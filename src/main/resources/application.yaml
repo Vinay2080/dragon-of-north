@@ -1,1 +1,17 @@
-spring.application.name=dragon-of-north
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: dragon-of-north
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres/dragon_of_north
+    username: ${db_username}
+    password: ${db_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+    database: postgresql
+    hibernate:
+      ddl-auto: create
+
+
