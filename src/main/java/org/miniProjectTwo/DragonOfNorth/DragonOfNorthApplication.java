@@ -6,8 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class DragonOfNorthApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(DragonOfNorthApplication.class, args);
-	}
+    static void main(String[] args) {
+        SpringApplication.run(DragonOfNorthApplication.class, args);
+    }
 
 }
