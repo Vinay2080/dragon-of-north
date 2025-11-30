@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.config.security;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
@@ -15,25 +16,31 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AppUserDetails implements UserDetails {
 
+
     private final AppUser appUser;
 
     @Override
     @NullMarked
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of();
+        // todo add roles
     }
 
     @Override
     public @Nullable String getPassword() {
-        return "";
+        return appUser.getPassword();
     }
 
     @Override
     @NullMarked
     public String getUsername() {
-        return "";
+        if (StringUtils.isNotBlank(appUser.getEmail())){
+            return appUser.getEmail();
+        }
+        return appUser.getPhoneNumber();
     }
 
+    // todo following methods need to return specific values will be defined later...
     @Override
     public boolean isAccountNonExpired() {
         return UserDetails.super.isAccountNonExpired();
@@ -54,4 +61,3 @@ public class AppUserDetails implements UserDetails {
         return UserDetails.super.isEnabled();
     }
 }
-// todo full fill userDetails

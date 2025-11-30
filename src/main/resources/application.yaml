@@ -14,4 +14,9 @@ spring:
     hibernate:
       ddl-auto: create
 
-
+app:
+  security:
+    jwt:
+      expiration:
+        access-token: 900000 # 15 minutes
+        refresh-token: 604800000 # 7 days

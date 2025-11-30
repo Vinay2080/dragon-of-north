@@ -43,7 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
 
     /**
-     * Processes each HTTP request to validate JWT token.
+     * Processes each HTTP request to validate a JWT token.
      *
      * @param request     the HTTP request
      * @param response    the HTTP response
@@ -62,6 +62,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 || "/api/v1/auth/register".equals(path)
                 || "/api/v1/auth/refresh/token".equals(path)) {
             filterChain.doFilter(request, response);
+            return;
         }
 
         final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
@@ -70,16 +71,18 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
+            return;
         }
 
-        assert authHeader != null;
         jwt = authHeader.substring(7);
-        username = jwtServices.ExtractUsername(jwt);
+
+        // todo add try catch block
+        username = jwtServices.extractUsername(jwt);
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             final UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            if (jwtServices.isTokenValid(jwt, userDetails.getUsername())) {
+            if (jwtServices.isTokenValid(jwt, userDetails)) {
                 final UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
