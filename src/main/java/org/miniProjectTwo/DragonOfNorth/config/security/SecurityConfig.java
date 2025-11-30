@@ -13,7 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 /**
  * Spring Security configuration for the application.
- * 
+ *
  * <p>This configuration:
  * <ul>
  *   <li>Enables web and method-level security</li>
@@ -23,7 +23,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  *   <li>Requires authentication for all other endpoints</li>
  *   <li>Registers a JWT filter for token validation</li>
  * </ul>
- * 
+ *
  * @see JwtFilter
  */
 @Configuration
@@ -39,14 +39,16 @@ public class SecurityConfig {
      * - "/swagger-ui/**" and "/v3/api-docs/**" for API documentation
      * - "/health", "/actuator/**" for health checks/actuator
      */
-    public static final String[] public_urls = {
     // todo add urls later;
+    public static final String[] public_urls = {
+            "/api/v1/auth/**"
     };
 
     /**
      * Custom JWT filter for processing and validating JWT tokens in incoming requests.
      */
     private final JwtFilter jwtFilter;
+
     /**
      * Configures the HTTP security filter chain.
      *
@@ -55,7 +57,7 @@ public class SecurityConfig {
      * - Allows anonymous access to {@link #public_urls}.
      * - Requires authentication for all other requests.
      * - Adds the {@link #jwtFilter} before {@link UsernamePasswordAuthenticationFilter}
-     *   so JWT tokens are processed prior to username/password auth.
+     * so JWT tokens are processed prior to username/password auth.
      * - Sets session management to {@link SessionCreationPolicy#STATELESS}.
      *
      * @param httpSecurity the {@link HttpSecurity} to configure
@@ -66,14 +68,16 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(final HttpSecurity httpSecurity) {
         return httpSecurity.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests
-                        (authorizationManagerRequestMatcherRegistry -> authorizationManagerRequestMatcherRegistry
+                        (auth -> auth
                                 .requestMatchers(public_urls).permitAll()
                                 .anyRequest()
                                 .authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                .sessionManagement(httpSecuritySessionManagementConfigurer -> httpSecuritySessionManagementConfigurer
+                .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();
 
     }
+
+
 }
