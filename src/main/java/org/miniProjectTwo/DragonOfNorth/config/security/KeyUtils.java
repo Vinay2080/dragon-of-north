@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -161,7 +162,7 @@ public final class KeyUtils {
             }
         }
 
-        var filePath = java.nio.file.Path.of(path);
+        var filePath = Path.of(path);
         if (Files.exists(filePath)) {
             return Files.readString(filePath);
         }
