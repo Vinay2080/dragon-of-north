@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,85 +20,108 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * JWT Authentication Filter that processes JWT tokens in the Authorization header.
- * <p>
- * This filter intercepts incoming requests and performs the following actions:
+ * JWT authentication filter responsible for processing and validating JWT tokens
+ * sent by the client in the {@code Authorization} header.
+ *
+ * <p>This filter runs once per request and performs the following step:
  * <ol>
- *   <li>Allows public endpoints to pass through without authentication</li>
- *   <li>Extracts the JWT token from the Authorization header</li>
- *   <li>Validates the token and extracts user information</li>
- *   <li>Sets up the Spring Security context with the authenticated user</li>
+ *   <li>Skips configured public authentication endpoints</li>
+ *   <li>Extracts and parses the JWT from the {@code Bearer} header</li>
+ *   <li>Validates token integrity, expiration, and ownership</li>
+ *   <li>Loads the corresponding user</li>
+ *   <li>Populates the Spring Security context with an authenticated user</li>
  * </ol>
  *
- * <p>Public endpoints that bypass JWT validation:
+ * <p>This filter only sets authentication if:
  * <ul>
- *   <li>{@code /api/v1/auth/login}</li>
- *   <li>{@code /api/v1/auth/register}</li>
- *   <li>{@code /api/v1/auth/refresh/token}</li>
+ *   <li>A valid token is provided</li>
+ *   <li>The security context is currently unauthenticated</li>
  * </ul>
+ *
+ * <p>Any invalid or expired token results only in a silent skip — no 500 errors —
+ * allowing downstream exception handlers or access rules to handle unauthorized access.</p>
  */
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
-    private final JwtServices jwtServices; // todo create class jwtServices
-    private final UserDetailsService userDetailsService; // todo implement UserDetailService
 
+    private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
 
-    /**
-     * Processes each HTTP request to validate a JWT token.
-     *
-     * @param request     the HTTP request
-     * @param response    the HTTP response
-     * @param filterChain the filter chain
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs during request processing
-     */
+    private final JwtServices jwtServices;
+    private final UserDetailsService userDetailsService;
+
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
 
-        //todo configure paths
         final String path = request.getServletPath();
-        if ("/api/v1/auth/login".equals(path)
-                || "/api/v1/auth/register".equals(path)
-                || "/api/v1/auth/refresh/token".equals(path)) {
+
+        // Public endpoints do not require JWT
+        if (isPublic(path)) {
+            log.debug("Skipping JWT filter for public path: {}", path);
             filterChain.doFilter(request, response);
             return;
         }
 
         final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        final String jwt;
-        final String username;
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.debug("No Bearer token found in request for path: {}", path);
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
+        final String token = authHeader.substring(7);
+        String username;
 
-        // todo add try catch block
-        username = jwtServices.extractUsername(jwt);
+        try {
+            username = jwtServices.extractUsername(token);
+            log.debug("Extracted username '{}' from JWT", username);
+        } catch (Exception ex) {
+            log.warn("Failed to parse or extract data from JWT: {}", ex.getMessage());
+            filterChain.doFilter(request, response);
+            return;
+        }
 
+        // Only authenticate if the context is empty
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            final UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            if (jwtServices.isTokenValid(jwt, userDetails)) {
-                final UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+            if (jwtServices.isTokenValid(token, userDetails)) {
+                UsernamePasswordAuthenticationToken authenticationToken =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
+
+                authenticationToken.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
                 );
 
-                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-
+                log.debug("Security context set for user: {}", username);
+            } else {
+                log.warn("Invalid JWT token for user: {}", username);
             }
-
         }
 
         filterChain.doFilter(request, response);
+    }
 
+    /**
+     * Determines whether a servlet path should bypass JWT authentication.
+     *
+     * @param path the request path
+     * @return true if the path is publicly accessible
+     */
+    private boolean isPublic(String path) {
+        return "/api/v1/auth/login".equals(path)
+                || "/api/v1/auth/register".equals(path)
+                || "/api/v1/auth/refresh/token".equals(path);
     }
 }

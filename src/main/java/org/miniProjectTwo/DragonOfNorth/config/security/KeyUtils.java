@@ -1,8 +1,10 @@
 package org.miniProjectTwo.DragonOfNorth.config.security;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyFactory;
@@ -13,30 +15,27 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 /**
- * Utility class for loading and managing cryptographic keys from PEM files.
- * <p>
- * This class provides thread-safe methods to load and cache RSA private and public keys
- * from PEM files. It handles various PEM formats and provides efficient key loading
- * with double-checked locking for thread safety.
- * </p>
+ * Utility class for loading RSA private and public keys from PEM files.
  *
- * <p>Supported key formats:
+ * <p>This class supports PEM files stored either on the classpath or on the filesystem.
+ * Keys are loaded once and cached using double-checked locking for high-performance,
+ * thread-safe access.</p>
+ *
+ * <p>Supported formats:</p>
  * <ul>
- *   <li>Private Keys: PKCS#8 and traditional RSA private keys</li>
- *   <li>Public Keys: X.509 and RSA public keys</li>
+ *     <li>Private Keys: PKCS#8, RSA PRIVATE KEY</li>
+ *     <li>Public Keys: X.509, RSA PUBLIC KEY</li>
  * </ul>
  *
- * <p>Usage example:
+ * <p>Example usage:</p>
  * <pre>
- * PrivateKey privateKey= KeyUtils.loadPrivateKey("keys/private.pem");
+ * PrivateKey privateKey = KeyUtils.loadPrivateKey("keys/private.pem");
  * PublicKey publicKey = KeyUtils.loadPublicKey("keys/public.pem");
  * </pre>
- *
- * @see java.security.PrivateKey
- * @see java.security.PublicKey
- * @see java.security.KeyFactory
  */
 public final class KeyUtils {
+
+    private static final Logger log = LoggerFactory.getLogger(KeyUtils.class);
 
     private KeyUtils() {
         throw new UnsupportedOperationException("Utility class");
@@ -65,24 +64,23 @@ public final class KeyUtils {
         try {
             RSA_FACTORY = KeyFactory.getInstance("RSA");
         } catch (Exception e) {
+            log.error("Failed to initialize RSA KeyFactory: {}", e.getMessage());
             throw new RuntimeException("Unable to load RSA KeyFactory", e);
         }
     }
+
     /**
-     * Loads and caches the RSA private key from the specified PEM file.
-     * <p>
-     * This method uses double-checked locking to ensure thread safety while
-     * maintaining performance. The key is loaded once and cached for subsequent calls.
+     * Loads and caches the RSA private key from a PEM file.
      *
-     * @param pemPath the classpath-relative path to the PEM file
-     * @return the loaded PrivateKey
-     * @throws Exception if the key cannot be loaded or is invalid
-     * @throws IllegalArgumentException if the PEM content is empty or invalid
+     * @param pemPath path to the private key file (classpath or filesystem)
+     * @return the loaded {@link PrivateKey}
+     * @throws Exception if loading or parsing fails
      */
     public static PrivateKey loadPrivateKey(String pemPath) throws Exception {
         if (PRIVATE_KEY == null) {
             synchronized (KeyUtils.class) {
                 if (PRIVATE_KEY == null) {
+                    log.info("Loading RSA private key from: {}", pemPath);
                     String pem = readKey(pemPath);
                     pem = normalizePem(pem, PRIVATE_HEADERS);
 
@@ -90,26 +88,27 @@ public final class KeyUtils {
                     PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decoded);
 
                     PRIVATE_KEY = RSA_FACTORY.generatePrivate(keySpec);
+                    log.info("Private key successfully loaded and cached.");
+                } else {
+                    log.debug("Private key returned from cache.");
                 }
             }
         }
         return PRIVATE_KEY;
     }
+
     /**
-     * Loads and caches the RSA public key from the specified PEM file.
-     * <p>
-     * This method uses double-checked locking to ensure thread safety while
-     * maintaining performance. The key is loaded once and cached for subsequent calls.
+     * Loads and caches the RSA public key from a PEM file.
      *
-     * @param pemPath the classpath-relative path to the PEM file
-     * @return the loaded PublicKey
-     * @throws Exception if the key cannot be loaded or is invalid
-     * @throws IllegalArgumentException if the PEM content is empty or invalid
+     * @param pemPath path to the public key file (classpath or filesystem)
+     * @return the loaded {@link PublicKey}
+     * @throws Exception if loading or parsing fails
      */
     public static PublicKey loadPublicKey(String pemPath) throws Exception {
         if (PUBLIC_KEY == null) {
             synchronized (KeyUtils.class) {
                 if (PUBLIC_KEY == null) {
+                    log.info("Loading RSA public key from: {}", pemPath);
                     String pem = readKey(pemPath);
                     pem = normalizePem(pem, PUBLIC_HEADERS);
 
@@ -117,21 +116,25 @@ public final class KeyUtils {
                     X509EncodedKeySpec keySpec = new X509EncodedKeySpec(decoded);
 
                     PUBLIC_KEY = RSA_FACTORY.generatePublic(keySpec);
+                    log.info("Public key successfully loaded and cached.");
+                } else {
+                    log.debug("Public key returned from cache.");
                 }
             }
         }
         return PUBLIC_KEY;
     }
+
     /**
-     * Normalizes PEM content by removing headers and whitespace.
+     * Normalizes PEM content by stripping headers/footers and removing whitespace.
      *
-     * @param pem the PEM content to normalize
-     * @param headers the headers to remove from the PEM content
-     * @return the normalized PEM content
-     * @throws IllegalArgumentException if the PEM content is empty or invalid
+     * @param pem         raw PEM file content
+     * @param headers     acceptable headers for removal
+     * @return normalized base64 content
      */
     private static String normalizePem(String pem, String[] headers) {
         if (pem == null || pem.isBlank()) {
+            log.error("PEM content is empty or null");
             throw new IllegalArgumentException("PEM content is empty");
         }
 
@@ -142,33 +145,38 @@ public final class KeyUtils {
         pem = pem.replaceAll("\\s", "");
 
         if (pem.isEmpty()) {
-            throw new IllegalArgumentException("PEM content invalid after header removal");
+            log.error("PEM content invalid after header removal");
+            throw new IllegalArgumentException("Invalid PEM format");
         }
 
         return pem;
     }
+
     /**
-     * Reads the key content from a classpath resource.
+     * Reads a key file from the classpath or filesystem.
      *
-     * @param path the classpath-relative path to the key file
-     * @return the key content as a String
+     * @param path path to the key file
+     * @return file content as UTF-8 string
      * @throws IOException if the file cannot be read
-     * @throws IllegalArgumentException if the file is not found
      */
     private static String readKey(String path) throws IOException {
+
+        // Try the classpath first
         try (InputStream is = KeyUtils.class.getClassLoader().getResourceAsStream(path)) {
             if (is != null) {
+                log.debug("Reading key from classpath: {}", path);
                 return new String(is.readAllBytes());
             }
         }
 
-        var filePath = Path.of(path);
-        if (Files.exists(filePath)) {
-            return Files.readString(filePath);
+        // Then filesystem
+        Path fsPath = Path.of(path);
+        if (Files.exists(fsPath)) {
+            log.debug("Reading key from filesystem: {}", fsPath);
+            return Files.readString(fsPath);
         }
 
+        log.error("Key file not found at: {}", path);
         throw new IllegalArgumentException("Key not found at: " + path);
     }
-
 }
-
