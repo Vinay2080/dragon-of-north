@@ -1,42 +1,30 @@
 package org.miniProjectTwo.DragonOfNorth.config;
 
-import org.jspecify.annotations.NullMarked;
-import org.miniProjectTwo.DragonOfNorth.impl.AuditorAwareImpl;
-import org.springframework.context.annotation.Bean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 /**
- * Configuration class for JPA and auditing settings.
- * This class enables JPA auditing and provides the necessary beans for tracking
- * the principal that created or modified an entity.
+ * Configures JPA auditing for the application.
  *
- * <p>Uses {@code @EnableJpaAuditing} to enable the JPA auditing functionality
- * and configures the {@link AuditorAware} bean to provide the current auditor.</p>
+ * <p>This setup enables automatic population of auditing fields such as
+ * {@code createdBy}, {@code createdAt}, {@code updatedBy}, and {@code updatedAt}
+ * on entities that extend a base auditable entity class.</p>
  *
- * @see org.springframework.data.jpa.repository.config.EnableJpaAuditing
- * @see org.springframework.data.domain.AuditorAware
+ * <p>The {@code auditorAwareRef} points to the {@code AuditorAware} bean responsible
+ * for determining the current user performing the action.</p>
  */
 @Configuration
-@EnableJpaAuditing
+@EnableJpaAuditing(auditorAwareRef = "auditorAware")
 public class JpaConfig {
 
+    private static final Logger log = LoggerFactory.getLogger(JpaConfig.class);
+
     /**
-     * Creates and configures an {@link AuditorAware} bean to provide the current auditor.
-     * This bean is used by Spring Data JPA to automatically populate the
-     * {@code createdBy} and {@code lastModifiedBy} fields in audited entities.
-     *
-     * <p>The current implementation returns a static value ("SYSTEM"). In a real application,
-     * this would typically be replaced with a mechanism to get the current user from the
-     * security context.</p>
-     *
-     * @return An instance of {@link AuditorAware} that provides the current auditor
-     * @see AuditorAwareImpl
+     * Logs JPA auditing activation at application startup.
      */
-    @Bean
-    @NullMarked
-    public AuditorAware<String> auditorAware() {
-        return new AuditorAwareImpl();
+    public JpaConfig() {
+        log.info("JPA Auditing enabled using AuditorAware implementation: 'auditorAware'");
     }
 }
