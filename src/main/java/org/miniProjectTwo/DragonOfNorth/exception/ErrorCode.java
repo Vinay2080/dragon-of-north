@@ -5,7 +5,10 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public enum ErrorCode {
-    ;
+    INVALID_TOKEN("AUTH_001", "Invalid or expired JWT token", HttpStatus.UNAUTHORIZED),
+    MALFORMED_TOKEN("AUTH_002", "Malformed JWT token", HttpStatus.BAD_REQUEST),
+    UNSUPPORTED_TOKEN("AUTH_003", "Unsupported JWT token", HttpStatus.BAD_REQUEST),
+    ILLEGAL_TOKEN("AUTH_004", "Illegal JWT token", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String defaultMessage;
