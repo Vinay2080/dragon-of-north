@@ -1,7 +1,10 @@
 package org.miniProjectTwo.DragonOfNorth.common;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
@@ -9,23 +12,23 @@ import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Base entity class that provides common fields and functionality for all entities in the application.
  * This class includes audit fields like created date, last modified date, created by, and last modified by.
  * It uses JPA's {@code @MappedSuperclass} to allow inheritance of these common fields.
- * 
+ *
  * <p>This class is designed to be extended by other entity classes to maintain consistent
  * audit information across all entities in the application.</p>
- * 
+ *
  * <p>Uses Hibernate's {@code @UuidGenerator} for generating unique identifiers and
  * Spring Data JPA's auditing features to automatically populate audit fields.</p>
- * 
+ *
  * @see jakarta.persistence.Entity
  * @see org.springframework.data.jpa.domain.support.AuditingEntityListener
  */
-@Builder
 @Getter
 @Setter
 @NoArgsConstructor
@@ -43,7 +46,7 @@ public class BaseEntity {
     @GeneratedValue
     @UuidGenerator(style = UuidGenerator.Style.TIME)
     @Column(columnDefinition = "uuid", nullable = false, unique = true, updatable = false)
-    private String id;
+    private UUID id;
 
     /**
      * The date and time when the entity was created.
@@ -52,7 +55,7 @@ public class BaseEntity {
      */
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     /**
      * The date and time when the entity was last modified.
@@ -61,7 +64,7 @@ public class BaseEntity {
      */
     @UpdateTimestamp
     @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     /**
      * The identifier of the user who created the entity.

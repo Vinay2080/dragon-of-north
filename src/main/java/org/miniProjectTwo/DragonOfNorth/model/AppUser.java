@@ -1,7 +1,10 @@
 package org.miniProjectTwo.DragonOfNorth.model;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.miniProjectTwo.DragonOfNorth.common.BaseEntity;
 import org.miniProjectTwo.DragonOfNorth.enums.UserStatus;
 
@@ -23,7 +26,6 @@ import java.time.LocalDateTime;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
 @Table(name = "users")
 public class AppUser extends BaseEntity {
 
@@ -58,7 +60,6 @@ public class AppUser extends BaseEntity {
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 
     /**
