@@ -1,4 +1,4 @@
-package org.miniProjectTwo.DragonOfNorth.dto.otp;
+package org.miniProjectTwo.DragonOfNorth.dto.otp.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
