@@ -5,6 +5,7 @@ import lombok.*;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpType;
 
 import java.time.Instant;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -25,6 +26,7 @@ import java.time.Instant;
         }
 )
 public class OtpToken {
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
@@ -37,7 +39,7 @@ public class OtpToken {
     private OtpType type;
 
     @Column(nullable = false, length = 200)
-    private String otp;
+    private String otpHash;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -63,5 +65,26 @@ public class OtpToken {
     @Version
     private Long version;
 
+    public OtpToken(String identifier, OtpType type, String otpHash, int ttlMinutes) {
+        this.identifier = identifier;
+        this.type = type;
+        this.otpHash = otpHash;
+        this.createdAt = Instant.now();
+        this.lastSentAt = this.createdAt;
+        this.expiresAt = this.createdAt.plusSeconds(ttlMinutes * 60L);
+    }
+
+    public boolean isExpired() {
+        return Instant.now().isAfter(expiresAt);
+    }
+
+    public void incrementAttempts() {
+        this.attempts += 1;
+    }
+
+    public void markVerified() {
+        this.consumed = true;
+        this.verifiedAt = Instant.now();
+    }
 
 }

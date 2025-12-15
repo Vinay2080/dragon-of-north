@@ -34,4 +34,3 @@ build/
 
 .env
 src/main/resources/local-keys
-src/main/resources/aws-keys

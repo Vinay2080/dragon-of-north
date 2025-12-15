@@ -7,6 +7,7 @@ import org.miniProjectTwo.DragonOfNorth.enums.Status;
 import java.time.Instant;
 
 @Getter
+// todo maybe it should in common module
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {

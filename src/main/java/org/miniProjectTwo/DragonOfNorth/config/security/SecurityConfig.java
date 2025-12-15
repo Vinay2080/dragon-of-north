@@ -41,7 +41,9 @@ public class SecurityConfig {
      */
     // todo add urls later;
     public static final String[] public_urls = {
-            "/api/v1/auth/**"
+            "/api/v1/auth/**",
+            "/api/v1/otp/**",
+
     };
 
     /**

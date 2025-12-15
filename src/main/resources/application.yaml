@@ -20,3 +20,19 @@ app:
       expiration:
         access-token: 900000 # 15 minutes
         refresh-token: 604800000 # 7 days
+
+otp:
+  length: 6
+  ttl-minutes: 10
+  max-verify-attempts: 3
+  request-window-seconds: 3600
+  block-duration-minutes: 15
+  resend-cooldown-seconds: 60
+  max-requests-per-window: 10
+
+
+aws:
+  region: us-east-1
+  ses:
+    sender: shaking.121@gmail.com
+
