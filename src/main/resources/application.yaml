@@ -29,7 +29,8 @@ otp:
   block-duration-minutes: 15
   resend-cooldown-seconds: 60
   max-requests-per-window: 10
-
+  cleanup:
+    delay-ms: 3599999
 
 aws:
   region: us-east-1

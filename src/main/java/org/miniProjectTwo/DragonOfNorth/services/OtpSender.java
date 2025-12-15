@@ -1,25 +1,21 @@
 package org.miniProjectTwo.DragonOfNorth.services;
 
+/**
+ * Service interface for sending One-Time Passwords (OTP) to users through various channels.
+ * Implementations of this interface handle the delivery mechanism for OTPs, which could be
+ * through email, SMS, or other communication channels.
+ */
+
 public interface OtpSender {
 
+    /**
+     * Sends an OTP to the specified recipient.
+     *
+     * @param identifier The recipient's unique identifier (e.g., email address or phone number)
+     * @param otp The one-time password to be sent
+     * @param ttlMinutes Time-to-live for the OTP in minutes
+     * @throws IllegalArgumentException if the identifier is invalid
+     */
     void send(String identifier, String otp, int ttlMinutes);
 
 }
-//package org.miniProjectTwo.auth.otp;
-//
-//import org.springframework.scheduling.annotation.Scheduled;
-//import org.springframework.stereotype.Component;
-//
-//import java.time.Instant;
-//
-//@Component
-//public class OtpCleanupTask {
-//    private final EmailOtpRepository repo;
-//    public OtpCleanupTask(EmailOtpRepository repo) { this.repo = repo; }
-//
-//    // runs every hour
-//    @Scheduled(fixedDelayString = "${otp.cleanup.delay-ms:3600000}")
-//    public void cleanupExpired() {
-//        repo.deleteAllByExpiresAtBefore(Instant.now());
-//    }
-//}
