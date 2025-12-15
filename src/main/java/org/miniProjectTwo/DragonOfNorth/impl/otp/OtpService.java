@@ -15,6 +15,24 @@ import java.time.Instant;
 import static org.miniProjectTwo.DragonOfNorth.enums.OtpType.EMAIL;
 import static org.miniProjectTwo.DragonOfNorth.enums.OtpType.PHONE;
 
+/**
+ * Service for managing OTP (One-Time Password) generation, validation, and delivery.
+ * This service handles both email and phone-based OTPs with rate limiting and security features.
+ *
+ * <p>Key features include:
+ * <ul>
+ *   <li>OTP generation with configurable length</li>
+ *   <li>Rate limiting and cooldown periods</li>
+ *   <li>Automatic expiration of OTPs</li>
+ *   <li>Maximum attempt restrictions</li>
+ *   <li>Secure storage using BCrypt hashing</li>
+ * </ul>
+ *
+ * @see OtpToken
+ * @see EmailOtpSender
+ * @see PhoneOtpSender
+ */
+
 @Service
 @RequiredArgsConstructor
 public class OtpService {
@@ -45,6 +63,15 @@ public class OtpService {
 
     private final SecureRandom secureRandom = new SecureRandom();
 
+    /**
+     * Generates and sends an OTP to the specified email address.
+     * The OTP will be valid for the configured TTL period.
+     *
+     * @param email The email address to send the OTP to
+     * @throws IllegalStateException if rate limits are exceeded
+     * @throws IllegalArgumentException if the email is invalid
+     */
+
     @Transactional
     public void createEmailOtp(String email) {
         String normalizedEmail = email.trim().toLowerCase();
@@ -60,6 +87,15 @@ public class OtpService {
 
         emailOtpSender.send(normalizedEmail, otp, ttlMinutes);
     }
+
+    /**
+     * Generates and sends an OTP to the specified phone number.
+     * The OTP will be valid for the configured TTL period.
+     *
+     * @param phone The phone number to send the OTP to
+     * @throws IllegalStateException if rate limits are exceeded
+     * @throws IllegalArgumentException if the phone number is invalid
+     */
 
     @Transactional
     public void createPhoneOtp(String phone) {
@@ -78,6 +114,15 @@ public class OtpService {
 
     }
 
+    /**
+     * Verifies an email OTP.
+     *
+     * @param email The email address the OTP was sent to
+     * @param providedOtp The OTP to verify
+     * @throws IllegalStateException if the OTP is expired or max attempts exceeded
+     * @throws IllegalArgumentException if the OTP is invalid
+     */
+
     @Transactional
     public void verifyEmailOtp(String email, String providedOtp) {
         verifyToken(
@@ -86,6 +131,15 @@ public class OtpService {
         );
     }
 
+    /**
+     * Verifies a phone OTP.
+     *
+     * @param phone The phone number the OTP was sent to
+     * @param providedOtp The OTP to verify
+     * @throws IllegalStateException if the OTP is expired or max attempts exceeded
+     * @throws IllegalArgumentException if the OTP is invalid
+     */
+
     @Transactional
     public void verifyPhoneOtp(String phone, String providedOtp) {
         verifyToken(
@@ -93,11 +147,29 @@ public class OtpService {
                 providedOtp);
     }
 
+    /**
+     * Fetches the most recent OTP token for the given identifier and type.
+     *
+     * @param identifier The email or phone number
+     * @param otpType The type of OTP (EMAIL or PHONE)
+     * @return The most recent OTP token
+     * @throws IllegalArgumentException if no OTP is found
+     */
+
     private OtpToken fetchLatest(String identifier, OtpType otpType) {
         return otpTokenRepository
                 .findTopByIdentifierAndTypeOrderByCreatedAtDesc(identifier, otpType)
                 .orElseThrow(() -> new IllegalArgumentException("OTP not found"));
     }
+
+    /**
+     * Verifies an OTP token.
+     *
+     * @param otpToken The OTP token to verify
+     * @param providedOtp The OTP to verify against
+     * @throws IllegalStateException if the OTP is expired or max attempts exceeded
+     * @throws IllegalArgumentException if the OTP is invalid
+     */
 
     private void verifyToken(OtpToken otpToken, String providedOtp) {
         if (otpToken.isExpired()) {
@@ -121,11 +193,25 @@ public class OtpService {
         otpTokenRepository.save(otpToken);
     }
 
+    /**
+     * Generates a random numeric OTP of the configured length.
+     *
+     * @return The generated OTP as a string
+     */
+
     private String generateOtp() {
         int min = (int) Math.pow(10, otpLength - 1);
         int max = (int) Math.pow(10, otpLength) - 1;
         return String.valueOf(secureRandom.nextInt(max - min + 1) + min);
     }
+
+    /**
+     * Enforces rate limiting for OTP requests.
+     *
+     * @param identifier The email or phone number
+     * @param otpType The type of OTP (EMAIL or PHONE)
+     * @throws IllegalStateException if rate limits are exceeded
+     */
 
     private void enforceRateLimits(String identifier, OtpType otpType) {
         Instant now = Instant.now();
