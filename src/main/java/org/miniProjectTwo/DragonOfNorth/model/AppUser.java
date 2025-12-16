@@ -9,6 +9,10 @@ import org.miniProjectTwo.DragonOfNorth.common.BaseEntity;
 import org.miniProjectTwo.DragonOfNorth.enums.UserStatus;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.miniProjectTwo.DragonOfNorth.enums.UserStatus.*;
 
 /**
  * Represents a user in the system.
@@ -26,7 +30,14 @@ import java.time.LocalDateTime;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "users")
+
+@Table(name = "users",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = "email"),
+                @UniqueConstraint(columnNames = "phone_number")
+        })
+
+
 public class AppUser extends BaseEntity {
 
     /**
@@ -60,7 +71,7 @@ public class AppUser extends BaseEntity {
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private UserStatus status = UserStatus.ACTIVE;
+    private UserStatus status = ACTIVE;
 
     /**
      * Indicates whether the user's email address has been verified.
@@ -87,6 +98,12 @@ public class AppUser extends BaseEntity {
     @Column(nullable = false)
     private int failedLoginAttempts = 0;
 
+    @Column(nullable = false)
+    private boolean accountLocked = false;
+
+    private LocalDateTime lockedAt;
+
+
     /**
      * The timestamp of the user's last successful login.
      * This field is automatically updated when the user successfully authenticates.
@@ -94,4 +111,14 @@ public class AppUser extends BaseEntity {
      */
     private LocalDateTime lastLoginAt;
 
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "roles_id")
+    )
+    private Set<Role> roles = new HashSet<>();
+
 }
+// todo javacode

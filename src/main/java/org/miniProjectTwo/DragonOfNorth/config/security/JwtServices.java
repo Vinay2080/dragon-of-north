@@ -6,16 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.exception.ErrorCode;
+import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.Date;
-import java.util.Map;
-import java.util.Objects;
-import java.util.regex.Pattern;
+import java.util.*;
 
 /**
  * Service responsible for creating, validating, and parsing JSON Web Tokens (JWT)
@@ -39,11 +36,9 @@ public class JwtServices {
     private static final String TOKEN_TYPE = "token_type";
     private static final String ACCESS_TOKEN_TYPE = "access_token";
     private static final String REFRESH_TOKEN_TYPE = "refresh_token";
+    private static final String ISSUER = "dragon-of-north-auth";
+    private static final String ROLES = "roles";
 
-    /**
-     * Username validation pattern: 3–30 characters, alphanumeric, or underscore.
-     */
-    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_]{3,30}$");
 
     private final PrivateKey privateKey;
     private final PublicKey publicKey;
@@ -68,56 +63,70 @@ public class JwtServices {
     /**
      * Generates a signed JWT access token for the given username.
      *
-     * @param username an authenticated username
      * @return a compact JWT access token string
      */
-    public String generateAccessToken(final String username) {
-        validateUsername(username);
+    public String generateAccessToken(UUID userId, Set<Role> roles) {
 
-        Map<String, Object> claims = Map.of(TOKEN_TYPE, ACCESS_TOKEN_TYPE);
-        return buildToken(username, claims, accessTokenExpiration);
+        List<String> roleNames = roles
+                .stream()
+                .map(role -> role.getRoleName().name())
+                .toList();
+
+        Map<String, Object> claims = Map.of(TOKEN_TYPE, ACCESS_TOKEN_TYPE, ROLES, roleNames);
+
+        return buildToken(userId, claims, accessTokenExpiration);
     }
 
     /**
      * Generates a signed JWT refresh token for the given username.
      *
-     * @param username an authenticated username
      * @return a compact JWT refresh token string
      */
-    public String generateRefreshToken(final String username) {
-        validateUsername(username);
+    public String generateRefreshToken(UUID userId) {
 
         Map<String, Object> claims = Map.of(TOKEN_TYPE, REFRESH_TOKEN_TYPE);
-        return buildToken(username, claims, refreshTokenExpiration);
+        return buildToken(userId, claims, refreshTokenExpiration);
     }
 
     /**
      * Builds a signed JWT using an RSA private key, embedding claims, subject,
      * issue time, and expiration time.
      *
-     * @param username   the subject (typically the username)
      * @param claims     token claims to embed
      * @param expiration validity duration in milliseconds
      * @return a signed JWT string
      */
-    private String buildToken(String username, Map<String, Object> claims, long expiration) {
-        Objects.requireNonNull(username, "username cannot be null");
+    private String buildToken(UUID userId, Map<String, Object> claims, long expiration) {
+        Objects.requireNonNull(userId, "username cannot be null");
         Objects.requireNonNull(claims, "claims cannot be null");
 
         final Date issuedAt = new Date();
         final Date expiry = new Date(issuedAt.getTime() + expiration);
 
-        log.debug("Generating {} for username={}", claims.get(TOKEN_TYPE), username);
-
         return Jwts.builder()
                 .claims(claims)
-                .subject(username)
+                .issuer(ISSUER)
+                .subject(userId.toString())
                 .signWith(privateKey)
                 .issuedAt(issuedAt)
                 .expiration(expiry)
                 .compact();
     }
 
+    public boolean isTokenValid(String token) {
+        Claims claims = extractAllClaims(token);
+
+
+        boolean notExpired = claims.getExpiration().after(new Date());
+
+        log.debug("Token validation: expired={}", !notExpired);
+
+        return notExpired;
+    }
+
+    public UUID extractUserId(String token) {
+        return UUID.fromString(extractAllClaims(token).getSubject());
+    }
 
     /**
      * Generates a new access token using a valid refresh token.
@@ -125,7 +134,7 @@ public class JwtServices {
      * @param refreshToken the provided refresh token
      * @return a new access token
      */
-    public String refreshAccessToken(final String refreshToken) {
+    public String refreshAccessToken(final String refreshToken, Set<Role> roles) {
         if (StringUtils.isBlank(refreshToken)) {
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "Refresh token cannot be empty");
         }
@@ -139,7 +148,8 @@ public class JwtServices {
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "Refresh token has expired");
         }
 
-        return generateAccessToken(claims.getSubject());
+        UUID userId = UUID.fromString(claims.getSubject());
+        return generateAccessToken(userId, roles);
     }
 
     /**
@@ -149,7 +159,7 @@ public class JwtServices {
      * @param token the JWT string
      * @return extracted {@link Claims}
      */
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         try {
             return Jwts.parser()
                     .verifyWith(publicKey)
@@ -174,39 +184,6 @@ public class JwtServices {
         }
     }
 
-    /**
-     * Extracts the username (JWT subject) from a token.
-     *
-     * @param token the JWT string
-     * @return the username contained within the token
-     */
-    public String extractUsername(String token) {
-        return extractAllClaims(token).getSubject();
-    }
-
-
-    /**
-     * Validates a JWT by ensuring:
-     * <ul>
-     *     <li>The subject matches the user's username</li>
-     *     <li>The token has not expired</li>
-     * </ul>
-     *
-     * @param token       the JWT string
-     * @param userDetails Spring Security user details
-     * @return true if the token is valid and belongs to the user
-     */
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        Claims claims = extractAllClaims(token);
-
-        String username = claims.getSubject();
-        boolean usernameMatch = username.equals(userDetails.getUsername());
-        boolean expired = isTokenExpired(claims);
-
-        log.debug("Token validation: usernameMatch={}, expired={}", usernameMatch, expired);
-
-        return usernameMatch && !expired;
-    }
 
     /**
      * Checks if a token represented by claims is expired.
@@ -218,22 +195,6 @@ public class JwtServices {
         return claims.getExpiration().before(new Date());
     }
 
-
-    /**
-     * Validates a username format using a predefined regex.
-     *
-     * @param username the username to validate
-     * @throws IllegalArgumentException if blank or invalid format
-     */
-    private void validateUsername(String username) {
-        if (StringUtils.isBlank(username)) {
-            throw new IllegalArgumentException("Username cannot be empty");
-        }
-
-        if (!USERNAME_PATTERN.matcher(username).matches()) {
-            throw new IllegalArgumentException("Invalid username format");
-        }
-    }
 
     /**
      * Ensures the provided token contains a refresh-token type.
@@ -253,3 +214,4 @@ public class JwtServices {
         }
     }
 }
+// todo javadoc

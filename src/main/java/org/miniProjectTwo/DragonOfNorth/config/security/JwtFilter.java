@@ -1,23 +1,27 @@
 package org.miniProjectTwo.DragonOfNorth.config.security;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 
 /**
  * JWT authentication filter responsible for processing and validating JWT tokens
@@ -38,17 +42,18 @@ import java.io.IOException;
  *   <li>The security context is currently unauthenticated</li>
  * </ul>
  *
- * <p>Any invalid or expired token results only in a silent skip — no 500 errors —
+ * <p>Any invalid or expired token results only in a silent skip — no. 500 errors —
  * allowing downstream exception handlers or access rules to handle unauthorized access.</p>
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
-
     private final JwtServices jwtServices;
-    private final UserDetailsService userDetailsService;
+
+    private final static String ROLES = "roles";
+
 
     @Override
     protected void doFilterInternal(
@@ -75,11 +80,52 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         final String token = authHeader.substring(7);
-        String username;
 
         try {
-            username = jwtServices.extractUsername(token);
-            log.debug("Extracted username '{}' from JWT", username);
+
+            if (!jwtServices.isTokenValid(token)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            Claims claims = jwtServices.extractAllClaims(token);
+            String subject = claims.getSubject();
+
+
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                UUID userId = UUID.fromString(subject);
+
+                List<GrantedAuthority> authorities = new ArrayList<>();
+
+                List<?> rawRoles = claims.get(ROLES, List.class);
+
+                List<String> roles = rawRoles ==
+                        null ? List.of() :
+                        rawRoles.stream()
+                                .map(String::valueOf)
+                                .toList();
+
+                roles.forEach(role ->
+                        authorities.add(new SimpleGrantedAuthority("ROLE_" + role)));
+
+
+                UsernamePasswordAuthenticationToken authenticationToken =
+                        new UsernamePasswordAuthenticationToken(
+                                userId,
+                                null,
+                                authorities
+                        );
+
+                authenticationToken.setDetails(
+                        new WebAuthenticationDetailsSource()
+                                .buildDetails(request)
+                );
+
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+            }
+
+
         } catch (Exception ex) {
             log.warn("Failed to parse or extract data from JWT: {}", ex.getMessage());
             filterChain.doFilter(request, response);
@@ -87,30 +133,8 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         // Only authenticate if the context is empty
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-            if (jwtServices.isTokenValid(token, userDetails)) {
-                UsernamePasswordAuthenticationToken authenticationToken =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
-
-                authenticationToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                log.debug("Security context set for user: {}", username);
-            } else {
-                log.warn("Invalid JWT token for user: {}", username);
-            }
-        }
-
         filterChain.doFilter(request, response);
+
     }
 
     /**
@@ -122,6 +146,12 @@ public class JwtFilter extends OncePerRequestFilter {
     private boolean isPublic(String path) {
         return "/api/v1/auth/login".equals(path)
                 || "/api/v1/auth/register".equals(path)
-                || "/api/v1/auth/refresh/token".equals(path);
+                || "/api/v1/auth/refresh/token".equals(path)
+                || "/api/v1/otp/email/request".equals(path)
+                || "/api/v1/otp/email/verify".equals(path)
+                || "/api/v1/otp/phone/request".equals(path)
+                || "/api/v1/otp/phone/verify".equals(path);
     }
+
 }
+// todo javadoc

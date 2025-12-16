@@ -1,16 +1,18 @@
 package org.miniProjectTwo.DragonOfNorth.config.security;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.springframework.modulith.NamedInterface;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Custom implementation of Spring Security's {@link UserDetails} that represents
@@ -35,8 +37,20 @@ public class AppUserDetails implements UserDetails {
     @Override
     @NullMarked
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
-        // todo add roles
+
+        Set<GrantedAuthority> authorities = new HashSet<>();
+
+        for (Role role : appUser.getRoles()) {
+            authorities.add(
+                    new SimpleGrantedAuthority
+                            ("ROLE_" + role.getRoleName().name()));
+
+            role.getPermissions().forEach(permission ->
+                    authorities.add(
+                            new SimpleGrantedAuthority("PERM_" + permission.getName())
+                    ));
+        }
+        return authorities;
     }
 
     /**
@@ -53,10 +67,8 @@ public class AppUserDetails implements UserDetails {
     @Override
     @NullMarked
     public String getUsername() {
-        if (StringUtils.isNotBlank(appUser.getEmail())){
-            return appUser.getEmail();
-        }
-        return appUser.getPhoneNumber();
+
+        return appUser.getId().toString();
     }
 
     // todo following methods need to return specific values will be defined later...
@@ -82,7 +94,7 @@ public class AppUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return UserDetails.super.isAccountNonLocked();
+        return appUser.getFailedLoginAttempts() < 5;
     }
 
     /**
@@ -106,6 +118,7 @@ public class AppUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return UserDetails.super.isEnabled();
+        return true;
     }
 }
+//todo rewrite the javadoc

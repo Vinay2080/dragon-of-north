@@ -10,6 +10,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 
 /**
  * Service implementation for loading user-specific data.
@@ -37,6 +39,7 @@ import org.springframework.stereotype.Service;
 public class AppUserDetailService implements UserDetailsService {
 
     private final AppUserRepository repository;
+
     /**
      * Locates the user based on the provided username (email or phone number).
      * <p>
@@ -44,17 +47,23 @@ public class AppUserDetailService implements UserDetailsService {
      * It performs a case-insensitive search for a user by either email or phone number.
      * </p>
      *
-     * @param username the username (email or phone number) identifying the user whose data is required
      * @return a fully populated user record (never {@code null})
      * @throws UsernameNotFoundException if the user could not be found
      */
     @Override
     @NullMarked
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
 
-        AppUser appUser = repository.findByEmailIgnoreCaseOrPhoneNumberIgnoreCase(username, username);
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(userId);
+        } catch (IllegalArgumentException _) {
+            throw new UsernameNotFoundException("Invalid user identifier");
+        }
+        AppUser appUser  = repository.findById(uuid);
         if (appUser == null) throw new UsernameNotFoundException("User not found");
         return new AppUserDetails(appUser);
 
     }
 }
+// todo rewrite the javadoc.
