@@ -97,7 +97,7 @@ public class JwtServices {
      * @return a signed JWT string
      */
     private String buildToken(UUID userId, Map<String, Object> claims, long expiration) {
-        Objects.requireNonNull(userId, "username cannot be null");
+        Objects.requireNonNull(userId, "userId cannot be null");
         Objects.requireNonNull(claims, "claims cannot be null");
 
         final Date issuedAt = new Date();
@@ -109,20 +109,11 @@ public class JwtServices {
                 .subject(userId.toString())
                 .signWith(privateKey)
                 .issuedAt(issuedAt)
+                .notBefore(issuedAt)
                 .expiration(expiry)
                 .compact();
     }
 
-    public boolean isTokenValid(String token) {
-        Claims claims = extractAllClaims(token);
-
-
-        boolean notExpired = claims.getExpiration().after(new Date());
-
-        log.debug("Token validation: expired={}", !notExpired);
-
-        return notExpired;
-    }
 
     public UUID extractUserId(String token) {
         return UUID.fromString(extractAllClaims(token).getSubject());
@@ -163,6 +154,7 @@ public class JwtServices {
         try {
             return Jwts.parser()
                     .verifyWith(publicKey)
+                    .requireIssuer(ISSUER)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();

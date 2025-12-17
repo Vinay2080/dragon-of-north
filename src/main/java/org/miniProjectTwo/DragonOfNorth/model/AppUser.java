@@ -12,8 +12,6 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.miniProjectTwo.DragonOfNorth.enums.UserStatus.*;
-
 /**
  * Represents a user in the system.
  * This entity extends {@link BaseEntity} to inherit common audit fields.
@@ -32,6 +30,10 @@ import static org.miniProjectTwo.DragonOfNorth.enums.UserStatus.*;
 @NoArgsConstructor
 
 @Table(name = "users",
+        indexes = {
+                @Index(name = "idx_users_email", columnList = "email"),
+                @Index(name = "idx_users_phone", columnList = "phone_number")
+        },
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "email"),
                 @UniqueConstraint(columnNames = "phone_number")
@@ -71,7 +73,7 @@ public class AppUser extends BaseEntity {
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private UserStatus status = ACTIVE;
+    private UserStatus status;
 
     /**
      * Indicates whether the user's email address has been verified.
@@ -121,4 +123,4 @@ public class AppUser extends BaseEntity {
     private Set<Role> roles = new HashSet<>();
 
 }
-// todo javacode
+// todo javadoc

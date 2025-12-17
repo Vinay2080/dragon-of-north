@@ -83,11 +83,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
         try {
 
-            if (!jwtServices.isTokenValid(token)) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-
             Claims claims = jwtServices.extractAllClaims(token);
             String subject = claims.getSubject();
 
@@ -127,7 +122,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
 
         } catch (Exception ex) {
-            log.warn("Failed to parse or extract data from JWT: {}", ex.getMessage());
+            log.debug("JWT processing failed: {}", ex.getMessage());
+
             filterChain.doFilter(request, response);
             return;
         }
@@ -137,20 +133,14 @@ public class JwtFilter extends OncePerRequestFilter {
 
     }
 
-    /**
-     * Determines whether a servlet path should bypass JWT authentication.
-     *
-     * @param path the request path
-     * @return true if the path is publicly accessible
-     */
+
+    private static final List<String> PUBLIC_PATH = List.of(
+            "/api/v1/auth",
+            "/api/v1/otp"
+    );
+
     private boolean isPublic(String path) {
-        return "/api/v1/auth/login".equals(path)
-                || "/api/v1/auth/register".equals(path)
-                || "/api/v1/auth/refresh/token".equals(path)
-                || "/api/v1/otp/email/request".equals(path)
-                || "/api/v1/otp/email/verify".equals(path)
-                || "/api/v1/otp/phone/request".equals(path)
-                || "/api/v1/otp/phone/verify".equals(path);
+        return PUBLIC_PATH.stream().anyMatch(path::startsWith);
     }
 
 }
