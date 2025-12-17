@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.impl.otp;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.services.OtpSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.MessageAttributeValue;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class PhoneOtpSender implements OtpSender {
     private final SnsClient snsClient;
 
+    @Async
     @Override
     public void send(String phone, String otp, int ttlMinutes) {
         String message = "Your OTP is " + otp + ". Expires in " + ttlMinutes + " minutes.";

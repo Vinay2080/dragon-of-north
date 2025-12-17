@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.impl.otp;
 
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.services.OtpSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
@@ -28,6 +29,7 @@ public class EmailOtpSender implements OtpSender {
      * @throws IllegalArgumentException if the email address is invalid
      */
 
+    @Async
     @Override
     public void send(String email, String otp, int ttlMinutes) {
         sesEmailService.sendOtpEmail(email, otp, ttlMinutes);
