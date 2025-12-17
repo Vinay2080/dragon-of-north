@@ -14,11 +14,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Custom implementation of Spring Security's {@link UserDetails} that represents
- * an authenticated user in the application. This class wraps an {@link AppUser} entity
- * and provides the necessary user details required by Spring Security.
- */
+
 
 /**
  * Custom implementation of Spring Security's {@link UserDetails} that represents

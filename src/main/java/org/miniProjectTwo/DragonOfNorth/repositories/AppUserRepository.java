@@ -8,9 +8,6 @@ import java.util.UUID;
 
 public interface AppUserRepository extends JpaRepository<@NonNull AppUser, @NonNull String> {
 
-    AppUser findByEmailIgnoreCaseOrPhoneNumberIgnoreCase(String username, String username1);
-
-
     AppUser findById(UUID uuid);
 }
 //todo javadoc
