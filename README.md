@@ -1,488 +1,174 @@
-# Dragon of North - Multi-Factor Authentication & Verification System
+# Dragon of North
 
-A robust and scalable multi-factor authentication (MFA) and verification system designed for enterprise-grade security. Dragon of North provides comprehensive authentication mechanisms including OTP, biometric verification, email/SMS verification, and secure session management.
+A modern Spring Boot application built with Java 25 and the latest enterprise technologies.
 
-## 🚀 Features
+## Overview
 
-### Core Authentication Methods
-- **One-Time Password (OTP)** - Time-based (TOTP) and HMAC-based (HOTP) OTP generation and validation
-- **Two-Factor Authentication (2FA)** - Multi-layered security with optional fallback methods
-- **Email Verification** - Secure email-based identity verification with token expiration
-- **SMS Verification** - Phone number verification with rate limiting and abuse prevention
-- **Biometric Authentication** - Fingerprint and facial recognition support
-- **Security Questions** - Customizable security questions for account recovery
+Dragon of North is a comprehensive Spring Boot 4.0.0 application demonstrating best practices in microservices architecture, security, and cloud-native development.
 
-### Advanced Features
-- **Session Management** - Secure session creation, validation, and expiration
-- **Rate Limiting** - Protection against brute force attacks
-- **Device Fingerprinting** - Track and manage trusted devices
-- **Audit Logging** - Comprehensive logging of all authentication events
-- **Risk Assessment** - Intelligent risk detection and adaptive authentication
-- **Account Recovery** - Secure backup codes and recovery mechanisms
-- **Single Sign-On (SSO)** - OAuth 2.0 and SAML 2.0 support
+## Technology Stack
 
-## 📋 Requirements
+### Core Framework
+- **Java**: 25
+- **Spring Boot**: 4.0.0
+- **Build Tool**: Maven/Gradle
 
-- Node.js >= 14.0.0
-- npm >= 6.0.0 or yarn >= 1.22.0
-- PostgreSQL >= 12 or MongoDB >= 4.4
-- Redis >= 5.0 (optional, for caching and rate limiting)
+### Security & Authentication
+- **JWT Authentication**: RSA-based encryption
+- **Token Management**: Secure token generation and validation
+- **Authorization**: Role-based access control (RBAC)
 
-## 💻 Installation
+### Communication & Notifications
+- **OTP Management**: 
+  - AWS Simple Notification Service (SNS) for SMS delivery
+  - AWS Simple Email Service (SES) for email delivery
+  - Time-based OTP (TOTP) implementation
+  - Secure OTP validation and expiration handling
 
-### Clone the Repository
-```bash
+### Data Management
+- **Database**: JPA/Hibernate ORM
+- **Caching**: Spring Cache abstractions
+- **Data Validation**: Bean Validation (Jakarta Validation)
+
+## Project Structure
+
+dragon-of-north/ ├── src/ │ ├── main/ │ │ ├── java/ │ │ │ └── com/ │ │ │ └── dragonofthenorth/ │ │ │ ├── config/ # Configuration classes │ │ │ ├── controller/ # REST controllers │ │ │ ├── service/ # Business logic │ │ │ ├── repository/ # Data access layer │ │ │ ├── entity/ # JPA entities │ │ │ ├── dto/ # Data transfer objects │ │ │ ├── security/ # Security & JWT handling │ │ │ ├── notification/ # OTP & AWS SNS/SES │ │ │ ├── exception/ # Custom exceptions │ │ │ └── util/ # Utility classes │ │ └── resources/ │ │ ├── application.yml # Main configuration │ │ ├── application-dev.yml # Development profile │ │ ├── application-prod.yml # Production profile │ │ └── db/ │ │ └── migration/ # Database migrations │ └── test/ │ ├── java/ # Unit and integration tests │ └── resources/ # Test resources ├── pom.xml # Maven configuration ├── README.md # This file └── .gitignore
+
+Code
+
+## Key Features
+
+### 1. JWT Authentication with RSA
+- RSA key pair management
+- Token generation with expiration
+- Token validation and refresh mechanisms
+- Claims-based authorization
+
+### 2. OTP Management System
+- Multi-channel OTP delivery (SMS via SNS, Email via SES)
+- Configurable OTP length and expiration
+- Rate limiting and attempt tracking
+- Secure OTP storage with encryption
+
+### 3. Proper Layered Architecture
+- **Controller Layer**: REST API endpoints
+- **Service Layer**: Business logic and OTP/JWT management
+- **Repository Layer**: Database operations
+- **Configuration Layer**: Security, AWS, and application configs
+- **Security Layer**: JWT filters, RSA encryption, Authorization
+
+### 4. AWS Integration
+- SNS for SMS-based OTP delivery
+- SES for email notifications
+- IAM role-based access
+- Environment-based configuration
+
+## Dependencies
+
+Key Spring Boot 4.0.0 dependencies:
+- spring-boot-starter-web
+- spring-boot-starter-security
+- spring-boot-starter-data-jpa
+- spring-boot-starter-validation
+- jjwt (JWT library with RSA support)
+- aws-java-sdk-sns
+- aws-java-sdk-ses
+- lombok (optional, for reducing boilerplate)
+
+## Configuration
+
+### Application Properties
+```yaml
+spring:
+  application:
+    name: dragon-of-north
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQL15Dialect
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/dragon_db
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 3600000  # 1 hour in milliseconds
+
+aws:
+  region: ${AWS_REGION}
+  sns:
+    topic-arn: ${AWS_SNS_TOPIC_ARN}
+  ses:
+    from-email: ${AWS_SES_FROM_EMAIL}
+
+otp:
+  length: 6
+  expiration-time: 300  # 5 minutes in seconds
+  max-attempts: 3
+Getting Started
+Prerequisites
+Java 25 or higher
+Maven 3.8+
+PostgreSQL 15+ (or your preferred database)
+AWS Account with SNS and SES configured
+Installation
+Clone the repository:
+bash
 git clone https://github.com/Vinay2080/dragon-of-north.git
 cd dragon-of-north
-```
-
-### Install Dependencies
-```bash
-npm install
-# or
-yarn install
-```
-
-### Environment Configuration
-Create a `.env` file in the root directory:
-
-```env
-# Server Configuration
-PORT=3000
-NODE_ENV=development
-API_URL=http://localhost:3000
-
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=dragon_of_north
-DB_USER=postgres
-DB_PASSWORD=your_password
-
-# Authentication Configuration
-JWT_SECRET=your_jwt_secret_key_change_this
-JWT_EXPIRATION=24h
-REFRESH_TOKEN_SECRET=your_refresh_token_secret
-REFRESH_TOKEN_EXPIRATION=7d
-
-# OTP Configuration
-OTP_WINDOW=30
-OTP_DIGITS=6
-OTP_ALGORITHM=SHA1
-
-# Email Configuration
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your_email@gmail.com
-SMTP_PASSWORD=your_app_password
-SMTP_FROM=noreply@dragonnorth.com
-
-# SMS Configuration
-TWILIO_ACCOUNT_SID=your_account_sid
-TWILIO_AUTH_TOKEN=your_auth_token
-TWILIO_PHONE_NUMBER=+1234567890
-
-# Redis Configuration (Optional)
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-
-# Security Configuration
-RATE_LIMIT_WINDOW=15m
-RATE_LIMIT_MAX_ATTEMPTS=5
-SESSION_TIMEOUT=30m
-TOKEN_EXPIRATION=15m
-
-# Logging
-LOG_LEVEL=info
-LOG_FORMAT=json
-```
-
-### Setup Database
-```bash
-npm run db:migrate
-npm run db:seed
-```
-
-### Start the Server
-```bash
-# Development
-npm run dev
-
-# Production
-npm run build
-npm run start
-```
-
-## 🔧 API Documentation
-
-### Authentication Endpoints
-
-#### Register User
-```http
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "SecurePassword123!",
-  "firstName": "John",
-  "lastName": "Doe"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "User registered successfully",
-  "userId": "uuid",
-  "requiresEmailVerification": true
-}
-```
-
-#### Verify Email
-```http
-POST /api/auth/verify-email
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "token": "verification_token"
-}
-```
-
-#### Login
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "SecurePassword123!"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "requiresMFA": true,
-  "mfaMethods": ["totp", "email", "sms"],
-  "sessionId": "session_uuid",
-  "expiresIn": 300
-}
-```
-
-#### Enable TOTP (2FA)
-```http
-POST /api/mfa/totp/setup
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "secret": "JBSWY3DPEBLW64TMMQ======",
-  "qrCode": "data:image/png;base64,...",
-  "backupCodes": ["code1", "code2", "code3", ...]
-}
-```
-
-#### Verify TOTP
-```http
-POST /api/mfa/totp/verify
-Content-Type: application/json
-
-{
-  "sessionId": "session_uuid",
-  "token": "123456"
-}
-```
-
-#### Send OTP via Email
-```http
-POST /api/verification/email/send-otp
-Content-Type: application/json
-
-{
-  "email": "user@example.com"
-}
-```
-
-#### Verify OTP via Email
-```http
-POST /api/verification/email/verify-otp
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "otp": "123456"
-}
-```
-
-#### Send OTP via SMS
-```http
-POST /api/verification/sms/send-otp
-Content-Type: application/json
-
-{
-  "phoneNumber": "+1234567890"
-}
-```
-
-#### Verify OTP via SMS
-```http
-POST /api/verification/sms/verify-otp
-Content-Type: application/json
-
-{
-  "phoneNumber": "+1234567890",
-  "otp": "123456"
-}
-```
-
-#### Manage Trusted Devices
-```http
-POST /api/devices/trust
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "deviceName": "My iPhone",
-  "trustForDays": 30
-}
-```
-
-#### List Trusted Devices
-```http
-GET /api/devices/list
-Authorization: Bearer {token}
-```
-
-#### Revoke Device Trust
-```http
-POST /api/devices/revoke
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "deviceId": "device_uuid"
-}
-```
-
-## 🔐 Security Best Practices
-
-### Password Requirements
-- Minimum 12 characters
-- At least one uppercase letter
-- At least one lowercase letter
-- At least one number
-- At least one special character (!@#$%^&*)
-
-### Rate Limiting
-- 5 login attempts per 15 minutes per IP
-- 3 OTP verification attempts per 10 minutes
-- 10 API requests per minute for authenticated users
-
-### Token Management
-- JWT tokens expire after 15 minutes
-- Refresh tokens expire after 7 days
-- Session tokens expire after 30 minutes of inactivity
-
-### Data Protection
-- All sensitive data encrypted at rest
-- HTTPS/TLS 1.2+ for all communications
-- CORS properly configured
-- CSRF protection enabled
-- SQL injection prevention through parameterized queries
-
-### Audit Trail
-- All authentication events logged
-- IP addresses and device information tracked
-- Failed login attempts monitored
-- Admin access audit trail maintained
-
-## 📦 Project Structure
-
-```
-dragon-of-north/
-├── src/
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   ├── mfaController.js
-│   │   └── verificationController.js
-│   ├── middleware/
-│   │   ├── authMiddleware.js
-│   │   ├── rateLimitMiddleware.js
-│   │   └── errorHandler.js
-│   ├── models/
-│   │   ├── User.js
-│   │   ├── Session.js
-│   │   └── AuditLog.js
-│   ├── routes/
-│   │   ├── authRoutes.js
-│   │   ├── mfaRoutes.js
-│   │   └── verificationRoutes.js
-│   ├── services/
-│   │   ├── authService.js
-│   │   ├── mfaService.js
-│   │   ├── emailService.js
-│   │   └── smsService.js
-│   ├── utils/
-│   │   ├── validators.js
-│   │   ├── cryptography.js
-│   │   └── logger.js
-│   └── app.js
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── e2e/
-├── migrations/
-├── .env.example
-├── package.json
-├── README.md
-└── LICENSE
-```
-
-## 🧪 Testing
-
-### Run All Tests
-```bash
-npm test
-```
-
-### Run Unit Tests
-```bash
-npm run test:unit
-```
-
-### Run Integration Tests
-```bash
-npm run test:integration
-```
-
-### Run End-to-End Tests
-```bash
-npm run test:e2e
-```
-
-### Generate Coverage Report
-```bash
-npm run test:coverage
-```
-
-## 🚀 Deployment
-
-### Docker Deployment
-```bash
-# Build Docker image
-docker build -t dragon-of-north:latest .
-
-# Run container
-docker run -p 3000:3000 --env-file .env dragon-of-north:latest
-```
-
-### Docker Compose
-```bash
-docker-compose up -d
-```
-
-### Kubernetes Deployment
-```bash
-kubectl apply -f k8s/
-```
-
-## 📊 Performance
-
-- **Response Time**: < 200ms for 95th percentile
-- **Throughput**: 1000+ requests per second
-- **Availability**: 99.9% uptime SLA
-- **Database Queries**: Optimized with proper indexing
-
-## 🔄 API Response Format
-
-All API responses follow a standard format:
-
-**Success Response:**
-```json
-{
-  "success": true,
-  "message": "Operation completed successfully",
-  "data": {
-    "key": "value"
-  },
-  "timestamp": "2025-12-17T14:21:14Z"
-}
-```
-
-**Error Response:**
-```json
-{
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Error description",
-    "details": []
-  },
-  "timestamp": "2025-12-17T14:21:14Z"
-}
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Code Style
-- Use ESLint for code formatting
-- Follow the existing code conventions
-- Write unit tests for new features
-- Update documentation
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🐛 Bug Reports & Feature Requests
-
-Please report bugs and request features by opening an issue on GitHub:
-[Issues](https://github.com/Vinay2080/dragon-of-north/issues)
-
-## 📞 Support
-
-For support, please contact:
-- Email: support@dragonnorth.com
-- Documentation: [docs/](docs/)
-- Issues: [GitHub Issues](https://github.com/Vinay2080/dragon-of-north/issues)
-
-## 🙏 Acknowledgments
-
-- Built with Node.js and Express
-- Security inspired by OWASP guidelines
-- Authentication flows based on industry standards
-
-## 📈 Roadmap
-
-- [ ] WebAuthn/FIDO2 support
-- [ ] Push notification verification
-- [ ] Advanced analytics dashboard
-- [ ] Machine learning-based risk assessment
-- [ ] Integration with popular identity providers
-- [ ] Multi-language support
-- [ ] Mobile app for authentication management
-
----
-
-**Last Updated:** 2025-12-17 14:21:14 UTC
-
-For more information, visit our [GitHub repository](https://github.com/Vinay2080/dragon-of-north)
+Configure environment variables:
+bash
+export DB_USER=your_db_user
+export DB_PASSWORD=your_db_password
+export JWT_SECRET=your_jwt_secret
+export AWS_REGION=your_aws_region
+export AWS_SNS_TOPIC_ARN=your_sns_topic_arn
+export AWS_SES_FROM_EMAIL=your_ses_from_email
+Build the project:
+bash
+mvn clean install
+Run the application:
+bash
+mvn spring-boot:run
+The application will start on http://localhost:8080
+
+API Endpoints
+Authentication
+POST /api/auth/register - Register new user
+POST /api/auth/login - User login
+POST /api/auth/refresh-token - Refresh JWT token
+POST /api/auth/logout - User logout
+OTP Management
+POST /api/otp/send - Send OTP via SMS or Email
+POST /api/otp/verify - Verify OTP
+POST /api/otp/resend - Resend OTP
+User Profile
+GET /api/users/profile - Get user profile
+PUT /api/users/profile - Update user profile
+Testing
+Run unit and integration tests:
+
+bash
+mvn test
+Run specific test class:
+
+bash
+mvn test -Dtest=YourTestClass
+Security Considerations
+All sensitive data is stored with encryption
+JWT tokens use RSA encryption
+OTP data is time-limited and encrypted
+AWS credentials are managed via IAM roles
+Input validation is performed at all layers
+CORS is properly configured for API access
+Contributing
+Create a feature branch (git checkout -b feature/amazing-feature)
+Commit your changes (git commit -m 'Add some amazing feature')
+Push to the branch (git push origin feature/amazing-feature)
+Open a Pull Request
+License
+This project is licensed under the MIT License - see the LICENSE file for details.
