@@ -27,6 +27,7 @@
         <url/>
     </scm>
     <properties>
+        <logback.version>1.5.19</logback.version>
         <java.version>25</java.version>
         <jjwt.version>0.13.0</jjwt.version>
         <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
@@ -58,7 +59,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-
 
 
         <dependency>
@@ -163,15 +163,13 @@
             <artifactId>logback-core</artifactId>
             <version>${logback.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>sns</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>ses</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>sns</artifactId>
         </dependency>
 
     </dependencies>
