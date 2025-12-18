@@ -3,11 +3,11 @@ package org.miniProjectTwo.DragonOfNorth.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.IdentifierEmail;
-import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserStatusFinderRequest;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.services.AuthenticationService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,14 +19,13 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
 
-    @PostMapping("/identifier/email")
-
-    public ResponseEntity<ApiResponse<?>> statusIdentifier(
+    @GetMapping("/identifier/email")
+    public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> findUserStatus(
             @RequestBody
             @Valid
-            IdentifierEmail identifierEmail
+            AppUserStatusFinderRequest request
     ) {
-        AppUserStatus appUserStatus = authenticationService.emailStatusIdentifier(identifierEmail);
-        return ResponseEntity.ok(ApiResponse.success(appUserStatus));
+        AppUserStatusFinderResponse response = authenticationService.statusFinder(request);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

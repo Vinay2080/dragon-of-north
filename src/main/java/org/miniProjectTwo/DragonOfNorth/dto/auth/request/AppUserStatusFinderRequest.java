@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Size;
  * DTO for {@link org.miniProjectTwo.DragonOfNorth.model.AppUser}
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record IdentifierEmail(
+public record AppUserStatusFinderRequest(
         @Pattern(message = "Email is invalid", regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}")
         @NotBlank(message = "Email cannot be blank.")
         String email,

@@ -1,9 +1,9 @@
 package org.miniProjectTwo.DragonOfNorth.services;
 
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.IdentifierEmail;
-import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserStatusFinderRequest;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
 
 public interface AuthenticationService {
-     AppUserStatus emailStatusIdentifier(IdentifierEmail identifierEmail);
+    AppUserStatusFinderResponse statusFinder(AppUserStatusFinderRequest username);
 
 }

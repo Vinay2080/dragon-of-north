@@ -21,6 +21,7 @@ public enum AppUserStatus {
      * The user has been blocked and cannot access the system.
      */
     BLOCKED,
+    NOT_EXIST,
     /**
      * The user has been deleted from the system.
      */

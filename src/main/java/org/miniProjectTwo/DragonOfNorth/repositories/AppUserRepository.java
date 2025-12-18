@@ -18,7 +18,8 @@ public interface AppUserRepository extends JpaRepository<@NonNull AppUser, @NonN
 
     Optional<AppUser> findByPhoneNumber(String phoneNumber);
 
-    Optional<AppUserStatus> findAppUserStatusByEmail(String email);
+    AppUserStatus findAppUserStatusByEmail(String email);
 
+    boolean existsByEmail(String email);
 }
 //todo javadoc
