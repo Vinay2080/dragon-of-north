@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpType;
 import org.miniProjectTwo.DragonOfNorth.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
+import org.miniProjectTwo.DragonOfNorth.services.OtpSender;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
@@ -37,8 +38,8 @@ import static org.miniProjectTwo.DragonOfNorth.enums.OtpType.PHONE;
 @RequiredArgsConstructor
 public class OtpService {
     private final OtpTokenRepository otpTokenRepository;
-    private final EmailOtpSender emailOtpSender;
-    private final PhoneOtpSender phoneOtpSender;
+    private final OtpSender emailOtpSender;
+    private final OtpSender phoneOtpSender;
 
     @Value("${otp.length}")
     private int otpLength;
@@ -68,7 +69,7 @@ public class OtpService {
      * The OTP will be valid for the configured TTL period.
      *
      * @param email The email address to send the OTP to
-     * @throws IllegalStateException if rate limits are exceeded
+     * @throws IllegalStateException    if rate limits are exceeded
      * @throws IllegalArgumentException if the email is invalid
      */
 
@@ -93,7 +94,7 @@ public class OtpService {
      * The OTP will be valid for the configured TTL period.
      *
      * @param phone The phone number to send the OTP to
-     * @throws IllegalStateException if rate limits are exceeded
+     * @throws IllegalStateException    if rate limits are exceeded
      * @throws IllegalArgumentException if the phone number is invalid
      */
 
@@ -117,9 +118,9 @@ public class OtpService {
     /**
      * Verifies an email OTP.
      *
-     * @param email The email address the OTP was sent to
+     * @param email       The email address the OTP was sent to
      * @param providedOtp The OTP to verify
-     * @throws IllegalStateException if the OTP is expired or max attempts exceeded
+     * @throws IllegalStateException    if the OTP is expired or max attempts exceeded
      * @throws IllegalArgumentException if the OTP is invalid
      */
 
@@ -134,9 +135,9 @@ public class OtpService {
     /**
      * Verifies a phone OTP.
      *
-     * @param phone The phone number the OTP was sent to
+     * @param phone       The phone number the OTP was sent to
      * @param providedOtp The OTP to verify
-     * @throws IllegalStateException if the OTP is expired or max attempts exceeded
+     * @throws IllegalStateException    if the OTP is expired or max attempts exceeded
      * @throws IllegalArgumentException if the OTP is invalid
      */
 
@@ -151,7 +152,7 @@ public class OtpService {
      * Fetches the most recent OTP token for the given identifier and type.
      *
      * @param identifier The email or phone number
-     * @param otpType The type of OTP (EMAIL or PHONE)
+     * @param otpType    The type of OTP (EMAIL or PHONE)
      * @return The most recent OTP token
      * @throws IllegalArgumentException if no OTP is found
      */
@@ -165,9 +166,9 @@ public class OtpService {
     /**
      * Verifies an OTP token.
      *
-     * @param otpToken The OTP token to verify
+     * @param otpToken    The OTP token to verify
      * @param providedOtp The OTP to verify against
-     * @throws IllegalStateException if the OTP is expired or max attempts exceeded
+     * @throws IllegalStateException    if the OTP is expired or max attempts exceeded
      * @throws IllegalArgumentException if the OTP is invalid
      */
 
@@ -209,7 +210,7 @@ public class OtpService {
      * Enforces rate limiting for OTP requests.
      *
      * @param identifier The email or phone number
-     * @param otpType The type of OTP (EMAIL or PHONE)
+     * @param otpType    The type of OTP (EMAIL or PHONE)
      * @throws IllegalStateException if rate limits are exceeded
      */
 
