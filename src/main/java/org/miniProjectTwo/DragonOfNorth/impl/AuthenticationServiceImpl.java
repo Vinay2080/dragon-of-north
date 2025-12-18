@@ -20,12 +20,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public AppUserStatus emailStatusIdentifier(IdentifierEmail identifierEmail) {
-        if (!appUserRepository.existsByEmail(identifierEmail.email())) {
-            final AppUser appUser = identifierEmailMapper.toEntity(identifierEmail);
-            appUser.setAppUserStatus(CREATED);
-            appUserRepository.save(appUser);
-            return CREATED;
-        }
-        return AppUserStatus.ACTIVE;
+        return appUserRepository
+                .findAppUserStatusByEmail(identifierEmail.email())
+                .orElseGet(
+                        () -> {
+                            AppUser appUser = identifierEmailMapper.toEntity(identifierEmail);
+                            appUser.setAppUserStatus(CREATED);
+                            appUserRepository.save(appUser);
+                            return CREATED;
+                        }
+                );
     }
 }

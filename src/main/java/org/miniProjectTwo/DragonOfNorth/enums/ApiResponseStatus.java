@@ -1,6 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.enums;
 
-public enum Status {
+public enum ApiResponseStatus {
     success,
     failed
 }

@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.miniProjectTwo.DragonOfNorth.common.BaseEntity;
-import org.miniProjectTwo.DragonOfNorth.enums.UserStatus;
+import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -21,7 +21,7 @@ import java.util.Set;
  * and uses JPA annotations for object-relational mapping.</p>
  *
  * @see BaseEntity
- * @see UserStatus
+ * @see AppUserStatus
  */
 @Entity
 @Getter
@@ -68,12 +68,12 @@ public class AppUser extends BaseEntity {
 
     /**
      * The current status of the user account.
-     * Defaults to {@link UserStatus#ACTIVE} when a new user is created.
+     * Defaults to {@link AppUserStatus#ACTIVE} when a new user is created.
      * Can be used to block or delete user accounts while preserving their data.
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private UserStatus status;
+    private AppUserStatus appUserStatus;
 
     /**
      * Indicates whether the user's email address has been verified.
