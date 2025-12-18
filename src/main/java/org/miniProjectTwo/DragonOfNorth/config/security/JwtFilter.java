@@ -84,6 +84,14 @@ public class JwtFilter extends OncePerRequestFilter {
         try {
 
             Claims claims = jwtServices.extractAllClaims(token);
+
+            String tokenType = claims.get("token_type", String.class);
+            if (!"access_token".equals(tokenType)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+
             String subject = claims.getSubject();
 
 

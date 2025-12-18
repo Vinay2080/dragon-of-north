@@ -10,7 +10,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
+import java.util.Optional;
 
 
 /**
@@ -52,17 +52,22 @@ public class AppUserDetailService implements UserDetailsService {
      */
     @Override
     @NullMarked
-    public UserDetails loadUserByUsername(String userId) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
 
-        UUID uuid;
-        try {
-            uuid = UUID.fromString(userId);
-        } catch (IllegalArgumentException _) {
-            throw new UsernameNotFoundException("Invalid user identifier");
+
+        Optional<AppUser> appUser;
+
+        if (identifier.contains("@")) {
+            appUser = repository.findByEmail(identifier);
+        } else {
+            appUser = repository.findByPhoneNumber(identifier);
         }
-        AppUser appUser  = repository.findById(uuid);
-        if (appUser == null) throw new UsernameNotFoundException("User not found");
-        return new AppUserDetails(appUser);
+
+        AppUser user = appUser.orElseThrow(
+                () -> new UsernameNotFoundException("User not found")
+        );
+
+        return new AppUserDetails(user);
 
     }
 }
