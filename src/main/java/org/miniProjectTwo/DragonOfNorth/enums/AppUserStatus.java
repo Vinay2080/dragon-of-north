@@ -5,6 +5,7 @@ package org.miniProjectTwo.DragonOfNorth.enums;
  */
 public enum AppUserStatus {
 
+    NOT_EXIST,
     /**
      * The user is created but not verified yet
      */
@@ -21,7 +22,7 @@ public enum AppUserStatus {
      * The user has been blocked and cannot access the system.
      */
     BLOCKED,
-    NOT_EXIST,
+
     /**
      * The user has been deleted from the system.
      */
