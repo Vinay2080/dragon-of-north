@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class AuthenticationServiceImpl implements AuthenticationService {
+public class EmailAuthenticationServiceImpl implements AuthenticationService {
 
     private final AppUserRepository repository;
 
@@ -19,14 +19,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
      */
     @Override
     public AppUserStatusFinderResponse statusFinder(AppUserStatusFinderRequest request) {
-        if (checkEmail(request.email())) {
-            return new AppUserStatusFinderResponse(repository.findAppUserStatusByEmail(request.email()));
-        } else {
-            return new AppUserStatusFinderResponse(AppUserStatus.NOT_EXIST);
-        }
-    }
-
-    private boolean checkEmail(String email) {
-        return repository.existsByEmail(email);
+        return repository
+                .findAppUserStatusByEmail(request.email()).map(AppUserStatusFinderResponse::new)
+                .orElseGet(() -> new AppUserStatusFinderResponse(AppUserStatus.NOT_EXIST));
     }
 }

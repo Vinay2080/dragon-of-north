@@ -6,4 +6,6 @@ import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderRes
 public interface AuthenticationService {
     AppUserStatusFinderResponse statusFinder(AppUserStatusFinderRequest username);
 
+
+
 }
