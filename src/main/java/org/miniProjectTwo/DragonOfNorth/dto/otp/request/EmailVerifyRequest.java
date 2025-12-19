@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.dto.otp.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 
 /**
  * Data Transfer Object (DTO) for handling email verification requests with OTP (One-Time Password).
@@ -10,7 +11,6 @@ import jakarta.validation.constraints.Size;
  *
  * @param email The email address to be verified. Must be a valid email format and cannot be blank.
  * @param otp   The one-time password for verification. Must be exactly 6 characters long.
- *
  * @see org.miniProjectTwo.DragonOfNorth.model.OtpToken The associated entity that this DTO maps to
  */
 
@@ -20,6 +20,7 @@ public record EmailVerifyRequest(
         String email,
         @NotBlank(message = "phone number cannot be blank")
         @Size(min = 6, max = 6)
-        String otp) {
+        String otp,
+        OtpPurpose otpPurpose) {
 
 }

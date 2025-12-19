@@ -1,8 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.exception;
 
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Custom runtime exception representing a business-level error in the application.
@@ -18,9 +17,8 @@ import org.slf4j.LoggerFactory;
  * Message formatting is only attempted when arguments are provided.</p>
  */
 @Getter
+@Slf4j
 public class BusinessException extends RuntimeException {
-
-    private static final Logger log = LoggerFactory.getLogger(BusinessException.class);
 
     private final ErrorCode errorCode;
     private final Object args;

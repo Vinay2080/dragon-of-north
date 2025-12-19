@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpType;
 
 import java.time.Instant;
@@ -38,6 +39,10 @@ public class OtpToken {
     @Column(nullable = false, length = 6)
     private OtpType type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20, name = "otp_purpose")
+    private OtpPurpose otpPurpose;
+
     @Column(nullable = false, length = 200)
     private String otpHash;
 
@@ -65,13 +70,14 @@ public class OtpToken {
     @Version
     private Long version;
 
-    public OtpToken(String identifier, OtpType type, String otpHash, int ttlMinutes) {
+    public OtpToken(String identifier, OtpType type, String otpHash, int ttlMinutes, OtpPurpose otpPurpose) {
         this.identifier = identifier;
         this.type = type;
         this.otpHash = otpHash;
         this.createdAt = Instant.now();
         this.lastSentAt = this.createdAt;
         this.expiresAt = this.createdAt.plusSeconds(ttlMinutes * 60L);
+        this.otpPurpose = otpPurpose;
     }
 
     public boolean isExpired() {

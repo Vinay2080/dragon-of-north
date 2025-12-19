@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.dto.otp.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 
 /**
  * Data Transfer Object (DTO) for handling phone-number-based OTP (One-Time Password) generation requests.
@@ -17,6 +18,7 @@ public record PhoneOtpRequest(
         @Size(message = "invalid phone number size", min = 10, max = 12)
         @Pattern(message = "invalid phone number", regexp = "^\\+91[6-9]\\d{9}$")
         @NotBlank(message = "phone number cannot be blank")
-        String phone) {
+        String phone,
+        OtpPurpose otpPurpose) {
 
 }

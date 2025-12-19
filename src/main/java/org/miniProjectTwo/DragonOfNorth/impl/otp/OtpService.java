@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.impl.otp;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpType;
 import org.miniProjectTwo.DragonOfNorth.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
@@ -75,10 +76,8 @@ public class OtpService {
      */
 
     @Transactional
-    public void createEmailOtp(String email) {
-        createOtp(email, EMAIL, 
-            e -> e.trim().toLowerCase(), 
-            emailOtpSender);
+    public void createEmailOtp(String email, OtpPurpose otpPurpose) {
+        createOtp(emailOtpSender, otpPurpose, email, EMAIL, e -> e.trim().toLowerCase());
     }
 
     /**
@@ -90,29 +89,27 @@ public class OtpService {
      * @throws IllegalArgumentException if the phone number is invalid
      */
     @Transactional
-    public void createPhoneOtp(String phone) {
-        createOtp(phone, PHONE,
-            p -> p.replace(" ", ""),
-            phoneOtpSender);
+    public void createPhoneOtp(String phone, OtpPurpose otpPurpose) {
+        createOtp(phoneOtpSender, otpPurpose, phone, PHONE, p -> p.replace(" ", ""));
     }
-    
+
     /**
      * Internal method to handle OTP creation and sending.
      *
      * @param identifier The identifier (email/phone) to send OTP to
-     * @param otpType   The type of OTP (EMAIL/PHONE)
+     * @param otpType    The type of OTP (EMAIL/PHONE)
      * @param normalizer Function to normalize the identifier
      * @param sender     The appropriate sender service
      */
-    private void createOtp(String identifier, OtpType otpType,
-                           Function<String, String> normalizer, OtpSender sender) {
+    private void createOtp(OtpSender sender, OtpPurpose otpPurpose,
+                           String identifier, OtpType otpType, Function<String, String> normalizer) {
         String normalizedIdentifier = normalizer.apply(identifier);
-        enforceRateLimits(normalizedIdentifier, otpType);
+        enforceRateLimits(normalizedIdentifier, otpType, otpPurpose);
 
         String otp = generateOtp();
         String hash = BCrypt.hashpw(otp, BCrypt.gensalt());
 
-        OtpToken otpToken = new OtpToken(normalizedIdentifier, otpType, hash, ttlMinutes);
+        OtpToken otpToken = new OtpToken(normalizedIdentifier, otpType, hash, ttlMinutes, otpPurpose);
         otpTokenRepository.save(otpToken);
         sender.send(normalizedIdentifier, otp, ttlMinutes);
     }
@@ -127,11 +124,8 @@ public class OtpService {
      */
 
     @Transactional
-    public void verifyEmailOtp(String email, String providedOtp) {
-        verifyToken(
-                fetchLatest(email.trim().toLowerCase(), EMAIL),
-                providedOtp
-        );
+    public void verifyEmailOtp(String email, String providedOtp, OtpPurpose otpPurpose) {
+        verifyToken(fetchLatest(email.trim().toLowerCase(), EMAIL, otpPurpose), providedOtp, otpPurpose);
     }
 
     /**
@@ -144,10 +138,8 @@ public class OtpService {
      */
 
     @Transactional
-    public void verifyPhoneOtp(String phone, String providedOtp) {
-        verifyToken(
-                fetchLatest(phone.replace(" ", ""), PHONE),
-                providedOtp);
+    public void verifyPhoneOtp(String phone, String providedOtp, OtpPurpose otpPurpose) {
+        verifyToken(fetchLatest(phone.replace(" ", ""), PHONE, otpPurpose), providedOtp, otpPurpose);
     }
 
     /**
@@ -159,9 +151,9 @@ public class OtpService {
      * @throws IllegalArgumentException if no OTP is found
      */
 
-    private OtpToken fetchLatest(String identifier, OtpType otpType) {
+    private OtpToken fetchLatest(String identifier, OtpType otpType, OtpPurpose otpPurpose) {
         return otpTokenRepository
-                .findTopByIdentifierAndTypeOrderByCreatedAtDesc(identifier, otpType)
+                .findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(identifier, otpType, otpPurpose)
                 .orElseThrow(() -> new IllegalArgumentException("OTP not found"));
     }
 
@@ -174,13 +166,20 @@ public class OtpService {
      * @throws IllegalArgumentException if the OTP is invalid
      */
 
-    private void verifyToken(OtpToken otpToken, String providedOtp) {
+    private void verifyToken(OtpToken otpToken, String providedOtp, OtpPurpose otpPurpose) {
         if (otpToken.isExpired()) {
             throw new IllegalStateException("OTP expired");
         }
 
         if (otpToken.getAttempts() >= maxAttempts) {
             throw new IllegalStateException("Max attempts exceeded");
+        }
+        if (otpToken.isConsumed()) {
+            throw new IllegalStateException("OTP has already been used");
+        }
+
+        if (otpToken.getOtpPurpose() != otpPurpose) {
+            throw new IllegalArgumentException("OTP was not generated for this purpose");
         }
 
         otpToken.incrementAttempts();
@@ -216,19 +215,20 @@ public class OtpService {
      * @throws IllegalStateException if rate limits are exceeded
      */
 
-    private void enforceRateLimits(String identifier, OtpType otpType) {
+    private void enforceRateLimits(String identifier, OtpType otpType, OtpPurpose otpPurpose) {
         Instant now = Instant.now();
 
-        otpTokenRepository.findTopByIdentifierAndTypeOrderByCreatedAtDesc(identifier, otpType)
+        otpTokenRepository.findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(identifier, otpType, otpPurpose)
                 .ifPresent(last -> {
                     long delta = now.getEpochSecond() - last.getLastSentAt().getEpochSecond();
                     if (delta < resendCooldownSeconds) {
-                        throw new IllegalStateException("wait " + (resendCooldownSeconds - delta) + " seconds");
+                        throw new IllegalStateException("wait " + (resendCooldownSeconds - delta) + " seconds before requesting another OTP for " +
+                                otpPurpose.toString().toLowerCase().replace("_", " "));
                     }
                 });
 
         Instant windowStart = now.minusSeconds(requestWindowSeconds);
-        int requestCount = otpTokenRepository.countByIdentifierAndTypeAndCreatedAtAfter(identifier, otpType, windowStart);
+        int requestCount = otpTokenRepository.countByIdentifierAndTypeAndOtpPurposeCreatedAtAfter(identifier, otpType, otpPurpose, windowStart);
 
         if (requestCount >= maxRequestsPerWindow) {
             throw new IllegalStateException("Too many otp requests. Blocked for " + blockDurationMinutes + " minutes.");

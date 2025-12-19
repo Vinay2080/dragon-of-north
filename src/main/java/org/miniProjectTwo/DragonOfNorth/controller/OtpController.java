@@ -25,7 +25,7 @@ public class OtpController {
     @PostMapping("/email/request")
     public ResponseEntity<ApiResponse<?>> requestEmailOtp(
             @RequestBody @Valid EmailOtpRequest request) {
-        otpService.createEmailOtp(request.email());
+        otpService.createEmailOtp(request.email(), request.otpPurpose());
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.successMessage("OTP sent"));
@@ -36,7 +36,7 @@ public class OtpController {
             @RequestBody
             @Valid
             PhoneOtpRequest request) {
-        otpService.createPhoneOtp(request.phone());
+        otpService.createPhoneOtp(request.phone(), request.otpPurpose());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.successMessage("OTP Sent"));
     }
@@ -46,7 +46,7 @@ public class OtpController {
             @Valid
             @RequestBody
             EmailVerifyRequest request) {
-        otpService.verifyEmailOtp(request.email(), request.otp());
+        otpService.verifyEmailOtp(request.email(), request.otp(), request.otpPurpose());
         return ResponseEntity
                 .accepted()
                 .body(ApiResponse.successMessage("email verified successfully"));
@@ -57,7 +57,7 @@ public class OtpController {
             @Valid
             @RequestBody
             PhoneVerifyRequest request) {
-        otpService.verifyPhoneOtp(request.phone(), request.otp());
+        otpService.verifyPhoneOtp(request.phone(), request.otp(), request.otpPurpose());
         return ResponseEntity.accepted().body(ApiResponse.successMessage("phone verified successfully"));
     }
 }

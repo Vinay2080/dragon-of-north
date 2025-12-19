@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.repositories;
 
+import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpType;
 import org.miniProjectTwo.DragonOfNorth.model.OtpToken;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,17 +17,18 @@ import java.util.Optional;
  * @see OtpType
  */
 public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
-    
+
     /**
      * Retrieves the most recent OTP token for the given identifier and type.
      *
      * @param identifier The unique identifier (e.g., email or phone number)
-     * @param type The type of OTP (e.g., EMAIL, SMS)
+     * @param type       The type of OTP (e.g., EMAIL, SMS)
      * @return An {@link Optional} containing the most recent OTP token if found, or empty if none exists
      */
-    Optional<OtpToken> findTopByIdentifierAndTypeOrderByCreatedAtDesc(
+    Optional<OtpToken> findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(
             String identifier,
-            OtpType type
+            OtpType type,
+            OtpPurpose otpPurpose
     );
 
     /**
@@ -34,8 +36,8 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
      * that were created after the specified timestamp.
      *
      * @param identifier The unique identifier to search for
-     * @param type The type of OTP to filter by
-     * @param after The cutoff timestamp (inclusive)
+     * @param type       The type of OTP to filter by
+     * @param after      The cutoff timestamp (inclusive)
      * @return The count of matching OTP tokens
      */
     @Query("""
@@ -43,11 +45,13 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
             FROM OtpToken o
             WHERE o.identifier = :identifier
               AND o.type = :type
+              AND o.otpPurpose = :otpPurpose
               AND o.createdAt >= :after
             """)
-    int countByIdentifierAndTypeAndCreatedAtAfter(
+    int countByIdentifierAndTypeAndOtpPurposeCreatedAtAfter(
             String identifier,
             OtpType type,
+            OtpPurpose otpPurpose,
             Instant after
     );
 
