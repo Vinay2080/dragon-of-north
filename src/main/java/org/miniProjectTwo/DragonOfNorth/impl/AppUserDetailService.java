@@ -1,4 +1,4 @@
-package org.miniProjectTwo.DragonOfNorth.services;
+package org.miniProjectTwo.DragonOfNorth.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;

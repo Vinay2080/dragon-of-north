@@ -11,12 +11,10 @@ import java.time.Instant;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
+
     private final String message;
-
     private final ApiResponseStatus apiResponseStatus;
-
     private final T data;
-
     private final Instant time;
 
     private ApiResponse(String message, ApiResponseStatus apiResponseStatus, T data) {
@@ -24,7 +22,6 @@ public class ApiResponse<T> {
         this.apiResponseStatus = apiResponseStatus;
         this.data = data;
         this.time = Instant.now();
-
     }
 
     public static <T> ApiResponse<T> success(T data) {
@@ -35,7 +32,7 @@ public class ApiResponse<T> {
         return new ApiResponse<>(message, ApiResponseStatus.success, null);
     }
 
-    public static ApiResponse<?> failed(String message) {
-        return new ApiResponse<>(message, ApiResponseStatus.failed, null);
+    public static <T> ApiResponse<T> failed(T data) {
+        return new ApiResponse<>(null, ApiResponseStatus.failed, data);
     }
 }
