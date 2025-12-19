@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.function.Function;
 
 import static org.miniProjectTwo.DragonOfNorth.enums.OtpType.EMAIL;
 import static org.miniProjectTwo.DragonOfNorth.enums.OtpType.PHONE;
@@ -75,18 +76,9 @@ public class OtpService {
 
     @Transactional
     public void createEmailOtp(String email) {
-        String normalizedEmail = email.trim().toLowerCase();
-
-        enforceRateLimits(normalizedEmail, EMAIL);
-
-        String otp = generateOtp();
-        String hash = BCrypt.hashpw(otp, BCrypt.gensalt());
-
-        OtpToken otpToken = new OtpToken(normalizedEmail, EMAIL, hash, ttlMinutes);
-
-        otpTokenRepository.save(otpToken);
-
-        emailOtpSender.send(normalizedEmail, otp, ttlMinutes);
+        createOtp(email, EMAIL, 
+            e -> e.trim().toLowerCase(), 
+            emailOtpSender);
     }
 
     /**
@@ -97,22 +89,32 @@ public class OtpService {
      * @throws IllegalStateException    if rate limits are exceeded
      * @throws IllegalArgumentException if the phone number is invalid
      */
-
     @Transactional
     public void createPhoneOtp(String phone) {
-        String normalizedPhone = phone.replace(" ", "");
-
-        enforceRateLimits(normalizedPhone, PHONE);
+        createOtp(phone, PHONE,
+            p -> p.replace(" ", ""),
+            phoneOtpSender);
+    }
+    
+    /**
+     * Internal method to handle OTP creation and sending.
+     *
+     * @param identifier The identifier (email/phone) to send OTP to
+     * @param otpType   The type of OTP (EMAIL/PHONE)
+     * @param normalizer Function to normalize the identifier
+     * @param sender     The appropriate sender service
+     */
+    private void createOtp(String identifier, OtpType otpType,
+                           Function<String, String> normalizer, OtpSender sender) {
+        String normalizedIdentifier = normalizer.apply(identifier);
+        enforceRateLimits(normalizedIdentifier, otpType);
 
         String otp = generateOtp();
         String hash = BCrypt.hashpw(otp, BCrypt.gensalt());
 
-        OtpToken otpToken = new OtpToken(normalizedPhone, PHONE, hash, ttlMinutes);
-
+        OtpToken otpToken = new OtpToken(normalizedIdentifier, otpType, hash, ttlMinutes);
         otpTokenRepository.save(otpToken);
-
-        phoneOtpSender.send(phone, otp, ttlMinutes);
-
+        sender.send(normalizedIdentifier, otp, ttlMinutes);
     }
 
     /**
