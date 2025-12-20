@@ -20,7 +20,7 @@ public class AuthenticationController {
 
     private final AuthenticationServiceResolver resolver;
 
-    @GetMapping("/identifier/email")
+    @GetMapping("/identifier/status")
     public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> findUserStatus(
             @RequestBody
             @Valid
