@@ -3,7 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
-import org.miniProjectTwo.DragonOfNorth.enums.OtpType;
+import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 
 import java.time.Instant;
 
@@ -37,7 +37,7 @@ public class OtpToken {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 6)
-    private OtpType type;
+    private IdentifierType type;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20, name = "otp_purpose")
@@ -70,7 +70,7 @@ public class OtpToken {
     @Version
     private Long version;
 
-    public OtpToken(String identifier, OtpType type, String otpHash, int ttlMinutes, OtpPurpose otpPurpose) {
+    public OtpToken(String identifier, IdentifierType type, String otpHash, int ttlMinutes, OtpPurpose otpPurpose) {
         this.identifier = identifier;
         this.type = type;
         this.otpHash = otpHash;

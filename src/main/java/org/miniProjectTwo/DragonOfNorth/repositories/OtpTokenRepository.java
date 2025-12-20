@@ -1,7 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.repositories;
 
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
-import org.miniProjectTwo.DragonOfNorth.enums.OtpType;
+import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.model.OtpToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,7 +14,7 @@ import java.util.Optional;
  * Provides methods to interact with the underlying database for OTP operations.
  *
  * @see OtpToken
- * @see OtpType
+ * @see IdentifierType
  */
 public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
 
@@ -27,7 +27,7 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
      */
     Optional<OtpToken> findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(
             String identifier,
-            OtpType type,
+            IdentifierType type,
             OtpPurpose otpPurpose
     );
 
@@ -50,7 +50,7 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
             """)
     int countByIdentifierAndTypeAndOtpPurposeCreatedAtAfter(
             String identifier,
-            OtpType type,
+            IdentifierType type,
             OtpPurpose otpPurpose,
             Instant after
     );

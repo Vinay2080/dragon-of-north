@@ -3,7 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.impl.otp;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
-import org.miniProjectTwo.DragonOfNorth.enums.OtpType;
+import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
 import org.miniProjectTwo.DragonOfNorth.services.OtpSender;
@@ -15,8 +15,8 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.function.Function;
 
-import static org.miniProjectTwo.DragonOfNorth.enums.OtpType.EMAIL;
-import static org.miniProjectTwo.DragonOfNorth.enums.OtpType.PHONE;
+import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.EMAIL;
+import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.PHONE;
 
 /**
  * Service for managing OTP (One-Time Password) generation, validation, and delivery.
@@ -102,7 +102,7 @@ public class OtpService {
      * @param sender     The appropriate sender service
      */
     private void createOtp(OtpSender sender, OtpPurpose otpPurpose,
-                           String identifier, OtpType otpType, Function<String, String> normalizer) {
+                           String identifier, IdentifierType otpType, Function<String, String> normalizer) {
         String normalizedIdentifier = normalizer.apply(identifier);
         enforceRateLimits(normalizedIdentifier, otpType, otpPurpose);
 
@@ -151,7 +151,7 @@ public class OtpService {
      * @throws IllegalArgumentException if no OTP is found
      */
 
-    private OtpToken fetchLatest(String identifier, OtpType otpType, OtpPurpose otpPurpose) {
+    private OtpToken fetchLatest(String identifier, IdentifierType otpType, OtpPurpose otpPurpose) {
         return otpTokenRepository
                 .findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(identifier, otpType, otpPurpose)
                 .orElseThrow(() -> new IllegalArgumentException("OTP not found"));
@@ -215,7 +215,7 @@ public class OtpService {
      * @throws IllegalStateException if rate limits are exceeded
      */
 
-    private void enforceRateLimits(String identifier, OtpType otpType, OtpPurpose otpPurpose) {
+    private void enforceRateLimits(String identifier, IdentifierType otpType, OtpPurpose otpPurpose) {
         Instant now = Instant.now();
 
         otpTokenRepository.findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(identifier, otpType, otpPurpose)
