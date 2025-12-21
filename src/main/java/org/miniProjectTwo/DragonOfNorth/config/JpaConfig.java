@@ -1,7 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
@@ -17,9 +16,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
  */
 @Configuration
 @EnableJpaAuditing(auditorAwareRef = "auditorAware")
+@Slf4j
 public class JpaConfig {
-
-    private static final Logger log = LoggerFactory.getLogger(JpaConfig.class);
 
     /**
      * Logs JPA auditing activation at application startup.
