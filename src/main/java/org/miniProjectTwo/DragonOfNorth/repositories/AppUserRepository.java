@@ -30,5 +30,7 @@ public interface AppUserRepository extends JpaRepository<@NonNull AppUser, @NonN
             where u.id = :id
             """)
     int updateUserStatusById(@Param("id") UUID uuid, @Param("status") AppUserStatus appUserStatus);
+
+
 }
 //todo javadoc
