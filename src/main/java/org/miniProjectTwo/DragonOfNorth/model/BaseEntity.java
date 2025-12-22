@@ -1,4 +1,4 @@
-package org.miniProjectTwo.DragonOfNorth.common;
+package org.miniProjectTwo.DragonOfNorth.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

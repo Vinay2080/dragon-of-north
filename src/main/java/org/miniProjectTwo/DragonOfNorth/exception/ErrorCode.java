@@ -10,7 +10,9 @@ public enum ErrorCode {
     UNSUPPORTED_TOKEN("AUTH_003", "Unsupported JWT token", HttpStatus.BAD_REQUEST),
     ILLEGAL_TOKEN("AUTH_004", "Illegal JWT token", HttpStatus.BAD_REQUEST),
     IDENTIFIER_MISMATCH("AUTH_005", "%s does not matches identifier type", HttpStatus.BAD_REQUEST),
-    USER_NOT_FOUND("AUTH_006","user not found" ,HttpStatus.NOT_FOUND );
+    USER_NOT_FOUND("AUTH_006","user not found" ,HttpStatus.NOT_FOUND ),
+
+    TOO_MANY_REQUESTS("AUTH_007","too many requests. Please try again later" , HttpStatus.TOO_MANY_REQUESTS);
 
     private final String code;
     private final String defaultMessage;

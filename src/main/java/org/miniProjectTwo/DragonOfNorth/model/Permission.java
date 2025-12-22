@@ -8,7 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.miniProjectTwo.DragonOfNorth.common.BaseEntity;
 
 import java.util.HashSet;
 import java.util.Set;

@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.miniProjectTwo.DragonOfNorth.common.BaseEntity;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 
 import java.time.LocalDateTime;

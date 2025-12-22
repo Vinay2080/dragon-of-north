@@ -62,4 +62,5 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
      * @param cutoff The timestamp before which tokens are considered expired
      */
     void deleteAllByExpiresAtBefore(Instant cutoff);
+
 }

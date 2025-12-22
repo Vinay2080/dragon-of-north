@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,5 +33,6 @@ public interface AppUserRepository extends JpaRepository<@NonNull AppUser, @NonN
     int updateUserStatusById(@Param("id") UUID uuid, @Param("status") AppUserStatus appUserStatus);
 
 
+    void deleteByAppUserStatusAndCreatedAtBefore(AppUserStatus appUserStatus, Instant createdAtBefore);
 }
 //todo javadoc

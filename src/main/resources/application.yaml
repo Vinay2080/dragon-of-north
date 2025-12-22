@@ -32,6 +32,16 @@ otp:
   cleanup:
     delay-ms: 3599999
 
+auth:
+  signup:
+    request-window-seconds: 3600
+    max-requests-per-window: 5
+    block-duration-minutes: 30
+
+  login:
+    max-failed-attempts: 5
+    block-duration-minutes: 15
+
 aws:
   region: us-east-1
   ses:

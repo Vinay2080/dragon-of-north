@@ -1,7 +1,9 @@
 package org.miniProjectTwo.DragonOfNorth.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.miniProjectTwo.DragonOfNorth.components.SignupRateLimiter;
 import org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserStatusFinderRequest;
@@ -11,7 +13,7 @@ import org.miniProjectTwo.DragonOfNorth.services.AuthenticationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.HttpStatus.CREATED;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -19,6 +21,7 @@ import static org.springframework.http.HttpStatus.*;
 public class AuthenticationController {
 
     private final AuthenticationServiceResolver resolver;
+    private final SignupRateLimiter signupRateLimiter;
 
     @GetMapping("/identifier/status")
     public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> findUserStatus(
@@ -35,8 +38,16 @@ public class AuthenticationController {
     public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> signupUser(
             @RequestBody
             @Valid
-            AppUserSignUpRequest request
-    ) {
+            AppUserSignUpRequest request,
+            HttpServletRequest httpServletRequest) {
+        String ip = httpServletRequest.getHeader("X-Forwarded-For");
+        if (ip == null) {
+            ip = httpServletRequest.getRemoteAddr();
+        }
+        signupRateLimiter.check(
+                request.identifier(),
+                ip
+        );
         AuthenticationService service = resolver.resolve(request.identifier(), request.identifierType());
         AppUserStatusFinderResponse response = service.signUpUser(request);
         return ResponseEntity.status(CREATED).body(ApiResponse.success(response));
