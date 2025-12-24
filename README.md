@@ -1,6 +1,6 @@
 # 🚀 Dragon of North - Cloud-Native Authentication Platform
 
-A Spring Boot authentication + OTP verification service (email/phone) with a clean modular structure (Spring Modulith) and a PostgreSQL-backed user store.
+A Spring Boot authentication and OTP verification service (email/phone) with a clean modular structure (Spring Modulith) and a PostgreSQL-backed user store.
 
 ## Why this project exists 🎯
 This project focuses on building a practical auth foundation:
@@ -12,26 +12,26 @@ This project focuses on building a practical auth foundation:
 ---
 
 ## Tech Stack 🧰
-| Layer | What | Notes |
-| --- | --- | --- |
-| Runtime | Java 25 ☕ | Set in `pom.xml` |
-| Framework | Spring Boot 4 🚀 | WebMVC + Security |
-| Persistence | Spring Data JPA 🗃️ | PostgreSQL runtime dependency |
-| Modularity | Spring Modulith 🧩 | For module boundaries |
-| API Docs | springdoc-openapi 📘 | Swagger UI enabled |
-| Tokens | JJWT 🎟️ | JWT parsing/validation deps present |
-| Email/SMS hooks | AWS SDK (SES/SNS) ☁️ | Optional integration points |
+| Layer           | What                 | Notes                               |
+|-----------------|----------------------|-------------------------------------|
+| Runtime         | Java 25 ☕            | Set in `pom.xml`                    |
+| Framework       | Spring Boot 4 🚀     | WebMVC + Security                   |
+| Persistence     | Spring Data JPA 🗃️  | PostgreSQL runtime dependency       |
+| Modularity      | Spring Modulith 🧩   | For module boundaries               |
+| API Docs        | springdoc-openapi 📘 | Swagger UI enabled                  |
+| Tokens          | JJWT 🎟️             | JWT parsing/validation deps present |
+| Email/SMS hooks | AWS SDK (SES/SNS) ☁️ | Optional integration points         |
 
 ---
 
 ## Feature Snapshot ✨
-| Feature | Status |
-| --- | --- |
-| Email OTP request/verify ✉️ | ✅ Implemented |
-| Phone OTP request/verify 📱 | ✅ Implemented |
-| Signup flow (email identifier) 🧾 | ✅ Implemented |
-| Default role assignment 🧑‍💼 | ✅ Implemented |
-| Swagger UI 📚 | ✅ Available |
+| Feature                                       | Status                                |
+|-----------------------------------------------|---------------------------------------|
+| Email OTP request/verify ✉️                   | ✅ Implemented                         |
+| Phone OTP request/verify 📱                   | ✅ Implemented                         |
+| Signup flow (email identifier) 🧾             | ✅ Implemented                         |
+| Default role assignment 🧑‍💼                 | ✅ Implemented                         |
+| Swagger UI 📚                                 | ✅ Available                           |
 | “Full AWS infra deployment” (ECS/CDK/etc.) ☁️ | 🧊 Not in this repo (future/optional) |
 
 ---
@@ -42,39 +42,39 @@ Base paths:
 - `/api/v1/otp`
 
 ### Auth
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| GET | `/api/v1/auth/identifier/status` | Returns user status for an identifier *(current implementation reads a request body)* |
-| POST | `/api/v1/auth/identier/sign-up` | Sign up user (note: endpoint contains `identier` typo in code) |
+| Method | Endpoint                         | Purpose                                                                               |
+|--------|----------------------------------|---------------------------------------------------------------------------------------|
+| GET    | `/api/v1/auth/identifier/status` | Returns user status for an identifier *(current implementation reads a request body)* |
+| POST   | `/api/v1/auth/identier/sign-up`  | Sign up user (note: endpoint contains `identier` typo in code)                        |
 
 ### OTP
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| POST | `/api/v1/otp/email/request` | Request OTP for email |
-| POST | `/api/v1/otp/email/verify` | Verify OTP for email |
-| POST | `/api/v1/otp/phone/request` | Request OTP for phone |
-| POST | `/api/v1/otp/phone/verify` | Verify OTP for phone |
+| Method | Endpoint                    | Purpose               |
+|--------|-----------------------------|-----------------------|
+| POST   | `/api/v1/otp/email/request` | Request OTP for email |
+| POST   | `/api/v1/otp/email/verify`  | Verify OTP for email  |
+| POST   | `/api/v1/otp/phone/request` | Request OTP for phone |
+| POST   | `/api/v1/otp/phone/verify`  | Verify OTP for phone  |
 
 ---
 
 ## Dragon Metrics 🐲📊 (from `application.yaml`)
 ### OTP rules
-| Setting | Value |
-| --- | --- |
-| OTP length | `6` |
-| TTL | `10 minutes` |
-| Max verify attempts | `3` |
-| Request window | `3600 seconds` |
-| Max requests/window | `10` |
-| Resend cooldown | `60 seconds` |
-| Block duration | `15 minutes` |
+| Setting             | Value          |
+|---------------------|----------------|
+| OTP length          | `6`            |
+| TTL                 | `10 minutes`   |
+| Max verify attempts | `3`            |
+| Request window      | `3600 seconds` |
+| Max requests/window | `10`           |
+| Resend cooldown     | `60 seconds`   |
+| Block duration      | `15 minutes`   |
 
 ### Signup limiter
-| Setting | Value |
-| --- | --- |
-| Max requests/window | `5` |
-| Request window | `3600 seconds` |
-| Block duration | `30 minutes` |
+| Setting             | Value          |
+|---------------------|----------------|
+| Max requests/window | `5`            |
+| Request window      | `3600 seconds` |
+| Block duration      | `30 minutes`   |
 
 ### Tiny “bar chart” for vibe
 OTP TTL: `██████████` 10m  
