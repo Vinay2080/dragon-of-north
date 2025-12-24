@@ -20,8 +20,9 @@ public class SignupRateLimiter {
         String key = ip + ":" + identifier;
         AttemptWindow window = attempts.computeIfAbsent(
                 key,
-                k -> new AttemptWindow()
+                _ -> new AttemptWindow()
         );
+        window.validate(properties.getSignup());
     }
 
     static class AttemptWindow {
@@ -41,9 +42,9 @@ public class SignupRateLimiter {
             }
             count++;
 
-            if (count > conf.getMaxRequestsPerWindow()){
+            if (count > conf.getMaxRequestsPerWindow()) {
                 blockedUntil = now + conf.getBlockDurationMinutes() * 60_000L;
-                throw  new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
+                throw new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
             }
         }
 

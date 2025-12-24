@@ -5,6 +5,7 @@ import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.model.OtpToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -16,6 +17,7 @@ import java.util.Optional;
  * @see OtpToken
  * @see IdentifierType
  */
+@Repository
 public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
 
     /**
