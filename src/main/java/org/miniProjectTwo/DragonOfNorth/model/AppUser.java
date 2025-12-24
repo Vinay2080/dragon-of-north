@@ -113,6 +113,10 @@ public class AppUser extends BaseEntity {
     private LocalDateTime lastLoginAt;
 
 
+    public boolean hasAnyRoles() {
+        return roles != null && roles.isEmpty();
+    }
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

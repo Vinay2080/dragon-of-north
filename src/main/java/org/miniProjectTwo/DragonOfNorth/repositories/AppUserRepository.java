@@ -37,4 +37,6 @@ public interface AppUserRepository extends JpaRepository<@NonNull AppUser, @NonN
 
     void deleteByAppUserStatusAndCreatedAtBefore(AppUserStatus appUserStatus, Instant createdAtBefore);
 }
+
+
 //todo javadoc

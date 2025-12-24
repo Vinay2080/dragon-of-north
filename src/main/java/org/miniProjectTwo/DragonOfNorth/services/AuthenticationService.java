@@ -5,16 +5,26 @@ import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderRes
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
+import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 
 import java.util.UUID;
 
 public interface AuthenticationService {
 
     IdentifierType supports();
+
     AppUserStatusFinderResponse getUserStatus(String identifier);
+
     AppUserStatusFinderResponse signUpUser(AppUserSignUpRequest request);
+
     void updateStatusById(UUID uuid, AppUserStatus appUserStatus);
-    void updateStatusByIdentifier(String identifier, OtpPurpose otpPurpose);
+
+    void assignDefaultRole(String identifier, AppUser appUser);
+
+    void updateStatusByIdentifier(String email, OtpPurpose otpPurpose, AppUser appUser);
+
+    void completeSignUp(String identifier, OtpPurpose otpPurpose);
+
 
 
 }

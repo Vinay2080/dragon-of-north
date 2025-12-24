@@ -49,7 +49,7 @@ public class OtpController {
             @RequestBody
             EmailVerifyRequest request) {
         otpService.verifyEmailOtp(request.email(), request.otp(), request.otpPurpose());
-        emailAuthenticationService.updateStatusByIdentifier(request.email(), request.otpPurpose());
+        emailAuthenticationService.completeSignUp(request.email(), request.otpPurpose());
         return ResponseEntity
                 .accepted()
                 .body(ApiResponse.successMessage("email verified successfully"));
