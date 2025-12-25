@@ -5,7 +5,6 @@ import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
-import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.exception.ErrorCode;
@@ -22,7 +21,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.*;
-import static org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose.SIGNUP;
 import static org.miniProjectTwo.DragonOfNorth.exception.ErrorCode.USER_NOT_FOUND;
 
 @Service
@@ -68,7 +66,7 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void assignDefaultRole(String identifier, AppUser appUser) {
+    public void assignDefaultRole(AppUser appUser) {
         if (!appUser.hasAnyRoles()) {
             Role userRole = roleRepository.findByRoleName(RoleName.USER)
                     .orElseThrow(() -> new BusinessException(ErrorCode.ROLE_NOT_FOUND, RoleName.USER.toString()));
@@ -77,25 +75,26 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     }
 
     @Override
-    public void updateStatusByIdentifier(String email, OtpPurpose otpPurpose, AppUser appUser) {
+    public void updateUserStatus(AppUserStatus appUserStatus, AppUser appUser) {
         if (appUser.getAppUserStatus() == VERIFIED) {
             throw new BusinessException(ErrorCode.USER_ALREADY_VERIFIED);
         }
 
-        if (otpPurpose == SIGNUP) {
+        if (appUserStatus == CREATED) {
             appUser.setAppUserStatus(VERIFIED);
         } else {
-            throw new BusinessException(ErrorCode.STATUS_MISMATCH, SIGNUP.toString());
+            throw new BusinessException(ErrorCode.STATUS_MISMATCH, CREATED.toString());
         }
     }
 
     @Transactional
     @Override
-    public void completeSignUp(String identifier, OtpPurpose otpPurpose) {
+    public AppUserStatusFinderResponse completeSignUp(String identifier) {
         AppUser appUser = appUserRepository.findByEmail(identifier).orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
-        updateStatusByIdentifier(identifier, otpPurpose, appUser);
-        assignDefaultRole(identifier, appUser);
+        updateUserStatus(appUser.getAppUserStatus(), appUser);
+        assignDefaultRole(appUser);
         appUserRepository.save(appUser);
+        return getUserStatus(identifier);
     }
 
 

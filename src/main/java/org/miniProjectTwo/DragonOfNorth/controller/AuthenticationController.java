@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.components.SignupRateLimiter;
 import org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpCompleteRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserStatusFinderRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
@@ -44,13 +45,20 @@ public class AuthenticationController {
         if (ip == null) {
             ip = httpServletRequest.getRemoteAddr();
         }
-        signupRateLimiter.check(
-                request.identifier(),
-                ip
-        );
+        signupRateLimiter.check(request.identifier(), ip);
         AuthenticationService service = resolver.resolve(request.identifier(), request.identifierType());
         AppUserStatusFinderResponse response = service.signUpUser(request);
         return ResponseEntity.status(CREATED).body(ApiResponse.success(response));
     }
 
+    @PostMapping("/identifier/sign-up/complete")
+    public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> completeUserSignup(
+            @RequestBody
+            @Valid
+            AppUserSignUpCompleteRequest request
+    ) {
+        AuthenticationService service = resolver.resolve(request.identifier(), request.identifierType());
+        AppUserStatusFinderResponse response = service.completeSignUp(request.identifier());
+        return ResponseEntity.status(CREATED).body(ApiResponse.success(response));
+    }
 }

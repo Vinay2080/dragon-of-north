@@ -8,7 +8,6 @@ import org.miniProjectTwo.DragonOfNorth.dto.otp.request.EmailOtpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.otp.request.EmailVerifyRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.otp.request.PhoneOtpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.otp.request.PhoneVerifyRequest;
-import org.miniProjectTwo.DragonOfNorth.impl.EmailAuthenticationServiceImpl;
 import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class OtpController {
     private final OtpService otpService;
-    private final EmailAuthenticationServiceImpl emailAuthenticationService;
 
     @PostMapping("/email/request")
     public ResponseEntity<ApiResponse<?>> requestEmailOtp(
@@ -49,7 +47,6 @@ public class OtpController {
             @RequestBody
             EmailVerifyRequest request) {
         otpService.verifyEmailOtp(request.email(), request.otp(), request.otpPurpose());
-        emailAuthenticationService.completeSignUp(request.email(), request.otpPurpose());
         return ResponseEntity
                 .accepted()
                 .body(ApiResponse.successMessage("email verified successfully"));
