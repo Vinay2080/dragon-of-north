@@ -24,6 +24,7 @@ public interface AppUserRepository extends JpaRepository<@NonNull AppUser, @NonN
 
     Optional<AppUser> findByPhoneNumber(String phoneNumber);
 
+    @Query("SELECT u.appUserStatus FROM AppUser u WHERE u.email = :email")
     Optional<AppUserStatus> findAppUserStatusByEmail(String email);
 
     @Modifying

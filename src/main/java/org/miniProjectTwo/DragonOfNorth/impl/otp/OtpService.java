@@ -2,8 +2,8 @@ package org.miniProjectTwo.DragonOfNorth.impl.otp;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
+import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
 import org.miniProjectTwo.DragonOfNorth.services.OtpSender;

@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 public class BusinessException extends RuntimeException {
 
     private final ErrorCode errorCode;
-    private final Object args;
+    private final Object[] args;
 
     /**
      * Creates a business exception with a dynamic message that requires arguments.
@@ -29,25 +29,12 @@ public class BusinessException extends RuntimeException {
      * @param errorCode the error type
      * @param args      a single argument to be injected into the error message format
      */
-    public BusinessException(ErrorCode errorCode, Object args) {
+    public BusinessException(ErrorCode errorCode, Object... args) {
         super(format(errorCode, args));
         this.errorCode = errorCode;
         this.args = args;
 
         log.debug("BusinessException created: code={}, args={}", errorCode, args);
-    }
-
-    /**
-     * Creates a business exception with a static message.
-     *
-     * @param errorCode the error type
-     */
-    public BusinessException(ErrorCode errorCode) {
-        super(format(errorCode, null));
-        this.errorCode = errorCode;
-        this.args = null;
-
-        log.debug("BusinessException created: code={} (no args)", errorCode);
     }
 
     /**
@@ -61,17 +48,18 @@ public class BusinessException extends RuntimeException {
      * @param args      optional argument used for formatting
      * @return formatted or raw message
      */
-    private static String format(ErrorCode errorCode, Object args) {
+    private static String format(ErrorCode errorCode, Object[] args) {
         String msg = errorCode.getDefaultMessage();
 
-        if (args == null) {
+        if (args == null || args.length == 0) {
             return msg;
         }
 
         try {
             return String.format(msg, args);
         } catch (Exception ex) {
-            return msg; // fail-safe fallback
+            log.warn("Message formatting failed for code={}", errorCode, ex);
+            return msg;
         }
     }
 

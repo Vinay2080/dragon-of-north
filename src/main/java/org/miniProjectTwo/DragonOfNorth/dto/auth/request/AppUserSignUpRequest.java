@@ -11,10 +11,10 @@ import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
  */
 public record AppUserSignUpRequest(
 
-        @NotNull
+        @NotBlank
         String identifier,
 
-        @NotBlank(message = "password cannot be blank")
+        @NotNull(message = "password cannot be null")
         IdentifierType identifierType,
 
         @Size(message = "password length must be between 8 and 50", min = 8, max = 50)

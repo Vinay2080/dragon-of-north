@@ -1,8 +1,8 @@
 package org.miniProjectTwo.DragonOfNorth.dto.otp.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 
 /**
@@ -19,8 +19,13 @@ public record EmailVerifyRequest(
         @NotBlank(message = "phone number cannot be blank")
         String email,
         @NotBlank(message = "phone number cannot be blank")
-        @Size(min = 6, max = 6)
+        @NotBlank(message = "otp cannot be blank")
+        @Pattern(
+                regexp = "^\\d{6}$",
+                message = "invalid OTP"
+        )
         String otp,
+        @NotNull(message = "OTP purpose cannot be null")
         OtpPurpose otpPurpose) {
 
 }

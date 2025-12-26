@@ -2,8 +2,8 @@ package org.miniProjectTwo.DragonOfNorth.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
+import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 
 import java.time.Instant;
 
