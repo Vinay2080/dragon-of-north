@@ -75,7 +75,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @PostMapping("jwt/refresh")
+    @PostMapping("/jwt/refresh")
     public ResponseEntity<ApiResponse<RefreshTokenResponse>> refreshToken(
             @Valid
             @RequestBody

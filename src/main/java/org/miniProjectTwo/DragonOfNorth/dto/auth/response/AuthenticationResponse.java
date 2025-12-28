@@ -1,12 +1,12 @@
 package org.miniProjectTwo.DragonOfNorth.dto.auth.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Setter
+@Getter
 public class AuthenticationResponse {
     private String accessToken;
     private String refreshToken;

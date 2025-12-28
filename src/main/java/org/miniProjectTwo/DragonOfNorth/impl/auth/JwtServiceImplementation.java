@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.impl.auth;
 
 import lombok.RequiredArgsConstructor;
+import org.miniProjectTwo.DragonOfNorth.config.security.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.config.security.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.RefreshTokenRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AuthenticationResponse;
@@ -26,7 +27,9 @@ public class JwtServiceImplementation {
 
     public AuthenticationResponse login(String identifier, String password) {
         final Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(identifier, password));
-        final AppUser appUser = (AppUser) authentication.getPrincipal();
+        AppUserDetails appUserDetails = (AppUserDetails) authentication.getPrincipal();
+        assert appUserDetails != null;
+        AppUser appUser = appUserDetails.getAppUser();
 
         assert appUser != null;
         final String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
@@ -44,6 +47,9 @@ public class JwtServiceImplementation {
         Set<Role> roles = appUserRepository.findRolesById(uuid);
         final String newAccessToken = jwtServices.refreshAccessToken(request.refreshToken(), roles);
         final String tokenType = "Bearer";
-        return RefreshTokenResponse.builder().accessToken(newAccessToken).tokenType(tokenType).build();
+        return RefreshTokenResponse.builder()
+                .accessToken(newAccessToken)
+                .tokenType(tokenType)
+                .build();
     }
 }

@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.config.security;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -23,6 +24,7 @@ import java.util.Set;
 
 @NamedInterface
 @RequiredArgsConstructor
+@Getter
 public class AppUserDetails implements UserDetails {
 
 
