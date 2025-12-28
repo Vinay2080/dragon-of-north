@@ -24,5 +24,4 @@ public interface AuthenticationService {
 
     AppUserStatusFinderResponse completeSignUp(String identifier);
 
-
 }

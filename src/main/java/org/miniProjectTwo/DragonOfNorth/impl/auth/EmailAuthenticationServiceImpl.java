@@ -1,4 +1,4 @@
-package org.miniProjectTwo.DragonOfNorth.impl;
+package org.miniProjectTwo.DragonOfNorth.impl.auth;
 
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;

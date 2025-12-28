@@ -5,10 +5,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.components.SignupRateLimiter;
 import org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpCompleteRequest;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserStatusFinderRequest;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.*;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AuthenticationResponse;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.response.RefreshTokenResponse;
+import org.miniProjectTwo.DragonOfNorth.impl.auth.JwtServiceImplementation;
 import org.miniProjectTwo.DragonOfNorth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.services.AuthenticationService;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ public class AuthenticationController {
 
     private final AuthenticationServiceResolver resolver;
     private final SignupRateLimiter signupRateLimiter;
+    private final JwtServiceImplementation jwtServiceImplementation;
 
     @GetMapping("/identifier/status")
     public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> findUserStatus(
@@ -35,12 +37,13 @@ public class AuthenticationController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @PostMapping("/identier/sign-up")
+    @PostMapping("/identifier/sign-up")
     public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> signupUser(
             @RequestBody
             @Valid
             AppUserSignUpRequest request,
             HttpServletRequest httpServletRequest) {
+        // todo move it somewhere.
         String ip = httpServletRequest.getHeader("X-Forwarded-For");
         if (ip == null) {
             ip = httpServletRequest.getRemoteAddr();
@@ -60,5 +63,25 @@ public class AuthenticationController {
         AuthenticationService service = resolver.resolve(request.identifier(), request.identifierType());
         AppUserStatusFinderResponse response = service.completeSignUp(request.identifier());
         return ResponseEntity.status(CREATED).body(ApiResponse.success(response));
+    }
+
+    @PostMapping("/identifier/login")
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> loginUser(
+            @RequestBody
+            @Valid
+            AppUserLoginRequest request
+    ) {
+        AuthenticationResponse response = jwtServiceImplementation.login(request.identifier(), request.password());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("jwt/refresh")
+    public ResponseEntity<ApiResponse<RefreshTokenResponse>> refreshToken(
+            @Valid
+            @RequestBody
+            RefreshTokenRequest request
+    ) {
+        RefreshTokenResponse response = jwtServiceImplementation.refreshToken(request);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

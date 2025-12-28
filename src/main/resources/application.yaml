@@ -13,6 +13,8 @@ spring:
     database: PostgreSql
     hibernate:
       ddl-auto: create
+  jackson:
+    property-naming-strategy: SNAKE_CASE
 
 app:
   security:

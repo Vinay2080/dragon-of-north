@@ -4,6 +4,7 @@ import lombok.NonNull;
 import org.jspecify.annotations.NullMarked;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
@@ -37,6 +39,10 @@ public interface AppUserRepository extends JpaRepository<@NonNull AppUser, @NonN
 
 
     void deleteByAppUserStatusAndCreatedAtBefore(AppUserStatus appUserStatus, Instant createdAtBefore);
+
+
+    @Query("select u.roles from AppUser u where u.id = :userId")
+    Set<Role> findRolesById(@Param("userId") UUID uuid);
 }
 
 

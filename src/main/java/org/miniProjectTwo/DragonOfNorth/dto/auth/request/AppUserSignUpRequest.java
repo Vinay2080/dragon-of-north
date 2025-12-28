@@ -14,7 +14,7 @@ public record AppUserSignUpRequest(
         @NotBlank
         String identifier,
 
-        @NotNull(message = "password cannot be null")
+        @NotNull(message = "identifier type cannot be null")
         IdentifierType identifierType,
 
         @Size(message = "password length must be between 8 and 50", min = 8, max = 50)
