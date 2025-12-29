@@ -47,7 +47,7 @@ public class AppUser extends BaseEntity {
      * Can be used as an alternative to email for authentication.
      */
     @Column(name = "phone_number", unique = true)
-    private String phoneNumber;
+    private String phone;
 
     /**
      * The unique email address of the user.

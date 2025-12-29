@@ -60,7 +60,7 @@ public class AppUserDetailService implements UserDetailsService {
         if (identifier.contains("@")) {
             appUser = repository.findByEmail(identifier);
         } else {
-            appUser = repository.findByPhoneNumber(identifier);
+            appUser = repository.findByPhone(identifier);
         }
 
         AppUser user = appUser.orElseThrow(

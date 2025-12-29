@@ -6,7 +6,6 @@ import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -24,25 +23,20 @@ public interface AppUserRepository extends JpaRepository<@NonNull AppUser, @NonN
 
     Optional<AppUser> findByEmail(String email);
 
-    Optional<AppUser> findByPhoneNumber(String phoneNumber);
+    Optional<AppUser> findByPhone(String phone);
 
-    @Query("SELECT u.appUserStatus FROM AppUser u WHERE u.email = :email")
+    @Query("select a.appUserStatus from AppUser a where a.email = :email")
     Optional<AppUserStatus> findAppUserStatusByEmail(String email);
 
-    @Modifying
-    @Query("""
-            update AppUser  u
-            set u.appUserStatus = :status
-            where u.id = :id
-            """)
-    int updateUserStatusById(@Param("id") UUID uuid, @Param("status") AppUserStatus appUserStatus);
-
+    @Query("select a.appUserStatus from AppUser a where a.phone = :phone")
+    Optional<AppUserStatus> findAppUserStatusByPhone(String phone);
 
     void deleteByAppUserStatusAndCreatedAtBefore(AppUserStatus appUserStatus, Instant createdAtBefore);
 
 
     @Query("select u.roles from AppUser u where u.id = :userId")
     Set<Role> findRolesById(@Param("userId") UUID uuid);
+
 }
 
 

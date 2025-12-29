@@ -11,58 +11,51 @@ import org.miniProjectTwo.DragonOfNorth.services.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.services.AuthenticationService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.CREATED;
 import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.NOT_EXIST;
-import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.EMAIL;
+import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.PHONE;
 import static org.miniProjectTwo.DragonOfNorth.exception.ErrorCode.USER_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
-public class EmailAuthenticationServiceImpl implements AuthenticationService {
+
+public class PhoneAuthenticationServiceImpl implements AuthenticationService {
 
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthCommonServices authCommonServices;
 
-
     @Override
     public IdentifierType supports() {
-        return EMAIL;
+        return PHONE;
     }
 
-    /**
-     * Finds user status or returns nonexistence status
-     */
     @Override
     public AppUserStatusFinderResponse getUserStatus(String identifier) {
-        return appUserRepository
-                .findAppUserStatusByEmail(identifier).map(AppUserStatusFinderResponse::new)
+        return appUserRepository.findAppUserStatusByPhone(identifier).map(AppUserStatusFinderResponse::new)
                 .orElseGet(() -> new AppUserStatusFinderResponse(NOT_EXIST));
     }
 
     @Override
     public AppUserStatusFinderResponse signUpUser(AppUserSignUpRequest request) {
-        AppUser user = new AppUser();
-        user.setEmail(request.identifier());
-        user.setPassword(passwordEncoder.encode(request.password()));
-        user.setAppUserStatus(CREATED);
-        appUserRepository.save(user);
+        AppUser appUser = new AppUser();
+        appUser.setPhone(request.identifier());
+        appUser.setPassword(passwordEncoder.encode(request.password()));
+        appUser.setAppUserStatus(CREATED);
+        appUserRepository.save(appUser);
         return getUserStatus(request.identifier());
     }
 
-
-
-    @Transactional
     @Override
     public AppUserStatusFinderResponse completeSignUp(String identifier) {
-        AppUser appUser = appUserRepository.findByEmail(identifier).orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+        AppUser appUser = appUserRepository.findByPhone(identifier).orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+
         authCommonServices.updateUserStatus(appUser.getAppUserStatus(), appUser);
         authCommonServices.assignDefaultRole(appUser);
         appUserRepository.save(appUser);
         return getUserStatus(identifier);
     }
 
-}
 
+}

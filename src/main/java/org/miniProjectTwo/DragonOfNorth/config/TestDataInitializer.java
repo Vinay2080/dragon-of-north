@@ -59,7 +59,7 @@ public class TestDataInitializer implements CommandLineRunner {
         if (appUserRepository.findByEmail(email).isEmpty()) {
             AppUser user = new AppUser();
             user.setEmail(email);
-            user.setPhoneNumber(phoneNumber);
+            user.setPhone(phoneNumber);
             user.setPassword(passwordEncoder.encode(password));
             user.setAppUserStatus(status);
             user.setRoles(roles);

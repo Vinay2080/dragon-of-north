@@ -9,8 +9,8 @@ import org.miniProjectTwo.DragonOfNorth.dto.auth.request.*;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AuthenticationResponse;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.RefreshTokenResponse;
-import org.miniProjectTwo.DragonOfNorth.impl.auth.JwtServiceImplementation;
 import org.miniProjectTwo.DragonOfNorth.resolver.AuthenticationServiceResolver;
+import org.miniProjectTwo.DragonOfNorth.services.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.services.AuthenticationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +24,7 @@ public class AuthenticationController {
 
     private final AuthenticationServiceResolver resolver;
     private final SignupRateLimiter signupRateLimiter;
-    private final JwtServiceImplementation jwtServiceImplementation;
+    private final AuthCommonServices authCommonServices;
 
     @GetMapping("/identifier/status")
     public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> findUserStatus(
@@ -71,7 +71,7 @@ public class AuthenticationController {
             @Valid
             AppUserLoginRequest request
     ) {
-        AuthenticationResponse response = jwtServiceImplementation.login(request.identifier(), request.password());
+        AuthenticationResponse response = authCommonServices.login(request.identifier(), request.password());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -81,7 +81,7 @@ public class AuthenticationController {
             @RequestBody
             RefreshTokenRequest request
     ) {
-        RefreshTokenResponse response = jwtServiceImplementation.refreshToken(request);
+        RefreshTokenResponse response = authCommonServices.refreshToken(request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
