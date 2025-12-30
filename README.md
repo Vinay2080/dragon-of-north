@@ -30,6 +30,8 @@ This project focuses on building a practical auth foundation:
 | Email OTP request/verify ✉️                   | ✅ Implemented                         |
 | Phone OTP request/verify 📱                   | ✅ Implemented                         |
 | Signup flow (email identifier) 🧾             | ✅ Implemented                         |
+| Login (JWT access + refresh) 🔐               | ✅ Implemented                         |
+| Refresh access token (JWT refresh) ♻️         | ✅ Implemented                         |
 | Default role assignment 🧑‍💼                 | ✅ Implemented                         |
 | Swagger UI 📚                                 | ✅ Available                           |
 | “Full AWS infra deployment” (ECS/CDK/etc.) ☁️ | 🧊 Not in this repo (future/optional) |
@@ -41,11 +43,19 @@ Base paths:
 - `/api/v1/auth`
 - `/api/v1/otp`
 
+JSON naming:
+- This project configures Jackson with `SNAKE_CASE` in `application.yaml`.
+- That means multi-word JSON fields are expected in snake_case (example: `identifier_type`, `otp_purpose`).
+- **Exception:** `RefreshTokenRequest` currently uses `@JsonProperty("refreshToken")`, so `/jwt/refresh` expects `refreshToken` (camelCase).
+
 ### Auth
 | Method | Endpoint                         | Purpose                                                                               |
 |--------|----------------------------------|---------------------------------------------------------------------------------------|
 | GET    | `/api/v1/auth/identifier/status` | Returns user status for an identifier *(current implementation reads a request body)* |
-| POST   | `/api/v1/auth/identier/sign-up`  | Sign up user (note: endpoint contains `identier` typo in code)                        |
+| POST   | `/api/v1/auth/identifier/sign-up`  | Sign up user                                                                           |
+| POST   | `/api/v1/auth/identifier/sign-up/complete` | Complete signup (status update after OTP verification)                                |
+| POST   | `/api/v1/auth/identifier/login` | Login and return JWT access + refresh tokens                                           |
+| POST   | `/api/v1/auth/jwt/refresh`       | Exchange refresh token for a new access token                                          |
 
 ### OTP
 | Method | Endpoint                    | Purpose               |
@@ -137,8 +147,9 @@ dragon-of-north/
 │   │   │   ├── repositories/      # Data access layer
 │   │   │   └── services/          # Business logic interfaces
 │   │   └── resources/
-│   │       ├── application.yml    # Main configuration
-│   │       └── db/               # Database migrations
+│   │       ├── META-INF/            # Spring resources
+│   │       ├── application.yaml     # Main configuration
+│   │       └── local-keys/          # Local RSA keys for JWT signing
 │   └── test/                     # Test suites
 └── pom.xml                      # Maven configuration
 ```

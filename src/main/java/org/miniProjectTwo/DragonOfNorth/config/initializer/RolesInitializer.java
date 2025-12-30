@@ -1,4 +1,4 @@
-package org.miniProjectTwo.DragonOfNorth.config;
+package org.miniProjectTwo.DragonOfNorth.config.initializer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,7 @@ import java.time.Instant;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class DataInitializer {
+public class RolesInitializer {
 
     private final RoleRepository roleRepository;
 

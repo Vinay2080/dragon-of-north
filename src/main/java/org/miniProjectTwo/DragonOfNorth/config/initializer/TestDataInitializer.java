@@ -1,4 +1,4 @@
-package org.miniProjectTwo.DragonOfNorth.config;
+package org.miniProjectTwo.DragonOfNorth.config.initializer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

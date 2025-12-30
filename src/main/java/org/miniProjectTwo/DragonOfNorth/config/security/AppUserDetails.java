@@ -70,12 +70,9 @@ public class AppUserDetails implements UserDetails {
     @Override
     @NullMarked
     public String getUsername() {
-
         return appUser.getId().toString();
     }
-
     // todo following methods need to return specific values will be defined later...
-
     /**
      * Indicates whether the user's account has expired.
      * TODO: Implement proper account expiration logic.
@@ -124,4 +121,3 @@ public class AppUserDetails implements UserDetails {
         return true;
     }
 }
-//todo rewrite the javadoc
