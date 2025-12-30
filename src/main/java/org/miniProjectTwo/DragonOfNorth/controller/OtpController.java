@@ -8,6 +8,7 @@ import org.miniProjectTwo.DragonOfNorth.dto.otp.request.EmailOtpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.otp.request.EmailVerifyRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.otp.request.PhoneOtpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.otp.request.PhoneVerifyRequest;
+import org.miniProjectTwo.DragonOfNorth.enums.OtpVerificationStatus;
 import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,22 +43,24 @@ public class OtpController {
     }
 
     @PostMapping("/email/verify")
-    public ResponseEntity<ApiResponse<?>> verifyEmailOtp(
+    public ResponseEntity<ApiResponse<OtpVerificationStatus>> verifyEmailOtp(
             @Valid
             @RequestBody
             EmailVerifyRequest request) {
-        otpService.verifyEmailOtp(request.email(), request.otp(), request.otpPurpose());
-        return ResponseEntity
-                .accepted()
-                .body(ApiResponse.successMessage("email verified successfully"));
+        OtpVerificationStatus otpVerificationStatus = otpService.verifyEmailOtp(request.email(), request.otp(), request.otpPurpose());
+        return otpVerificationStatus.isSuccess() ?
+                ResponseEntity.accepted().body(ApiResponse.success(otpVerificationStatus)) :
+                ResponseEntity.badRequest().body(ApiResponse.failed(otpVerificationStatus));
     }
 
     @PostMapping("/phone/verify")
-    public ResponseEntity<ApiResponse<?>> verifyPhoneOtp(
+    public ResponseEntity<ApiResponse<OtpVerificationStatus>> verifyPhoneOtp(
             @Valid
             @RequestBody
             PhoneVerifyRequest request) {
-        otpService.verifyPhoneOtp(request.phone(), request.otp(), request.otpPurpose());
-        return ResponseEntity.accepted().body(ApiResponse.successMessage("phone verified successfully"));
+        OtpVerificationStatus otpVerificationStatus = otpService.verifyPhoneOtp(request.phone(), request.otp(), request.otpPurpose());
+        return otpVerificationStatus.isSuccess() ?
+                ResponseEntity.accepted().body(ApiResponse.success(otpVerificationStatus)) :
+                ResponseEntity.badRequest().body(ApiResponse.failed(otpVerificationStatus));
     }
 }

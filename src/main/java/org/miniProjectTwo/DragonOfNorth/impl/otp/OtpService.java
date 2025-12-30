@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
+import org.miniProjectTwo.DragonOfNorth.enums.OtpVerificationStatus;
 import org.miniProjectTwo.DragonOfNorth.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
 import org.miniProjectTwo.DragonOfNorth.services.OtpSender;
@@ -17,6 +18,7 @@ import java.util.function.Function;
 
 import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.EMAIL;
 import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.PHONE;
+import static org.miniProjectTwo.DragonOfNorth.enums.OtpVerificationStatus.*;
 
 /**
  * Service for managing OTP (One-Time Password) generation, validation, and delivery.
@@ -124,8 +126,8 @@ public class OtpService {
      */
 
     @Transactional
-    public void verifyEmailOtp(String email, String providedOtp, OtpPurpose otpPurpose) {
-        verifyToken(fetchLatest(email.trim().toLowerCase(), EMAIL, otpPurpose), providedOtp, otpPurpose);
+    public OtpVerificationStatus verifyEmailOtp(String email, String providedOtp, OtpPurpose otpPurpose) {
+        return verifyToken(fetchLatest(email.trim().toLowerCase(), EMAIL, otpPurpose), providedOtp, otpPurpose);
     }
 
     /**
@@ -138,8 +140,8 @@ public class OtpService {
      */
 
     @Transactional
-    public void verifyPhoneOtp(String phone, String providedOtp, OtpPurpose otpPurpose) {
-        verifyToken(fetchLatest(phone.replace(" ", ""), PHONE, otpPurpose), providedOtp, otpPurpose);
+    public OtpVerificationStatus verifyPhoneOtp(String phone, String providedOtp, OtpPurpose otpPurpose) {
+        return verifyToken(fetchLatest(phone.replace(" ", ""), PHONE, otpPurpose), providedOtp, otpPurpose);
     }
 
     /**
@@ -166,20 +168,20 @@ public class OtpService {
      * @throws IllegalArgumentException if the OTP is invalid
      */
 
-    private void verifyToken(OtpToken otpToken, String providedOtp, OtpPurpose otpPurpose) {
+    private OtpVerificationStatus verifyToken(OtpToken otpToken, String providedOtp, OtpPurpose otpPurpose) {
         if (otpToken.isExpired()) {
-            throw new IllegalStateException("OTP expired");
+            return EXPIRED_OTP;
         }
 
         if (otpToken.getAttempts() >= maxAttempts) {
-            throw new IllegalStateException("Max attempts exceeded");
+            return MAX_ATTEMPT_EXCEEDED;
         }
         if (otpToken.isConsumed()) {
-            throw new IllegalStateException("OTP has already been used");
+            return ALREADY_USED;
         }
 
         if (otpToken.getOtpPurpose() != otpPurpose) {
-            throw new IllegalArgumentException("OTP was not generated for this purpose");
+            return INVALID_PURPOSE;
         }
 
         otpToken.incrementAttempts();
@@ -188,11 +190,12 @@ public class OtpService {
 
         if (!correct) {
             otpTokenRepository.save(otpToken);
-            throw new IllegalArgumentException("Invalid OTP");
+            return INVALID_OTP;
         }
 
         otpToken.markVerified();
         otpTokenRepository.save(otpToken);
+        return SUCCESS;
     }
 
     /**
