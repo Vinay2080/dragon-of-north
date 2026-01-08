@@ -234,7 +234,7 @@ All error responses follow this structure:
 
 The application uses both the Factory and Resolver patterns to manage different authentication methods (email/phone) and OTP senders. This combination provides a clean way to handle multiple implementations of the same interface.
 
-### Design Decision: Resolver vs Direct Injection
+### Design Decision: Resolver vs. Direct Injection
 
 1. **Authentication Layer (Using Resolver)**
    - Uses `AuthenticationServiceResolver` to dynamically select the appropriate service
@@ -421,7 +421,7 @@ public class AppUser extends BaseEntity {
  * @param password the password for authentication (must not be null)
  * @return AuthenticationResponse containing JWT tokens if successful
  * @throws AuthenticationException if authentication fails
- * @throws IllegalArgumentException if username or password is invalid
+ * @throws IllegalArgumentException if the username or password is invalid
  * @since 1.0
  */
 ```
@@ -430,7 +430,7 @@ public class AppUser extends BaseEntity {
 ```java
 /**
  * The user's email address.
- * Must be unique across all users and follow standard email format.
+ * Must be unique across all users and follow the standard email format.
  * Used as the primary identifier for email-based authentication.
  */
 @Column(unique = true, nullable = false)
@@ -488,7 +488,7 @@ To enable seeded data locally, run with an active profile:
 
 ## Configuration Highlights ⚙️ (from `application.yaml`)
 
-Some important tunables (beyond OTP + signup limiter metrics listed above):
+Some important tunable (beyond OTP + signup limiter metrics listed above):
 
 - **Database / JPA**
   - `spring.jpa.hibernate.ddl-auto: create` (recreates schema on startup; use carefully).
