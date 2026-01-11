@@ -15,15 +15,6 @@ public enum AppUserStatus {
      */
     VERIFIED,
     /**
-     * The user is active and can access the system.
-     */
-    ACTIVE,
-    /**
-     * The user has been blocked and cannot access the system.
-     */
-    BLOCKED,
-
-    /**
      * The user has been deleted from the system.
      */
     DELETED

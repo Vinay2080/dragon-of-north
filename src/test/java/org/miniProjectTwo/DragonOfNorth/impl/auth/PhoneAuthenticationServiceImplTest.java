@@ -19,8 +19,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.CREATED;
-import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.NOT_EXIST;
+import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.*;
+import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.PHONE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,7 +50,7 @@ class PhoneAuthenticationServiceImplTest {
         IdentifierType type = phoneAuthenticationService.supports();
 
         // assert
-        assertEquals(IdentifierType.PHONE, type, "PhoneAuthenticationServiceImpl should support PHONE identifier type");
+        assertEquals(PHONE, type, "PhoneAuthenticationServiceImpl should support PHONE identifier type");
 
     }
 
@@ -65,8 +65,8 @@ class PhoneAuthenticationServiceImplTest {
         AppUserStatusFinderResponse response = phoneAuthenticationService.getUserStatus(phoneNumber);
 
         //assert
-        assertNotNull(response, "response should not be null");
-        assertEquals(expectedStatus, response.appUserStatus(), "should match the expected value");
+        assertNotNull(response, "status should be returned upon calling this method");
+        assertEquals(expectedStatus, response.appUserStatus(), "user status should be CREATED");
         verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
 
     }
@@ -80,8 +80,47 @@ class PhoneAuthenticationServiceImplTest {
         AppUserStatusFinderResponse response = phoneAuthenticationService.getUserStatus(phoneNumber);
 
         //assert
-        assertNotNull(response, "response should not be null");
+        assertNotNull(response, "status should be returned upon calling this method");
         assertEquals(NOT_EXIST, response.appUserStatus(), "should return NOT_EXISTS for user that does not exists");
+
+        //verify
+        verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
+
+    }
+
+    @Test
+    void getUserStatus_shouldReturnStatusVERIFIED_whenUserIsAlreadyVerified() {
+
+        // arrange
+        AppUserStatus appUserStatus = VERIFIED;
+        when(appUserRepository.findAppUserStatusByPhone(phoneNumber)).thenReturn(Optional.of(appUserStatus));
+
+        //act
+        AppUserStatusFinderResponse response = phoneAuthenticationService.getUserStatus(phoneNumber);
+
+        //assert
+        assertNotNull(response, "status should be returned upon calling this method");
+        assertEquals(appUserStatus, response.appUserStatus(), "user status should be VERIFIED");
+
+        //verify
+        verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
+
+    }
+
+    @Test
+    void getAppUserStatus_shouldReturnDELETED_whenUserIsDELETED() {
+
+        //arrange
+        AppUserStatus appUserStatus = DELETED;
+
+        when(appUserRepository.findAppUserStatusByPhone(phoneNumber)).thenReturn(Optional.of(appUserStatus));
+
+        //act
+        AppUserStatusFinderResponse response = phoneAuthenticationService.getUserStatus(phoneNumber);
+
+        //assert
+        assertNotNull(response, "status should be returned upon calling this method");
+        assertEquals(appUserStatus, response.appUserStatus(), "returned status should be DELETED for the user that is deleted.");
 
         //verify
         verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
@@ -91,7 +130,7 @@ class PhoneAuthenticationServiceImplTest {
     @Test
     void signUpUser_ShouldReturnStatusCREATED_AndSaveUser_WhenCalled() {
         //arrange
-        AppUserSignUpRequest request = new AppUserSignUpRequest(phoneNumber, IdentifierType.PHONE, password);
+        AppUserSignUpRequest request = new AppUserSignUpRequest(phoneNumber, PHONE, password);
 
         AppUser appUser = new AppUser();
         appUser.setPhone(request.identifier());
@@ -114,7 +153,7 @@ class PhoneAuthenticationServiceImplTest {
 
         // user ArgumentCaptor when the data/Object that is passed needs to be varified.
         // the object is created in the current method.
-        // don't use when a method returns an expected result / dependencies need not to be checked.
+        // don't use when a method returns an expected result / dependencies need not be checked.
         ArgumentCaptor<AppUser> userArgumentCaptor = ArgumentCaptor.forClass(AppUser.class);
         verify(appUserRepository).save(userArgumentCaptor.capture());
 
@@ -128,6 +167,6 @@ class PhoneAuthenticationServiceImplTest {
     }
 
     @Test
-    void completeSignUp() {
+    void completeSignUp_UpdateUserStatusAndSetRolesAndSaveUser_whenCalledWithPhoneNumber() {
     }
 }
