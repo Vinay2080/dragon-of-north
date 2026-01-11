@@ -127,6 +127,14 @@ class PhoneAuthenticationServiceImplTest {
 
     }
 
+    //Use ArgumentCaptor ONLY when ALL 3 are true
+    //
+    //A method receives an object
+    //
+    //Your code mutates/builds that object
+    //
+    //You must verify what’s inside that object
+
     @Test
     void signUpUser_ShouldReturnStatusCREATED_AndSaveUser_WhenCalled() {
         //arrange
@@ -167,6 +175,26 @@ class PhoneAuthenticationServiceImplTest {
     }
 
     @Test
-    void completeSignUp_UpdateUserStatusAndSetRolesAndSaveUser_whenCalledWithPhoneNumber() {
+    void completeSignUp_UpdateUserStatusAndSetRolesAndSaveUser_whenCalledWithValidPhoneNumber() {
+        //arrange
+        AppUser appUser = new AppUser();
+        appUser.setPhone(phoneNumber);
+        appUser.setAppUserStatus(CREATED);
+
+        when(appUserRepository.findByPhone(phoneNumber)).thenReturn(Optional.of(appUser));
+        when(appUserRepository.findAppUserStatusByPhone(phoneNumber)).thenReturn(Optional.of(VERIFIED));
+
+        //act
+        AppUserStatusFinderResponse response = phoneAuthenticationService.completeSignUp(phoneNumber);
+
+        //assert
+        assertNotNull(appUser, "method should not return null object (appUser) when called with valid phone number");
+        assertEquals(VERIFIED, response.appUserStatus(), "method should return status VERIFIED for valid input (i.e. valid phone number, user exists and user status is CREATED");
+
+        //verify
+        verify(authCommonServices).updateUserStatus(appUser.getAppUserStatus(), appUser);
+        verify(authCommonServices).assignDefaultRole(appUser);
+        verify(appUserRepository).save(appUser);
+        verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
     }
 }
