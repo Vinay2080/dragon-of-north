@@ -197,4 +197,6 @@ class PhoneAuthenticationServiceImplTest {
         verify(appUserRepository).save(appUser);
         verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
     }
+
+    //todo for user does not exists, ..
 }
