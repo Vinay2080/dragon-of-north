@@ -107,70 +107,58 @@ const AuthIdentifierPage = () => {
             setLoading(false);
         }
     };
-
     return (
-        <div style={{padding: '2rem', maxWidth: '400px', margin: '0 auto'}}>
-            <h2>Sign In / Sign Up</h2>
-            {blockedMessage ? (
-                <div style={{
-                    padding: '1rem',
-                    backgroundColor: '#fee2e2',
-                    color: '#b91c1c',
-                    borderRadius: '4px',
-                    border: '1px solid #fecaca'
-                }}>
-                    {blockedMessage}
-                </div>
-            ) : (
-                <form onSubmit={handleSubmit} noValidate>
-                    <div style={{marginBottom: '1rem'}}>
-                        <label htmlFor="identifier" style={{display: 'block', marginBottom: '0.5rem'}}>
-                            Email or Phone Number
-                        </label>
-                        <input
-                            id="identifier"
-                            type="text"
-                            value={identifier}
-                            onChange={(e) => setIdentifier(e.target.value)}
-                            disabled={loading}
-                            placeholder="e.g., user@example.com or +1234567890"
-                            style={{
-                                width: '100%',
-                                padding: '0.5rem',
-                                boxSizing: 'border-box',
-                                borderRadius: '4px',
-                                border: '1px solid #ccc'
-                            }}
-                            required
-                        />
+        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
+            <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-8 shadow-2xl">
+                <h2 className="text-2xl font-bold text-white">
+                    Sign In / Sign Up
+                </h2>
+
+                <p className="mt-1 mb-6 text-sm text-slate-400">
+                    Continue with email or phone number
+                </p>
+
+                {blockedMessage && (
+                    <div className="mb-4 rounded-lg border border-red-800 bg-red-950 px-4 py-3 text-sm text-red-300">
+                        {blockedMessage}
                     </div>
+                )}
+
+                <form onSubmit={handleSubmit} noValidate>
+                    <input
+                        type="text"
+                        value={identifier}
+                        onChange={(e) => setIdentifier(e.target.value)}
+                        disabled={loading}
+                        placeholder="Email or phone number"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                        required
+                    />
 
                     {error && (
-                        <div style={{color: '#dc2626', fontSize: '0.875rem', marginBottom: '1rem'}}>
+                        <p className="mt-3 text-sm text-red-400">
                             {error}
-                        </div>
+                        </p>
                     )}
 
                     <button
                         type="submit"
                         disabled={loading || !identifier.trim()}
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            backgroundColor: loading ? '#94a3b8' : '#2563eb',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            fontWeight: 'bold'
-                        }}
+                        className="mt-5 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        {loading ? 'Processing...' : 'Continue'}
+                        {loading ? 'Processing…' : 'Continue'}
                     </button>
                 </form>
-            )}
+
+                <p className="mt-6 text-center text-xs text-slate-500">
+                    We may send an OTP if required
+                </p>
+            </div>
         </div>
     );
+
+
 };
+
 
 export default AuthIdentifierPage;
