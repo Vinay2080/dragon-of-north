@@ -45,31 +45,75 @@ public class TestDataInitializer implements CommandLineRunner {
         Role adminRole = roleRepository.findByRoleName(ADMIN)
                 .orElseThrow(() -> new IllegalStateException("ADMIN role not found. Make sure DataInitializer has run first."));
 
-        // Create test users with different statuses
-        createUserIfNotExists("created@example.com", "+1234567890", CREATED, null);
-        createUserIfNotExists("verified@example.com", "+1234567891", VERIFIED, Set.of(userRole));
-        createUserIfNotExists("admin@gmail.com", "7897897890", VERIFIED, Set.of(adminRole));
+        // Initialize email users
+        initializeEmailUsers(userRole, adminRole);
+        
+        // Initialize phone users
+        initializePhoneUsers(userRole, adminRole);
+        
         log.info("Test users initialized successfully");
     }
-
-    private void createUserIfNotExists(String email, String phoneNumber,
-                                       AppUserStatus status, Set<Role> roles) {
-        if (appUserRepository.findByEmail(email).isEmpty()) {
-            AppUser user = new AppUser();
-            user.setEmail(email);
-            user.setPhone(phoneNumber);
-            user.setPassword(passwordEncoder.encode("password123"));
-            user.setAppUserStatus(status);
-            user.setRoles(roles);
-
-            // Set verification flags based on status
-            if (status == VERIFIED) {
-                user.setEmailVerified(true);
-                user.setPhoneNumberVerified(true);
-            }
-
-            appUserRepository.save(user);
-            log.info("Created {} user with email: {}", status, email);
-        }
+    
+    private void initializeEmailUsers(Role userRole, Role adminRole) {
+        // Create 5 email-only users with different statuses and roles
+        createEmailUser("user1@example.com", CREATED, Set.of(userRole));
+        createEmailUser("user2@example.com", VERIFIED, Set.of(userRole));
+        createEmailUser("admin1@example.com", CREATED, Set.of(adminRole));
+        createEmailUser("admin2@example.com", VERIFIED, Set.of(adminRole));
+        createEmailUser("superadmin@example.com", VERIFIED, Set.of(userRole, adminRole));
     }
+    
+    private void initializePhoneUsers(Role userRole, Role adminRole) {
+        // Create 5 phone-only users with different statuses and roles
+        createPhoneUser("9912345601", CREATED, Set.of(userRole));
+        createPhoneUser("9912345602", VERIFIED, Set.of(userRole));
+        createPhoneUser("9912345603", CREATED, Set.of(adminRole));
+        createPhoneUser("9912345604", VERIFIED, Set.of(adminRole));
+        createPhoneUser("9912345605", VERIFIED, Set.of(userRole, adminRole));
+    }
+
+    /**
+     * Creates a new user with email authentication only
+     */
+    private void createEmailUser(String email, AppUserStatus status, Set<Role> roles) {
+        if (appUserRepository.findByEmail(email).isPresent()) {
+            return;
+        }
+        
+        AppUser user = new AppUser();
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode("password123"));
+        user.setAppUserStatus(status);
+        user.setRoles(roles);
+        
+        if (status == VERIFIED) {
+            user.setEmailVerified(true);
+        }
+        
+        appUserRepository.save(user);
+        log.info("Created {} email user: {}", status, email);
+    }
+    
+    /**
+     * Creates a new user with phone authentication only
+     */
+    private void createPhoneUser(String phoneNumber, AppUserStatus status, Set<Role> roles) {
+        if (appUserRepository.findByPhone(phoneNumber).isPresent()) {
+            return;
+        }
+        
+        AppUser user = new AppUser();
+        user.setPhone(phoneNumber);
+        user.setPassword(passwordEncoder.encode("password123"));
+        user.setAppUserStatus(status);
+        user.setRoles(roles);
+        
+        if (status == VERIFIED) {
+            user.setPhoneNumberVerified(true);
+        }
+        
+        appUserRepository.save(user);
+        log.info("Created {} phone user: {}", status, phoneNumber);
+    }
+
 }

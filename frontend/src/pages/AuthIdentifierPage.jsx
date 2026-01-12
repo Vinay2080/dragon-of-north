@@ -7,9 +7,9 @@ import {useNavigate} from 'react-router-dom';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Regex for basic phone validation (10-digit number with optional +91 or 0 prefix)
+ * Regex for basic phone validation (10-digit number starting with 6-9)
  */
-const PHONE_REGEX = /^(\+91|0)?[6-9]\d{9}$/;
+const PHONE_REGEX = /^[6-9]\d{9}$/;
 
 const API_BASE_URL = 'http://localhost:8080'; // Update this to match your backend port
 
@@ -34,14 +34,9 @@ const AuthIdentifierPage = () => {
         let processedIdentifier = identifier.trim();
         const identifierType = detectIdentifierType(processedIdentifier);
 
-        // If it's a phone number, clean it up and add +91 country code if needed
+        // If it's a phone number, clean it up (remove all non-digit characters)
         if (identifierType === 'PHONE') {
-            // Remove all non-digit characters
-            const digitsOnly = processedIdentifier.replace(/\D/g, '');
-            // If it starts with 91, remove it first
-            const cleanNumber = digitsOnly.startsWith('91') ? digitsOnly.substring(2) : digitsOnly;
-            // Add +91 prefix
-            processedIdentifier = `+91${cleanNumber}`;
+            processedIdentifier = processedIdentifier.replace(/\D/g, '');
         }
 
         if (!identifierType) {
@@ -156,7 +151,6 @@ const AuthIdentifierPage = () => {
             </div>
         </div>
     );
-
 
 };
 

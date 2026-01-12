@@ -17,7 +17,7 @@ import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 
 public record PhoneOtpRequest(
         @Size(message = "invalid phone number size", min = 10, max = 14)
-        @Pattern(message = "invalid phone number", regexp = "^\\+91[6-9]\\d{9}$")
+        @Pattern(message = "invalid phone number", regexp = "[6-9]\\d{9}$")
         @NotBlank(message = "phone number cannot be blank")
         String phone,
         @NotNull(message = "OTP purpose cannot be null")

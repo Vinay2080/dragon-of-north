@@ -33,7 +33,8 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public AppUserStatusFinderResponse getUserStatus(String identifier) {
-        return appUserRepository.findAppUserStatusByPhone(identifier).map(AppUserStatusFinderResponse::new)
+        return appUserRepository
+                .findAppUserStatusByPhone(identifier).map(AppUserStatusFinderResponse::new)
                 .orElseGet(() -> new AppUserStatusFinderResponse(NOT_EXIST));
     }
 

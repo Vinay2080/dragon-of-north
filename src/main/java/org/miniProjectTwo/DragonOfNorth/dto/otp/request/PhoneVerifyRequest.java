@@ -16,7 +16,7 @@ import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
  */
 
 public record PhoneVerifyRequest(
-        @Pattern(message = "invalid phone number", regexp = "^\\+91[6-9]\\d{9}$")
+        @Pattern(message = "invalid phone number", regexp = "[6-9]\\d{9}$")
         @Size(message = "invalid phone number size", min = 10, max = 14)
         @NotBlank(message = "this field cannot be empty")
         String phone,

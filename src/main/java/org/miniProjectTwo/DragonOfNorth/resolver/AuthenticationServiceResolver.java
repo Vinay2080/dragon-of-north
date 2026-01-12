@@ -43,6 +43,6 @@ public class AuthenticationServiceResolver {
     }
 
     private boolean isPhone(String identifier) {
-        return identifier.matches("^\\+91[6-9]\\d{9}$");
+        return identifier.matches("[6-9]\\d{9}$");
     }
 }
