@@ -26,7 +26,7 @@ public class AuthenticationController {
     private final SignupRateLimiter signupRateLimiter;
     private final AuthCommonServices authCommonServices;
 
-    @GetMapping("/identifier/status")
+    @PostMapping("/identifier/status")
     public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> findUserStatus(
             @RequestBody
             @Valid
