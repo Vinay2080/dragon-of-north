@@ -78,13 +78,13 @@ const AuthIdentifierPage = () => {
 
                 switch (status) {
                     case 'NOT_EXIST':
-                        navigate('/signup');
+                        navigate('/signup', { state: { identifier: processedIdentifier, identifierType } });
                         break;
                     case 'CREATED':
-                        navigate('/otp');
+                        navigate('/otp', { state: { identifier: processedIdentifier, identifierType } });
                         break;
                     case 'VERIFIED':
-                        navigate('/dashboard');
+                        navigate('/login', { state: { identifier: processedIdentifier } });
                         break;
                     case 'BLOCKED':
                         setBlockedMessage('Your account is blocked. Please contact support.');
