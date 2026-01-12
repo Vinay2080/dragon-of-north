@@ -24,6 +24,26 @@ This project focuses on building a practical auth foundation:
 
 ---
 
+## Testing 🧪✅
+
+- **Frameworks**: JUnit 5 🧫 + Mockito 🎭
+- **Style**: AAA (Arrange → Act → Assert) 🧩
+- **Goal**: Unit tests for core services (happy paths + edge cases) 🔍
+
+### Where are the tests? 🗂️
+- `src/test/java/...`
+
+### Run tests locally 🏃‍♂️⚡
+```bash
+mvn test
+```
+
+### Example (Service Unit Tests) 🧠
+- Uses `@ExtendWith(MockitoExtension.class)`
+- Mocks repositories / dependencies and verifies interactions via `verify(...)`
+
+---
+
 ## Feature Snapshot ✨
 | Feature                                       | Status                                |
 |-----------------------------------------------|---------------------------------------|
