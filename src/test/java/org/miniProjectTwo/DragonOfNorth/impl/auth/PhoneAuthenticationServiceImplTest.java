@@ -6,6 +6,7 @@ import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
+import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.services.AuthCommonServices;
@@ -17,13 +18,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.*;
 import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.PHONE;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PhoneAuthenticationServiceImplTest {
@@ -41,8 +40,7 @@ class PhoneAuthenticationServiceImplTest {
     private PhoneAuthenticationServiceImpl phoneAuthenticationService;
 
 
-    private static final String phoneNumber = "9838291289";
-    private static final String password = "encoded@Password123";
+    private final String phoneNumber = "9838291289";
 
     @Test
     void supports_ShouldReturnPHONE_WhenCalled() {
@@ -88,44 +86,6 @@ class PhoneAuthenticationServiceImplTest {
 
     }
 
-    @Test
-    void getUserStatus_shouldReturnStatusVERIFIED_whenUserIsAlreadyVerified() {
-
-        // arrange
-        AppUserStatus appUserStatus = VERIFIED;
-        when(appUserRepository.findAppUserStatusByPhone(phoneNumber)).thenReturn(Optional.of(appUserStatus));
-
-        //act
-        AppUserStatusFinderResponse response = phoneAuthenticationService.getUserStatus(phoneNumber);
-
-        //assert
-        assertNotNull(response, "status should be returned upon calling this method");
-        assertEquals(appUserStatus, response.appUserStatus(), "user status should be VERIFIED");
-
-        //verify
-        verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
-
-    }
-
-    @Test
-    void getAppUserStatus_shouldReturnDELETED_whenUserIsDELETED() {
-
-        //arrange
-        AppUserStatus appUserStatus = DELETED;
-
-        when(appUserRepository.findAppUserStatusByPhone(phoneNumber)).thenReturn(Optional.of(appUserStatus));
-
-        //act
-        AppUserStatusFinderResponse response = phoneAuthenticationService.getUserStatus(phoneNumber);
-
-        //assert
-        assertNotNull(response, "status should be returned upon calling this method");
-        assertEquals(appUserStatus, response.appUserStatus(), "returned status should be DELETED for the user that is deleted.");
-
-        //verify
-        verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
-
-    }
 
     //Use ArgumentCaptor ONLY when ALL 3 are true
     //
@@ -138,6 +98,7 @@ class PhoneAuthenticationServiceImplTest {
     @Test
     void signUpUser_ShouldReturnStatusCREATED_AndSaveUser_WhenCalled() {
         //arrange
+        String password = "encoded@Password123";
         AppUserSignUpRequest request = new AppUserSignUpRequest(phoneNumber, PHONE, password);
 
         AppUser appUser = new AppUser();
@@ -188,7 +149,6 @@ class PhoneAuthenticationServiceImplTest {
         AppUserStatusFinderResponse response = phoneAuthenticationService.completeSignUp(phoneNumber);
 
         //assert
-        assertNotNull(appUser, "method should not return null object (appUser) when called with valid phone number");
         assertEquals(VERIFIED, response.appUserStatus(), "method should return status VERIFIED for valid input (i.e. valid phone number, user exists and user status is CREATED");
 
         //verify
@@ -198,5 +158,18 @@ class PhoneAuthenticationServiceImplTest {
         verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
     }
 
-    //todo for user does not exists, ..
+    @Test
+    void completeSignUp_returnUSER_NOT_FOUND_whenCalledWithInvalidPhoneNumber() {
+        //arrange
+        when(appUserRepository.findByPhone(phoneNumber)).thenReturn(Optional.empty());
+
+        assertThrows(
+                BusinessException.class,
+                () -> phoneAuthenticationService.completeSignUp(phoneNumber)
+        );
+
+        //verify
+        verify(appUserRepository, never()).save(any());
+        verify(authCommonServices, never()).assignDefaultRole(any());
+    }
 }

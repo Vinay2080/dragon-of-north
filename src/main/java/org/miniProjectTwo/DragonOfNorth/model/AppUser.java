@@ -67,7 +67,7 @@ public class AppUser extends BaseEntity {
 
     /**
      * The current status of the user account.
-     * Defaults to {@link AppUserStatus#ACTIVE} when a new user is created.
+     * Defaults to {@link AppUserStatus#CREATED} when a new user is created.
      * Can be used to block or delete user accounts while preserving their data.
      */
     @Enumerated(EnumType.STRING)
