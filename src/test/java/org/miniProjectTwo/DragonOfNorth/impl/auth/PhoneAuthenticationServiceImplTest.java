@@ -65,6 +65,8 @@ class PhoneAuthenticationServiceImplTest {
         //assert
         assertNotNull(response, "status should be returned upon calling this method");
         assertEquals(expectedStatus, response.appUserStatus(), "user status should be CREATED");
+
+        //verify
         verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
 
     }
