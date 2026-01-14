@@ -46,11 +46,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         final String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
         final String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
         final String tokenType = "Bearer";
-        return AuthenticationResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .tokenType(tokenType)
-                .build();
+        return AuthenticationResponse.builder().accessToken(accessToken).refreshToken(refreshToken).tokenType(tokenType).build();
     }
 
     @Override
@@ -59,18 +55,14 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         Set<Role> roles = appUserRepository.findRolesById(uuid);
         final String newAccessToken = jwtServices.refreshAccessToken(request.refreshToken(), roles);
         final String tokenType = "Bearer";
-        return RefreshTokenResponse.builder()
-                .accessToken(newAccessToken)
-                .tokenType(tokenType)
-                .build();
+        return RefreshTokenResponse.builder().accessToken(newAccessToken).tokenType(tokenType).build();
     }
 
 
     @Override
     public void assignDefaultRole(AppUser appUser) {
         if (!appUser.hasAnyRoles()) {
-            Role userRole = roleRepository.findByRoleName(RoleName.USER)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.ROLE_NOT_FOUND, RoleName.USER.toString()));
+            Role userRole = roleRepository.findByRoleName(RoleName.USER).orElseThrow(() -> new BusinessException(ErrorCode.ROLE_NOT_FOUND, RoleName.USER.toString()));
             appUser.setRoles(Set.of(userRole));
         }
     }

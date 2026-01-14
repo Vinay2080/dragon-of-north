@@ -114,7 +114,7 @@ public class AppUser extends BaseEntity {
 
 
     public boolean hasAnyRoles() {
-        return roles != null && roles.isEmpty();
+        return roles != null && !roles.isEmpty();
     }
 
     @ManyToMany(fetch = FetchType.EAGER)
