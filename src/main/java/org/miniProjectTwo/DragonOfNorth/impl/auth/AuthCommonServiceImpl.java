@@ -44,6 +44,15 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
         assert appUser != null;
         final String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
+
+        Cookie cookie = new Cookie("access_token", accessToken);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false); // localhost
+        cookie.setPath("/");
+        cookie.setMaxAge(3600); // 1-hour default
+        cookie.setAttribute("SameSite", "Lax");
+        response.addCookie(cookie);
+
         final String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
         final String tokenType = "Bearer";
         return AuthenticationResponse.builder().accessToken(accessToken).refreshToken(refreshToken).tokenType(tokenType).build();

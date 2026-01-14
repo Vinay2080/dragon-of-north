@@ -82,6 +82,7 @@ class AuthCommonServiceImplTest {
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(jwtServices).generateAccessToken(userId, roles);
         verify(jwtServices).generateRefreshToken(userId);
+        verify(httpServletResponse).addCookie(any());
     }
 
     @Test
