@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.components.SignupRateLimiter;
@@ -69,9 +70,10 @@ public class AuthenticationController {
     public ResponseEntity<ApiResponse<AuthenticationResponse>> loginUser(
             @RequestBody
             @Valid
-            AppUserLoginRequest request
+            AppUserLoginRequest request,
+            HttpServletResponse httpServletResponse
     ) {
-        AuthenticationResponse response = authCommonServices.login(request.identifier(), request.password());
+        AuthenticationResponse response = authCommonServices.login(request.identifier(), request.password(), httpServletResponse);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

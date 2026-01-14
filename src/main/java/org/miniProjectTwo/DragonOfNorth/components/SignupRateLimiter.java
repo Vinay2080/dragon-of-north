@@ -33,7 +33,7 @@ public class SignupRateLimiter {
         synchronized void validate(AuthRateLimitProperties.Signup conf) {
             long now = System.currentTimeMillis();
 
-            if (now < windowStart) {
+            if (now < blockedUntil) {
                 throw new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
             }
             if (now - windowStart > conf.getRequestWindowSeconds() * 1000L) {
@@ -44,7 +44,9 @@ public class SignupRateLimiter {
 
             if (count > conf.getMaxRequestsPerWindow()) {
                 blockedUntil = now + conf.getBlockDurationMinutes() * 60_000L;
-                throw new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
+                if (now < blockedUntil) {
+                    throw new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
+                }
             }
         }
 

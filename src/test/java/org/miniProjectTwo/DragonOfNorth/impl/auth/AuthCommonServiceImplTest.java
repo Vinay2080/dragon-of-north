@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.impl.auth;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.config.security.AppUserDetails;
@@ -69,8 +70,10 @@ class AuthCommonServiceImplTest {
         when(jwtServices.generateAccessToken(userId, roles)).thenReturn("access-token");
         when(jwtServices.generateRefreshToken(userId)).thenReturn("refresh-token");
 
+        HttpServletResponse httpServletResponse = mock(HttpServletResponse.class);
+
         // act
-        AuthenticationResponse response = authCommonService.login(identifier, password);
+        AuthenticationResponse response = authCommonService.login(identifier, password, httpServletResponse);
 
         // assert
         assertNotNull(response);

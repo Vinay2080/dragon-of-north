@@ -1,5 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.impl.auth;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.config.security.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.config.security.JwtServices;
@@ -36,7 +38,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final RoleRepository roleRepository;
 
     @Override
-    public AuthenticationResponse login(String identifier, String password) {
+    public AuthenticationResponse login(String identifier, String password, HttpServletResponse response) {
         final Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(identifier, password));
         AppUserDetails appUserDetails = (AppUserDetails) authentication.getPrincipal();
         assert appUserDetails != null;
