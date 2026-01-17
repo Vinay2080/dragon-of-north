@@ -20,7 +20,7 @@ public class SignupRateLimiter {
         String key = ip + ":" + identifier;
         AttemptWindow window = attempts.computeIfAbsent(
                 key,
-                _ -> new AttemptWindow()
+                string -> new AttemptWindow()
         );
         window.validate(properties.getSignup());
     }

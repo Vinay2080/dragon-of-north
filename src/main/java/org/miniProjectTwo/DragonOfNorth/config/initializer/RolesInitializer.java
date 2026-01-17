@@ -22,7 +22,7 @@ public class RolesInitializer {
     @Bean
     @Order(1)
     public CommandLineRunner initializeROles() {
-        return _ -> {
+        return strings -> {
             log.info("Checking and initializing roles in the database");
 
             String systemUser = "system@Startup";
