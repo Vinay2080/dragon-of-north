@@ -4,7 +4,7 @@ spring:
   application:
     name: dragon-of-north
   datasource:
-    url: jdbc:postgresql://localhost:5432/dragon_of_north
+    url: jdbc:postgresql:/${db_url}:${db_port}/dragon_of_north
     username: ${db_username}
     password: ${db_password}
     driver-class-name: org.postgresql.Driver
