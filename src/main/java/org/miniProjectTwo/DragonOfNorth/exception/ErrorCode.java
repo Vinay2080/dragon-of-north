@@ -13,11 +13,14 @@ public enum ErrorCode {
     IDENTIFIER_MISMATCH("AUTH_001", "%s does not matches identifier type", HttpStatus.BAD_REQUEST),
     TOO_MANY_REQUESTS("AUTH_002", "too many requests. Please try again later", HttpStatus.TOO_MANY_REQUESTS),
     STATUS_MISMATCH("AUTH_003", "Invalid status expected status %s", HttpStatus.CONFLICT),
+    AUTHENTICATION_FAILED("AUTH_004", "Invalid username or password", HttpStatus.UNAUTHORIZED),
 
     ROLE_NOT_FOUND("ROL_009", "role %s not found", HttpStatus.NOT_FOUND),
 
     USER_NOT_FOUND("USER_001", "user not found", HttpStatus.NOT_FOUND),
-    USER_ALREADY_VERIFIED("USER_002","user is already verified" ,HttpStatus.CONFLICT );
+    USER_ALREADY_VERIFIED("USER_002","user is already verified" ,HttpStatus.CONFLICT ),
+
+    INVALID_INPUT("VAL_001", "invalid input", HttpStatus.BAD_REQUEST);
 
     private final String code;
     private final String defaultMessage;

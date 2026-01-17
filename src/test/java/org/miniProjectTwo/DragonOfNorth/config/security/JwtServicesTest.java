@@ -3,8 +3,8 @@ package org.miniProjectTwo.DragonOfNorth.config.security;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
+import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
@@ -12,7 +12,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class JwtServicesTest {
 
