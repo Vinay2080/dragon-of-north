@@ -34,7 +34,7 @@ class JwtServicesTest {
     }
 
     private static void ensureLocalKeysExist() throws Exception {
-        Path keysDir = Path.of("local-keys");
+        Path keysDir = Path.of("keys");
         Path privateKeyPath = keysDir.resolve("private_key.pem");
         Path publicKeyPath = keysDir.resolve("public_key.pem");
 
