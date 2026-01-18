@@ -34,5 +34,5 @@ build/
 
 .env
 docker-compose.yaml
-keys/private_key.pem
-keys/public_key.pem
+private_key.pem
+public_key.pem
