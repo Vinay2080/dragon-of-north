@@ -33,4 +33,5 @@ build/
 .vscode/
 
 .env
-src/main/resources/local-keys
+docker-compose.yaml
+keys
