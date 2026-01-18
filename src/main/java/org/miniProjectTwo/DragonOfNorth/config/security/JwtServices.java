@@ -55,8 +55,8 @@ public class JwtServices {
      * @throws Exception if key loading fails
      */
     public JwtServices() throws Exception {
-        this.privateKey = KeyUtils.loadPrivateKey("local-keys/private_key.pem");
-        this.publicKey = KeyUtils.loadPublicKey("local-keys/public_key.pem");
+        this.privateKey = KeyUtils.loadPrivateKey("keys/private_key.pem");
+        this.publicKey = KeyUtils.loadPublicKey("keys/public_key.pem");
         log.info("JWT RSA keys successfully loaded");
     }
 
