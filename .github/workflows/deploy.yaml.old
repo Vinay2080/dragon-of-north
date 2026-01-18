@@ -15,4 +15,4 @@ jobs:
       - name: Pull latest image and restart services
         run: |
           docker compose pull
-          docker compose up -d
+          docker compose up -d --no-build
