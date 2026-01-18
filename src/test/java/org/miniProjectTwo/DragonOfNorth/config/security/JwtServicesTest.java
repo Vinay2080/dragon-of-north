@@ -7,6 +7,12 @@ import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -21,9 +27,42 @@ class JwtServicesTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        ensureLocalKeysExist();
         jwtServices = new JwtServices();
         ReflectionTestUtils.setField(jwtServices, "accessTokenExpiration", 3600000L); // 1 hour
         ReflectionTestUtils.setField(jwtServices, "refreshTokenExpiration", 86400000L); // 24 hours
+    }
+
+    private static void ensureLocalKeysExist() throws Exception {
+        Path keysDir = Path.of("local-keys");
+        Path privateKeyPath = keysDir.resolve("private_key.pem");
+        Path publicKeyPath = keysDir.resolve("public_key.pem");
+
+        if (Files.exists(privateKeyPath) && Files.exists(publicKeyPath)) {
+            return;
+        }
+
+        Files.createDirectories(keysDir);
+
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(2048);
+        KeyPair keyPair = generator.generateKeyPair();
+
+        String privatePem = toPem("PRIVATE KEY", keyPair.getPrivate().getEncoded());
+        String publicPem = toPem("PUBLIC KEY", keyPair.getPublic().getEncoded());
+
+        Files.writeString(privateKeyPath, privatePem, StandardCharsets.UTF_8);
+        Files.writeString(publicKeyPath, publicPem, StandardCharsets.UTF_8);
+
+        privateKeyPath.toFile().deleteOnExit();
+        publicKeyPath.toFile().deleteOnExit();
+        keysDir.toFile().deleteOnExit();
+    }
+
+    private static String toPem(String type, byte[] derBytes) {
+        String base64 = Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.UTF_8))
+                .encodeToString(derBytes);
+        return "-----BEGIN " + type + "-----\n" + base64 + "\n-----END " + type + "-----\n";
     }
 
     @Test
