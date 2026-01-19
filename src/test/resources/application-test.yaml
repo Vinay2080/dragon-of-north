@@ -1,0 +1,30 @@
+db_name: test_db
+db_url: localhost
+db_port: 5432
+db_username: test
+db_password: test
+db_ddl_auto: update
+
+access_token: 60000          # 1 minute (shorter for faster tests)
+refresh_token: 300000       # 5 minutes (shorter for faster tests)
+
+otp_length: 4               # Shorter for testing
+otp_ttl_minutes: 2          # 2 minutes for tests
+otp_max_verify_attempts: 2   # Fewer attempts for tests
+otp_request_window_seconds: 300  # 5 minutes for tests
+otp_block_duration_minutes: 1    # 1 minute for tests
+otp_resend_cooldown_seconds: 30  # 30 seconds for tests
+otp_max_requests_per_window: 5   # Fewer requests for tests
+otp_cleanup_delay_ms: 60000     # 1 minute for tests
+
+auth_signup_request_window_seconds: 300  # 5 minutes for tests
+auth_signup_max_requests_per_window: 3   # Fewer signup attempts for tests
+auth_signup_block_duration_minutes: 5    # 5 minutes for tests
+auth_login_max_failed_attempts: 3        # Fewer login attempts for tests
+auth_login_block_duration_minutes: 5     # 5 minutes for tests
+
+aws_region: test-region-1
+aws_ses_sender: no-reply-test@test.local
+
+public_key_path: keys/public_key.pem
+private_key_path: keys/private_key.pem
