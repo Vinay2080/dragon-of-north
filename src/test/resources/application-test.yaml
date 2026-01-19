@@ -1,9 +1,22 @@
-db_name: test_db
+spring:
+  application:
+    name: dragon-of-north
+  datasource:
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: false
+    database: postgresql
+    hibernate:
+      ddl-auto: create-drop
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+db_name: postgresql
 db_url: localhost
 db_port: 5432
 db_username: test
 db_password: test
-db_ddl_auto: update
+db_ddl_auto: create-drop
 
 access_token: 60000          # 1 minute (shorter for faster tests)
 refresh_token: 300000       # 5 minutes (shorter for faster tests)
@@ -29,9 +42,38 @@ aws_ses_sender: no-reply-test@test.local
 public_key_path: keys/public_key.pem
 private_key_path: keys/private_key.pem
 
-spring:
-  datasource:
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
+app:
+  security:
+    jwt:
+      expiration:
+        access-token: ${access_token}
+        refresh-token: ${refresh_token}
+
+otp:
+  length: ${otp_length}
+  ttl-minutes: ${otp_ttl_minutes}
+  max-verify-attempts: ${otp_max_verify_attempts}
+  request-window-seconds: ${otp_request_window_seconds}
+  block-duration-minutes: ${otp_block_duration_minutes}
+  resend-cooldown-seconds: ${otp_resend_cooldown_seconds}
+  max-requests-per-window: ${otp_max_requests_per_window}
+  cleanup:
+    delay-ms: ${otp_cleanup_delay_ms}
+
+auth:
+  signup:
+    request-window-seconds: ${auth_signup_request_window_seconds}
+    max-requests-per-window: ${auth_signup_max_requests_per_window}
+    block-duration-minutes: ${auth_signup_block_duration_minutes}
+  login:
+    max-failed-attempts: ${auth_login_max_failed_attempts}
+    block-duration-minutes: ${auth_login_block_duration_minutes}
+
+aws:
+  region: ${aws_region}
+  ses:
+    sender: ${aws_ses_sender}
+
+keys:
+  public: ${public_key_path}
+  private: ${private_key_path}
