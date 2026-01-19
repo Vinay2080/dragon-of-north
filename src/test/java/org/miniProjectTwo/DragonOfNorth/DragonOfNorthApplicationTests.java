@@ -2,13 +2,9 @@ package org.miniProjectTwo.DragonOfNorth;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,28 +14,15 @@ import java.security.KeyPairGenerator;
 import java.util.Base64;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("test")
 class DragonOfNorthApplicationTests {
-
-    @Container
-    @ServiceConnection
-    @SuppressWarnings("resource")
-    private static final PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("testDB")
-            .withUsername("test")
-            .withPassword("test");
 
     private static volatile KeyPaths KEY_PATHS;
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry){
-        registry.add("spring.datasource.url", postgreSQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgreSQLContainer::getUsername);
-        registry.add("spring.datasource.password", postgreSQLContainer::getPassword);
-
-        registry.add("private_key_path", () -> ensureLocalKeysExist().privateKeyPath().toString());
-        registry.add("public_key_path", () -> ensureLocalKeysExist().publicKeyPath().toString());
+        registry.add("keys.private", () -> ensureLocalKeysExist().privateKeyPath().toString());
+        registry.add("keys.public", () -> ensureLocalKeysExist().publicKeyPath().toString());
     }
 
     private static KeyPaths ensureLocalKeysExist() {

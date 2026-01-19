@@ -21,24 +21,10 @@ class JwtServicesTest {
 
     private JwtServices jwtServices;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        ensureLocalKeysExist();
-        jwtServices = new JwtServices("keys/private_key.pem", "keys/public_key.pem");
-        ReflectionTestUtils.setField(jwtServices, "accessTokenExpiration", 3600000L); // 1 hour
-        ReflectionTestUtils.setField(jwtServices, "refreshTokenExpiration", 86400000L); // 24 hours
-    }
-
-    private static void ensureLocalKeysExist() throws Exception {
-        Path keysDir = Path.of("keys");
+    private static KeyPaths ensureLocalKeysExist() throws Exception {
+        Path keysDir = Files.createTempDirectory("dragon-of-north-keys-jwt-test");
         Path privateKeyPath = keysDir.resolve("private_key.pem");
         Path publicKeyPath = keysDir.resolve("public_key.pem");
-
-        if (Files.exists(privateKeyPath) && Files.exists(publicKeyPath)) {
-            return;
-        }
-
-        Files.createDirectories(keysDir);
 
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
         generator.initialize(2048);
@@ -53,6 +39,19 @@ class JwtServicesTest {
         privateKeyPath.toFile().deleteOnExit();
         publicKeyPath.toFile().deleteOnExit();
         keysDir.toFile().deleteOnExit();
+
+        return new KeyPaths(privateKeyPath, publicKeyPath);
+    }
+
+    @BeforeEach
+    void setUp() throws Exception {
+        KeyPaths paths = ensureLocalKeysExist();
+        jwtServices = new JwtServices(paths.privateKeyPath().toString(), paths.publicKeyPath().toString());
+        ReflectionTestUtils.setField(jwtServices, "accessTokenExpiration", 3600000L); // 1 hour
+        ReflectionTestUtils.setField(jwtServices, "refreshTokenExpiration", 86400000L); // 24 hours
+    }
+
+    private record KeyPaths(Path privateKeyPath, Path publicKeyPath) {
     }
 
     private static String toPem(String type, byte[] derBytes) {
