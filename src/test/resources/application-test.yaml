@@ -28,3 +28,10 @@ aws_ses_sender: no-reply-test@test.local
 
 public_key_path: keys/public_key.pem
 private_key_path: keys/private_key.pem
+
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
