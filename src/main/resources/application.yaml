@@ -4,15 +4,15 @@ spring:
   application:
     name: dragon-of-north
   datasource:
-    url: jdbc:postgresql://${db_url}:${db_port}/dragon_of_north
+    url: jdbc:${db_name}://${db_url}:${db_port}/dragon_of_north
     username: ${db_username}
     password: ${db_password}
     driver-class-name: org.postgresql.Driver
   jpa:
     show-sql: true
-    database: PostgreSql
+    database: ${db_name}
     hibernate:
-      ddl-auto: create
+      ddl-auto: ${db_ddl_auto}
   jackson:
     property-naming-strategy: SNAKE_CASE
 
@@ -20,32 +20,44 @@ app:
   security:
     jwt:
       expiration:
-        access-token: 900000 # 15 minutes
-        refresh-token: 604800000 # 7 days
+        access-token: ${access_token}
+        refresh-token: ${refresh_token}
 
 otp:
-  length: 6
-  ttl-minutes: 10
-  max-verify-attempts: 3
-  request-window-seconds: 3600
-  block-duration-minutes: 15
-  resend-cooldown-seconds: 60
-  max-requests-per-window: 10
+  length: ${otp_length}
+  ttl-minutes: ${otp_ttl_minutes}
+  max-verify-attempts: ${otp_max_verify_attempts}
+  request-window-seconds: ${otp_request_window_seconds}
+  block-duration-minutes: ${otp_block_duration_minutes}
+  resend-cooldown-seconds: ${otp_resend_cooldown_seconds}
+  max-requests-per-window: ${otp_max_requests_per_window}
   cleanup:
-    delay-ms: 3599999
+    delay-ms: ${otp_cleanup_delay_ms}
 
 auth:
   signup:
-    request-window-seconds: 3600
-    max-requests-per-window: 5
-    block-duration-minutes: 30
+    request-window-seconds: ${auth_signup_request_window_seconds}
+    max-requests-per-window: ${auth_signup_max_requests_per_window}
+    block-duration-minutes: ${auth_signup_block_duration_minutes}
 
   login:
-    max-failed-attempts: 5
-    block-duration-minutes: 15
+    max-failed-attempts: ${auth_login_max_failed_attempts}
+    block-duration-minutes: ${auth_login_block_duration_minutes}
 
 aws:
-  region: us-east-1
+  region: ${aws_region}
   ses:
-    sender: shaking.121@gmail.com
+    sender: ${aws_ses_sender}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+keys:
+  public: ${public_key_path}
+  private: ${private_key_path}

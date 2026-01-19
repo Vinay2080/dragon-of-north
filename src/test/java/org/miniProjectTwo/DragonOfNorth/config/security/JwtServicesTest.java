@@ -12,11 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -28,7 +24,7 @@ class JwtServicesTest {
     @BeforeEach
     void setUp() throws Exception {
         ensureLocalKeysExist();
-        jwtServices = new JwtServices();
+        jwtServices = new JwtServices("keys/private_key.pem", "keys/public_key.pem");
         ReflectionTestUtils.setField(jwtServices, "accessTokenExpiration", 3600000L); // 1 hour
         ReflectionTestUtils.setField(jwtServices, "refreshTokenExpiration", 86400000L); // 24 hours
     }
