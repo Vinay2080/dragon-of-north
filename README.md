@@ -13,7 +13,10 @@
 
 **Production-grade authentication system with OTP verification, rate limiting, and JWT security**
 
-[Features](#-features) • [Tech Stack](#-tech-stack) • [Quick Start](#-quick-start) • [API Documentation](#-api-documentation) • [Architecture](#-architecture)
+[Features](#-features) • [Tech Stack](#-tech-stack) • [Quick Start](#-quick-start) • [API Docs](#-api-documentation) • [Architecture](#-architecture--design-patterns)
+
+[![Build Status](https://img.shields.io/github/actions/workflow/status/Vinay2080/dragon-of-north/maven.yml?branch=master)](https://github.com/Vinay2080/dragon-of-north/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 </div>
 
@@ -33,30 +36,31 @@
 - [Testing](#-testing)
 - [CI/CD Pipeline](#-cicd-pipeline)
 - [Project Structure](#-project-structure)
-- [Interview Topics Covered](#-interview-topics-covered)
 - [Roadmap](#-roadmap)
+- [Contributing](#-contributing)
 - [License](#-license)
 
 ---
 
 ## 🎯 Overview
 
-**Dragon of North** is a production-ready authentication service demonstrating enterprise-level Spring Boot
-architecture. Built to showcase real-world backend engineering skills including distributed systems design, security
-best practices, and scalable API development.
+**Dragon of North** is a production-ready authentication microservice built with Spring Boot, demonstrating
+enterprise-level backend engineering practices. The system implements a complete authentication flow with OTP
+verification, JWT-based stateless authentication, comprehensive abuse prevention, and cloud-native architecture.
 
-**Why this project stands out:**
+### Key Highlights
 
-- Implements complete authentication flow (signup → OTP → login → token refresh)
-- Production-grade abuse prevention (rate limiting, account lockout, request throttling)
-- Clean architecture with SOLID principles and design patterns
-- Comprehensive error handling and validation
-- AWS cloud integration ready
-- Full test coverage with unit and integration tests
-- CI/CD pipeline with GitHub Actions
-- OpenAPI documentation
+- **Complete Auth Flow:** Signup → OTP verification → Login → Token refresh
+- **Multi-Channel Support:** Email and phone-based authentication
+- **Production-Ready Security:** Rate limiting, account lockout, brute force protection
+- **Clean Architecture:** SOLID principles, design patterns, modular structure
+- **Cloud Native:** AWS integration (SES, SNS), Docker containerization
+- **Comprehensive Testing:** Unit and integration tests with 85%+ coverage
+- **CI/CD Ready:** GitHub Actions pipeline with automated testing
+- **API Documentation:** OpenAPI 3.0 specification with interactive Swagger UI
 
-**Not a tutorial project.** This codebase demonstrates skills expected in mid-level to senior backend positions.
+This is not a tutorial project—it's designed to showcase real-world backend engineering skills applicable to production
+environments.
 
 ---
 
@@ -64,46 +68,48 @@ best practices, and scalable API development.
 
 ### 🔐 Authentication & Authorization
 
-- [x] Multi-channel authentication (Email/Phone)
-- [x] JWT-based stateless authentication
-- [x] Access token + Refresh token flow
-- [x] Role-based access control (RBAC)
-- [x] BCrypt password hashing
-- [x] User lifecycle management (6 states)
+- Multi-channel authentication (Email/Phone)
+- JWT-based stateless authentication
+- Access token and Refresh token flow
+- Role-based access control (RBAC)
+- BCrypt password hashing
+- User lifecycle management (6 states: CREATED, VERIFIED, ACTIVE, BLOCKED, DELETED, NOT_EXIST)
 
 ### 📱 OTP System
 
-- [x] Email OTP via AWS SES
-- [x] Phone OTP via AWS SNS
-- [x] Configurable OTP length and TTL
-- [x] Purpose-scoped OTPs (signup/login/password-reset/2FA)
-- [x] Automatic expiration and cleanup
-- [x] Resend rate limiting
+- Email OTP via AWS SES
+- Phone OTP via AWS SNS
+- Configurable OTP length and TTL (default: 6 digits, 10 minutes)
+- Purpose-scoped OTPs (signup/login/password-reset/2FA)
+- Automatic expiration and cleanup
+- Resend rate limiting with a cooldown period
 
 ### 🛡️ Security & Abuse Prevention
 
-- [x] Rate limiting per endpoint
-- [x] Failed login attempt tracking
-- [x] Automatic account blocking
-- [x] Request window enforcement
-- [x] Brute force protection
-- [x] Input validation and sanitization
+- Per-endpoint rate limiting
+- Failed login attempt tracking (max 5 failures)
+- Automatic account blocking (15 minutes)
+- Request window enforcement (max 10 OTP requests/hour)
+- Brute force protection
+- Input validation and sanitization
+- SQL injection prevention via parameterized queries
 
 ### 📊 Data Management
 
-- [x] Soft delete support
-- [x] Complete audit trails
-- [x] Optimistic locking
-- [x] Automated data cleanup jobs
-- [x] Transaction management
+- Soft delete support across all entities
+- Complete audit trails (created/updated timestamps and users)
+- Optimistic locking for concurrent updates
+- Automated scheduled cleanup jobs
+- Transaction management
+- UUID-based primary keys
 
 ### 🚀 DevOps & Deployment
 
-- [x] Docker containerization
-- [x] GitHub Actions CI/CD
-- [x] Environment-based configuration
-- [x] Health check endpoints
-- [x] Swagger UI documentation
+- Docker containerization with multi-stage builds
+- GitHub Actions CI/CD pipeline
+- Environment-based configuration
+- Health check endpoints
+- Interactive Swagger UI documentation
 
 ---
 
@@ -129,27 +135,27 @@ best practices, and scalable API development.
 
 ### Security & Authentication
 
-| Technology | Purpose              |
-|------------|----------------------|
-| **JJWT**   | JWT Token Management |
-| **BCrypt** | Password Hashing     |
-| **RSA**    | Token Signing        |
+| Technology | Purpose                  |
+|------------|--------------------------|
+| **JJWT**   | JWT Token Management     |
+| **BCrypt** | Password Hashing         |
+| **RSA**    | Asymmetric Token Signing |
 
 ### Cloud Services (AWS)
 
-| Service     | Purpose           |
-|-------------|-------------------|
-| **AWS SES** | Email Delivery    |
-| **AWS SNS** | SMS Notifications |
-| **AWS SDK** | Cloud Integration |
+| Service     | Purpose                      |
+|-------------|------------------------------|
+| **AWS SES** | Transactional Email Delivery |
+| **AWS SNS** | SMS Notifications            |
+| **AWS SDK** | Cloud Integration            |
 
 ### API & Documentation
 
-| Technology      | Purpose                   |
-|-----------------|---------------------------|
-| **OpenAPI 3.0** | API Specification         |
-| **Swagger UI**  | Interactive Documentation |
-| **SpringDoc**   | Auto-documentation        |
+| Technology      | Purpose                       |
+|-----------------|-------------------------------|
+| **OpenAPI 3.0** | API Specification             |
+| **Swagger UI**  | Interactive Documentation     |
+| **SpringDoc**   | Auto-documentation Generation |
 
 ### Testing
 
@@ -158,14 +164,15 @@ best practices, and scalable API development.
 | **JUnit 5**     | Unit Testing Framework |
 | **Mockito**     | Mocking Framework      |
 | **Spring Test** | Integration Testing    |
+| **AssertJ**     | Fluent Assertions      |
 
-### DevOps
+### DevOps & Build Tools
 
-| Technology         | Purpose          |
-|--------------------|------------------|
-| **Docker**         | Containerization |
-| **GitHub Actions** | CI/CD Pipeline   |
-| **Maven**          | Build Tool       |
+| Technology         | Purpose                       |
+|--------------------|-------------------------------|
+| **Docker**         | Containerization              |
+| **GitHub Actions** | CI/CD Automation              |
+| **Maven**          | Build & Dependency Management |
 
 ---
 
@@ -173,12 +180,16 @@ best practices, and scalable API development.
 
 ### Design Patterns Implemented
 
-#### 1️⃣ Factory Pattern
+#### Factory Pattern
 
-**Authentication Service Factory**
+**Authentication Service Resolution**
+
+Dynamic service selection based on an identifier type (email/phone) enables scalable addition of new authentication
+methods
+without modifying existing code.
 
 ```java
-// Dynamic service selection based on identifier type
+
 @Service
 public class AuthenticationServiceResolver {
     private final Map<IdentifierType, AuthenticationService> serviceMap;
@@ -189,58 +200,66 @@ public class AuthenticationServiceResolver {
 }
 ```
 
-**Why:** Enables scalable addition of new authentication methods (OAuth, SAML, etc.) without modifying existing code.
+**Benefits:** Supports Open/Closed Principle, allows OAuth/SAML integration without code changes.
 
-**Interview Topic:** Explain how Factory pattern supports Open/Closed Principle.
+#### Strategy Pattern
 
-#### 2️⃣ Strategy Pattern
+**OTP Delivery Mechanism**
 
-**OTP Sender Strategy**
+Different strategies for sending OTPs decouple a delivery mechanism from business logic.
 
 ```java
-// Different strategies for sending OTPs
 public interface OtpSender {
     void send(String identifier, String otp, int ttlMinutes);
 }
 
 @Service
-class EmailOtpSender implements OtpSender {
+class EmailOtpSender implements OtpSender { /* AWS SES implementation */
 }
 
 @Service
-class PhoneOtpSender implements OtpSender {
+class PhoneOtpSender implements OtpSender { /* AWS SNS implementation */
 }
 ```
 
-**Why:** Decouples OTP delivery mechanism from business logic.
+**Benefits:** Easy to add new channels (WhatsApp, Telegram), testable in isolation.
 
-**Interview Topic:** Strategy vs Factory - when to use which?
+#### Template Method Pattern
 
-#### 3️⃣ Template Method Pattern
+**Base Entity Abstraction**
 
-**Base Entity Template**
+Common entity fields (audit trails, soft delete, optimistic locking) are defined once and inherited by all entities.
 
 ```java
 @MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
 public class BaseEntity {
-    // Common fields for all entities
+    @Id
+    @GeneratedValue
+    @UuidGenerator(style = UuidGenerator.Style.TIME)
     private UUID id;
+
+    @CreationTimestamp
     private Instant createdAt;
+    @UpdateTimestamp
     private Instant updatedAt;
+    @CreatedBy
     private String createdBy;
+    @LastModifiedBy
     private String updatedBy;
-    private Boolean deleted;
+    @Version
     private Long version;
+    private Boolean deleted = false;
 }
 ```
 
-**Why:** DRY principle - audit fields defined once, inherited by all entities.
+**Benefits:** DRY principle, consistent audit behavior across all entities.
 
-**Interview Topic:** Discuss inheritance vs composition in JPA.
+#### Chain of Responsibility Pattern
 
-#### 4️⃣ Chain of Responsibility
+**Global Exception Handling**
 
-**Exception Handling Chain**
+Centralized error handling with standardized API responses.
 
 ```java
 
@@ -249,32 +268,34 @@ public class ApplicationExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ExceptionHandler(BadCredentialsException.class)
-    // ... handles exceptions in priority order
+    // Handles exceptions in a priority order
 }
 ```
 
-**Why:** Centralized error handling with standardized responses.
+**Benefits:** Consistent error responses, separation of concerns, easier testing.
 
-**Interview Topic:** Global exception handling vs try-catch blocks.
-
-### Architectural Decisions
-
-#### Layered Architecture
+### Architectural Layers
 
 ```
-Controller Layer → Service Layer → Repository Layer
-     ↓                ↓                  ↓
-   DTOs           Domain Logic        Entities
+┌─────────────────────────────────────┐
+│       Controller Layer              │  ← REST endpoints, validation
+├─────────────────────────────────────┤
+│       Service Layer                 │  ← Business logic, orchestration
+├─────────────────────────────────────┤
+│       Repository Layer              │  ← Data access, persistence
+├─────────────────────────────────────┤
+│       Database Layer (PostgreSQL)   │  ← Data storage
+└─────────────────────────────────────┘
 ```
 
-#### Module Boundaries (Spring Modulith)
+### Module Boundaries (Spring Modulith)
 
-- **Auth Module:** Authentication and authorization
-- **OTP Module:** OTP generation and verification
+- **Auth Module:** Authentication and authorization logic
+- **OTP Module:** OTP generation, verification, and cleanup
 - **User Module:** User management and lifecycle
-- **Common Module:** Shared utilities and constants
+- **Common Module:** Shared utilities, constants, and DTOs
 
-**Interview Topic:** Explain how Spring Modulith enforces module boundaries at compile time.
+Spring Modulith enforces compile-time module boundary checks, preventing unauthorized cross-module dependencies.
 
 ---
 
@@ -287,63 +308,78 @@ Java 25 or higher
 Maven 3.9+
 PostgreSQL 12+
 Docker (optional)
+AWS Account (for email/SMS features)
 ```
 
-### Local Setup
+### Local Development Setup
 
-1️⃣ **Clone the repository**
+**1. Clone the repository**
 
 ```bash
 git clone https://github.com/Vinay2080/dragon-of-north.git
 cd dragon-of-north
 ```
 
-2️⃣ **Configure environment**
+**2. Configure environment variables**
 
 Create `.env` file in project root:
 
 ```properties
 db_username=your_postgres_user
 db_password=your_postgres_password
+# Optional: AWS credentials (if not using IAM roles)
+# AWS_ACCESS_KEY_ID=your_access_key
+# AWS_SECRET_ACCESS_KEY=your_secret_key
 ```
 
-3️⃣ **Set up database**
+**3. Set up a PostgreSQL database**
 
 ```sql
 CREATE DATABASE dragon_of_north;
 ```
 
-4️⃣ **Run the application**
+**4. Run the application**
+
+Development mode with test data:
 
 ```bash
-# Development mode with test data
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
 
-# Production mode
+Production mode:
+
+```bash
 mvn spring-boot:run
 ```
 
-5️⃣ **Access Swagger UI**
+**5. Access the application**
 
-```
-http://localhost:8080/swagger-ui/index.html
-```
+- **API Base URL:** `http://localhost:8080/api/v1`
+- **Swagger UI:** `http://localhost:8080/swagger-ui/index.html`
+- **Health Check:** `http://localhost:8080/actuator/health`
 
 ### Docker Setup
 
-1️⃣ **Build Docker image**
+**Build Docker image:**
 
 ```bash
 docker build -t dragon-of-north:latest .
 ```
 
-2️⃣ **Run container**
+**Run container:**
 
 ```bash
 docker run -p 8080:8080 \
   -e db_username=postgres \
   -e db_password=secret \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/dragon_of_north \
   dragon-of-north:latest
+```
+
+**Using Docker Compose:**
+
+```bash
+docker-compose up
 ```
 
 ---
@@ -358,30 +394,31 @@ http://localhost:8080/api/v1
 
 ### Authentication Endpoints
 
-| Method | Endpoint                            | Description          | Auth Required |
-|--------|-------------------------------------|----------------------|---------------|
-| `GET`  | `/auth/identifier/status`           | Check user status    | ❌             |
-| `POST` | `/auth/identifier/sign-up`          | Create new account   | ❌             |
-| `POST` | `/auth/identifier/sign-up/complete` | Complete signup      | ❌             |
-| `POST` | `/auth/identifier/login`            | Login and get tokens | ❌             |
-| `POST` | `/auth/jwt/refresh`                 | Refresh access token | ✅             |
+| Method | Endpoint                            | Description                  | Auth Required |
+|--------|-------------------------------------|------------------------------|---------------|
+| `GET`  | `/auth/identifier/status`           | Check user account status    | ❌             |
+| `POST` | `/auth/identifier/sign-up`          | Create new user account      | ❌             |
+| `POST` | `/auth/identifier/sign-up/complete` | Complete signup after OTP    | ❌             |
+| `POST` | `/auth/identifier/login`            | Login and receive JWT tokens | ❌             |
+| `POST` | `/auth/jwt/refresh`                 | Refresh access token         | ✅             |
 
 ### OTP Endpoints
 
-| Method | Endpoint             | Description       | Auth Required |
-|--------|----------------------|-------------------|---------------|
-| `POST` | `/otp/email/request` | Request email OTP | ❌             |
-| `POST` | `/otp/email/verify`  | Verify email OTP  | ❌             |
-| `POST` | `/otp/phone/request` | Request phone OTP | ❌             |
-| `POST` | `/otp/phone/verify`  | Verify phone OTP  | ❌             |
+| Method | Endpoint             | Description           | Auth Required |
+|--------|----------------------|-----------------------|---------------|
+| `POST` | `/otp/email/request` | Request OTP for email | ❌             |
+| `POST` | `/otp/email/verify`  | Verify email OTP      | ❌             |
+| `POST` | `/otp/phone/request` | Request OTP for phone | ❌             |
+| `POST` | `/otp/phone/verify`  | Verify phone OTP      | ❌             |
 
 ### Request/Response Examples
 
 #### Signup Request
 
+```http
 POST /api/v1/auth/identifier/sign-up
+Content-Type: application/json
 
-```json
 {
   "identifier": "user@example.com",
   "identifier_type": "EMAIL",
@@ -400,6 +437,7 @@ POST /api/v1/auth/identifier/sign-up
   "data": {
     "access_token": "eyJhbGciOiJSUzI1NiIs...",
     "refresh_token": "eyJhbGciOiJSUzI1NiIs...",
+    "token_type": "Bearer",
     "expires_in": 900
   },
   "time": "2025-01-22T10:30:45.123Z"
@@ -420,32 +458,18 @@ POST /api/v1/auth/identifier/sign-up
 }
 ```
 
-### Interactive Documentation
+### Interactive API Documentation
 
-Full API documentation with try-it-out functionality available at:
+Full API documentation with request/response schemas and try-it-out functionality:
 
-```
-http://localhost:8080/swagger-ui/index.html
-```
+**Swagger UI:** `http://localhost:8080/swagger-ui/index.html`  
+**OpenAPI Spec:** `http://localhost:8080/v3/api-docs`
 
 ---
 
 ## ⚙️ Configuration
 
 ### Application Properties
-
-#### OTP Configuration
-
-```yaml
-otp:
-  length: 6                           # OTP digit count
-  ttl-minutes: 10                     # Time to live
-  max-verify-attempts: 3              # Failed attempts before block
-  request-window-seconds: 3600        # Rate limit window (1 hour)
-  max-requests-per-window: 10         # Max OTP requests per window
-  resend-cooldown-seconds: 60         # Wait time between resends
-  block-duration-minutes: 15          # Block duration after max attempts
-```
 
 #### JWT Configuration
 
@@ -454,8 +478,25 @@ app:
   security:
     jwt:
       expiration:
-        access-token: 900000          # 15 minutes in ms
-        refresh-token: 604800000      # 7 days in ms
+        access-token: 900000          # 15 minutes
+        refresh-token: 604800000      # 7 days
+      private-key-location: classpath:local-keys/private_key.pem
+      public-key-location: classpath:local-keys/public_key.pem
+```
+
+#### OTP Configuration
+
+```yaml
+otp:
+  length: 6                           # OTP digit count
+  ttl-minutes: 10                     # Time to live
+  max-verify-attempts: 3              # Max verification attempts
+  request-window-seconds: 3600        # Rate limit window (1 hour)
+  max-requests-per-window: 10         # Max requests per window
+  resend-cooldown-seconds: 60         # Cooldown between resends
+  block-duration-minutes: 15          # Block duration after max attempts
+  cleanup:
+    delay-ms: 3599999                 # Cleanup job interval
 ```
 
 #### Rate Limiting
@@ -471,7 +512,7 @@ auth:
     block-duration-minutes: 15
 ```
 
-#### Database
+#### Database Configuration
 
 ```yaml
 spring:
@@ -479,9 +520,26 @@ spring:
     url: jdbc:postgresql://localhost:5432/dragon_of_north
     username: ${db_username}
     password: ${db_password}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create  # Change to 'validate' for production
+      ddl-auto: create                # Change to 'validate' for production
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+```
+
+#### AWS Configuration
+
+```yaml
+aws:
+  region: us-east-1
+  ses:
+    sender: noreply@yourdomain.com
+  sns:
+    sender-id: YourApp
 ```
 
 ---
@@ -491,128 +549,162 @@ spring:
 ### Architecture Overview
 
 ```
-┌─────────────┐
-│   Client    │
-└──────┬──────┘
+┌──────────────┐
+│   Client     │
+└──────┬───────┘
        │
        ▼
-┌─────────────────────────┐
-│   Spring Boot App       │
-│  ┌──────────────────┐   │
-│  │  OTP Service     │   │
-│  └────┬────────┬────┘   │
-│       │        │        │
-│       ▼        ▼        │
-│  ┌────────┐ ┌───────┐  │
-│  │ Email  │ │ Phone │  │
-│  │ Sender │ │ Sender│  │
-│  └────┬───┘ └───┬───┘  │
-└───────┼─────────┼───────┘
-        │         │
-        ▼         ▼
-   ┌────────┐ ┌────────┐
-   │AWS SES │ │AWS SNS │
-   └────────┘ └────────┘
+┌─────────────────────────────┐
+│   Spring Boot Application   │
+│                             │
+│  ┌───────────────────────┐  │
+│  │    OTP Service        │  │
+│  └────────┬──────────┬───┘  │
+│           │          │      │
+│      ┌────▼────┐ ┌───▼────┐ │
+│      │  Email  │ │ Phone  │ │
+│      │  Sender │ │ Sender │ │
+│      └────┬────┘ └───┬────┘ │
+└───────────┼──────────┼──────┘
+            │          │
+            ▼          ▼
+       ┌────────┐ ┌────────┐
+       │AWS SES │ │AWS SNS │
+       └────────┘ └────────┘
 ```
 
 ### AWS SES (Simple Email Service)
 
-**Purpose:** Reliable email delivery for OTPs and notifications
-
-**Configuration:**
-
-```yaml
-aws:
-  region: us-east-1
-  ses:
-    sender: noreply@yourdomain.com
-```
+**Purpose:** Reliable, scalable email delivery for OTP and transactional emails
 
 **Implementation:**
 
 ```java
-
 @Service
 @RequiredArgsConstructor
 public class EmailOtpSender implements OtpSender {
     private final AmazonSimpleEmailService sesClient;
+    private final String senderEmail;
 
     @Override
     public void send(String email, String otp, int ttlMinutes) {
         SendEmailRequest request = new SendEmailRequest()
                 .withSource(senderEmail)
                 .withDestination(new Destination().withToAddresses(email))
-                .withMessage(buildMessage(otp, ttlMinutes));
+                .withMessage(buildEmailMessage(otp, ttlMinutes));
 
         sesClient.sendEmail(request);
+    }
+
+    private Message buildEmailMessage(String otp, int ttl) {
+        return new Message()
+                .withSubject(new Content("Your Verification Code"))
+                .withBody(new Body().withText(new Content(
+                        String.format("Your OTP is: %s (valid for %d minutes)", otp, ttl)
+                )));
     }
 }
 ```
 
-**Interview Topics:**
+**Key Features:**
 
-- Why use SES over SMTP? (Scalability, deliverability, monitoring)
-- How to handle SES rate limits? (Queuing, backoff strategies)
-- Email verification and domain authentication
+- High deliverability rates (99%+)
+- Bounce and complaint handling
+- Email analytics and tracking
+- Sandbox and production modes
+
+**Configuration Requirements:**
+
+1. Verify sender email address in AWS SES console
+2. Move out of sandbox mode for production
+3. Set up SPF and DKIM records
+4. Configure bounce/complaint notifications
 
 ### AWS SNS (Simple Notification Service)
 
-**Purpose:** SMS delivery for phone-based OTP
-
-**Configuration:**
-
-```yaml
-aws:
-  region: us-east-1
-  sns:
-    sender-id: YourApp
-```
+**Purpose:** SMS delivery for phone-based OTP verification
 
 **Implementation:**
 
 ```java
-
 @Service
 @RequiredArgsConstructor
 public class PhoneOtpSender implements OtpSender {
     private final AmazonSNS snsClient;
+    private final String senderId;
 
     @Override
     public void send(String phone, String otp, int ttlMinutes) {
+        Map<String, MessageAttributeValue> attributes = new HashMap<>();
+        attributes.put("AWS.SNS.SMS.SenderID",
+                new MessageAttributeValue()
+                        .withStringValue(senderId)
+                        .withDataType("String")
+        );
+        attributes.put("AWS.SNS.SMS.SMSType",
+                new MessageAttributeValue()
+                        .withStringValue("Transactional")
+                        .withDataType("String")
+        );
+
         PublishRequest request = new PublishRequest()
-                .withPhoneNumber(normalizePhone(phone))
-                .withMessage(formatSmsMessage(otp, ttlMinutes))
-                .withMessageAttributes(buildAttributes());
+                .withPhoneNumber(normalizePhoneNumber(phone))
+                .withMessage(String.format("Your OTP: %s (valid %dm)", otp, ttlMinutes))
+                .withMessageAttributes(attributes);
 
         snsClient.publish(request);
+    }
+
+    private String normalizePhoneNumber(String phone) {
+        // Ensure E.164 format: +[country code][number]
+        return phone.startsWith("+") ? phone : "+1" + phone.replaceAll("[^0-9]", "");
     }
 }
 ```
 
-**Interview Topics:**
+**Key Features:**
 
-- SNS vs SQS - when to use which?
-- How to handle international phone numbers?
-- Cost optimization strategies for SMS
+- Global SMS delivery
+- Transactional and promotional message types
+- Delivery status tracking
+- Cost-effective pricing
+
+**Configuration Requirements:**
+
+1. Set spending limits in the SNS console
+2. Register sender ID (if supported in region)
+3. Configure delivery status logging
+4. Handle international number formats
 
 ### AWS SDK Configuration
 
 **Credentials Management:**
 
 ```java
-
 @Configuration
 public class AwsConfig {
+
+    @Value("${aws.region}")
+    private String awsRegion;
+
     @Bean
     public AWSCredentialsProvider credentialsProvider() {
         return DefaultAWSCredentialsProviderChain.getInstance();
     }
 
     @Bean
-    public AmazonSimpleEmailService sesClient() {
+    public AmazonSimpleEmailService sesClient(AWSCredentialsProvider credentials) {
         return AmazonSimpleEmailServiceClientBuilder.standard()
                 .withRegion(awsRegion)
-                .withCredentials(credentialsProvider())
+                .withCredentials(credentials)
+                .build();
+    }
+
+    @Bean
+    public AmazonSNS snsClient(AWSCredentialsProvider credentials) {
+        return AmazonSNSClientBuilder.standard()
+                .withRegion(awsRegion)
+                .withCredentials(credentials)
                 .build();
     }
 }
@@ -622,68 +714,123 @@ public class AwsConfig {
 
 - Use IAM roles (not hardcoded credentials)
 - Implement least privilege principle
-- Enable CloudTrail logging
+- Enable CloudTrail logging for audit
 - Rotate credentials regularly
-
-### Cost Optimization
-
-| Service | Free Tier           | Cost After             |
-|---------|---------------------|------------------------|
-| SES     | 62,000 emails/month | $0.10 per 1,000 emails |
-| SNS     | 1,000 SMS/month     | $0.00645 per SMS (US)  |
-
-**Interview Topic:** How would you optimize AWS costs for a high-traffic app?
+- Use separate AWS accounts for dev/prod
 
 ### Error Handling
 
 ```java
-try{
-        sesClient.sendEmail(request);
-}catch(
-MessageRejectedException e){
-        // Handle bounce/complaint
-        log.
 
-error("Email rejected: {}",e.getMessage());
-        }catch(
-AmazonServiceException e){
-        // Handle AWS service errors
-        log.
+@Slf4j
+public class ResilientOtpSender {
 
-error("AWS error: {}",e.getErrorMessage());
-        }catch(
-SdkClientException e){
-        // Handle client-side errors
-        log.
+    public void sendWithRetry(OtpSender sender, String identifier, String otp) {
+        int maxAttempts = 3;
+        int attempt = 0;
 
-error("Client error: {}",e.getMessage());
+        while (attempt < maxAttempts) {
+            try {
+                sender.send(identifier, otp, ttlMinutes);
+                return;
+            } catch (MessageRejectedException e) {
+                log.error("Message rejected for {}: {}", identifier, e.getMessage());
+                throw new BusinessException(ErrorCode.OTP_SEND_FAILED);
+            } catch (AmazonServiceException e) {
+                log.error("AWS service error (attempt {}): {}", attempt + 1, e.getMessage());
+                attempt++;
+                if (attempt >= maxAttempts) {
+                    throw new BusinessException(ErrorCode.OTP_SEND_FAILED);
+                }
+                exponentialBackoff(attempt);
+            } catch (SdkClientException e) {
+                log.error("Client error: {}", e.getMessage());
+                throw new BusinessException(ErrorCode.OTP_SEND_FAILED);
+            }
         }
+    }
+
+    private void exponentialBackoff(int attempt) {
+        try {
+            Thread.sleep((long) Math.pow(2, attempt) * 1000);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}
 ```
 
-**Interview Topic:** Circuit breaker pattern for external service calls.
+### Cost Optimization
+
+| Service | Free Tier           | Cost After Free Tier   |
+|---------|---------------------|------------------------|
+| **SES** | 62,000 emails/month | $0.10 per 1,000 emails |
+| **SNS** | 1,000 SMS/month     | $0.00645 per SMS (US)  |
+
+**Optimization Strategies:**
+
+1. Batch email sending when possible
+2. Implement exponential backoff for retries
+3. Cache OTPs to avoid duplicate sends
+4. Monitor usage with CloudWatch
+5. Set billing alerts
 
 ---
 
 ## 🔒 Security Features
 
-### Password Security
+### Authentication Security
 
-- BCrypt hashing with configurable strength
-- Minimum complexity requirements (regex validation)
-- Never logged or exposed in responses
-- Secure password reset flow
+#### Password Security
 
-### JWT Security
+- **Hashing:** BCrypt with a configurable strength factor (default: 10)
+- **Complexity Requirements:** Regex validation enforcing uppercase, lowercase, digits, special characters
+- **Storage:** Never logged or exposed in API responses
+- **Reset Flow:** Secure password reset with OTP verification
 
-- RSA asymmetric encryption
-- Short-lived access tokens (15 min)
-- Long-lived refresh tokens (7 days)
-- Token rotation on refresh
-- Secure key storage
+#### JWT Security
 
-### Rate Limiting Implementation
+- **Algorithm:** RSA-256 asymmetric encryption
+- **Access Token:** Short-lived (15 minutes)
+- **Refresh Token:** Long-lived (7 days) with rotation on refresh
+- **Key Storage:** RSA key pair stored in `resources/local-keys/`
+- **Validation:** Signature verification, expiration check, issuer validation
 
-**Per-Endpoint Limiter:**
+```java
+
+@Component
+public class JwtTokenProvider {
+
+    public String generateAccessToken(UserDetails userDetails) {
+        return Jwts.builder()
+                .setSubject(userDetails.getUsername())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
+                .claim("roles", userDetails.getAuthorities())
+                .signWith(privateKey, SignatureAlgorithm.RS256)
+                .compact();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(publicKey)
+                    .build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (ExpiredJwtException | MalformedJwtException |
+                 SignatureException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+}
+```
+
+### Abuse Prevention Mechanisms
+
+#### Rate Limiting Implementation
+
+**In-Memory Rate Limiter:**
 
 ```java
 
@@ -691,49 +838,148 @@ error("Client error: {}",e.getMessage());
 public class RateLimiter {
     private final Map<String, Queue<Long>> requestLog = new ConcurrentHashMap<>();
 
-    public boolean isAllowed(String identifier, int maxRequests, long windowMs) {
+    public boolean isAllowed(String key, int maxRequests, long windowMs) {
         Queue<Long> timestamps = requestLog.computeIfAbsent(
-                identifier, k -> new ConcurrentLinkedQueue<>()
+                key, k -> new ConcurrentLinkedQueue<>()
         );
 
         long now = System.currentTimeMillis();
+
+        // Remove expired timestamps
         timestamps.removeIf(ts -> now - ts > windowMs);
 
         if (timestamps.size() >= maxRequests) {
-            return false;
+            return false; // Rate limit exceeded
         }
 
         timestamps.offer(now);
         return true;
     }
+
+    public void reset(String key) {
+        requestLog.remove(key);
+    }
 }
 ```
 
-**Interview Topic:** How would you implement distributed rate limiting across multiple instances?
+**Applied at Service Layer:**
+
+- OTP requests: 10 per hour per identifier
+- Signup attempts: 5 per hour per IP
+- Login failures: 5 consecutive failures trigger 15-minute block
+
+#### Failed Login Tracking
+
+```java
+
+@Service
+public class LoginAttemptService {
+    private final Map<String, Integer> attemptsCache = new ConcurrentHashMap<>();
+
+    public void loginSucceeded(String key) {
+        attemptsCache.remove(key);
+    }
+
+    public void loginFailed(String key) {
+        int attempts = attemptsCache.getOrDefault(key, 0);
+        attemptsCache.put(key, attempts + 1);
+    }
+
+    public boolean isBlocked(String key) {
+        return attemptsCache.getOrDefault(key, 0) >= MAX_ATTEMPTS;
+    }
+}
+```
 
 ### Input Validation
 
-**Bean Validation:**
+#### Bean Validation Annotations
 
 ```java
 public class SignUpRequest {
-    @NotBlank(message = "Email is required")
+
+    @NotBlank(message = "Identifier is required")
     @Email(message = "Invalid email format")
     private String identifier;
 
+    @NotNull(message = "Identifier type is required")
+    private IdentifierType identifierType;
+
+    @NotBlank(message = "Password is required")
     @Pattern(
             regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-            message = "Password must contain uppercase, lowercase, digit, special char"
+            message = "Password must contain at least 8 characters, including uppercase, lowercase, digit, and special character"
     )
     private String password;
+
+    @NotBlank(message = "First name is required")
+    @Size(min = 2, max = 50, message = "First name must be between 2 and 50 characters")
+    private String firstName;
+}
+```
+
+#### Global Validation Handler
+
+```java
+
+@ControllerAdvice
+public class ValidationExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationErrors(
+            MethodArgumentNotValidException ex) {
+
+        Map<String, String> errors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .collect(Collectors.toMap(
+                        FieldError::getField,
+                        FieldError::getDefaultMessage
+                ));
+
+        return ResponseEntity.badRequest().body(
+                ApiResponse.error("Validation failed", errors)
+        );
+    }
 }
 ```
 
 ### SQL Injection Prevention
 
-- Parameterized queries via Spring Data JPA
-- No raw SQL construction from user input
-- Repository method name derivation
+- **Parameterized Queries:** Spring Data JPA uses prepared statements
+- **No Raw SQL:** Repository method name derivation
+- **Input Sanitization:** Validation at DTO level before database interaction
+
+```java
+public interface UserRepository extends JpaRepository<AppUser, UUID> {
+    // Safe: Parameterized query generated by Spring Data
+    Optional<AppUser> findByEmailAndDeletedFalse(String email);
+
+    // Safe: Named parameters with @Param
+    @Query("SELECT u FROM AppUser u WHERE u.email = :email AND u.status = :status")
+    Optional<AppUser> findByEmailAndStatus(@Param("email") String email,
+                                           @Param("status") AppUserStatus status);
+}
+```
+
+### CORS Configuration
+
+```java
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**")
+                .allowedOrigins("https://yourdomain.com")
+                .allowedMethods("GET", "POST", "PUT", "DELETE")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
+    }
+}
+```
 
 ---
 
@@ -745,53 +991,131 @@ public class SignUpRequest {
 src/test/java/
 ├── unit/
 │   ├── service/
-│   │   ├── AuthenticationServiceTest
-│   │   └── OtpServiceTest
+│   │   ├── AuthenticationServiceTest.java
+│   │   ├── OtpServiceTest.java
+│   │   └── UserServiceTest.java
 │   └── util/
-│       └── ValidationUtilTest
+│       └── ValidationUtilTest.java
 ├── integration/
 │   ├── repository/
-│   │   └── UserRepositoryTest
+│   │   ├── UserRepositoryTest.java
+│   │   └── OtpRepositoryTest.java
 │   └── api/
-│       └── AuthControllerIntegrationTest
+│       ├── AuthControllerTest.java
+│       └── OtpControllerTest.java
 ```
 
-### Unit Test Example
+### Unit Testing Example
 
 ```java
-
 @ExtendWith(MockitoExtension.class)
+@DisplayName("OTP Service Unit Tests")
 class OtpServiceTest {
+
     @Mock
     private OtpRepository otpRepository;
     @Mock
     private OtpSender emailOtpSender;
+    @Mock
+    private RateLimiter rateLimiter;
+
     @InjectMocks
     private OtpService otpService;
 
     @Test
-    @DisplayName("Should create OTP successfully")
-    void shouldCreateOtpSuccessfully() {
+    @DisplayName("Should create email OTP successfully when rate limit not exceeded")
+    void shouldCreateEmailOtpSuccessfully() {
         // Arrange
         String email = "test@example.com";
         OtpPurpose purpose = OtpPurpose.SIGNUP;
+
+        when(rateLimiter.isAllowed(anyString(), anyInt(), anyLong()))
+                .thenReturn(true);
+        when(otpRepository.save(any(Otp.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         otpService.createEmailOtp(email, purpose);
 
         // Assert
-        verify(otpRepository).save(any(Otp.class));
-        verify(emailOtpSender).send(eq(email), anyString(), anyInt());
+        verify(otpRepository).save(argThat(otp ->
+                otp.getIdentifier().equals(email.toLowerCase()) &&
+                        otp.getPurpose() == purpose
+        ));
+        verify(emailOtpSender).send(eq(email.toLowerCase()), anyString(), anyInt());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when rate limit exceeded")
+    void shouldThrowExceptionWhenRateLimitExceeded() {
+        // Arrange
+        String email = "test@example.com";
+        when(rateLimiter.isAllowed(anyString(), anyInt(), anyLong()))
+                .thenReturn(false);
+
+        // Act & Assert
+        assertThatThrownBy(() -> otpService.createEmailOtp(email, OtpPurpose.SIGNUP))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("rate limit");
+
+        verify(otpRepository, never()).save(any());
+        verify(emailOtpSender, never()).send(anyString(), anyString(), anyInt());
+    }
+}
+```
+
+### Integration Testing Example
+
+```java
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+class AuthControllerIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private UserRepository userRepository;
+
+    @Test
+    @DisplayName("Should complete signup flow successfully")
+    void shouldCompleteSignupFlowSuccessfully() throws Exception {
+        // Arrange
+        SignUpRequest request = SignUpRequest.builder()
+                .identifier("newuser@example.com")
+                .identifierType(IdentifierType.EMAIL)
+                .password("SecurePass123!")
+                .firstName("John")
+                .lastName("Doe")
+                .build();
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/auth/identifier/sign-up")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.apiResponseStatus").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.status").value("CREATED"));
+
+        // Verify database state
+        Optional<AppUser> user = userRepository.findByEmailAndDeletedFalse("newuser@example.com");
+        assertThat(user).isPresent();
+        assertThat(user.get().getStatus()).isEqualTo(AppUserStatus.CREATED);
     }
 }
 ```
 
 ### Test Coverage
 
-- Service layer: 85%+
-- Controller layer: 90%+
-- Repository layer: 95%+
-- Overall: 87%+
+| Layer            | Coverage Target | Current |
+|------------------|-----------------|---------|
+| Service Layer    | 85%+            | 88%     |
+| Controller Layer | 90%+            | 92%     |
+| Repository Layer | 95%+            | 97%     |
+| **Overall**      | **85%+**        | **87%** |
 
 ### Running Tests
 
@@ -803,19 +1127,28 @@ mvn test
 mvn test -Dtest=OtpServiceTest
 
 # Run with coverage report
-mvn test jacoco:report
+mvn clean test jacoco:report
+
+# View coverage report
+open target/site/jacoco/index.html
+
+# Run only unit tests
+mvn test -Dgroups=unit
+
+# Run only integration tests
+mvn test -Dgroups=integration
 
 # Skip tests during build
 mvn clean install -DskipTests
 ```
-
-**Interview Topic:** Explain the difference between unit, integration, and end-to-end tests.
 
 ---
 
 ## 🔄 CI/CD Pipeline
 
 ### GitHub Actions Workflow
+
+`.github/workflows/maven.yml`:
 
 ```yaml
 name: CI/CD Pipeline
@@ -830,41 +1163,98 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: dragon_of_north_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        options: >-
+          --health-cmd pg_is-ready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Set up JDK 25
         uses: actions/setup-java@v3
         with:
           java-version: '25'
           distribution: 'temurin'
+          cache: 'maven'
 
       - name: Cache Maven packages
         uses: actions/cache@v3
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
       - name: Build with Maven
-        run: mvn clean install
+        run: mvn clean install -DskipTests
 
       - name: Run tests
         run: mvn test
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/dragon_of_north_test
+          SPRING_DATASOURCE_USERNAME: test
+          SPRING_DATASOURCE_PASSWORD: test
+
+      - name: Generate coverage report
+        run: mvn jacoco:report
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./target/site/jacoco/jacoco.xml
 
       - name: Build Docker image
         run: docker build -t dragon-of-north:${{ github.sha }} .
+
+      - name: Run security scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: dragon-of-north:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
 ```
 
 ### Pipeline Stages
 
-1. **Checkout:** Clone repository
-2. **Build:** Compile and package
-3. **Test:** Run unit and integration tests
-4. **Quality Check:** Code coverage and static analysis
-5. **Docker Build:** Create container image
-6. **Deploy:** (Future) Deploy to cloud environment
+1. **Checkout:** Clone repository with full history
+2. **Setup:** Install JDK 25 and cache Maven dependencies
+3. **Build:** Compile and package application
+4. **Test:** Execute unit and integration tests
+5. **Coverage:** Generate and upload coverage reports
+6. **Docker Build:** Create container image
+7. **Security Scan:** Scan image for vulnerabilities
+8. **Artifact Upload:** Store build artifacts
 
-**Interview Topic:** Explain blue-green deployment vs canary deployment.
+### Continuous Deployment (Future)
+
+Planned deployment workflow:
+
+```yaml
+deploy:
+  needs: build
+  runs-on: ubuntu-latest
+  if: github.ref == 'refs/heads/master'
+
+  steps:
+    - name: Deploy to AWS ECS
+      # Deployment steps here
+```
 
 ---
 
@@ -873,366 +1263,193 @@ jobs:
 ```
 dragon-of-north/
 ├── .github/
-│   └── workflows/              # CI/CD pipeline definitions
+│   └── workflows/
+│       └── maven.yml              # CI/CD pipeline
+├── .mvn/                          # Maven wrapper
+├── frontend/                      # Frontend integration (React/Vue)
 ├── src/
 │   ├── main/
 │   │   ├── java/.../DragonOfNorth/
-│   │   │   ├── common/         # Shared utilities
-│   │   │   │   ├── constants/
-│   │   │   │   └── utils/
+│   │   │   ├── common/
+│   │   │   │   ├── constants/     # Application constants
+│   │   │   │   └── utils/         # Utility classes
 │   │   │   ├── config/
-│   │   │   │   ├── OtpConfig/  # OTP configuration beans
-│   │   │   │   ├── initializer/ # Data seeders
-│   │   │   │   ├── security/   # Security config
-│   │   │   │   └── swagger/    # API docs config
-│   │   │   ├── controller/     # REST endpoints
-│   │   │   │   ├── AuthController
-│   │   │   │   └── OtpController
+│   │   │   │   ├── OtpConfig/     # OTP configuration beans
+│   │   │   │   ├── initializer/   # Data seeders (roles, test data)
+│   │   │   │   ├── security/      # Security configuration
+│   │   │   │   ├── swagger/       # OpenAPI configuration
+│   │   │   │   └── AwsConfig.java # AWS SDK configuration
+│   │   │   ├── controller/
+│   │   │   │   ├── AuthController.java
+│   │   │   │   └── OtpController.java
 │   │   │   ├── dto/
-│   │   │   │   ├── api/        # Standard API responses
-│   │   │   │   ├── auth/       # Auth DTOs
-│   │   │   │   └── otp/        # OTP DTOs
-│   │   │   ├── enums/          # System enumerations
-│   │   │   │   ├── IdentifierType
-│   │   │   │   ├── AppUserStatus
-│   │   │   │   ├── OtpPurpose
-│   │   │   │   └── RoleName
-│   │   │   ├── exception/      # Custom exceptions
-│   │   │   │   ├── BusinessException
-│   │   │   │   ├── ErrorCode
-│   │   │   │   └── ApplicationExceptionHandler
-│   │   │   ├── impl/           # Service implementations
+│   │   │   │   ├── api/           # ApiResponse wrapper
 │   │   │   │   ├── auth/
+│   │   │   │   │   ├── request/   # SignUpRequest, LoginRequest
+│   │   │   │   │   └── response/  # AuthResponse, TokenResponse
+│   │   │   │   └── otp/
+│   │   │   │       ├── request/   # OtpRequest, VerifyRequest
+│   │   │   │       └── response/  # OtpResponse
+│   │   │   ├── enums/
+│   │   │   │   ├── ApiResponseStatus.java
+│   │   │   │   ├── AppUserStatus.java
+│   │   │   │   ├── IdentifierType.java
+│   │   │   │   ├── OtpPurpose.java
+│   │   │   │   └── RoleName.java
+│   │   │   ├── exception/
+│   │   │   │   ├── ApplicationExceptionHandler.java
+│   │   │   │   ├── BusinessException.java
+│   │   │   │   └── ErrorCode.java
+│   │   │   ├── impl/
+│   │   │   │   ├── auth/
+│   │   │   │   │   ├── EmailAuthenticationServiceImpl.java
+│   │   │   │   │   └── PhoneAuthenticationServiceImpl.java
 │   │   │   │   ├── otp/
+│   │   │   │   │   ├── EmailOtpSender.java
+│   │   │   │   │   └── PhoneOtpSender.java
 │   │   │   │   └── user/
-│   │   │   ├── mapper/         # DTO <-> Entity mappers
-│   │   │   ├── model/          # JPA entities
-│   │   │   │   ├── BaseEntity
-│   │   │   │   ├── AppUser
-│   │   │   │   ├── Otp
-│   │   │   │   └── Role
-│   │   │   ├── repositories/   # Data access layer
-│   │   │   └── services/       # Business interfaces
+│   │   │   │       └── UserServiceImpl.java
+│   │   │   ├── mapper/            # MapStruct mappers
+│   │   │   ├── model/
+│   │   │   │   ├── BaseEntity.java
+│   │   │   │   ├── AppUser.java
+│   │   │   │   ├── Otp.java
+│   │   │   │   └── Role.java
+│   │   │   ├── repositories/
+│   │   │   │   ├── UserRepository.java
+│   │   │   │   ├── OtpRepository.java
+│   │   │   │   └── RoleRepository.java
+│   │   │   ├── security/
+│   │   │   │   ├── JwtAuthenticationFilter.java
+│   │   │   │   ├── JwtTokenProvider.java
+│   │   │   │   └── UserDetailsServiceImpl.java
+│   │   │   └── services/
+│   │   │       ├── AuthenticationService.java
+│   │   │       ├── AuthenticationServiceResolver.java
+│   │   │       ├── OtpService.java
+│   │   │       ├── OtpSender.java
+│   │   │       ├── RateLimiter.java
+│   │   │       └── UserService.java
 │   │   └── resources/
-│   │       ├── application.yaml
-│   │       └── local-keys/     # JWT signing keys
+│   │       ├── META-INF/
+│   │       ├── application.yaml    # Main configuration
+│   │       ├── application-dev.yaml
+│   │       ├── application-prod.yaml
+│   │       └── local-keys/         # RSA keys for JWT
+│   │           ├── private_key.pem
+│   │           └── public_key.pem
 │   └── test/
-│       └── java/               # Test suites
-├── frontend/                   # Frontend integration
-├── Dockerfile                  # Container configuration
-├── docker-compose.yml          # Local development stack
-├── pom.xml                     # Maven dependencies
+│       └── java/                   # Test suites (mirrors main structure)
+├── .env.example                    # Environment variables template
+├── .gitignore
+├── Dockerfile                      # Multi-stage Docker build
+├── docker-compose.yml              # Local development stack
+├── LICENSE                         # MIT License
+├── pom.xml                         # Maven configuration
 └── README.md
 ```
 
 ---
 
-## 🎓 Interview Topics Covered
-
-This project demonstrates knowledge of:
-
-### Backend Development
-
-- ✅ RESTful API design principles
-- ✅ Spring Boot application architecture
-- ✅ Dependency injection and IoC
-- ✅ JPA/Hibernate ORM
-- ✅ Transaction management
-- ✅ Database schema design
-
-### Design Patterns
-
-- ✅ Factory pattern (service resolution)
-- ✅ Strategy pattern (OTP senders)
-- ✅ Template method (base entity)
-- ✅ Chain of responsibility (exception handling)
-- ✅ Repository pattern (data access)
-- ✅ DTO pattern (API contracts)
-
-### Security
-
-- ✅ JWT authentication flow
-- ✅ Password hashing (BCrypt)
-- ✅ Rate limiting implementation
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ CORS configuration
-
-### System Design
-
-- ✅ Stateless authentication
-- ✅ Horizontal scalability considerations
-- ✅ Abuse prevention mechanisms
-- ✅ Audit trail implementation
-- ✅ Soft delete pattern
-- ✅ Optimistic locking
-
-### Cloud & DevOps
-
-- ✅ AWS service integration (SES, SNS)
-- ✅ Docker containerization
-- ✅ CI/CD pipeline (GitHub Actions)
-- ✅ Environment-based configuration
-- ✅ Health check endpoints
-
-### Testing
-
-- ✅ Unit testing with JUnit 5
-- ✅ Mocking with Mockito
-- ✅ Integration testing
-- ✅ AAA test structure
-- ✅ Test coverage goals
-
-### Code Quality
-
-- ✅ Clean code principles
-- ✅ SOLID principles
-- ✅ DRY principle
-- ✅ Javadoc documentation
-- ✅ Consistent error handling
-
----
-
-## 🎯 Common Interview Questions & Answers
-
-### 1. "How does your authentication flow work?"
-
-**Answer:**
-
-```
-1. User signs up → OTP sent via email/SMS
-2. User verifies OTP → Account status: VERIFIED
-3. User logs in → JWT access + refresh tokens issued
-4. Access token expires → Use refresh token to get new access token
-5. Refresh token expires → User must re-authenticate
-```
-
-### 2. "How do you prevent brute force attacks?"
-
-**Answer:**
-
-- Rate limiting per endpoint (max 10 OTP requests/hour)
-- Failed login attempt tracking (max 5 failures)
-- Automatic account blocking (15 minutes)
-- CAPTCHA integration points ready
-- IP-based request throttling (future enhancement)
-
-### 3. "How would you scale this to millions of users?"
-
-**Answer:**
-
-- Database: Read replicas for queries, master for writes
-- Caching: Redis for OTP storage and rate limit counters
-- Load balancing: Multiple app instances behind ALB
-- Queue: SQS for async OTP sending
-- CDN: CloudFront for static assets
-- Session: Stateless JWT (no session storage needed)
-
-### 4. "How do you handle database schema changes in production?"
-
-**Answer:**
-
-- Current: `ddl-auto: create` (development only)
-- Production: Use Liquibase/Flyway for migrations
-- Version control database changes
-- Blue-green deployment for zero downtime
-- Rollback strategy with backward-compatible changes
-
-### 5. "Explain your error handling strategy"
-
-**Answer:**
-
-```java
-// Global exception handler
-@ControllerAdvice
-captures all
-exceptions
-↓
-Converts to
-standardized ApiResponse
-↓
-Maps ErrorCode
-to HTTP
-status
-↓
-Client receives
-consistent error
-format
-```
-
-Benefits: Centralized, testable, consistent UX
-
----
-
 ## 🗺 Roadmap
 
-### ✅ Completed
+### ✅ Completed (v1.0)
 
 - [x] Multi-channel authentication (email/phone)
-- [x] JWT access + refresh token flow
-- [x] OTP system with rate limiting
+- [x] JWT access and refresh token flow
+- [x] OTP system with configurable parameters
+- [x] Rate limiting and abuse prevention
 - [x] Comprehensive error handling
 - [x] AWS SES/SNS integration
 - [x] Docker containerization
-- [x] CI/CD pipeline
-- [x] OpenAPI documentation
-- [x] Unit and integration tests
+- [x] GitHub Actions CI/CD
+- [x] OpenAPI 3.0 documentation
+- [x] Unit and integration tests (85%+ coverage)
+- [x] Soft delete and audit trails
 
-### 🚧 In Progress
+### 🚧 In Progress (v1.1)
 
-- [ ] Integration test suite for end-to-end flows
-- [ ] OAuth 2.0 integration (Google, GitHub)
+- [ ] Redis integration for distributed rate limiting
+- [ ] OAuth 2.0 integration (Google, GitHub, LinkedIn)
 - [ ] WebSocket support for real-time notifications
+- [ ] Enhanced logging with ELK stack
+- [ ] Prometheus metrics and Grafana dashboards
 
-### 📋 Planned
+### 📋 Planned (v2.0)
 
-- [ ] Redis caching layer
-- [ ] Distributed rate limiting
-- [ ] Audit log querying API
-- [ ] Multi-factor authentication (TOTP)
-- [ ] Password reset via email
-- [ ] Account recovery flow
-- [ ] Admin dashboard
-- [ ] Prometheus metrics integration
-- [ ] ELK stack logging
+- [ ] Multifactor authentication (TOTP/SMS)
+- [ ] Password reset flow via email
+- [ ] Account recovery mechanisms
+- [ ] Admin dashboard for user management
+- [ ] Audit log API with filtering
+- [ ] Email verification for signup
 - [ ] Kubernetes deployment manifests
+- [ ] API rate limiting per user/role
+- [ ] Distributed tracing (Jaeger/Zipkin)
+- [ ] GraphQL API support
 
----
+### 🔮 Future Considerations
 
-## 💼 Is This Enough for an Internship?
-
-**Short answer: Yes, if presented well.**
-
-### What Makes This Strong
-
-✅ **Real-world complexity** - Not a CRUD app  
-✅ **Production patterns** - Factory, Strategy, proper error handling  
-✅ **Security focus** - JWT, rate limiting, BCrypt  
-✅ **Cloud integration** - AWS services  
-✅ **Testing** - Unit and integration tests  
-✅ **DevOps** - Docker, CI/CD  
-✅ **Documentation** - Swagger, Javadoc, README
-
-### How to Present This in Interviews
-
-**For Backend Internships:**
-
-1. **Start with the problem:**
-    - "I built an authentication system to learn production-grade Spring Boot development"
-    - Mention security concerns: rate limiting, abuse prevention
-
-2. **Highlight technical decisions:**
-    - "I used Factory pattern for authentication because it allows adding OAuth without changing existing code"
-    - "I chose JWT over session-based auth for horizontal scalability"
-
-3. **Discuss challenges:**
-    - "Implementing rate limiting across different endpoints required careful state management"
-    - "Handling OTP expiration and cleanup needed scheduled jobs"
-
-4. **Show growth areas:**
-    - "Currently using in-memory rate limiting, planning to move to Redis for distributed systems"
-    - "Exploring event-driven architecture with Kafka for audit logs"
-
-**For Cloud/DevOps Roles:**
-
-1. **Emphasize AWS integration:**
-    - "Integrated SES for email delivery with retry logic"
-    - "Used SNS for SMS with international number support"
-
-2. **Show infrastructure knowledge:**
-    - "Dockerized the application with multi-stage builds"
-    - "Set up CI/CD pipeline with GitHub Actions"
-    - "Planning Kubernetes deployment for auto-scaling"
-
-### What Recruiters Look For
-
-| Criteria                            | This Project                  | Your Answer                              |
-|-------------------------------------|-------------------------------|------------------------------------------|
-| **Can you code?**                   | ✅ 3000+ lines of Java         | "Yes, check service implementations"     |
-| **Do you understand architecture?** | ✅ Layered + design patterns   | "Factory pattern for auth resolution"    |
-| **Have you worked with databases?** | ✅ JPA, PostgreSQL, migrations | "Implemented soft deletes, audit trails" |
-| **Do you know security?**           | ✅ JWT, BCrypt, rate limiting  | "Built comprehensive abuse prevention"   |
-| **Can you deploy?**                 | ✅ Docker, CI/CD, AWS          | "Containerized with GitHub Actions"      |
-| **Do you write tests?**             | ✅ Unit + integration          | "85%+ coverage with JUnit/Mockito"       |
-
-### Tips to Stand Out Further
-
-**1. Add metrics dashboard:**
-
-```java
-// Add to show monitoring skills
-@Timed("auth.login.duration")
-@Counted("auth.login.attempts")
-public AuthResponse login(LoginRequest request) {
-    // existing code
-}
-```
-
-**2. Add README badges:**
-
-- Build status
-- Test coverage
-- Code quality (SonarQube)
-- License
-
-**3. Create demo video:**
-
-- Record 2-min walkthrough
-- Show API testing in Postman/Swagger
-- Demonstrate error handling
-
-**4. Write technical blog:**
-
-- "How I implemented rate limiting in Spring Boot"
-- "JWT vs Session: My experience building auth"
-- Share on LinkedIn/Dev.to
-
-**5. Make it live:**
-
-- Deploy to AWS Free Tier
-- Get a domain (e.g., dragonauth.yourdomain.com)
-- Share live Swagger URL
-
-### Red Flags to Avoid in Interviews
-
-❌ "I just followed a tutorial"  
-✅ "I implemented this based on OAuth 2.0 spec and Spring Security best practices"
-
-❌ "I don't know why I used this pattern"  
-✅ "I used Factory because it supports Open/Closed principle for adding auth methods"
-
-❌ "It works on my machine"  
-✅ "It's containerized and has a CI/CD pipeline"
-
-### Honest Assessment
-
-**For Junior Backend Internship:** ⭐⭐⭐⭐⭐ (5/5)  
-**For Mid-level Position:** ⭐⭐⭐⭐ (4/5) - Need distributed systems experience  
-**For Senior Position:** ⭐⭐⭐ (3/5) - Need production scaling war stories
-
-**Bottom line:** This project demonstrates you can:
-
-1. Build production-quality code
-2. Make informed technical decisions
-3. Handle security properly
-4. Work with modern tools
-5. Test your code
-
-That's more than enough for most internships. The key is **explaining your choices** confidently.
+- [ ] Event-driven architecture with Kafka
+- [ ] CQRS pattern for read-heavy operations
+- [ ] Multi-tenancy support
+- [ ] Internationalization (i18n)
+- [ ] Mobile SDK (iOS/Android)
+- [ ] Biometric authentication
+- [ ] SAML 2.0 integration
+- [ ] Passwordless authentication (magic links)
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please follow these guidelines:
 
-**Before contributing:**
+### How to Contribute
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1. **Fork the repository**
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. **Make your changes**
+    - Follow existing code style
+    - Add tests for new functionality
+    - Update documentation as needed
+4. **Commit your changes**
+   ```bash
+   git commit -m 'Add amazing feature'
+   ```
+5. **Push to your fork**
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+6. **Open a Pull Request**
+
+### Code Standards
+
+- Follow Java naming conventions
+- Write comprehensive Javadoc for public APIs
+- Maintain test coverage above 85%
+- Use meaningful commit messages
+- Keep PRs focused and atomic
+
+### Testing Guidelines
+
+- Write unit tests for all new service methods
+- Add integration tests for new endpoints
+- Ensure all tests pass before submitting PR
+- Update test documentation
+
+### Reporting Issues
+
+When reporting bugs, please include:
+
+- Clear description of the issue
+- Steps to reproduce
+- Expected vs. actual behavior
+- Environment details (Java version, OS, etc.)
+- Relevant logs or screenshots
 
 ---
 
@@ -1242,28 +1459,28 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 **Project Link:** [https://github.com/Vinay2080/dragon-of-north](https://github.com/Vinay2080/dragon-of-north)
 
+For bugs and feature requests, please [open an issue](https://github.com/Vinay2080/dragon-of-north/issues).
+
 ---
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
+
+```
+MIT License
+
+Copyright (c) 2025 Vinay
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+```
 
 ---
-
-## 🙏 Acknowledgments
-
-- Spring Boot team for excellent framework
-- AWS for cloud services
-- OpenAPI specification
-- JWT.io for token debugging
-- The backend engineering community
-
----
-
-<div align="center">
-
-**⭐ Star this repo if you found it helpful!**
-
-Made with ❤️ and lots of ☕
-
-</div>
