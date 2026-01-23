@@ -48,7 +48,21 @@ public class SecurityConfig {
             "/api/v1/auth/**",
             "/api/v1/otp/**",
 
+            //swagger ui and OpenAPI documentation
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/swagger-resources/**",
+            "/swagger-resources",
+            "/v2/api-docs",
+            "/webjars/**",
+            "/configuration/ui",
+            "/configuration/security",
 
+            // actuator and health points
+            "/actuator",
+            "/actuator/health",
+            "/actuator/health/**"
     };
 
     /**
