@@ -65,7 +65,7 @@ keys:
 springdoc:
   swagger-ui:
     urls:
-      - url: http://52.71.153.142:8080
+      - url: http://52.71.153.142:8080/v3/api-docs
         name: EC2
-      - url: http://localhost:8080
+      - url: http://localhost:8080/v3/api-docs
         name: LOCAL
