@@ -7,7 +7,7 @@ on:
       - "v*"
   pull_request:
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -53,3 +53,16 @@ jobs:
           IMAGE=ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')/backend
           docker push $IMAGE:latest
           docker push $IMAGE:${{ github.sha }}
+
+      # Deploy
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}    # 🔹 usually ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}      # 🔹 private SSH key
+          script: |
+            cd app                              # 🔹 directory with docker-compose.yml
+            docker compose pull backend        # 🔹 FORCE pull latest image (core fix)
+            docker compose up -d

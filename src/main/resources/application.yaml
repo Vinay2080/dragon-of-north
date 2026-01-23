@@ -61,3 +61,11 @@ management:
 keys:
   public: ${public_key_path}
   private: ${private_key_path}
+
+springdoc:
+  swagger-ui:
+    urls:
+      - url: http://52.71.153.142:8080
+        name: EC2
+      - url: http://localhost:8080
+        name: LOCAL
