@@ -56,6 +56,22 @@ public class JwtFilter extends OncePerRequestFilter {
     private final static String ROLES = "roles";
 
 
+    private static final List<String> SWAGGER_PATH = List.of(
+            "/swagger-ui",
+            "/v3/api-docs",
+            "/swagger-ui.html"
+    );
+
+
+    private static final List<String> PUBLIC_PATH = List.of(
+            "/api/v1/auth",
+            "/api/v1/otp"
+    );
+
+    private boolean isPublic(String path) {
+        return PUBLIC_PATH.stream().anyMatch(path::startsWith);
+    }
+
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
@@ -66,7 +82,7 @@ public class JwtFilter extends OncePerRequestFilter {
         final String path = request.getServletPath();
 
         // Public endpoints do not require JWT
-        if (isPublic(path)) {
+        if (isPublic(path) || isSwagger(path)) {
             log.debug("Skipping JWT filter for public path: {}", path);
             filterChain.doFilter(request, response);
             return;
@@ -152,15 +168,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
     }
 
-
-    private static final List<String> PUBLIC_PATH = List.of(
-            "/api/v1/auth",
-            "/api/v1/otp"
-    );
-
-    private boolean isPublic(String path) {
-        return PUBLIC_PATH.stream().anyMatch(path::startsWith);
+    private boolean isSwagger(String path) {
+        return SWAGGER_PATH.stream().anyMatch(path::startsWith);
     }
-
 }
 // todo javadoc
