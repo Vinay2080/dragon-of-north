@@ -74,7 +74,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     public void assignDefaultRole(AppUser appUser) {
         if (!appUser.hasAnyRoles()) {
             Role userRole = roleRepository.findByRoleName(RoleName.USER).orElseThrow(() -> new BusinessException(ErrorCode.ROLE_NOT_FOUND, RoleName.USER.toString()));
-            appUser.setRoles(Set.of(userRole));
+            appUser.getRoles().add(userRole);
         }
     }
 

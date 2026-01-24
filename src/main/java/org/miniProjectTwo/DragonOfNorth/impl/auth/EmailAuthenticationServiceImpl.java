@@ -60,6 +60,7 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
         AppUser appUser = appUserRepository.findByEmail(identifier).orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
         authCommonServices.updateUserStatus(appUser.getAppUserStatus(), appUser);
         authCommonServices.assignDefaultRole(appUser);
+        appUser.setEmailVerified(true);
         appUserRepository.save(appUser);
         return getUserStatus(identifier);
     }
