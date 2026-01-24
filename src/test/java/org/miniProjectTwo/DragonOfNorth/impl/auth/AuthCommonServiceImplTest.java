@@ -22,10 +22,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
-import java.util.Collections;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.CREATED;
@@ -118,7 +115,7 @@ class AuthCommonServiceImplTest {
     void assignDefaultRole_shouldAssignUserRole_whenUserHasNoRoles() {
         // arrange
         AppUser appUser = new AppUser();
-        appUser.setRoles(Collections.emptySet());
+        appUser.setRoles(new HashSet<>());
         Role userRole = new Role();
         userRole.setRoleName(RoleName.USER);
 
@@ -158,7 +155,7 @@ class AuthCommonServiceImplTest {
     void assignDefaultRole_shouldThrowException_whenRoleNotFound() {
         // arrange
         AppUser appUser = new AppUser();
-        appUser.setRoles(Collections.emptySet());
+        appUser.setRoles(new HashSet<>());
 
         when(roleRepository.findByRoleName(RoleName.USER)).thenReturn(Optional.empty());
 
