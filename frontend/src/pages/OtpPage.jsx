@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
+import {API_CONFIG} from '../config';
 
 const OtpPage = () => {
     const location = useLocation();
@@ -10,13 +11,30 @@ const OtpPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [resendLoading, setResendLoading] = useState(false);
-    const [timer, setTimer] = useState(60);
+    const [timer, setTimer] = useState(() => {
+        const savedTimer = localStorage.getItem('otpTimer');
+        const savedTime = localStorage.getItem('otpTimerTimestamp');
+        if (savedTimer && savedTime) {
+            const elapsed = Math.floor((Date.now() - parseInt(savedTime)) / 1000);
+            const remaining = parseInt(savedTimer) - elapsed;
+            return remaining > 0 ? remaining : 0;
+        }
+        return 60;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('otpTimer', timer.toString());
+        localStorage.setItem('otpTimerTimestamp', Date.now().toString());
+    }, [timer]);
 
     useEffect(() => {
         let interval;
         if (timer > 0) {
             interval = setInterval(() => {
-                setTimer((prev) => prev - 1);
+                setTimer((prev) => {
+                    const next = prev - 1;
+                    return next >= 0 ? next : 0;
+                });
             }, 1000);
         }
         return () => clearInterval(interval);
@@ -41,6 +59,35 @@ const OtpPage = () => {
         }
     };
 
+    const completeSignup = async (otpCode) => {
+        try {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/auth/identifier/sign-up/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    identifier,
+                    identifier_type: identifierType,
+                    otp: otpCode
+                }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.api_response_status === 'success') {
+                localStorage.removeItem('otpTimer');
+                localStorage.removeItem('otpTimerTimestamp');
+                navigate('/login', {state: {identifier}});
+            } else {
+                setError(result.message || 'Failed to complete registration.');
+            }
+        } catch (err) {
+            setError('Failed to complete registration. Please try again.');
+            console.error('Complete Signup Error:', err);
+        }
+    };
+
     const handleVerifyOtp = async (e) => {
         e.preventDefault();
         const otpCode = otp.join('');
@@ -52,16 +99,17 @@ const OtpPage = () => {
         setLoading(true);
         setError('');
 
-        const endpoint = identifierType === 'EMAIL' 
-            ? 'http://localhost:8080/api/v1/otp/email/verify' 
-            : 'http://localhost:8080/api/v1/otp/phone/verify';
+        const endpoint = identifierType === 'EMAIL'
+            ? `${API_CONFIG.BASE_URL}/api/v1/otp/email/verify`
+            : `${API_CONFIG.BASE_URL}/api/v1/otp/phone/verify`;
 
         const payload = identifierType === 'EMAIL'
             ? { email: identifier, otp: otpCode, otp_purpose: 'SIGNUP' }
             : { phone: identifier, otp: otpCode, otp_purpose: 'SIGNUP' };
 
         try {
-            const response = await fetch(endpoint, {
+            // First verify the OTP
+            const verifyResponse = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -69,13 +117,13 @@ const OtpPage = () => {
                 body: JSON.stringify(payload),
             });
 
-            const result = await response.json();
+            const verifyResult = await verifyResponse.json();
 
-            if (response.status === 202) {
-                // Success - now complete the signup
-                await completeSignup();
+            if (verifyResponse.ok) {
+                // If OTP is verified, complete the signup
+                await completeSignup(otpCode);
             } else {
-                setError(result.message || 'Invalid OTP. Please try again.');
+                setError(verifyResult.message || (verifyResult.data && verifyResult.data.message) || 'Invalid OTP. Please try again.');
             }
         } catch (err) {
             setError('Failed to connect to the server. Please try again later.');
@@ -85,31 +133,6 @@ const OtpPage = () => {
         }
     };
 
-    const completeSignup = async () => {
-        try {
-            const response = await fetch('http://localhost:8080/api/v1/auth/identifier/sign-up/complete', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    identifier,
-                    identifier_type: identifierType
-                }),
-            });
-
-            const result = await response.json();
-
-            if (response.ok && result.api_response_status === 'success') {
-                navigate('/login', { state: { identifier } });
-            } else {
-                setError(result.message || 'Failed to complete registration.');
-            }
-        } catch (err) {
-            setError('Failed to complete registration. Please try again.');
-            console.error('Complete Signup Error:', err);
-        }
-    };
 
     const handleResendOtp = async () => {
         if (timer > 0) return;
@@ -117,9 +140,9 @@ const OtpPage = () => {
         setResendLoading(true);
         setError('');
 
-        const endpoint = identifierType === 'EMAIL' 
-            ? 'http://localhost:8080/api/v1/otp/email/request' 
-            : 'http://localhost:8080/api/v1/otp/phone/request';
+        const endpoint = identifierType === 'EMAIL'
+            ? `${API_CONFIG.BASE_URL}/api/v1/otp/email/request`
+            : `${API_CONFIG.BASE_URL}/api/v1/otp/phone/request`;
         
         const payload = identifierType === 'EMAIL'
             ? { email: identifier, otp_purpose: 'SIGNUP' }

@@ -14,6 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
  * Spring Security configuration for the application.
@@ -60,9 +61,7 @@ public class SecurityConfig {
             "/actuator/health/**"
     };
 
-    /**
-     * Custom JWT filter for processing and validating JWT tokens in incoming requests.
-     */
+    private final CorsConfigurationSource corsConfigurationSource;
     private final JwtFilter jwtFilter;
 
     /**
@@ -82,7 +81,9 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity httpSecurity) {
-        return httpSecurity.csrf(AbstractHttpConfigurer::disable)
+        return httpSecurity
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests
                         (auth -> auth
                                 .requestMatchers(public_urls).permitAll()
@@ -92,7 +93,6 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();
-
     }
 
     @Bean

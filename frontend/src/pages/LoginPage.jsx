@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, {useState} from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
+import {API_CONFIG} from '../config';
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -17,7 +18,7 @@ const LoginPage = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:8080/api/v1/auth/identifier/login', {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/auth/identifier/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
+import {API_CONFIG} from '../config';
 
 /**
  * Regex for basic email validation.
@@ -10,8 +11,6 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Regex for basic phone validation (10-digit number starting with 6-9)
  */
 const PHONE_REGEX = /^[6-9]\d{9}$/;
-
-const API_BASE_URL = 'http://localhost:8080'; // Update this to match your backend port
 
 const AuthIdentifierPage = () => {
     const [identifier, setIdentifier] = useState('');
@@ -47,7 +46,7 @@ const AuthIdentifierPage = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/auth/identifier/status`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/auth/identifier/status`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -81,7 +80,37 @@ const AuthIdentifierPage = () => {
                         navigate('/signup', { state: { identifier: processedIdentifier, identifierType } });
                         break;
                     case 'CREATED':
-                        navigate('/otp', { state: { identifier: processedIdentifier, identifierType } });
+                        setLoading(true);
+                        try {
+                            const otpEndpoint = identifierType === 'EMAIL'
+                                ? `${API_CONFIG.BASE_URL}/api/v1/otp/email/request`
+                                : `${API_CONFIG.BASE_URL}/api/v1/otp/phone/request`;
+
+                            const otpPayload = identifierType === 'EMAIL'
+                                ? {email: processedIdentifier, otp_purpose: 'SIGNUP'}
+                                : {phone: processedIdentifier, otp_purpose: 'SIGNUP'};
+
+                            const otpResponse = await fetch(otpEndpoint, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify(otpPayload),
+                            });
+
+                            if (!otpResponse.ok) {
+                                const otpError = await otpResponse.json().catch(() => ({}));
+                                setError(otpError.message || 'Failed to send OTP. Please try again.');
+                                return;
+                            }
+
+                            navigate('/otp', {state: {identifier: processedIdentifier, identifierType}});
+                        } catch (otpErr) {
+                            setError('Failed to send OTP. Please check your connection.');
+                            console.error('OTP API Error:', otpErr);
+                        } finally {
+                            setLoading(false);
+                        }
                         break;
                     case 'VERIFIED':
                         navigate('/login', { state: { identifier: processedIdentifier } });

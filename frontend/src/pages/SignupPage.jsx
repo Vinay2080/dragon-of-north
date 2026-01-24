@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, {useState} from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
+import {API_CONFIG} from '../config';
 
 const SignupPage = () => {
     const location = useLocation();
@@ -22,7 +23,7 @@ const SignupPage = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:8080/api/v1/auth/identifier/sign-up', {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/auth/identifier/sign-up`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -50,9 +51,9 @@ const SignupPage = () => {
 
             if (result.api_response_status === 'success') {
                 // Determine OTP endpoint based on identifierType
-                const otpEndpoint = identifierType === 'EMAIL' 
-                    ? 'http://localhost:8080/api/v1/otp/email/request' 
-                    : 'http://localhost:8080/api/v1/otp/phone/request';
+                const otpEndpoint = identifierType === 'EMAIL'
+                    ? `${API_CONFIG.BASE_URL}/api/v1/otp/email/request`
+                    : `${API_CONFIG.BASE_URL}/api/v1/otp/phone/request`;
                 
                 const otpPayload = identifierType === 'EMAIL'
                     ? { email: identifier, otp_purpose: 'SIGNUP' }
