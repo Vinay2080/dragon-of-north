@@ -64,5 +64,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}      # 🔹 private SSH key
           script: |
             cd app                              # 🔹 directory with docker-compose.yml
+            export IMAGE_TAG=${{ github.sha }}
             docker compose pull backend        # 🔹 FORCE pull latest image (core fix)
             docker compose up -d
