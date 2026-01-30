@@ -26,7 +26,7 @@ class DragonOfNorthApplicationTests {
     @Container
     @SuppressWarnings("resource")
     static final PostgreSQLContainer<?> postgreSQLContainer =
-            new PostgreSQLContainer<>("postgres:16-alpine")
+            new PostgreSQLContainer<>("postgres:16")
                     .withDatabaseName("testDB")
                     .withUsername("test")
                     .withPassword("test");
