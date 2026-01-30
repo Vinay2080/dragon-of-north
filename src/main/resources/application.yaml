@@ -15,6 +15,10 @@ spring:
       ddl-auto: ${db_ddl_auto}
   jackson:
     property-naming-strategy: SNAKE_CASE
+  data:
+    redis:
+      host: ${redis_host}
+      port: 6379
 
 app:
   security:
