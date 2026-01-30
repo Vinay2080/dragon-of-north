@@ -10,6 +10,10 @@ spring:
       ddl-auto: create-drop
   jackson:
     property-naming-strategy: SNAKE_CASE
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 db_name: postgresql
 db_url: localhost
