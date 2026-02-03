@@ -1,7 +1,8 @@
 // API Configuration
 export const API_CONFIG = {
     // Base URL for all API requests
-    BASE_URL: 'http://dragon-api.duckdns.org',
+    BASE_URL: import.meta.env.VITE_API_BASE_URL,
+
 
     // API Endpoints
     ENDPOINTS: {

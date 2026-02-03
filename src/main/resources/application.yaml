@@ -69,7 +69,7 @@ keys:
 springdoc:
   swagger-ui:
     urls:
-      - url: http://${backend_url}:8080/v3/api-docs
+      - url: https://${backend_url}/v3/api-docs
         name: EC2
       - url: http://localhost:8080/v3/api-docs
         name: LOCAL

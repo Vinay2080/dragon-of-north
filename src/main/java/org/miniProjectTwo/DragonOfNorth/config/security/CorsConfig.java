@@ -47,7 +47,7 @@ public class CorsConfig {
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*",
-                "http://dragon-api.duckdns.org"
+                "https://dragon-of-north-bsj1km8hv-vinay2080s-projects.vercel.app"
         ));
 
         // Allow all headers and methods
