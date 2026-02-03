@@ -46,7 +46,8 @@ public class CorsConfig {
         // Allowed origin patterns (supports wildcard ports)
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
-                "http://127.0.0.1:*"
+                "http://127.0.0.1:*",
+                "http://dragon-api.duckdns.org"
         ));
 
         // Allow all headers and methods

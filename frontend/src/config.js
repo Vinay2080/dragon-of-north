@@ -1,7 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
     // Base URL for all API requests
-    BASE_URL: 'http://ec2-100-31-6-170.compute-1.amazonaws.com:8080',
+    BASE_URL: 'http://dragon-api.duckdns.org',
 
     // API Endpoints
     ENDPOINTS: {
