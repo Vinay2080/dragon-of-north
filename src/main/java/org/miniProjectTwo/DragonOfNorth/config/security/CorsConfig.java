@@ -48,12 +48,14 @@ public class CorsConfig {
                 "http://localhost:*",
                 "http://127.0.0.1:*",
                 "https://dragon-of-north.vercel.app",
-                "https://dragon-of-north-bsj1km8hv-vinay2080s-projects.vercel.app"
+                "https://*.vercel.app"
         ));
 
-        // Allow all headers and methods
-        config.addAllowedHeader("*");
-        config.addAllowedMethod("*");
+        config.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS"
+        ));
+
+        config.setAllowedHeaders(List.of("*"));
 
         // Enable cookies / Authorization header
         config.setAllowCredentials(true);
