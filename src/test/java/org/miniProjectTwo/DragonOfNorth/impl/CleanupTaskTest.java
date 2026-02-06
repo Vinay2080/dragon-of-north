@@ -28,9 +28,9 @@ class CleanupTaskTest {
     private AppUserRepository appUserRepository;
 
     @Test
-    void cleanupExpired_shouldCallDeleteAllByExpiresAtBefore() {
+    void cleanupExpired_Otps_shouldCallDeleteAllByExpiresAtBefore() {
         // act
-        cleanupTask.cleanupExpired();
+        cleanupTask.cleanupExpiredOtpTokens();
 
         // verify
         verify(otpTokenRepository).deleteAllByExpiresAtBefore(any(Instant.class));

@@ -26,7 +26,7 @@ import static org.miniProjectTwo.DragonOfNorth.enums.RoleName.USER;
  * Creates users with different statuses for testing purposes.
  */
 @Component
-@Profile({"dev", "test"})
+@Profile({"test"})
 @RequiredArgsConstructor
 @Slf4j
 @Order(2) // Run after DataInitializer which has @Order(1)

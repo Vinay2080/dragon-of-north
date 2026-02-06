@@ -1,8 +1,11 @@
 package org.miniProjectTwo.DragonOfNorth.impl;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
+import org.miniProjectTwo.DragonOfNorth.repositories.RefreshTokenRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,21 +21,14 @@ import java.time.temporal.ChronoUnit;
  * @see org.springframework.scheduling.annotation.Scheduled
  * @see OtpTokenRepository
  */
-
+@RequiredArgsConstructor
 @Component
+@Slf4j
 public class CleanupTask {
     private final OtpTokenRepository otpTokenRepository;
     private final AppUserRepository appUserRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
-    /**
-     * Constructs a new OtpCleanupTask with the specified repository.
-     *
-     * @param otpTokenRepository The repository used to access OTP tokens
-     */
-    public CleanupTask(OtpTokenRepository otpTokenRepository, AppUserRepository appUserRepository) {
-        this.otpTokenRepository = otpTokenRepository;
-        this.appUserRepository = appUserRepository;
-    }
 
     /**
      * Executes the cleanup of expired OTP tokens.
@@ -44,9 +40,11 @@ public class CleanupTask {
      */
 
     @Scheduled(fixedDelayString = "${otp.cleanup.delay-ms}")
-    public void cleanupExpired() {
+    public void cleanupExpiredOtpTokens() {
         otpTokenRepository.deleteAllByExpiresAtBefore(Instant.now());
+        log.info("Cleaned up all expired OTPs");
     }
+
 
     @Scheduled(fixedDelay = 15 * 60 * 1000)
     @Transactional
@@ -55,5 +53,14 @@ public class CleanupTask {
                 AppUserStatus.CREATED,
                 Instant.now().minus(30, ChronoUnit.MINUTES)
         );
+        log.info("Cleaned up all unverified users");
+    }
+
+    @Scheduled(cron = "0 0 0 * * ?")
+    @Transactional
+    public void CleanupExpiredJwtToken() {
+        Instant now = Instant.now();
+        int deletedCount = refreshTokenRepository.deleteByExpiryDateBefore(now);
+        log.info("Cleaned up {} expired refresh tokens", deletedCount);
     }
 }

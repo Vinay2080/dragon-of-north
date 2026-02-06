@@ -1,13 +1,11 @@
 package org.miniProjectTwo.DragonOfNorth.impl.auth;
 
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.config.security.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.config.security.JwtServices;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.RefreshTokenRequest;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AuthenticationResponse;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.response.RefreshTokenResponse;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
@@ -17,6 +15,7 @@ import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.services.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.services.RefreshTokenService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -36,38 +35,55 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final JwtServices jwtServices;
     private final AppUserRepository appUserRepository;
     private final RoleRepository roleRepository;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
-    public AuthenticationResponse login(String identifier, String password, HttpServletResponse response) {
+    public void login(String identifier, String password, HttpServletResponse response) {
         final Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(identifier, password));
-        AppUserDetails appUserDetails = (AppUserDetails) authentication.getPrincipal();
-        assert appUserDetails != null;
+
+        if (authentication.getPrincipal() == null) {
+            throw new BusinessException(ErrorCode.AUTHENTICATION_FAILED, "Authentication principal is null");
+        }
+
+        if (!(authentication.getPrincipal() instanceof AppUserDetails appUserDetails)) {
+            throw new BusinessException(ErrorCode.AUTHENTICATION_FAILED, "Invalid principal type");
+        }
+
         AppUser appUser = appUserDetails.getAppUser();
 
-        assert appUser != null;
         final String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
-
-        Cookie cookie = new Cookie("access_token", accessToken);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false); // localhost
-        cookie.setPath("/");
-        cookie.setMaxAge(3600); // 1-hour default
-        cookie.setAttribute("SameSite", "Lax");
-        response.addCookie(cookie);
-
         final String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
-        final String tokenType = "Bearer";
-        return AuthenticationResponse.builder().accessToken(accessToken).refreshToken(refreshToken).tokenType(tokenType).build();
+
+        refreshTokenService.storeRefreshToken(appUser, refreshToken);
+
+        setAccessToken(response, accessToken);
+        setRefreshCookie(response, refreshToken);
+
     }
 
     @Override
-    public RefreshTokenResponse refreshToken(RefreshTokenRequest request) {
-        UUID uuid = jwtServices.extractUserId(request.refreshToken());
-        Set<Role> roles = appUserRepository.findRolesById(uuid);
-        final String newAccessToken = jwtServices.refreshAccessToken(request.refreshToken(), roles);
-        final String tokenType = "Bearer";
-        return RefreshTokenResponse.builder().accessToken(newAccessToken).tokenType(tokenType).build();
+    public void refreshToken(HttpServletRequest request, HttpServletResponse response) {
+        String refreshToken = extractRefreshToken(request);
+        if (refreshToken == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "Refresh token missing");
+        }
+
+        try {
+
+            refreshTokenService.verifyAndUpdateToken(refreshToken);
+            UUID userId = jwtServices.extractUserId(refreshToken);
+            Set<Role> roles = appUserRepository.findRolesById(userId);
+
+            String newAccessToken = jwtServices.refreshAccessToken(refreshToken, roles);
+
+            setAccessToken(response, newAccessToken);
+
+        } catch (BusinessException e) {
+            clearRefreshTokenCookie(response);
+            throw e;
+        }
     }
+
 
 
     @Override
@@ -91,4 +107,49 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         }
     }
 
+    private String extractRefreshToken(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return null;
+        }
+
+        for (Cookie cookie : request.getCookies()) {
+            if ("refresh_token".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
+    }
+
+    private void setAccessToken(HttpServletResponse response, String token) {
+        Cookie accessCookie = new Cookie("access_token", token);
+        accessCookie.setHttpOnly(true);
+        accessCookie.setSecure(true);
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(60 * 15);
+        accessCookie.setAttribute("SameSite", "None");
+        response.addCookie(accessCookie);
+    }
+
+
+    private void setRefreshCookie(HttpServletResponse response, String token) {
+        Cookie refreshCookie = new Cookie("refresh_token", token);
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(true);
+        refreshCookie.setPath("/jwt/refresh");
+        refreshCookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
+        refreshCookie.setAttribute("SameSite", "None");
+        response.addCookie(refreshCookie);
+    }
+
+    private void clearRefreshTokenCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie("refresh_token", "");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/auth/refresh");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+    }
+
+    //todo logout
 }

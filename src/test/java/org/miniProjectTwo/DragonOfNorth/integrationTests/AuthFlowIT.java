@@ -124,7 +124,7 @@ class AuthFlowIT {
     @Test
     void shouldCompleteAuthFlowEndToEnd() throws Exception {
         // 0. Setup: Ensure role exists
-        if (!roleRepository.existsByRoleName(RoleName.USER)) {
+        if (roleRepository.existsByRoleName(RoleName.USER)) {
             Role userRole = new Role();
             userRole.setRoleName(RoleName.USER);
             userRole.setSystemRole(true);

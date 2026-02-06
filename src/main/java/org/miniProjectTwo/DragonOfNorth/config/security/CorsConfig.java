@@ -48,7 +48,8 @@ public class CorsConfig {
                 "http://localhost:*",
                 "http://127.0.0.1:*",
                 "https://dragon-of-north.vercel.app",
-                "https://*.vercel.app"
+                "https://*.vercel.app",
+                "https://dragon-api.duckdns.org"
         ));
 
         config.setAllowedMethods(List.of(
