@@ -4,15 +4,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.miniProjectTwo.DragonOfNorth.components.SignupRateLimiter;
 import org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.*;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserLoginRequest;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpCompleteRequest;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserStatusFinderRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AuthenticationResponse;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.response.RefreshTokenResponse;
 import org.miniProjectTwo.DragonOfNorth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.services.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.services.AuthenticationService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,7 +28,6 @@ import static org.springframework.http.HttpStatus.CREATED;
 public class AuthenticationController {
 
     private final AuthenticationServiceResolver resolver;
-    private final SignupRateLimiter signupRateLimiter;
     private final AuthCommonServices authCommonServices;
 
     @PostMapping("/identifier/status")
@@ -45,14 +45,9 @@ public class AuthenticationController {
     public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> signupUser(
             @RequestBody
             @Valid
-            AppUserSignUpRequest request,
-            HttpServletRequest httpServletRequest) {
-        // todo move it somewhere.
-        String ip = httpServletRequest.getHeader("X-Forwarded-For");
-        if (ip == null) {
-            ip = httpServletRequest.getRemoteAddr();
-        }
-        signupRateLimiter.check(request.identifier(), ip);
+            AppUserSignUpRequest request
+    ) {
+
         AuthenticationService service = resolver.resolve(request.identifier(), request.identifierType());
         AppUserStatusFinderResponse response = service.signUpUser(request);
         return ResponseEntity.status(CREATED).body(ApiResponse.success(response));
@@ -70,23 +65,22 @@ public class AuthenticationController {
     }
 
     @PostMapping("/identifier/login")
-    public ResponseEntity<ApiResponse<AuthenticationResponse>> loginUser(
+    public ResponseEntity<ApiResponse<?>> loginUser(
             @RequestBody
             @Valid
             AppUserLoginRequest request,
             HttpServletResponse httpServletResponse
     ) {
-        AuthenticationResponse response = authCommonServices.login(request.identifier(), request.password(), httpServletResponse);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        authCommonServices.login(request.identifier(), request.password(), httpServletResponse);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.successMessage("log in successful"));
     }
 
     @PostMapping("/jwt/refresh")
-    public ResponseEntity<ApiResponse<RefreshTokenResponse>> refreshToken(
-            @Valid
-            @RequestBody
-            RefreshTokenRequest request
+    public ResponseEntity<ApiResponse<?>> refreshToken(
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
-        RefreshTokenResponse response = authCommonServices.refreshToken(request);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        authCommonServices.refreshToken(request, response);
+        return ResponseEntity.ok(ApiResponse.successMessage("refresh token sent"));
     }
 }

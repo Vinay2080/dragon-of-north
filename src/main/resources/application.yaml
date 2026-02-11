@@ -19,6 +19,7 @@ spring:
     redis:
       host: ${redis_host}
       port: 6379
+      password: ${redis_password}
 
 app:
   security:
@@ -53,14 +54,46 @@ aws:
   ses:
     sender: ${aws_ses_sender}
 
+rate-limit:
+  endpoints:
+    signup:
+      pattern: /auth/signup
+      type: signup
+    login:
+      pattern: /auth/login
+      type: login
+    send-otp:
+      pattern: /auth/send-otp
+      type: otp
+    verify-otp:
+      pattern: /auth/verify-otp
+      type: otp
+  rules:
+    signup:
+      capacity: 3
+      refill-tokens: 3
+      refill-minutes: 60
+    login:
+      capacity: 10
+      refill-tokens: 10
+      refill-minutes: 15
+    otp:
+      capacity: 5
+      refill-tokens: 5
+      refill-minutes: 30
+
 management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,metrics,prometheus
   endpoint:
     health:
       show-details: never
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 keys:
   public: ${public_key_path}

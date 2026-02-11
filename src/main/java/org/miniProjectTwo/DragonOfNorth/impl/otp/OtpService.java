@@ -2,9 +2,11 @@ package org.miniProjectTwo.DragonOfNorth.impl.otp;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpVerificationStatus;
+import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
 import org.miniProjectTwo.DragonOfNorth.services.OtpSender;
@@ -225,7 +227,8 @@ public class OtpService {
                 .ifPresent(last -> {
                     long delta = now.getEpochSecond() - last.getLastSentAt().getEpochSecond();
                     if (delta < resendCooldownSeconds) {
-                        throw new IllegalStateException("wait " + (resendCooldownSeconds - delta) + " seconds before requesting another OTP for " +
+                        throw new BusinessException(ErrorCode.OTP_RATE_LIMIT,
+                                (resendCooldownSeconds - delta),
                                 otpPurpose.toString().toLowerCase().replace("_", " "));
                     }
                 });

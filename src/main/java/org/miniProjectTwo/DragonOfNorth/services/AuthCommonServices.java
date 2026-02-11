@@ -1,17 +1,15 @@
 package org.miniProjectTwo.DragonOfNorth.services;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.RefreshTokenRequest;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AuthenticationResponse;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.response.RefreshTokenResponse;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 
 public interface AuthCommonServices {
 
-    AuthenticationResponse login(String identifier, String password, HttpServletResponse response);
+    void login(String identifier, String password, HttpServletResponse response);
 
-    RefreshTokenResponse refreshToken(RefreshTokenRequest request);
+    void refreshToken(HttpServletRequest request, HttpServletResponse response);
 
     void assignDefaultRole(AppUser appUser);
 

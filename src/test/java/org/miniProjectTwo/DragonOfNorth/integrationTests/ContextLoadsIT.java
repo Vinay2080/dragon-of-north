@@ -18,7 +18,7 @@ import java.security.KeyPairGenerator;
 import java.util.Base64;
 
 @SpringBootTest
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @ActiveProfiles("test")
 class ContextLoadsIT {
 
