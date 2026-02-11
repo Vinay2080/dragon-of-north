@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,5 +34,10 @@ public class BeansConfig {
     public AuditorAware<String> auditorAware() {
         log.info("AuditorAware bean initialized using AuditorAwareImpl");
         return new AuditorAwareImpl();
+    }
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
     }
 }

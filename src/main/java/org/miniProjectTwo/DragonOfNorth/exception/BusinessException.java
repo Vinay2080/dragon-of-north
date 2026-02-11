@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.exception;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
 
 /**
  * Custom runtime exception representing a business-level error in the application.

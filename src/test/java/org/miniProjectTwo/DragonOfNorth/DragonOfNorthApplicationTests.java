@@ -18,7 +18,7 @@ import java.util.Base64;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class DragonOfNorthApplicationTests {
 
     private static volatile KeyPaths KEY_PATHS;

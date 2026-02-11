@@ -2,8 +2,8 @@ package org.miniProjectTwo.DragonOfNorth.services;
 
 import jakarta.transaction.Transactional;
 import org.miniProjectTwo.DragonOfNorth.components.TokenHasher;
+import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
-import org.miniProjectTwo.DragonOfNorth.exception.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.model.RefreshToken;
 import org.miniProjectTwo.DragonOfNorth.repositories.RefreshTokenRepository;

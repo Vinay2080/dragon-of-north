@@ -9,6 +9,31 @@
       "name": "app.security.jwt.expiration.refresh-token",
       "type": "java.lang.String",
       "description": "Description for app.security.jwt.expiration.refresh-token."
+    },
+    {
+      "name": "auth.signup.request-window-seconds",
+      "type": "java.lang.String",
+      "description": "Description for auth.signup.request-window-seconds."
+    },
+    {
+      "name": "auth.signup.max-requests-per-window",
+      "type": "java.lang.String",
+      "description": "Description for auth.signup.max-requests-per-window."
+    },
+    {
+      "name": "auth.signup.block-duration-minutes",
+      "type": "java.lang.String",
+      "description": "Description for auth.signup.block-duration-minutes."
+    },
+    {
+      "name": "auth.login.block-duration-minutes",
+      "type": "java.lang.String",
+      "description": "Description for auth.login.block-duration-minutes."
+    },
+    {
+      "name": "auth.login.max-failed-attempts",
+      "type": "java.lang.String",
+      "description": "Description for auth.login.max-failed-attempts."
     }
   ]
 }

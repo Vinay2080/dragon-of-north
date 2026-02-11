@@ -14,8 +14,8 @@ import org.springframework.stereotype.Service;
 
 import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.CREATED;
 import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.NOT_EXIST;
+import static org.miniProjectTwo.DragonOfNorth.enums.ErrorCode.USER_NOT_FOUND;
 import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.PHONE;
-import static org.miniProjectTwo.DragonOfNorth.exception.ErrorCode.USER_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor

@@ -2,9 +2,9 @@ package org.miniProjectTwo.DragonOfNorth.impl.auth;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
-import org.miniProjectTwo.DragonOfNorth.exception.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;

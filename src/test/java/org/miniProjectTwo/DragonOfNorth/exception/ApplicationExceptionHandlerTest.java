@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse;
 import org.miniProjectTwo.DragonOfNorth.dto.api.ErrorResponse;
+import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.MethodParameter;

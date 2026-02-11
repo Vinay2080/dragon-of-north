@@ -30,15 +30,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 public class RedisTest {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
+    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
 
     @Container
-    static GenericContainer<?> redis =
+    @SuppressWarnings("resource")
+    static final GenericContainer<?> redis =
             new GenericContainer<>("redis:7")
                     .withExposedPorts(6379);
 

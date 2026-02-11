@@ -1,4 +1,4 @@
-package org.miniProjectTwo.DragonOfNorth.exception;
+package org.miniProjectTwo.DragonOfNorth.enums;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
@@ -13,15 +13,19 @@ public enum ErrorCode {
 
     IDENTIFIER_MISMATCH("AUTH_001", "%s does not matches identifier type", HttpStatus.BAD_REQUEST),
     TOO_MANY_REQUESTS("AUTH_002", "too many requests. Please try again later", HttpStatus.TOO_MANY_REQUESTS),
-    STATUS_MISMATCH("AUTH_003", "Invalid status expected status %s", HttpStatus.CONFLICT),
-    AUTHENTICATION_FAILED("AUTH_004", "Invalid username or password", HttpStatus.UNAUTHORIZED),
+    RATE_LIMIT_EXCEEDED("AUTH_003", "Too many requests. Please try again later", HttpStatus.TOO_MANY_REQUESTS),
+    STATUS_MISMATCH("AUTH_004", "Invalid status expected status %s", HttpStatus.CONFLICT),
+    AUTHENTICATION_FAILED("AUTH_005", "Invalid username or password", HttpStatus.UNAUTHORIZED),
 
     ROLE_NOT_FOUND("ROL_009", "role %s not found", HttpStatus.NOT_FOUND),
 
     USER_NOT_FOUND("USER_001", "user not found", HttpStatus.NOT_FOUND),
     USER_ALREADY_VERIFIED("USER_002", "user is already verified", HttpStatus.CONFLICT),
 
-    INVALID_INPUT("VAL_001", "invalid input", HttpStatus.BAD_REQUEST);
+    INVALID_INPUT("VAL_001", "invalid input", HttpStatus.BAD_REQUEST),
+
+    OTP_RATE_LIMIT("OTP_001", "wait %s seconds before requesting another OTP for %s", HttpStatus.TOO_MANY_REQUESTS),
+    OTP_TOO_MANY_REQUESTS("OTP_002", "Too many otp requests. Blocked for %s minutes.", HttpStatus.TOO_MANY_REQUESTS);
 
     private final String code;
     private final String defaultMessage;

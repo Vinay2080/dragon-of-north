@@ -10,9 +10,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.miniProjectTwo.DragonOfNorth.enums.ErrorCode.IDENTIFIER_MISMATCH;
 import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.EMAIL;
 import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.PHONE;
-import static org.miniProjectTwo.DragonOfNorth.exception.ErrorCode.IDENTIFIER_MISMATCH;
 
 @Service
 public class AuthenticationServiceResolver {
