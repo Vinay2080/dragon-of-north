@@ -17,11 +17,6 @@ spring:
       password: ""
       timeout: 100ms
 
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration
-      - org.springframework.boot.data.redis.autoconfigure.DataRedisRepositoriesAutoConfiguration
-
 db_name: postgresql
 db_url: localhost
 db_port: 5432
