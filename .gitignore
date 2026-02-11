@@ -36,3 +36,5 @@ build/
 docker-compose.yaml
 private_key.pem
 public_key.pem
+nul
+effective-pom.xml

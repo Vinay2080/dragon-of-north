@@ -54,7 +54,7 @@ public class RateLimitConfig {
     @Bean(destroyMethod = "shutdown")
     public RedisClient redisClient(@Value("${spring.data.redis.host}") String host,
                                    @Value("${spring.data.redis.port:6379}") int port,
-                                   @Value("${spring.data.redis.password}") String password) {
+                                   @Value("${spring.data.redis.password:}") String password) {
         RedisURI.Builder uriBuilder = RedisURI.builder()
                 .withHost(host)
                 .withPort(port);
