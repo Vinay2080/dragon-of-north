@@ -3,9 +3,11 @@ package org.miniProjectTwo.DragonOfNorth.impl.otp;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpVerificationStatus;
+import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
 import org.miniProjectTwo.DragonOfNorth.services.OtpSender;
@@ -72,7 +74,7 @@ class OtpServiceTest {
     }
 
     @Test
-    void createEmailOtp_shouldThrowException_whenCooldownPeriodActive() {
+    void createEmailOtp_shouldThrowBusinessException_whenCooldownPeriodActive() {
         // arrange
         String email = "test@example.com";
         OtpPurpose purpose = OtpPurpose.SIGNUP;
@@ -83,7 +85,9 @@ class OtpServiceTest {
                 .thenReturn(Optional.of(lastToken));
 
         // act & assert
-        assertThrows(IllegalStateException.class, () -> otpService.createEmailOtp(email, purpose));
+        BusinessException exception = assertThrows(BusinessException.class, () -> otpService.createEmailOtp(email, purpose));
+        assertEquals(ErrorCode.OTP_RATE_LIMIT, exception.getErrorCode());
+        assertTrue(exception.getMessage().contains("signup"));
 
         verify(emailOtpSender, never()).send(any(), any(), anyInt());
     }
