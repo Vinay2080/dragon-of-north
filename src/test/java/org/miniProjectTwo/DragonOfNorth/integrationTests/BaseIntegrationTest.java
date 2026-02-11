@@ -47,13 +47,6 @@ public abstract class BaseIntegrationTest {
     private static volatile KeyPaths KEY_PATHS;
     @Autowired
     protected EmailOtpSender emailOtpSender;
-    @Autowired
-    protected PhoneOtpSender phoneOtpSender;
-    @Autowired
-    private SesClient sesClient;
-    @Autowired
-    private SnsClient snsClient;
-
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
@@ -112,13 +105,13 @@ public abstract class BaseIntegrationTest {
 
         @Bean
         @Primary
-        SesClient sesClient() {
+        SesClient mockedSesClient() {
             return Mockito.mock(SesClient.class);
         }
 
         @Bean
         @Primary
-        SnsClient snsClient() {
+        SnsClient mockedSnsClient() {
             return Mockito.mock(SnsClient.class);
         }
 
