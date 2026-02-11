@@ -15,6 +15,12 @@ spring:
       host: localhost
       port: 6379
       password: ""
+      timeout: 100ms
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration
+      - org.springframework.boot.data.redis.autoconfigure.DataRedisRepositoriesAutoConfiguration
 
 db_name: postgresql
 db_url: localhost
@@ -77,8 +83,31 @@ auth:
 aws:
   region: ${aws_region}
   ses:
+    enabled: false
     sender: ${aws_ses_sender}
-
+  sns:
+    enabled: false
 keys:
   public: ${public_key_path}
   private: ${private_key_path}
+
+rate-limit:
+  rules:
+    signup:
+      capacity: 3
+      refill-tokens: 3
+      refill-minutes: 60
+    login:
+      capacity: 10
+      refill-tokens: 10
+      refill-minutes: 15
+    otp:
+      capacity: 5
+      refill-tokens: 5
+      refill-minutes: 30
+
+logging:
+  level:
+    org.miniProjectTwo.DragonOfNorth: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
