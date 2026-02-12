@@ -57,16 +57,17 @@ aws:
 rate-limit:
   endpoints:
     signup:
-      pattern: /auth/signup
+      pattern: /api/v1/auth/identifier/sign-up
       type: signup
     login:
-      pattern: /auth/login
+      pattern: /api/v1/auth/identifier/login
       type: login
+    #      change if phone number added
     send-otp:
-      pattern: /auth/send-otp
+      pattern: /api/v1/otp/email/request
       type: otp
     verify-otp:
-      pattern: /auth/verify-otp
+      pattern: /api/v1/otp/email/verify
       type: otp
   rules:
     signup:
