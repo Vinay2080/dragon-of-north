@@ -23,6 +23,16 @@ import java.util.stream.Collectors;
 
 import static org.miniProjectTwo.DragonOfNorth.dto.api.ErrorResponse.ValidationError;
 
+/**
+ * Global exception handler for consistent API error responses.
+ * <p>
+ * Maps exceptions to standardized ErrorResponse with proper HTTP status codes.
+ * Handles validation, authentication, and business logic exceptions. Critical for
+ * API contract maintenance and client error handling consistency.
+ *
+ * @see BusinessException for business errors
+ * @see ErrorCode for error mapping
+ */
 @RestControllerAdvice
 @RequiredArgsConstructor
 @Slf4j

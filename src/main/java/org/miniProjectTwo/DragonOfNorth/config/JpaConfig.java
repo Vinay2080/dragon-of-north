@@ -20,7 +20,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 public class JpaConfig {
 
     /**
-     * Logs JPA auditing activation at application startup.
+     * Initializes JPA configuration and logs auditing activation.
+     * Constructor logs the enabling of JPA auditing with the specified
+     * AuditorAware bean reference to provide visibility into the audit
+     * configuration during application startup.
      */
     public JpaConfig() {
         log.info("JPA Auditing enabled using AuditorAware implementation: 'auditorAware'");

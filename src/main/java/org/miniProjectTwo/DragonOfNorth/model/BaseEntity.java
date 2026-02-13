@@ -16,18 +16,13 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Base entity class that provides common fields and functionality for all entities in the application.
- * This class includes audit fields like created date, last modified date, created by, and last modified by.
- * It uses JPA's {@code @MappedSuperclass} to allow inheritance of these common fields.
+ * Base entity with audit fields and soft delete support.
+ * <p>
+ * Provides UUID generation, timestamp tracking, and audit information.
+ * Supports optimistic locking and soft deletion for data integrity.
+ * Critical for consistent entity management across the application.
  *
- * <p>This class is designed to be extended by other entity classes to maintain consistent
- * audit information across all entities in the application.</p>
- *
- * <p>Uses Hibernate's {@code @UuidGenerator} for generating unique identifiers and
- * Spring Data JPA's auditing features to automatically populate audit fields.</p>
- *
- * @see jakarta.persistence.Entity
- * @see org.springframework.data.jpa.domain.support.AuditingEntityListener
+ * @see AuditingEntityListener for audit field population
  */
 @Getter
 @Setter

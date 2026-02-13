@@ -7,7 +7,28 @@ import jakarta.validation.constraints.Size;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 
 /**
- * DTO for {@link org.miniProjectTwo.DragonOfNorth.model.AppUser}
+ * Request record for initiating the user registration / sign-up process.
+ *
+ * <p>This DTO is used to create new user accounts with initially CREATED status.
+ * It contains the user identifier, authentication method preference, and password
+ * that will be validated and stored securely. Password must meet security requirements.</p>
+ *
+ * <p><strong>Input Components:</strong></p>
+ * <ul>
+ *   <li>{@code identifier} - The user's email address or phone number for registration</li>
+ *   <li>{@code identifierType} - Enum specifying EMAIL or PHONE authentication method</li>
+ *   <li>{@code password} - User password meeting security criteria (8-50 chars, mixed case, numbers, special chars)</li>
+ * </ul>
+ *
+ * <p><strong>Usage:</strong></p>
+ * <p>Used in {@code AuthenticationController.signupUser()} endpoint at {@code /api/v1/auth/identifier/sign-up}.
+ * The service validates the identifier uniqueness, encrypts the password, creates the user account
+ * with CREATED status, and initiates a verification process (OTP/email verification).</p>
+ *
+ * <p><strong>Output Flow:</strong></p>
+ * <p>When registration succeeds, returns {@code AppUserStatusFinderResponse} with CREATED status
+ * through {@code ApiResponse} wrapper. User must complete verification via {@code AppUserSignUpCompleteRequest}
+ * before full authentication capabilities are enabled.</p>
  */
 public record AppUserSignUpRequest(
 

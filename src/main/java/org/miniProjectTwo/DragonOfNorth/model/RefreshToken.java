@@ -6,6 +6,15 @@ import lombok.Setter;
 
 import java.time.Instant;
 
+/**
+ * JWT refresh token entity for session management.
+ * <p>
+ * Stores hashed refresh tokens with expiration and revocation tracking.
+ * Links to user for token-based authentication renewal.
+ * Critical for maintaining secure user sessions.
+ *
+ * @see AppUser for token ownership
+ */
 @Getter
 @Setter
 @Entity
@@ -33,6 +42,11 @@ public class RefreshToken extends BaseEntity {
     @Column
     private Instant lastUsed;
 
+    /**
+     * Checks if the refresh token has expired.
+     *
+     * @return true if the expiration date is before the current time
+     */
     public boolean isExpired() {
         return expiryDate.isBefore(Instant.now());
     }

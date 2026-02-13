@@ -14,12 +14,15 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 /**
- * A scheduled task that periodically cleans up expired OTP tokens from the repository.
- * This helps maintain database cleanliness by removing stale OTP records that are no longer valid.
- * The cleanup interval is configurable through the application properties.
+ * Scheduled cleanup task for expired tokens and unverified users.
+ * <p>
+ * Removes expired OTP tokens, unverified CREATED users, and expired
+ * refresh tokens to maintain database hygiene and security.
+ * Runs on configurable schedules for automated maintenance.
+ * Critical for system performance and data cleanup.
  *
- * @see org.springframework.scheduling.annotation.Scheduled
- * @see OtpTokenRepository
+ * @see OtpTokenRepository for OTP cleanup
+ * @see RefreshTokenRepository for token cleanup
  */
 @RequiredArgsConstructor
 @Component
@@ -31,14 +34,12 @@ public class CleanupTask {
 
 
     /**
-     * Executes the cleanup of expired OTP tokens.
-     * This method is scheduled to run at a fixed delay as configured in the application properties.
-     * It removes all OTP tokens that have expired before the current time.
-     * The delay between executions is configured by the property 'otp.cleanup.delay-ms'.
-     *
-     * @see org.springframework.scheduling.annotation.Scheduled
+     * Removes expired OTP tokens from a database.
+     * <p>
+     * Deletes all OTP tokens with expiration time before now.
+     * Runs on a configurable fixed delay schedule.
+     * Critical for OTP table maintenance and performance.
      */
-
     @Scheduled(fixedDelayString = "${otp.cleanup.delay-ms}")
     public void cleanupExpiredOtpTokens() {
         otpTokenRepository.deleteAllByExpiresAtBefore(Instant.now());
@@ -46,6 +47,13 @@ public class CleanupTask {
     }
 
 
+    /**
+     * Removes unverified users older than 30 minutes.
+     * <p>
+     * Deletes users with CREATED status older than 30 minutes.
+     * Runs every 15 minutes to prevent abandoned registrations.
+     * Critical for user data cleanup and storage optimization.
+     */
     @Scheduled(fixedDelay = 15 * 60 * 1000)
     @Transactional
     public void cleanupUnverifiedUsers() {
@@ -56,6 +64,13 @@ public class CleanupTask {
         log.info("Cleaned up all unverified users");
     }
 
+    /**
+     * Removes expired refresh tokens daily at midnight.
+     * <p>
+     * Deletes refresh tokens with the expiration date before now.
+     * Runs daily using cron expression for consistent cleanup.
+     * Critical for token table maintenance and security.
+     */
     @Scheduled(cron = "0 0 0 * * ?")
     @Transactional
     public void CleanupExpiredJwtToken() {

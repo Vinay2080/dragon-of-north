@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.impl.otp;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.miniProjectTwo.DragonOfNorth.config.OtpConfig.SnsConfig;
 import org.miniProjectTwo.DragonOfNorth.services.OtpSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -11,14 +12,32 @@ import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 import java.util.Map;
 
-
+/**
+ * SMS OTP sender using AWS SNS for delivery.
+ * <p>
+ * Asynchronously sends OTP codes via SMS through SNS service.
+ * Formats a message with OTP and expiration, uses a Transactional SMS type.
+ * Critical for phone-based authentication flows with reliable delivery.
+ *
+ * @see SnsConfig for SNS client configuration
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
-
 public class PhoneOtpSender implements OtpSender {
     private final SnsClient snsClient;
 
+    /**
+     * Sends OTP code via SMS asynchronously.
+     * <p>
+     * Formats a message with OTP and expiration, sets a Transactional SMS type,
+     * and publishes via AWS SNS. Runs asynchronously to prevent blocking.
+     * Critical for timely OTP delivery in phone authentication.
+     *
+     * @param phone      recipient phone number
+     * @param otp        generated OTP code
+     * @param ttlMinutes OTP validity period
+     */
     @Async
     @Override
     public void send(String phone, String otp, int ttlMinutes) {

@@ -1,4 +1,4 @@
-package org.miniProjectTwo.DragonOfNorth.services;
+package org.miniProjectTwo.DragonOfNorth.impl;
 
 import jakarta.transaction.Transactional;
 import org.miniProjectTwo.DragonOfNorth.components.TokenHasher;
@@ -12,6 +12,16 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 
+/**
+ * Service for managing JWT refresh tokens with secure storage and validation.
+ * <p>
+ * Handles token creation, verification, and expiration management.
+ * Uses secure hashing and database persistence for session renewal.
+ * Critical for maintaining secure user authentication flows.
+ *
+ * @see TokenHasher for secure token operations
+ * @see RefreshToken for token entity
+ */
 @Service
 public class RefreshTokenService {
 
@@ -25,6 +35,16 @@ public class RefreshTokenService {
         this.tokenHasher = tokenHasher;
     }
 
+    /**
+     * Stores refresh token with secure hashing and expiration.
+     * <p>
+     * Hashes token, links to user, sets prefix, and calculates expiration.
+     * Persists in a database for future authentication renewal.
+     * Critical for secure session management.
+     *
+     * @param user     token owner
+     * @param rawToken unhashed refresh token
+     */
     @Transactional
     public void storeRefreshToken(AppUser user, String rawToken) {
         String token = tokenHasher.hashToken(rawToken);
@@ -38,6 +58,16 @@ public class RefreshTokenService {
         refreshTokenRepository.save(refreshToken);
     }
 
+    /**
+     * Verifies the refresh token and updates the last used timestamp.
+     * <p>
+     * Validates token prefix, hash, expiration, and revocation status.
+     * Updates last used time on successful verification.
+     * Critical for token security and session continuity.
+     *
+     * @param rawToken refresh token to verify
+     * @throws BusinessException if token is invalid, expired, or revoked
+     */
     @Transactional
     public void verifyAndUpdateToken(String rawToken) {
         String prefix = rawToken.length() > 8 ? rawToken.substring(0, 8) : rawToken;
@@ -54,6 +84,16 @@ public class RefreshTokenService {
                 );
     }
 
+    /**
+     * Validates token status and updates usage timestamp.
+     * <p>
+     * Checks expiration and revocation before allowing usage.
+     * Updates last used timestamp for security tracking.
+     * Critical for preventing token reuse and ensuring validity.
+     *
+     * @param token refresh token to validate
+     * @throws BusinessException if the token is expired or revoked
+     */
     private void validateAndUpdateToken(RefreshToken token) {
         if (token.isExpired()) {
             refreshTokenRepository.delete(token);

@@ -1,8 +1,19 @@
 package org.miniProjectTwo.DragonOfNorth.enums;
 
 import lombok.Getter;
+import org.miniProjectTwo.DragonOfNorth.dto.api.ErrorResponse;
+import org.miniProjectTwo.DragonOfNorth.exception.ApplicationExceptionHandler;
 import org.springframework.http.HttpStatus;
 
+/**
+ * Centralized error code mapping for consistent API error responses.
+ * Each error maps to specific HTTP status codes and provides structured error
+ * information for client handling. Supports parameterized messages for dynamic
+ * error details. Critical for maintaining API contract and error handling consistency.
+ *
+ * @see ErrorResponse for response structure
+ * @see ApplicationExceptionHandler for error mapping
+ */
 @Getter
 public enum ErrorCode {
     INVALID_TOKEN("TOK_001", "Invalid or expired JWT token", HttpStatus.UNAUTHORIZED),

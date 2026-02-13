@@ -5,14 +5,18 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
+import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
+import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 
 /**
- * Data Transfer Object (DTO) for handling phone number verification requests with OTP (One-Time Password).
- * This record encapsulates the phone number and the OTP code for verification purposes.
+ * Request DTO for verifying OTP codes delivered via SMS.
+ * <p>
+ * Validates OTP against stored tokens and updates phone verification status. Purpose-based
+ * verification ensures proper authentication flow completion. Failed attempts increment
+ * security counters and may trigger rate limiting or account locks.
  *
- * @param phone The phone number to be verified. Must be a valid 10-digit number and cannot be blank.
- * @param otp   The one-time password for verification. Must be exactly 6 characters long.
- * @see org.miniProjectTwo.DragonOfNorth.model.OtpToken The associated entity that this DTO maps to
+ * @see OtpService for verification logic
+ * @see AppUser for status updates
  */
 
 public record PhoneVerifyRequest(

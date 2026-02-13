@@ -4,15 +4,17 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.miniProjectTwo.DragonOfNorth.config.OtpConfig.SnsConfig;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
+import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
 
 /**
- * Data Transfer Object (DTO) for handling phone-number-based OTP (One-Time Password) generation requests.
- * This record encapsulates the phone number to which the OTP will be sent.
- *
- * @param phone The phone number of the user requesting OTP. Must be a valid 10-digit number
- *              and cannot be blank. The phone number is validated against a standard pattern.
- * @see org.miniProjectTwo.DragonOfNorth.model.AppUser The associated entity that this DTO maps to
+ * Request DTO for generating OTP codes via SMS delivery.
+ * Triggers OTP generation and SMS delivery through SNS service. Phone validation
+ * ensures the proper Indian mobile format (6-9 prefix, 10 digits). Purpose-based routing
+ * controls verification flows and prevents SMS spam to invalid numbers.
+ * @see OtpService for generation logic
+ * @see SnsConfig for SMS delivery configuration
  */
 
 public record PhoneOtpRequest(

@@ -12,6 +12,12 @@ import org.springframework.core.annotation.Order;
 
 import java.time.Instant;
 
+/**
+ * Configuration component that initializes system roles on application startup.
+ * Ensures all required roles defined in {@link RoleName} enum exist in the database
+ * before the application starts serving requests. Runs with the highest precedence (@Order(1))
+ * to guarantee roles are available for user registration and authentication.
+ */
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
@@ -19,6 +25,13 @@ public class RolesInitializer {
 
     private final RoleRepository roleRepository;
 
+    /**
+     * CommandLineRunner bean that executes on application startup.
+     * Creates any missing system roles in the database with audit information.
+     * Uses "system@Startup" as the creator and marks roles as system-managed.
+     *
+     * @return CommandLineRunner that initializes roles
+     */
     @Bean
     @Order(1)
     public CommandLineRunner initializeROles() {

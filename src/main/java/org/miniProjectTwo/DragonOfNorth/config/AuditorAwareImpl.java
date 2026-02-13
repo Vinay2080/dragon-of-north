@@ -24,6 +24,14 @@ public class AuditorAwareImpl implements AuditorAware<String> {
 
     private static final Logger log = LoggerFactory.getLogger(AuditorAwareImpl.class);
 
+    /**
+     * Retrieves the current auditor for JPA auditing operations.
+     * Checks the Spring Security context for an authenticated user and returns
+     * their username. If no authenticated user is found or the user is anonymous, it
+     * returns "SYSTEM" as the fallback auditor for background operations.
+     *
+     * @return Optional containing the username of the authenticated user, or "SYSTEM" if no user is authenticated
+     */
     @Override
     public Optional<String> getCurrentAuditor() {
 

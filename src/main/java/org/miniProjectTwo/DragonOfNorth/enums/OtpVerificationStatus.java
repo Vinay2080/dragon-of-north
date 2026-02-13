@@ -2,7 +2,19 @@ package org.miniProjectTwo.DragonOfNorth.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.miniProjectTwo.DragonOfNorth.dto.otp.request.EmailVerifyRequest;
+import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
 
+/**
+ * OTP verification outcomes with a success flag and user-facing messages.
+ * <p>
+ * Controls verification flow continuation and user feedback. SUCCESS enables
+ * authentication progress, failures trigger retry limits or account locks.
+ * Critical for security enforcement and user experience management.
+ *
+ * @see OtpService for verification logic
+ * @see EmailVerifyRequest and PhoneVerifyRequest for usage
+ */
 @Getter
 @RequiredArgsConstructor
 public enum OtpVerificationStatus {

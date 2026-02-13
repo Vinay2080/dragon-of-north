@@ -12,15 +12,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Represents a user in the system.
- * This entity extends {@link BaseEntity} to inherit common audit fields.
- * It is mapped to the 'users' table in the database.
+ * User entity with authentication and profile management.
+ * <p>
+ * Supports email/phone authentication with role-based access control.
+ * Tracks login attempts, verification status, and account locking.
+ * Critical for user lifecycle and security enforcement.
  *
- * <p>This class includes user authentication and profile information
- * and uses JPA annotations for object-relational mapping.</p>
- *
- * @see BaseEntity
- * @see AppUserStatus
+ * @see Role for permission management
+ * @see AppUserStatus for account states
  */
 @Entity
 @Getter
@@ -113,6 +112,11 @@ public class AppUser extends BaseEntity {
     private LocalDateTime lastLoginAt;
 
 
+    /**
+     * Checks if a user has any assigned roles.
+     *
+     * @return true if the roles collection is not null and not empty
+     */
     public boolean hasAnyRoles() {
         return roles != null && !roles.isEmpty();
     }
@@ -126,4 +130,3 @@ public class AppUser extends BaseEntity {
     private Set<Role> roles = new HashSet<>();
 
 }
-// todo javadoc

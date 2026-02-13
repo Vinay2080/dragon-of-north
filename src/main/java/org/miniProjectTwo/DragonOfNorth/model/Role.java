@@ -10,6 +10,16 @@ import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Role entity for role-based access control.
+ * <p>
+ * Defines user roles with permission assignments and user associations.
+ * Supports system and custom roles with many-to-many relationships.
+ * Critical for implementing a hierarchical authorization system.
+ *
+ * @see Permission for role permissions
+ * @see AppUser for role assignments
+ */
 @Entity
 @Setter
 @Getter
@@ -38,5 +48,3 @@ public class Role extends BaseEntity {
     @ManyToMany(mappedBy = "roles")
     private Set<AppUser> appUsers = new HashSet<>();
 }
-
-// todo javadoc

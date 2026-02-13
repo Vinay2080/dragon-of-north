@@ -14,25 +14,14 @@ import java.util.Optional;
 
 
 /**
- * Service implementation for loading user-specific data.
+ * Spring Security UserDetailsService for multi-method authentication.
  * <p>
- * This service is responsible for retrieving user information from the database
- * and converting it into a format that Spring Security can understand.
- * It implements Spring Security's {@link UserDetailsService} to integrate with
- * the authentication process.
- * </p>
+ * Loads user details by email or phone for Spring Security authentication.
+ * Supports both identifier types with case-insensitive email lookup.
+ * Critical for integrating custom user entities with Spring Security.
  *
- * <p>Key features:
- * <ul>
- *   <li>Loads user details by username (email or phone number)</li>
- *   <li>Throws {@link UsernameNotFoundException} if user is not found</li>
- *   <li>Wraps the {@link AppUser} entity in a Spring Security {@link UserDetails} implementation</li>
- * </ul>
- * </p>
- *
- * @see UserDetailsService
- * @see AppUserDetails
- * @see AppUser
+ * @see AppUserDetails for Spring Security wrapper
+ * @see AppUserRepository for user data access
  */
 @Service
 @RequiredArgsConstructor
@@ -41,14 +30,15 @@ public class AppUserDetailService implements UserDetailsService {
     private final AppUserRepository repository;
 
     /**
-     * Locates the user based on the provided username (email or phone number).
+     * Loads user by identifier for Spring Security authentication.
      * <p>
-     * This method is called by Spring Security during the authentication process.
-     * It performs a case-insensitive search for a user by either email or phone number.
-     * </p>
+     * Determines identifier type (email vs. phone) by '@' presence.
+     * Performs case-insensitive email lookup and exact phone match.
+     * Critical for authentication credential validation.
      *
-     * @return a fully populated user record (never {@code null})
-     * @throws UsernameNotFoundException if the user could not be found
+     * @param identifier user email or phone number
+     * @return Spring Security UserDetails wrapper
+     * @throws UsernameNotFoundException if user not found
      */
     @Override
     @NullMarked
@@ -71,4 +61,3 @@ public class AppUserDetailService implements UserDetailsService {
 
     }
 }
-// todo rewrite the javadoc.

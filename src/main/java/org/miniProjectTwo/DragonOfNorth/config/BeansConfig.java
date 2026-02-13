@@ -36,6 +36,13 @@ public class BeansConfig {
         return new AuditorAwareImpl();
     }
 
+    /**
+     * Registers a configured {@link ObjectMapper} bean for JSON serialization/deserialization.
+     * Provides a shared ObjectMapper instance for the application to use for
+     * JSON processing operations, ensuring consistent configuration across all components.
+     *
+     * @return a configured ObjectMapper instance
+     */
     @Bean
     public ObjectMapper objectMapper() {
         return new ObjectMapper();

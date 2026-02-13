@@ -11,6 +11,7 @@ import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
+import org.springframework.modulith.NamedInterface;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -23,8 +24,16 @@ import static org.miniProjectTwo.DragonOfNorth.enums.RoleName.USER;
 
 /**
  * Initializes test data for development and testing environments.
- * Creates users with different statuses for testing purposes.
+ * Creates users with different authentication methods (email/phone), statuses,
+ * and roles for testing purposes. Runs only in "test" profile with @Order(2)
+ * after {@link RolesInitializer} ensures required roles exist.
+ * Test users created with the default password "password123":
+ * - 5 email users (user1-2@example.com, admin1-2@example.com, superadmin@example.com)
+ * - 5 phone users (9912345601-9912345605)
+ * - Various statuses: CREATED, VERIFIED
+ * - Roles: USER, ADMIN, or both
  */
+@NamedInterface
 @Component
 @Profile({"test"})
 @RequiredArgsConstructor
@@ -36,6 +45,14 @@ public class TestDataInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Entry point for test data initialization.
+     * Retrieves USER and ADMIN roles from a database, then creates email and phone
+     * users with different combinations of status and role assignments.
+     *
+     * @param args command line arguments (unused)
+     * @throws IllegalStateException if required roles are not found
+     */
     @Override
     public void run(String @NonNull ... args) {
         // Get existing roles (they should be created by DataInitializer)
@@ -53,7 +70,13 @@ public class TestDataInitializer implements CommandLineRunner {
         
         log.info("Test users initialized successfully");
     }
-    
+
+    /**
+     * Creates email-based test users with various statuses and roles.
+     *
+     * @param userRole  the USER role instance
+     * @param adminRole the ADMIN role instance
+     */
     private void initializeEmailUsers(Role userRole, Role adminRole) {
         // Create 5 email-only users with different statuses and roles
         createEmailUser("user1@example.com", CREATED, Set.of(userRole));
@@ -62,7 +85,13 @@ public class TestDataInitializer implements CommandLineRunner {
         createEmailUser("admin2@example.com", VERIFIED, Set.of(adminRole));
         createEmailUser("superadmin@example.com", VERIFIED, Set.of(userRole, adminRole));
     }
-    
+
+    /**
+     * Creates phone-based test users with various statuses and roles.
+     *
+     * @param userRole the USER role instance
+     * @param adminRole the ADMIN role instance
+     */
     private void initializePhoneUsers(Role userRole, Role adminRole) {
         // Create 5 phone-only users with different statuses and roles
         createPhoneUser("9912345601", CREATED, Set.of(userRole));
@@ -73,7 +102,11 @@ public class TestDataInitializer implements CommandLineRunner {
     }
 
     /**
-     * Creates a new user with email authentication only
+     * Creates a new user with email authentication only.
+     *
+     * @param email the email address for the user
+     * @param status the user status (CREATED or VERIFIED)
+     * @param roles set of roles to assign to the user
      */
     private void createEmailUser(String email, AppUserStatus status, Set<Role> roles) {
         if (appUserRepository.findByEmail(email).isPresent()) {
@@ -93,9 +126,13 @@ public class TestDataInitializer implements CommandLineRunner {
         appUserRepository.save(user);
         log.info("Created {} email user: {}", status, email);
     }
-    
+
     /**
-     * Creates a new user with phone authentication only
+     * Creates a new user with phone authentication only.
+     *
+     * @param phoneNumber the phone number for the user
+     * @param status the user status (CREATED or VERIFIED)
+     * @param roles set of roles to assign to the user
      */
     private void createPhoneUser(String phoneNumber, AppUserStatus status, Set<Role> roles) {
         if (appUserRepository.findByPhone(phoneNumber).isPresent()) {

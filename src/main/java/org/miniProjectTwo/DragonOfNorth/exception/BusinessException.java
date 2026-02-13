@@ -5,17 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
 
 /**
- * Custom runtime exception representing a business-level error in the application.
+ * Business logic exception with structured error codes and dynamic messaging.
+ * <p>
+ * Wraps ErrorCode for consistent API responses and supports parameterized messages.
+ * Performance-optimized with lazy message formatting. Critical for business rule
+ * enforcement and standardized error reporting across services.
  *
- * <p>This exception wraps an {@link ErrorCode} and optional arguments used for
- * formatting the error message. It supports two usage patterns:
- * <ul>
- *     <li>Errors that use simple fixed messages</li>
- *     <li>Errors that require dynamic placeholders (e.g., {@code %s})</li>
- * </ul>
- *
- * <p>Designed for high-performance scenarios where varargs allocation is avoided.
- * Message formatting is only attempted when arguments are provided.</p>
+ * @see ErrorCode for error definitions
+ * @see ApplicationExceptionHandler for error mapping
  */
 @Getter
 @Slf4j

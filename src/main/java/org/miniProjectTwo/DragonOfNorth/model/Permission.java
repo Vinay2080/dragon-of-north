@@ -12,6 +12,15 @@ import lombok.Setter;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Permission entity for role-based access control.
+ * <p>
+ * Defines granular permissions that can be assigned to roles.
+ * Supports many-to-many relationship with roles for flexible authorization.
+ * Critical for implementing fine-grained security controls.
+ *
+ * @see Role for permission assignment
+ */
 @Entity
 @Getter
 @Setter
@@ -26,4 +35,3 @@ public class Permission extends BaseEntity {
     @ManyToMany(mappedBy = "permissions")
     Set<Role> roles = new HashSet<>();
 }
-// todo javadoc

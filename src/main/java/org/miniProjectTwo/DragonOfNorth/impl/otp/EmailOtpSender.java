@@ -6,29 +6,30 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
- * Implementation of {@link OtpSender} that sends One-Time Passwords (OTP) via email
- * using Amazon Simple Email Service (SES).
- * This service is responsible for delivering OTPs to users' email addresses.
+ * Email OTP sender using AWS SES for delivery.
+ * <p>
+ * Asynchronously sends OTP codes via email through SES service. Delegates
+ * email formatting and delivery to SesEmailService. Critical for email-based
+ * authentication flows with reliable delivery tracking.
  *
- * @see OtpSender
- * @see SesEmailService
+ * @see SesEmailService for email formatting and AWS SES integration
  */
-
 @Service
 @RequiredArgsConstructor
 public class EmailOtpSender implements OtpSender {
     private final SesEmailService sesEmailService;
 
     /**
-     * Sends an OTP to the specified email address.
-     * The OTP is delivered asynchronously through AWS SES.
+     * Sends OTP code via email asynchronously.
+     * <p>
+     * Delegates to SesEmailService for email formatting and AWS SES delivery.
+     * Runs asynchronously to prevent blocking main request threads.
+     * Critical for timely OTP delivery in authentication flows.
      *
-     * @param email The recipient's email address
-     * @param otp The one-time password to be sent
-     * @param ttlMinutes Time-to-live for the OTP in minutes
-     * @throws IllegalArgumentException if the email address is invalid
+     * @param email recipient email address
+     * @param otp generated OTP code
+     * @param ttlMinutes OTP validity period
      */
-
     @Async
     @Override
     public void send(String email, String otp, int ttlMinutes) {

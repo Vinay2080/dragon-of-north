@@ -10,16 +10,17 @@
 ![AWS](https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
 ![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)
 
 ![Deployment](https://img.shields.io/badge/Deployment-Live-brightgreen?style=for-the-badge)
 ![Frontend](https://img.shields.io/badge/Frontend-Vercel-black?style=for-the-badge&logo=vercel)
 ![Backend](https://img.shields.io/badge/Backend-AWS%20EC2-orange?style=for-the-badge&logo=amazon-aws)
 
-**Production-grade authentication system with OTP verification, rate limiting, and JWT security**
+**Production-grade authentication system with OTP verification, Redis-based rate limiting, and JWT security**
 
 [Live Demo](#-live-demo) • [Features](#-features) • [Tech Stack](#-tech-stack) • [Quick Start](#-quick-start) • [API Docs](#-api-documentation) • [Architecture](#-architecture--design-patterns)
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/Vinay2080/dragon-of-north/maven.yml?branch=master)](https://github.com/Vinay2080/dragon-of-north/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/Vinay2080/dragon-of-north/maven.yml?branch=master)](https://github.com/Vinay2080/dragon-of-north/blob/master/.github/workflows/CI-CD.yaml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 </div>
@@ -179,6 +180,16 @@ curl -X POST https://dragon-api.duckdns.org/api/v1/auth/identifier/login \
 
 ### 📊 Data Management
 
+### 🚦 Advanced Rate Limiting
+
+- **Distributed Rate Limiting:** Redis-backed token bucket algorithm using Bucket4j
+- **Multi-Category Limits:** Separate limits for SIGNUP, LOGIN, OTP endpoints
+- **Configurable Buckets:** Custom capacity, refill rate, and time windows
+- **Response Headers:** X-RateLimit-Remaining, X-RateLimit-Capacity, Retry-After
+- **Fail-Open Strategy:** Graceful degradation when Redis is unavailable
+- **Monitoring Integration:** Prometheus metrics for blocked/successful requests
+- **Endpoint Pattern Matching:** Ant-style URL patterns for flexible configuration
+
 - Soft delete support across all entities
 - Complete audit trails (created/updated timestamps and users)
 - Optimistic locking for concurrent updates
@@ -213,11 +224,12 @@ curl -X POST https://dragon-api.duckdns.org/api/v1/auth/identifier/login \
 
 ### Database & Persistence
 
-| Technology     | Purpose            |
-|----------------|--------------------|
-| **PostgreSQL** | Primary Database   |
-| **Hibernate**  | ORM Implementation |
-| **HikariCP**   | Connection Pooling |
+| Technology     | Purpose               |
+|----------------|-----------------------|
+| **PostgreSQL** | Primary Database      |
+| **Hibernate**  | ORM Implementation    |
+| **HikariCP**   | Connection Pooling    |
+| **Redis**      | Rate Limiting Storage |
 
 ### Security & Authentication
 

@@ -4,14 +4,17 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
+import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
+import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 
 /**
- * Data Transfer Object (DTO) for handling email verification requests with OTP (One-Time Password).
- * This record encapsulates the email address and the OTP code for verification purposes.
+ * Request DTO for verifying OTP codes delivered via email.
+ * Validates OTP against stored tokens and updates user verification status. Purpose-based
+ * verification ensures proper authentication flow completion. Failed attempts increment
+ * security counters and may trigger rate limiting or account locks.
  *
- * @param email The email address to be verified. Must be a valid email format and cannot be blank.
- * @param otp   The one-time password for verification. Must be exactly 6 characters long.
- * @see org.miniProjectTwo.DragonOfNorth.model.OtpToken The associated entity that this DTO maps to
+ * @see OtpService for verification logic
+ * @see AppUser for status updates
  */
 
 public record EmailVerifyRequest(

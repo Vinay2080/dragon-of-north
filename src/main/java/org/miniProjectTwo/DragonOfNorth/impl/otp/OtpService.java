@@ -23,21 +23,14 @@ import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.PHONE;
 import static org.miniProjectTwo.DragonOfNorth.enums.OtpVerificationStatus.*;
 
 /**
- * Service for managing OTP (One-Time Password) generation, validation, and delivery.
- * This service handles both email and phone-based OTPs with rate limiting and security features.
+ * Core OTP service managing generation, validation, and delivery.
+ * <p>
+ * Handles OTP lifecycle with rate limiting, expiration, and secure storage.
+ * Supports email and phone delivery with BCrypt hashing and attempt tracking.
+ * Critical for authentication security and spam prevention.
  *
- * <p>Key features include:
- * <ul>
- *   <li>OTP generation with configurable length</li>
- *   <li>Rate limiting and cooldown periods</li>
- *   <li>Automatic expiration of OTPs</li>
- *   <li>Maximum attempt restrictions</li>
- *   <li>Secure storage using BCrypt hashing</li>
- * </ul>
- *
- * @see OtpToken
- * @see EmailOtpSender
- * @see PhoneOtpSender
+ * @see EmailOtpSender for email delivery
+ * @see PhoneOtpSender for SMS delivery
  */
 
 @Service

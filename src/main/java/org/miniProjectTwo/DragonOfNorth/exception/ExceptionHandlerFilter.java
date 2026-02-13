@@ -17,6 +17,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * Filter exception handler for BusinessException in filter chains.
+ * <p>
+ * Catches business exceptions before controller advice and returns standardized
+ * JSON responses. Runs at Order(0) to intercept exceptions early. Critical for
+ * consistent error handling in rate limiting and authentication filters.
+ *
+ * @see BusinessException for caught exceptions
+ * @see ApplicationExceptionHandler for controller-level handling
+ */
 @Component
 @Order(0) // Must run BEFORE RateLimitFilter
 @RequiredArgsConstructor
