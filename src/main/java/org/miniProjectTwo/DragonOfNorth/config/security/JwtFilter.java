@@ -172,4 +172,3 @@ public class JwtFilter extends OncePerRequestFilter {
         return SWAGGER_PATH.stream().anyMatch(path::startsWith);
     }
 }
-// todo javadoc

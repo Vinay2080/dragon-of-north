@@ -39,5 +39,3 @@ public interface AppUserRepository extends JpaRepository<@NonNull AppUser, @NonN
 
 }
 
-
-//todo javadoc
