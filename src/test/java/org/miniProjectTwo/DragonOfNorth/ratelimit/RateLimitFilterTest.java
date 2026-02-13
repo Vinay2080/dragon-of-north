@@ -8,6 +8,8 @@ import org.miniProjectTwo.DragonOfNorth.config.RateLimitProperties;
 import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.enums.RateLimitType;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
+import org.miniProjectTwo.DragonOfNorth.resolver.RateLimitKeyResolver;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.RateLimitBucketService;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
@@ -37,7 +39,7 @@ class RateLimitFilterTest {
 
     @BeforeEach
     void setUp() {
-        bucketService = mock(RateLimitBucketService.class);
+        bucketService = mock(RateLimitBucketServiceImpl.class);
         keyResolver = mock(RateLimitKeyResolver.class);
         chain = mock(FilterChain.class);
 
@@ -85,7 +87,7 @@ class RateLimitFilterTest {
 
         when(keyResolver.resolve(request, RateLimitType.OTP)).thenReturn("OTP:ip:1.2.3.4");
         when(bucketService.tryConsume("OTP:ip:1.2.3.4", RateLimitType.OTP))
-                .thenReturn(RateLimitBucketService.ConsumptionResult.allowed(9, 10));
+                .thenReturn(RateLimitBucketServiceImpl.ConsumptionResult.allowed(9, 10));
 
         // act
         filter.doFilterInternal(request, response, chain);
@@ -112,7 +114,7 @@ class RateLimitFilterTest {
 
         when(keyResolver.resolve(request, RateLimitType.OTP)).thenReturn("OTP:ip:1.2.3.4");
         when(bucketService.tryConsume("OTP:ip:1.2.3.4", RateLimitType.OTP))
-                .thenReturn(RateLimitBucketService.ConsumptionResult.blocked(0, 10, 60));
+                .thenReturn(RateLimitBucketServiceImpl.ConsumptionResult.blocked(0, 10, 60));
 
         // act
         BusinessException ex = assertThrows(BusinessException.class,

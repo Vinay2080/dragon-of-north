@@ -5,8 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
-import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.services.otp.OtpServiceImpl;
 
 /**
  * Request DTO for verifying OTP codes delivered via SMS.
@@ -15,7 +15,7 @@ import org.miniProjectTwo.DragonOfNorth.model.AppUser;
  * verification ensures proper authentication flow completion. Failed attempts increment
  * security counters and may trigger rate limiting or account locks.
  *
- * @see OtpService for verification logic
+ * @see OtpServiceImpl for verification logic
  * @see AppUser for status updates
  */
 

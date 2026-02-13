@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.model.Role;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.JwtServices;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -46,7 +47,7 @@ class JwtServicesTest {
     @BeforeEach
     void setUp() throws Exception {
         KeyPaths paths = ensureLocalKeysExist();
-        jwtServices = new JwtServices(paths.privateKeyPath().toString(), paths.publicKeyPath().toString());
+        jwtServices = new JwtServicesImpl(paths.privateKeyPath().toString(), paths.publicKeyPath().toString());
         ReflectionTestUtils.setField(jwtServices, "accessTokenExpiration", 3600000L); // 1 hour
         ReflectionTestUtils.setField(jwtServices, "refreshTokenExpiration", 86400000L); // 24 hours
     }

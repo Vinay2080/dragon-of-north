@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
-import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
+import org.miniProjectTwo.DragonOfNorth.services.otp.OtpServiceImpl;
 
 import java.time.Instant;
 
@@ -15,7 +15,7 @@ import java.time.Instant;
  * Supports email and phone identifiers with purpose-based validation.
  * Critical for authentication security and spam prevention.
  *
- * @see OtpService for token lifecycle management
+ * @see OtpServiceImpl for token lifecycle management
  */
 @Getter
 @Setter

@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.miniProjectTwo.DragonOfNorth.config.OtpConfig.SnsConfig;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
-import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
+import org.miniProjectTwo.DragonOfNorth.services.otp.OtpServiceImpl;
 
 /**
  * Request DTO for generating OTP codes via email delivery.
@@ -13,7 +13,7 @@ import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
  * ensures appropriate verification flows (registration, login, recovery). Email format validation
  * prevents invalid delivery attempts and reduces service costs.
  *
- * @see OtpService for generation logic
+ * @see OtpServiceImpl for generation logic
  * @see SnsConfig for email delivery configuration
  */
 

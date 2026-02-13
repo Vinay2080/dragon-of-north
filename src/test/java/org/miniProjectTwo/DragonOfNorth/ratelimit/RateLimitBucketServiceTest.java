@@ -7,6 +7,7 @@ import io.github.bucket4j.distributed.proxy.ProxyManager;
 import org.junit.jupiter.api.Test;
 import org.miniProjectTwo.DragonOfNorth.config.RateLimitProperties;
 import org.miniProjectTwo.DragonOfNorth.enums.RateLimitType;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.RateLimitBucketService;
 
 import java.util.Map;
 import java.util.function.Supplier;
@@ -38,7 +39,7 @@ class RateLimitBucketServiceTest {
         RateLimitProperties properties = new RateLimitProperties();
         properties.setRules(Map.of());
 
-        RateLimitBucketService service = new RateLimitBucketService(proxyManager, properties);
+        RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
 
         // act + assert
         IllegalStateException ex = assertThrows(IllegalStateException.class, service::initializeConfigurations);
@@ -58,7 +59,7 @@ class RateLimitBucketServiceTest {
                 "otp", rule()
         ));
 
-        RateLimitBucketService service = new RateLimitBucketService(proxyManager, properties);
+        RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
 
         // act + assert
         assertDoesNotThrow(service::initializeConfigurations);
@@ -85,11 +86,11 @@ class RateLimitBucketServiceTest {
                 "otp", rule()
         ));
 
-        RateLimitBucketService service = new RateLimitBucketService(proxyManager, properties);
+        RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
         service.initializeConfigurations();
 
         // act
-        RateLimitBucketService.ConsumptionResult result = service.tryConsume("k", RateLimitType.OTP);
+        RateLimitBucketServiceImpl.ConsumptionResult result = service.tryConsume("k", RateLimitType.OTP);
 
         // assert
         assertTrue(result.isAllowed());
@@ -120,11 +121,11 @@ class RateLimitBucketServiceTest {
                 "otp", rule()
         ));
 
-        RateLimitBucketService service = new RateLimitBucketService(proxyManager, properties);
+        RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
         service.initializeConfigurations();
 
         // act
-        RateLimitBucketService.ConsumptionResult result = service.tryConsume("k", RateLimitType.OTP);
+        RateLimitBucketServiceImpl.ConsumptionResult result = service.tryConsume("k", RateLimitType.OTP);
 
         // assert
         assertFalse(result.isAllowed());
@@ -147,11 +148,11 @@ class RateLimitBucketServiceTest {
                 "otp", rule()
         ));
 
-        RateLimitBucketService service = new RateLimitBucketService(proxyManager, properties);
+        RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
         service.initializeConfigurations();
 
         // act
-        RateLimitBucketService.ConsumptionResult result = service.tryConsume("k", RateLimitType.OTP);
+        RateLimitBucketServiceImpl.ConsumptionResult result = service.tryConsume("k", RateLimitType.OTP);
 
         // assert
         assertTrue(result.isAllowed());

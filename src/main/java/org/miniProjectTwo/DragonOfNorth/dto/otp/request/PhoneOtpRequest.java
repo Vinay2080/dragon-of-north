@@ -6,14 +6,14 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.miniProjectTwo.DragonOfNorth.config.OtpConfig.SnsConfig;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
-import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
+import org.miniProjectTwo.DragonOfNorth.services.otp.OtpServiceImpl;
 
 /**
  * Request DTO for generating OTP codes via SMS delivery.
  * Triggers OTP generation and SMS delivery through SNS service. Phone validation
  * ensures the proper Indian mobile format (6-9 prefix, 10 digits). Purpose-based routing
  * controls verification flows and prevents SMS spam to invalid numbers.
- * @see OtpService for generation logic
+ * @see OtpServiceImpl for generation logic
  * @see SnsConfig for SMS delivery configuration
  */
 

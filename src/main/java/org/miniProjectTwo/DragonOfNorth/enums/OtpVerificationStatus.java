@@ -3,7 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.enums;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.dto.otp.request.EmailVerifyRequest;
-import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
+import org.miniProjectTwo.DragonOfNorth.services.otp.OtpServiceImpl;
 
 /**
  * OTP verification outcomes with a success flag and user-facing messages.
@@ -12,7 +12,7 @@ import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
  * authentication progress, failures trigger retry limits or account locks.
  * Critical for security enforcement and user experience management.
  *
- * @see OtpService for verification logic
+ * @see OtpServiceImpl for verification logic
  * @see EmailVerifyRequest and PhoneVerifyRequest for usage
  */
 @Getter

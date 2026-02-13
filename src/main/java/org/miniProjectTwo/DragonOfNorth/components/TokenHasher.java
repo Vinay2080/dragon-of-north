@@ -1,6 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.components;
 
-import org.miniProjectTwo.DragonOfNorth.impl.RefreshTokenService;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.RefreshTokenService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;

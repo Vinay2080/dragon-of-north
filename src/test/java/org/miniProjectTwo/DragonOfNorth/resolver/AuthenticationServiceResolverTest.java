@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
-import org.miniProjectTwo.DragonOfNorth.services.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthenticationService;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 

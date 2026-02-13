@@ -9,7 +9,7 @@ import org.miniProjectTwo.DragonOfNorth.dto.otp.request.EmailVerifyRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.otp.request.PhoneOtpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.otp.request.PhoneVerifyRequest;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpVerificationStatus;
-import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.OtpService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

@@ -2,7 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.resolver;
 
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
-import org.miniProjectTwo.DragonOfNorth.services.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthenticationService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

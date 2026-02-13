@@ -11,8 +11,8 @@ import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserStatusFinderRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.resolver.AuthenticationServiceResolver;
-import org.miniProjectTwo.DragonOfNorth.services.AuthCommonServices;
-import org.miniProjectTwo.DragonOfNorth.services.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthenticationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -132,5 +132,14 @@ public class AuthenticationController {
     ) {
         authCommonServices.refreshToken(request, response);
         return ResponseEntity.ok(ApiResponse.successMessage("refresh token sent"));
+    }
+
+    @PostMapping("/identifier/logout")
+    public ResponseEntity<ApiResponse<?>> logoutUser(
+            HttpServletResponse response,
+            HttpServletRequest request
+    ) {
+        authCommonServices.logoutUser(request, response);
+        return ResponseEntity.ok(ApiResponse.successMessage("user logged out successfully"));
     }
 }

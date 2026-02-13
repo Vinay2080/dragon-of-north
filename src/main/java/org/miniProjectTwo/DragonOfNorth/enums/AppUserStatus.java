@@ -1,7 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.enums;
 
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
-import org.miniProjectTwo.DragonOfNorth.services.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthenticationService;
 
 /**
  * User account lifecycle states controlling authentication and authorization flows.

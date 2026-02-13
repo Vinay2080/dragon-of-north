@@ -11,6 +11,8 @@ import org.miniProjectTwo.DragonOfNorth.config.RateLimitProperties;
 import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.enums.RateLimitType;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
+import org.miniProjectTwo.DragonOfNorth.resolver.RateLimitKeyResolver;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.RateLimitBucketService;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -55,7 +57,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         if (type != null) {
             String key = keyResolver.resolve(request, type);
-            RateLimitBucketService.ConsumptionResult result = bucketService.tryConsume(key, type);
+            RateLimitBucketServiceImpl.ConsumptionResult result = bucketService.tryConsume(key, type);
 
             // Add response headers
             response.setHeader("X-RateLimit-Remaining", String.valueOf(result.getRemaining()));

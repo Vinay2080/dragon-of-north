@@ -11,7 +11,7 @@ import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.exception.ApplicationExceptionHandler;
 import org.miniProjectTwo.DragonOfNorth.resolver.AuthenticationServiceResolver;
-import org.miniProjectTwo.DragonOfNorth.services.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthenticationService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;

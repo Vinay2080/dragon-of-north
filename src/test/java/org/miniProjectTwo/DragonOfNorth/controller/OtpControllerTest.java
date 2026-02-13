@@ -11,7 +11,7 @@ import org.miniProjectTwo.DragonOfNorth.dto.otp.request.PhoneVerifyRequest;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpVerificationStatus;
 import org.miniProjectTwo.DragonOfNorth.exception.ApplicationExceptionHandler;
-import org.miniProjectTwo.DragonOfNorth.impl.otp.OtpService;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.OtpService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
