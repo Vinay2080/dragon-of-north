@@ -9,7 +9,6 @@ import org.miniProjectTwo.DragonOfNorth.config.security.JwtServicesImpl;
 import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
-import org.miniProjectTwo.DragonOfNorth.model.RefreshToken;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.RefreshTokenService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -19,7 +18,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,16 +57,14 @@ class AuthCommonServiceRevocationTest {
         appUser.setId(UUID.randomUUID());
         appUser.setRoles(new HashSet<>());
 
-        RefreshToken existingToken = new RefreshToken();
-        existingToken.setRevoked(false);
 
         AppUserDetails appUserDetails = new AppUserDetails(appUser);
         Authentication authentication = new UsernamePasswordAuthenticationToken(appUserDetails, password);
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
-        when(refreshTokenService.findValidTokensByUser(appUser))
-                .thenReturn(List.of(existingToken));
+
+
         when(jwtServices.generateAccessToken(any(UUID.class), anySet()))
                 .thenReturn("access-token");
         when(jwtServices.generateRefreshToken(any(UUID.class)))
@@ -78,9 +74,6 @@ class AuthCommonServiceRevocationTest {
         authCommonService.login(identifier, password, httpServletResponse);
 
         // assert
-        verify(refreshTokenService).findValidTokensByUser(appUser);
-        // CHANGED: No longer revoking existing tokens in multiple token approach
-        verify(refreshTokenService, never()).revokeToken(any());
         verify(refreshTokenService).storeRefreshToken(appUser, "refresh-token");
         verify(jwtServices).generateAccessToken(appUser.getId(), appUser.getRoles());
         verify(jwtServices).generateRefreshToken(appUser.getId());
@@ -101,8 +94,8 @@ class AuthCommonServiceRevocationTest {
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
-        when(refreshTokenService.findValidTokensByUser(appUser))
-                .thenReturn(List.of());
+
+
         when(jwtServices.generateAccessToken(any(UUID.class), anySet()))
                 .thenReturn("access-token");
         when(jwtServices.generateRefreshToken(any(UUID.class)))
@@ -112,8 +105,6 @@ class AuthCommonServiceRevocationTest {
         authCommonService.login(identifier, password, httpServletResponse);
 
         // assert
-        verify(refreshTokenService).findValidTokensByUser(appUser);
-        verify(refreshTokenService, never()).revokeToken(any());
         verify(refreshTokenService).storeRefreshToken(appUser, "refresh-token");
         verify(jwtServices).generateAccessToken(appUser.getId(), appUser.getRoles());
         verify(jwtServices).generateRefreshToken(appUser.getId());
