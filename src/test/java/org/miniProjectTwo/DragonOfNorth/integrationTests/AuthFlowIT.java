@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.integrationTests;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserLoginRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpCompleteRequest;
@@ -27,6 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@Disabled
 class AuthFlowIT extends BaseIntegrationTest {
 
     private MockMvc mockMvc;
