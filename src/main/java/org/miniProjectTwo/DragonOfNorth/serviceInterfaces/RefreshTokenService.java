@@ -4,6 +4,8 @@ import jakarta.transaction.Transactional;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.model.RefreshToken;
 
+import java.util.List;
+
 public interface RefreshTokenService {
     @Transactional
     void storeRefreshToken(AppUser user, String rawToken);
@@ -13,6 +15,14 @@ public interface RefreshTokenService {
 
     void validateAndUpdateToken(RefreshToken token);
 
-    void deleteRefreshToken(String refreshToken);
+    @Transactional
+    void revokeToken(RefreshToken token);
 
+    @Transactional
+    void revokeTokenByRawToken(String rawToken);
+
+    List<RefreshToken> findValidTokensByUser(AppUser appUser);
+
+    @Transactional
+    void deleteAllTokensForUser(AppUser appUser);
 }

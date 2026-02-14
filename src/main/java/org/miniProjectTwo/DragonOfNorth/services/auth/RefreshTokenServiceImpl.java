@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Service for managing JWT refresh tokens with secure storage and validation.
@@ -97,6 +98,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
      * @param token refresh token to validate
      * @throws BusinessException if the token is expired or revoked
      */
+    @Transactional
     @Override
     public void validateAndUpdateToken(RefreshToken token) {
         if (token.isExpired()) {
@@ -112,15 +114,36 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         refreshTokenRepository.save(token);
     }
 
+    @Transactional
     @Override
-    public void deleteRefreshToken(String rawToken) {
+    public void revokeToken(RefreshToken token) {
+        token.setRevoked(true);
+        refreshTokenRepository.save(token);
+    }
+
+    @Transactional
+    @Override
+    public void revokeTokenByRawToken(String rawToken) {
         String prefix = rawToken.length() > 8 ? rawToken.substring(0, 8) : rawToken;
 
         refreshTokenRepository.findByTokenPrefix(prefix)
                 .stream()
                 .filter(rt -> tokenHasher.matches(rawToken, rt.getToken()))
                 .findFirst()
-                .ifPresent(refreshTokenRepository::delete);
+                .ifPresent(this::revokeToken);
+    }
+
+    @Override
+    public List<RefreshToken> findValidTokensByUser(AppUser appUser) {
+        return refreshTokenRepository.findByUserAndRevokedFalse(appUser)
+                .stream()
+                .filter(token -> !token.isExpired())
+                .toList();
+    }
+
+    @Override
+    public void deleteAllTokensForUser(AppUser appUser) {
+        refreshTokenRepository.deleteByUser(appUser);
     }
 
 }

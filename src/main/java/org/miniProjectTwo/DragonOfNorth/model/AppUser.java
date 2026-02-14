@@ -8,7 +8,9 @@ import lombok.Setter;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -128,5 +130,8 @@ public class AppUser extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "roles_id")
     )
     private Set<Role> roles = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<RefreshToken> refreshTokens = new ArrayList<>();
 
 }

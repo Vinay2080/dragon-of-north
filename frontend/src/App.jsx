@@ -1,19 +1,29 @@
-import { Routes, Route } from "react-router-dom";
+import {Route, Routes} from "react-router-dom";
+import {AuthProvider} from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import AuthIdentifierPage from "./pages/AuthIdentifierPage";
 import SignupPage from "./pages/SignupPage";
 import OtpPage from "./pages/OtpPage";
 import LoginPage from "./pages/LoginPage";
-
-const DashboardPage = () => <div style={{ padding: '20px' }}>Dashboard Page (Placeholder)</div>;
+import DashboardPage from "./pages/DashboardPage";
 
 export default function App() {
     return (
-        <Routes>
-            <Route path="/" element={<AuthIdentifierPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/otp" element={<OtpPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-        </Routes>
+        <AuthProvider>
+            <Routes>
+                <Route path="/" element={<AuthIdentifierPage/>}/>
+                <Route path="/signup" element={<SignupPage/>}/>
+                <Route path="/otp" element={<OtpPage/>}/>
+                <Route path="/login" element={<LoginPage/>}/>
+                <Route
+                    path="/dashboard"
+                    element={
+                        <ProtectedRoute>
+                            <DashboardPage/>
+                        </ProtectedRoute>
+                    }
+                />
+            </Routes>
+        </AuthProvider>
     );
 }

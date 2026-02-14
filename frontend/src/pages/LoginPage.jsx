@@ -1,10 +1,14 @@
 import React, {useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
+import {apiService} from '../services/apiService';
+import {useAuth} from '../context/authUtils';
+import RateLimitInfo from '../components/RateLimitInfo';
 
 const LoginPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const {login} = useAuth();
     const { identifier: initialIdentifier } = location.state || {};
 
     const [identifier, setIdentifier] = useState(initialIdentifier || '');
@@ -18,28 +22,26 @@ const LoginPage = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/auth/identifier/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    identifier,
-                    password,
-                }),
+            const result = await apiService.post(API_CONFIG.ENDPOINTS.LOGIN, {
+                identifier,
+                password,
             });
 
-            const result = await response.json();
-
-            if (response.ok && result.api_response_status === 'success') {
-                // For now, just redirect to dashboard as per common flow
-                // The user said "frontend will call login endpoint. that's it am going to change jwt logic so keep it to this"
+            if (result.api_response_status === 'success') {
+                // Set auth state
+                login({identifier});
                 navigate('/dashboard');
             } else {
                 setError(result.message || 'Login failed. Please check your credentials.');
             }
         } catch (err) {
-            setError('Failed to connect to the server. Please try again later.');
+            if (err.type === 'RATE_LIMIT_EXCEEDED') {
+                setError(`Too many login attempts. Please wait ${err.retryAfter} seconds before trying again.`);
+            } else if (err.type === 'API_ERROR') {
+                setError(err.message || 'Login failed. Please check your credentials.');
+            } else {
+                setError('Failed to connect to the server. Please try again later.');
+            }
             console.error('Login Error:', err);
         } finally {
             setLoading(false);
@@ -101,6 +103,8 @@ const LoginPage = () => {
                             {loading ? 'Logging in...' : 'Login'}
                         </button>
                     </div>
+
+                    <RateLimitInfo/>
                 </form>
 
                 <div className="mt-6 text-center">

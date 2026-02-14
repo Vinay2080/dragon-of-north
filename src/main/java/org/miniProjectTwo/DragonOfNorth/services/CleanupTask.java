@@ -78,4 +78,15 @@ public class CleanupTask {
         int deletedCount = refreshTokenRepository.deleteByExpiryDateBefore(now);
         log.info("Cleaned up {} expired refresh tokens", deletedCount);
     }
+
+    @Scheduled(fixedRate = 24 * 60 * 60 * 1000)
+    public void cleanUpTokens() {
+        Instant now = Instant.now();
+
+        int expiredDeleted = refreshTokenRepository.deleteByExpiryDateBefore(now);
+        Instant revokedCutoff = now.minus(7, ChronoUnit.DAYS);
+        int revokedDeleted = refreshTokenRepository.deleteByRevokedTrueAndCreatedAtBefore(revokedCutoff);
+
+        log.info("Cleanup: {} expired, {} revoked tokens deleted", expiredDeleted, revokedDeleted);
+    }
 }

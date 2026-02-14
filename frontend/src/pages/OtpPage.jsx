@@ -1,6 +1,8 @@
 import React, {useEffect, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
+import {apiService} from '../services/apiService';
+import RateLimitInfo from '../components/RateLimitInfo';
 
 const OtpPage = () => {
     const location = useLocation();
@@ -61,21 +63,13 @@ const OtpPage = () => {
 
     const completeSignup = async (otpCode) => {
         try {
-            const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/auth/identifier/sign-up/complete`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    identifier,
-                    identifier_type: identifierType,
-                    otp: otpCode
-                }),
+            const result = await apiService.post(API_CONFIG.ENDPOINTS.SIGNUP_COMPLETE, {
+                identifier,
+                identifier_type: identifierType,
+                otp: otpCode
             });
 
-            const result = await response.json();
-
-            if (response.ok && result.api_response_status === 'success') {
+            if (result.api_response_status === 'success') {
                 localStorage.removeItem('otpTimer');
                 localStorage.removeItem('otpTimerTimestamp');
                 navigate('/login', {state: {identifier}});
@@ -83,7 +77,7 @@ const OtpPage = () => {
                 setError(result.message || 'Failed to complete registration.');
             }
         } catch (err) {
-            setError('Failed to complete registration. Please try again.');
+            setError(err.message || 'Failed to complete registration. Please try again.');
             console.error('Complete Signup Error:', err);
         }
     };
@@ -100,8 +94,8 @@ const OtpPage = () => {
         setError('');
 
         const endpoint = identifierType === 'EMAIL'
-            ? `${API_CONFIG.BASE_URL}/api/v1/otp/email/verify`
-            : `${API_CONFIG.BASE_URL}/api/v1/otp/phone/verify`;
+            ? API_CONFIG.ENDPOINTS.EMAIL_OTP_VERIFY
+            : API_CONFIG.ENDPOINTS.PHONE_OTP_VERIFY;
 
         const payload = identifierType === 'EMAIL'
             ? { email: identifier, otp: otpCode, otp_purpose: 'SIGNUP' }
@@ -109,24 +103,20 @@ const OtpPage = () => {
 
         try {
             // First verify the OTP
-            const verifyResponse = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            });
+            const verifyResult = await apiService.post(endpoint, payload);
 
-            const verifyResult = await verifyResponse.json();
-
-            if (verifyResponse.ok) {
+            if (verifyResult.api_response_status === 'success') {
                 // If OTP is verified, complete the signup
                 await completeSignup(otpCode);
             } else {
-                setError(verifyResult.message || (verifyResult.data && verifyResult.data.message) || 'Invalid OTP. Please try again.');
+                setError(verifyResult.message || 'Invalid OTP. Please try again.');
             }
         } catch (err) {
-            setError('Failed to connect to the server. Please try again later.');
+            if (err.type === 'RATE_LIMIT_EXCEEDED') {
+                setError(`Too many verification attempts. Please wait ${err.retryAfter} seconds before trying again.`);
+            } else {
+                setError(err.message || 'Failed to connect to the server. Please try again later.');
+            }
             console.error('Verify OTP Error:', err);
         } finally {
             setLoading(false);
@@ -136,36 +126,33 @@ const OtpPage = () => {
 
     const handleResendOtp = async () => {
         if (timer > 0) return;
-        
+
         setResendLoading(true);
         setError('');
 
         const endpoint = identifierType === 'EMAIL'
-            ? `${API_CONFIG.BASE_URL}/api/v1/otp/email/request`
-            : `${API_CONFIG.BASE_URL}/api/v1/otp/phone/request`;
-        
+            ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST
+            : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
+
         const payload = identifierType === 'EMAIL'
             ? { email: identifier, otp_purpose: 'SIGNUP' }
             : { phone: identifier, otp_purpose: 'SIGNUP' };
 
         try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            });
+            const result = await apiService.post(endpoint, payload);
 
-            if (response.ok) {
+            if (result.api_response_status === 'success') {
                 setTimer(60);
                 setOtp(['', '', '', '', '', '']);
             } else {
-                const result = await response.json();
                 setError(result.message || 'Failed to resend OTP.');
             }
         } catch (err) {
-            setError('Failed to resend OTP. Please try again.');
+            if (err.type === 'RATE_LIMIT_EXCEEDED') {
+                setError(`Too many OTP requests. Please wait ${err.retryAfter} seconds before trying again.`);
+            } else {
+                setError(err.message || 'Failed to resend OTP. Please try again.');
+            }
             console.error('Resend OTP Error:', err);
         } finally {
             setResendLoading(false);
@@ -216,6 +203,8 @@ const OtpPage = () => {
                     >
                         {loading ? 'Verifying...' : 'Verify & Continue'}
                     </button>
+
+                    <RateLimitInfo/>
                 </form>
 
                 <div className="mt-8 text-center">

@@ -29,7 +29,7 @@ public class RefreshToken extends BaseEntity {
     @Column(name = "token_prefix", length = 8)
     private String tokenPrefix;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private AppUser user;
 

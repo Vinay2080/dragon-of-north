@@ -41,7 +41,7 @@ class RefreshTokenServiceTest {
         RefreshToken saved = captor.getValue();
         assertSame(user, saved.getUser());
         assertEquals("hashed-value-1234567890", saved.getToken());
-        assertEquals("hashed-v", saved.getTokenPrefix());
+        assertEquals("raw-refr", saved.getTokenPrefix());
         assertNotNull(saved.getExpiryDate());
         assertTrue(saved.getExpiryDate().isAfter(Instant.now()));
     }
@@ -157,5 +157,125 @@ class RefreshTokenServiceTest {
         verify(repo).save(captor.capture());
         RefreshToken saved = captor.getValue();
         assertNotNull(saved.getLastUsed());
+    }
+
+    @Test
+    void revokeToken_shouldMarkTokenAsRevoked() {
+        // arrange
+        RefreshTokenRepository repo = mock(RefreshTokenRepository.class);
+        TokenHasher hasher = mock(TokenHasher.class);
+        RefreshTokenService service = new RefreshTokenServiceImpl(repo, hasher);
+
+        RefreshToken token = new RefreshToken();
+        token.setRevoked(false);
+
+        // act
+        service.revokeToken(token);
+
+        // assert
+        assertTrue(token.isRevoked());
+        verify(repo).save(token);
+    }
+
+    @Test
+    void revokeTokenByRawToken_shouldRevokeMatchingToken() {
+        // arrange
+        RefreshTokenRepository repo = mock(RefreshTokenRepository.class);
+        TokenHasher hasher = mock(TokenHasher.class);
+        RefreshTokenService service = new RefreshTokenServiceImpl(repo, hasher);
+
+        RefreshToken storedToken = new RefreshToken();
+        storedToken.setToken("hashed");
+        storedToken.setRevoked(false);
+
+        when(repo.findByTokenPrefix("raw-toke")).thenReturn(List.of(storedToken));
+        when(hasher.matches("raw-token", "hashed")).thenReturn(true);
+
+        // act
+        service.revokeTokenByRawToken("raw-token");
+
+        // assert
+        assertTrue(storedToken.isRevoked());
+        verify(repo).save(storedToken);
+    }
+
+    @Test
+    void revokeTokenByRawToken_shouldDoNothing_whenTokenNotFound() {
+        // arrange
+        RefreshTokenRepository repo = mock(RefreshTokenRepository.class);
+        TokenHasher hasher = mock(TokenHasher.class);
+        RefreshTokenService service = new RefreshTokenServiceImpl(repo, hasher);
+
+        when(repo.findByTokenPrefix("raw-toke")).thenReturn(List.of());
+
+        // act
+        service.revokeTokenByRawToken("raw-token");
+
+        // assert
+        verify(repo, never()).save(any());
+    }
+
+    @Test
+    void findValidTokensByUser_shouldReturnNonRevokedNonExpiredToken() {
+        // arrange
+        RefreshTokenRepository repo = mock(RefreshTokenRepository.class);
+        TokenHasher hasher = mock(TokenHasher.class);
+        RefreshTokenService service = new RefreshTokenServiceImpl(repo, hasher);
+
+        AppUser user = new AppUser();
+        RefreshToken validToken = new RefreshToken();
+        validToken.setRevoked(false);
+        validToken.setExpiryDate(Instant.now().plusSeconds(600));
+
+        when(repo.findByUserAndRevokedFalse(user)).thenReturn(List.of(validToken));
+
+        // act
+        List<RefreshToken> result = service.findValidTokensByUser(user);
+
+        // assert
+        assertEquals(1, result.size());
+        assertEquals(validToken, result.getFirst());
+    }
+
+    @Test
+    void findValidTokensByUser_shouldReturnEmpty_whenTokenRevoked() {
+        // arrange
+        RefreshTokenRepository repo = mock(RefreshTokenRepository.class);
+        TokenHasher hasher = mock(TokenHasher.class);
+        RefreshTokenService service = new RefreshTokenServiceImpl(repo, hasher);
+
+        AppUser user = new AppUser();
+        RefreshToken revokedToken = new RefreshToken();
+        revokedToken.setRevoked(true); // Actually revoked
+        revokedToken.setExpiryDate(Instant.now().plusSeconds(600)); // Not expired
+
+        when(repo.findByUserAndRevokedFalse(user)).thenReturn(List.of()); // Repository filters out revoked tokens
+
+        // act
+        List<RefreshToken> result = service.findValidTokensByUser(user);
+
+        // assert
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findValidTokensByUser_shouldReturnEmpty_whenTokenExpired() {
+        // arrange
+        RefreshTokenRepository repo = mock(RefreshTokenRepository.class);
+        TokenHasher hasher = mock(TokenHasher.class);
+        RefreshTokenService service = new RefreshTokenServiceImpl(repo, hasher);
+
+        AppUser user = new AppUser();
+        RefreshToken expiredToken = new RefreshToken();
+        expiredToken.setRevoked(false);
+        expiredToken.setExpiryDate(Instant.now().minusSeconds(600));
+
+        when(repo.findByUserAndRevokedFalse(user)).thenReturn(List.of(expiredToken));
+
+        // act
+        List<RefreshToken> result = service.findValidTokensByUser(user);
+
+        // assert
+        assertTrue(result.isEmpty());
     }
 }

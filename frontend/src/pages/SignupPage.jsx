@@ -1,6 +1,8 @@
 import React, {useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
+import {apiService} from '../services/apiService';
+import RateLimitInfo from '../components/RateLimitInfo';
 
 const SignupPage = () => {
     const location = useLocation();
@@ -23,67 +25,51 @@ const SignupPage = () => {
         setLoading(true);
 
         try {
-            const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/auth/identifier/sign-up`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    identifier,
-                    identifier_type: identifierType,
-                    password,
-                }),
+            const result = await apiService.post(API_CONFIG.ENDPOINTS.SIGNUP, {
+                identifier,
+                identifier_type: identifierType,
+                password,
             });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                if (result.data && result.data.validationErrorList) {
-                    const validationErrors = result.data.validationErrorList
-                        .filter(err => err.field === 'password')
-                        .map(err => err.message);
-                    setErrors(validationErrors.length > 0 ? validationErrors : [result.message || 'Validation failed']);
-                } else {
-                    setErrors([result.message || 'Something went wrong']);
-                }
-                return;
-            }
 
             if (result.api_response_status === 'success') {
                 // Determine OTP endpoint based on identifierType
                 const otpEndpoint = identifierType === 'EMAIL'
-                    ? `${API_CONFIG.BASE_URL}/api/v1/otp/email/request`
-                    : `${API_CONFIG.BASE_URL}/api/v1/otp/phone/request`;
-                
+                    ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST
+                    : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
+
                 const otpPayload = identifierType === 'EMAIL'
                     ? { email: identifier, otp_purpose: 'SIGNUP' }
                     : { phone: identifier, otp_purpose: 'SIGNUP' };
 
                 try {
-                    const otpResponse = await fetch(otpEndpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(otpPayload),
-                    });
-
-                    if (!otpResponse.ok) {
-                        const otpError = await otpResponse.json();
-                        setErrors([otpError.message || 'Failed to send OTP. Please try again.']);
-                        return;
-                    }
-
+                    await apiService.post(otpEndpoint, otpPayload);
                     navigate('/otp', { state: { identifier, identifierType } });
                 } catch (otpErr) {
-                    setErrors(['Failed to send OTP. Please check your connection.']);
+                    if (otpErr.type === 'RATE_LIMIT_EXCEEDED') {
+                        setErrors([`Too many OTP requests. Please wait ${otpErr.retryAfter} seconds before trying again.`]);
+                    } else {
+                        setErrors([otpErr.message || 'Failed to send OTP. Please try again.']);
+                    }
                     console.error('OTP API Error:', otpErr);
                 }
             } else {
                 setErrors([result.message || 'Something went wrong']);
             }
         } catch (err) {
-            setErrors(['Failed to connect to the server. Please try again later.']);
+            if (err.type === 'RATE_LIMIT_EXCEEDED') {
+                setErrors([`Too many signup attempts. Please wait ${err.retryAfter} seconds before trying again.`]);
+            } else if (err.type === 'API_ERROR') {
+                if (err.data && err.data.data && err.data.data.validationErrorList) {
+                    const validationErrors = err.data.data.validationErrorList
+                        .filter(e => e.field === 'password')
+                        .map(e => e.message);
+                    setErrors(validationErrors.length > 0 ? validationErrors : [err.message || 'Validation failed']);
+                } else {
+                    setErrors([err.message || 'Something went wrong']);
+                }
+            } else {
+                setErrors(['Failed to connect to the server. Please try again later.']);
+            }
             console.error('API Error:', err);
         } finally {
             setLoading(false);
@@ -137,6 +123,8 @@ const SignupPage = () => {
                             {loading ? 'Processing...' : 'Get OTP'}
                         </button>
                     </div>
+
+                    <RateLimitInfo/>
                 </form>
 
                 <div className="mt-6 flex items-center justify-between">

@@ -161,7 +161,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         if (refreshToken == null || refreshToken.isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "refresh token missing");
         }
-        refreshTokenServiceImpl.deleteRefreshToken(refreshToken);
+        refreshTokenServiceImpl.revokeTokenByRawToken(refreshToken);
         clearRefreshTokenCookie(response);
         clearAccessTokenCookie(response);
 
