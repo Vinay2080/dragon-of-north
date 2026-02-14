@@ -32,7 +32,7 @@
         <jjwt.version>0.13.0</jjwt.version>
         <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
         <spring-modulith.version>2.0.0</spring-modulith.version>
-        <testcontainers.version>1.20.4</testcontainers.version>
+        <testcontainers.version>1.20.5</testcontainers.version>
     </properties>
     <dependencies>
         <dependency>
