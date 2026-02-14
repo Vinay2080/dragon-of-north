@@ -31,8 +31,16 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x mvnw
 
-      - name: Run tests
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run unit tests
         run: ./mvnw test
+
+      - name: Run integration tests
+        run: ./mvnw verify -P integration-tests
+        env:
+          DOCKER_HOST: unix:///var/run/docker.sock
 
 # CD
 
