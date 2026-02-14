@@ -25,7 +25,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.util.Base64;
 
-@Testcontainers(disabledWithoutDocker = true)
+@Testcontainers
 @ActiveProfiles("test")
 @Import(BaseIntegrationTest.MockedBeansTestConfig.class)
 public abstract class BaseIntegrationTest {
