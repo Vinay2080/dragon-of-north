@@ -10,6 +10,10 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,10 +38,12 @@ jobs:
       - name: Run unit tests
         run: ./mvnw test
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Verify Docker is running
+        run: |
+          docker version
+          docker ps
 
-      - name: Run integration tests
+      - name: Run integration tests with Testcontainers
         run: ./mvnw verify -P integration-tests
 
 # CD

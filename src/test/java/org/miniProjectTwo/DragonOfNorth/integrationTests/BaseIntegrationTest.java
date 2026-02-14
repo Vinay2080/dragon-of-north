@@ -36,13 +36,15 @@ public abstract class BaseIntegrationTest {
             new PostgreSQLContainer<>("postgres:16-alpine")
                     .withDatabaseName("testDB")
                     .withUsername("test")
-                    .withPassword("test");
+                    .withPassword("test")
+                    .withReuse(false);
 
     @Container
     @SuppressWarnings("resource")
     static final GenericContainer<?> redis =
-            new GenericContainer<>("redis:7")
-                    .withExposedPorts(6379);
+            new GenericContainer<>("redis:7-alpine")
+                    .withExposedPorts(6379)
+                    .withReuse(false);
 
     private static volatile KeyPaths KEY_PATHS;
     @Autowired
