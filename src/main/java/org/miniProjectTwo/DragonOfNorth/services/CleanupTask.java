@@ -41,6 +41,7 @@ public class CleanupTask {
      * Critical for OTP table maintenance and performance.
      */
     @Scheduled(fixedDelayString = "${otp.cleanup.delay-ms}")
+    @Transactional
     public void cleanupExpiredOtpTokens() {
         otpTokenRepository.deleteAllByExpiresAtBefore(Instant.now());
         log.info("Cleaned up all expired OTPs");
@@ -80,6 +81,7 @@ public class CleanupTask {
     }
 
     @Scheduled(fixedRate = 24 * 60 * 60 * 1000)
+    @Transactional
     public void cleanUpTokens() {
         Instant now = Instant.now();
 
