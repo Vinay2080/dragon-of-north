@@ -79,8 +79,6 @@ aws:
   region: ${aws_region}
   ses:
     sender: ${aws_ses_sender}
-  sns:
-    enabled: false
 keys:
   public: ${public_key_path}
   private: ${private_key_path}
