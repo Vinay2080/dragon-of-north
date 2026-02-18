@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
-import org.miniProjectTwo.DragonOfNorth.repositories.RefreshTokenRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +21,6 @@ import java.time.temporal.ChronoUnit;
  * Critical for system performance and data cleanup.
  *
  * @see OtpTokenRepository for OTP cleanup
- * @see RefreshTokenRepository for token cleanup
  */
 @RequiredArgsConstructor
 @Component
@@ -30,7 +28,6 @@ import java.time.temporal.ChronoUnit;
 public class CleanupTask {
     private final OtpTokenRepository otpTokenRepository;
     private final AppUserRepository appUserRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
 
 
     /**
@@ -65,30 +62,6 @@ public class CleanupTask {
         log.info("Cleaned up all unverified users");
     }
 
-    /**
-     * Removes expired refresh tokens daily at midnight.
-     * <p>
-     * Deletes refresh tokens with the expiration date before now.
-     * Runs daily using cron expression for consistent cleanup.
-     * Critical for token table maintenance and security.
-     */
-    @Scheduled(cron = "0 0 0 * * ?")
-    @Transactional
-    public void CleanupExpiredJwtToken() {
-        Instant now = Instant.now();
-        int deletedCount = refreshTokenRepository.deleteByExpiryDateBefore(now);
-        log.info("Cleaned up {} expired refresh tokens", deletedCount);
-    }
+//todo cleanup sessions
 
-    @Scheduled(fixedRate = 24 * 60 * 60 * 1000)
-    @Transactional
-    public void cleanUpTokens() {
-        Instant now = Instant.now();
-
-        int expiredDeleted = refreshTokenRepository.deleteByExpiryDateBefore(now);
-        Instant revokedCutoff = now.minus(7, ChronoUnit.DAYS);
-        int revokedDeleted = refreshTokenRepository.deleteByRevokedTrueAndCreatedAtBefore(revokedCutoff);
-
-        log.info("Cleanup: {} expired, {} revoked tokens deleted", expiredDeleted, revokedDeleted);
-    }
 }

@@ -132,6 +132,6 @@ public class AppUser extends BaseEntity {
     private Set<Role> roles = new HashSet<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<RefreshToken> refreshTokens = new ArrayList<>();
+    private List<Sessions> sessions = new ArrayList<>();
 
 }

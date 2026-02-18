@@ -1,6 +1,5 @@
 package org.miniProjectTwo.DragonOfNorth.components;
 
-import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.RefreshTokenService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -11,7 +10,6 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * Utility component for secure token hashing and verification.
- * Used by {@link RefreshTokenService} to securely store and validate refresh tokens
  * in the database. Implements double hashing: SHA-256 followed by BCrypt
  * for enhanced security against rainbow table and brute force attacks.
  */

@@ -16,7 +16,6 @@ import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.JwtServices;
-import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.RefreshTokenService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -35,7 +34,6 @@ import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.VERIFIED;
  * Critical for session management and security enforcement across the application.
  *
  * @see JwtServicesImpl for token operations
- * @see RefreshTokenService for token persistence
  */
 @RequiredArgsConstructor
 @Service
@@ -45,7 +43,6 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final JwtServices jwtServices;
     private final AppUserRepository appUserRepository;
     private final RoleRepository roleRepository;
-    private final RefreshTokenService refreshTokenServiceImpl;
 
     /**
      * Authenticates user credentials and issues JWT tokens.
@@ -74,8 +71,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
         final String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
         final String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
-
-        refreshTokenServiceImpl.storeRefreshToken(appUser, refreshToken);
+        //todo session store
 
         setAccessToken(response, accessToken);
         setRefreshCookie(response, refreshToken);
@@ -101,7 +97,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
         try {
 
-            refreshTokenServiceImpl.verifyAndUpdateToken(refreshToken);
+            //todo validate session
             UUID userId = jwtServices.extractUserId(refreshToken);
             Set<Role> roles = appUserRepository.findRolesById(userId);
 
@@ -139,7 +135,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * Critical for user registration flow completion and security enforcement.
      *
      * @param appUserStatus must be CREATED to trigger verification
-     * @param appUser user to update status
+     * @param appUser       user to update status
      * @throws BusinessException if the user is already verified or status is invalid
      */
     @Override
@@ -161,7 +157,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         if (refreshToken == null || refreshToken.isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "refresh token missing");
         }
-        refreshTokenServiceImpl.revokeTokenByRawToken(refreshToken);
+        //todo session revocation
         clearRefreshTokenCookie(response);
         clearAccessTokenCookie(response);
 
@@ -198,7 +194,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * from XSS attacks and ensuring proper token transmission.
      *
      * @param response HTTP response for cookie setting
-     * @param token JWT access token value
+     * @param token    JWT access token value
      */
     private void setAccessToken(HttpServletResponse response, String token) {
         Cookie accessCookie = new Cookie("access_token", token);
@@ -244,7 +240,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * Critical for long-term session management and token security.
      *
      * @param response HTTP response for cookie setting
-     * @param token JWT refresh token value
+     * @param token    JWT refresh token value
      */
     private void setRefreshCookie(HttpServletResponse response, String token) {
         Cookie refreshCookie = new Cookie("refresh_token", token);

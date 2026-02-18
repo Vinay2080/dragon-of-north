@@ -5,7 +5,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
-import org.miniProjectTwo.DragonOfNorth.repositories.RefreshTokenRepository;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -13,7 +12,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CleanupTaskTest {
@@ -26,9 +26,6 @@ class CleanupTaskTest {
 
     @Mock
     private AppUserRepository appUserRepository;
-
-    @Mock
-    private RefreshTokenRepository refreshTokenRepository;
 
     @Test
     void cleanupExpired_Otps_shouldCallDeleteAllByExpiresAtBefore() {
@@ -50,30 +47,6 @@ class CleanupTaskTest {
                 any(Instant.class)
         );
     }
+    //todo session cleanup tests
 
-    @Test
-    void cleanUpTokens_shouldDeleteExpiredAndRevokedTokens() {
-        // arrange
-        when(refreshTokenRepository.deleteByExpiryDateBefore(any(Instant.class))).thenReturn(5);
-        when(refreshTokenRepository.deleteByRevokedTrueAndCreatedAtBefore(any(Instant.class))).thenReturn(3);
-
-        // act
-        cleanupTask.cleanUpTokens();
-
-        // verify
-        verify(refreshTokenRepository).deleteByExpiryDateBefore(any(Instant.class));
-        verify(refreshTokenRepository).deleteByRevokedTrueAndCreatedAtBefore(any(Instant.class));
-    }
-
-    @Test
-    void cleanUpTokens_shouldUse7DayCutoffForRevokedTokens() {
-        // arrange
-        when(refreshTokenRepository.deleteByRevokedTrueAndCreatedAtBefore(any(Instant.class))).thenReturn(2);
-
-        // act
-        cleanupTask.cleanUpTokens();
-
-        // verify
-        verify(refreshTokenRepository).deleteByRevokedTrueAndCreatedAtBefore(any(Instant.class));
-    }
 }
