@@ -27,7 +27,7 @@
         <url/>
     </scm>
     <properties>
-        <logback.version>1.5.17</logback.version>
+        <logback.version>1.5.25</logback.version>
         <java.version>21</java.version>
         <jjwt.version>0.13.0</jjwt.version>
         <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
@@ -231,6 +231,18 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
                 <version>1.27.1</version>
+            </dependency>
+            <!-- Force a secure version of netty-codec-http to address CVE-2025-67735 -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-http</artifactId>
+                <version>4.2.8.Final</version>
+            </dependency>
+            <!-- Force a secure version of assertj-core to address CVE-2026-24400 -->
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>3.27.7</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.modulith</groupId>

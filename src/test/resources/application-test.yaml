@@ -78,7 +78,6 @@ auth:
 aws:
   region: ${aws_region}
   ses:
-    enabled: false
     sender: ${aws_ses_sender}
   sns:
     enabled: false

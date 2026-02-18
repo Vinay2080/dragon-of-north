@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {apiService} from '../services/apiService';
-import {AuthContext} from './authContext';
+import {AuthContext} from './AuthContextDefinition.jsx';
 
 /**
  * Auth Provider Component
@@ -10,10 +10,11 @@ export const AuthProvider = ({children}) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState(null);
-
     useEffect(() => {
         // Check if a user is authenticated on the mount
-        checkAuthStatus();
+        (async () => {
+            await checkAuthStatus();
+        })();
     }, []);
 
     /**
@@ -23,7 +24,7 @@ export const AuthProvider = ({children}) => {
      */
     const checkAuthStatus = async () => {
         try {
-            // Check if user was previously authenticated (stored in localStorage)
+            // Check if a user was previously authenticated (stored in localStorage)
             const storedAuth = localStorage.getItem('isAuthenticated');
             if (storedAuth === 'true') {
                 setIsAuthenticated(true);

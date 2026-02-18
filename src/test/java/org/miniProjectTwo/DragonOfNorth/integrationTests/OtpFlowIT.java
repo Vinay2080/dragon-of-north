@@ -3,7 +3,6 @@ package org.miniProjectTwo.DragonOfNorth.integrationTests;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
 import org.mockito.Mockito;
@@ -22,8 +21,14 @@ import static org.mockito.Mockito.doAnswer;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Integration tests for OTP (One-Time Password) flow.
+ * <p>
+ * Note: These tests require Docker to be running for TestContainers to start PostgreSQL and Redis.
+ * If Docker is not available, these tests will be skipped automatically.
+ */
 @SpringBootTest
-@Disabled
+@EnabledIfDockerAvailable
 class OtpFlowIT extends BaseIntegrationTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper()

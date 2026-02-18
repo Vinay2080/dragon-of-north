@@ -22,10 +22,7 @@ const LoginPage = () => {
         setLoading(true);
 
         try {
-            const result = await apiService.post(API_CONFIG.ENDPOINTS.LOGIN, {
-                identifier,
-                password,
-            });
+            const result = await apiService.post(API_CONFIG.ENDPOINTS.LOGIN);
 
             if (result.api_response_status === 'success') {
                 // Set auth state

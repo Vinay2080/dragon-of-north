@@ -3,7 +3,6 @@ package org.miniProjectTwo.DragonOfNorth.integrationTests;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserLoginRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpCompleteRequest;
@@ -27,8 +26,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Integration tests for the authentication flow.
+ * <p>
+ * Note: These tests require Docker to be running for TestContainers to start PostgreSQL and Redis.
+ * If Docker is not available, these tests will be skipped automatically.
+ * <p>
+ * To run these tests:
+ * 1. Ensure Docker Desktop is installed and running
+ * 2. Run: mvn test -Dtest=AuthFlowIT
+ * <p>
+ * For setup instructions, see DOCKER_TESTCONTAINERS_GUIDE.md
+ */
 @SpringBootTest
-@Disabled
+@EnabledIfDockerAvailable
 class AuthFlowIT extends BaseIntegrationTest {
 
     private MockMvc mockMvc;
@@ -130,12 +141,12 @@ class AuthFlowIT extends BaseIntegrationTest {
         assertThat(secondRefreshTokenCookie).isNotBlank();
         assertThat(secondRefreshTokenCookie).isNotEqualTo(refreshTokenCookie);
 
-        // 8. Refresh token from first session
+        // 8. Refresh token from the first session
         mockMvc.perform(post("/api/v1/auth/jwt/refresh")
                         .cookie(new jakarta.servlet.http.Cookie("refresh_token", refreshTokenCookie)))
                 .andExpect(status().isOk());
 
-        // 9. Logout from first session
+        // 9. Logout from the first session
         mockMvc.perform(post("/api/v1/auth/identifier/logout")
                         .cookie(new jakarta.servlet.http.Cookie("refresh_token", refreshTokenCookie)))
                 .andExpect(status().isOk());
@@ -145,7 +156,7 @@ class AuthFlowIT extends BaseIntegrationTest {
                         .cookie(new jakarta.servlet.http.Cookie("refresh_token", refreshTokenCookie)))
                 .andExpect(result -> assertThat(result.getResponse().getStatus()).isIn(401, 403));
 
-        // 11. Verify second session is still active
+        // 11. Verify the second session is still active
         mockMvc.perform(post("/api/v1/auth/jwt/refresh")
                         .cookie(new jakarta.servlet.http.Cookie("refresh_token", secondRefreshTokenCookie)))
                 .andExpect(status().isOk());
