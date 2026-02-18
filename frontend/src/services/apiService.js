@@ -107,19 +107,41 @@ class ApiService {
         }
     }
 
-
+    /**
+     * GET request
+     */
+    async get(endpoint, options = {}) {
+        return this.request(endpoint, {...options, method: 'GET'});
+    }
 
     /**
      * POST request
      */
-    async post(endpoint, options = {}) {
+    async post(endpoint, body, options = {}) {
         return this.request(endpoint, {
             ...options,
             method: 'POST',
-            body: options.body,
+            body: JSON.stringify(body),
         });
     }
 
+    /**
+     * PUT request
+     */
+    async put(endpoint, body, options = {}) {
+        return this.request(endpoint, {
+            ...options,
+            method: 'PUT',
+            body: JSON.stringify(body),
+        });
+    }
+
+    /**
+     * DELETE request
+     */
+    async delete(endpoint, options = {}) {
+        return this.request(endpoint, {...options, method: 'DELETE'});
+    }
 
     /**
      * Get current rate limit info

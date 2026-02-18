@@ -25,7 +25,11 @@ const SignupPage = () => {
         setLoading(true);
 
         try {
-            const result = await apiService.post(API_CONFIG.ENDPOINTS.SIGNUP);
+            const result = await apiService.post(API_CONFIG.ENDPOINTS.SIGNUP, {
+                identifier,
+                identifier_type: identifierType,
+                password,
+            });
 
             if (result.api_response_status === 'success') {
                 // Determine OTP endpoint based on identifierType

@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {apiService} from '../services/apiService';
+import {API_CONFIG} from '../config';
 
 /**
  * Regex for basic email validation.
@@ -46,25 +46,33 @@ const AuthIdentifierPage = () => {
         setLoading(true);
 
         try {
-            const result = await apiService.post('/api/v1/auth/identifier/status', {
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/auth/identifier/status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({
                     identifier: processedIdentifier,
                     identifier_type: identifierType,
                 }),
             });
 
-            if (result.type === 'NETWORK_ERROR' || result.type === 'API_ERROR') {
-                setError(result.message || 'An error occurred. Please try again.');
-                return;
+            if (!response.ok) {
+                // Handle non-2xx responses
+                try {
+
+                    const errorData = await response.json().catch(() => ({}));
+                    setError(errorData.message || 'An error occurred. Please try again.');
+                } catch {
+                    setError('Network error. Please check your connection and try again.');
+                }
+
             }
 
-            if (result.type === 'RATE_LIMIT_EXCEEDED') {
-                setError(`Rate limit exceeded. Please try again in ${result.retryAfter} seconds.`);
-                return;
-            }
+            const result = await response.json();
 
             // Read response using snake_case keys as per requirement
-            if (result.apiResponseStatus === 'success') {
+            if (result.api_response_status === 'success') {
                 const status = result.data.app_user_status;
 
                 switch (status) {
@@ -75,24 +83,24 @@ const AuthIdentifierPage = () => {
                         setLoading(true);
                         try {
                             const otpEndpoint = identifierType === 'EMAIL'
-                                ? '/api/v1/otp/email/request'
-                                : '/api/v1/otp/phone/request';
+                                ? `${API_CONFIG.BASE_URL}/api/v1/otp/email/request`
+                                : `${API_CONFIG.BASE_URL}/api/v1/otp/phone/request`;
 
                             const otpPayload = identifierType === 'EMAIL'
                                 ? {email: processedIdentifier, otp_purpose: 'SIGNUP'}
                                 : {phone: processedIdentifier, otp_purpose: 'SIGNUP'};
 
-                            const otpResponse = await apiService.post(otpEndpoint, {
+                            const otpResponse = await fetch(otpEndpoint, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
                                 body: JSON.stringify(otpPayload),
                             });
 
-                            if (otpResponse.type === 'NETWORK_ERROR' || otpResponse.type === 'API_ERROR') {
-                                setError(otpResponse.message || 'Failed to send OTP. Please try again.');
-                                return;
-                            }
-
-                            if (otpResponse.type === 'RATE_LIMIT_EXCEEDED') {
-                                setError(`Rate limit exceeded. Please try again in ${otpResponse.retryAfter} seconds.`);
+                            if (!otpResponse.ok) {
+                                const otpError = await otpResponse.json().catch(() => ({}));
+                                setError(otpError.message || 'Failed to send OTP. Please try again.');
                                 return;
                             }
 
