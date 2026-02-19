@@ -31,8 +31,7 @@ public class AppUserDetails implements UserDetails {
     private final AppUser appUser;
 
     /**
-     * Returns the authorities granted to the user.
-     * Currently returns an empty list. TODO: Implement role-based authorities.
+     * Returns the authorities granted to the user based on roles and permissions.
      *
      * @return a collection of granted authorities
      */
@@ -72,52 +71,49 @@ public class AppUserDetails implements UserDetails {
     public String getUsername() {
         return appUser.getId().toString();
     }
-    // todo following methods need to return specific values will be defined later...
     /**
      * Indicates whether the user's account has expired.
-     * TODO: Implement proper account expiration logic.
      *
      * @return true if the user's account is valid (non-expired), false otherwise
      */
 
     @Override
     public boolean isAccountNonExpired() {
-        return UserDetails.super.isAccountNonExpired();
+        return appUser.getAppUserStatus() != org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.DELETED;
     }
 
     /**
      * Indicates whether the user is locked or unlocked.
-     * TODO: Implement proper account locking logic.
      *
      * @return true if the user is not locked, false otherwise
      */
 
     @Override
     public boolean isAccountNonLocked() {
-        return appUser.getFailedLoginAttempts() < 5;
+        return !appUser.isAccountLocked();
     }
 
     /**
      * Indicates whether the user's credentials (password) has expired.
-     * TODO: Implement proper credentials expiration logic.
      *
      * @return true if the user's credentials are valid (non-expired), false otherwise
      */
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return UserDetails.super.isCredentialsNonExpired();
+        return appUser.getAppUserStatus() != org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.BLOCKED
+                && appUser.getAppUserStatus() != org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.DELETED;
     }
 
     /**
      * Indicates whether the user is enabled or disabled.
-     * TODO: Implement proper user enabling/disabling logic.
      *
      * @return true if the user is enabled, false otherwise
      */
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return appUser.getAppUserStatus() != org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.BLOCKED
+                && appUser.getAppUserStatus() != org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.DELETED;
     }
 }

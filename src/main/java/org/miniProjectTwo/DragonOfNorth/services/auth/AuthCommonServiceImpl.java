@@ -75,9 +75,8 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
         final String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
         final String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
-        //todo session store
 
-        String ipAddress = request.getHeader("X-Forwarded-For");
+        String ipAddress = extractClientIp(request);
         String userAgent = request.getHeader("User-Agent");
 
         sessionService.createSession(appUser, refreshToken, ipAddress, deviceId, userAgent);
@@ -109,13 +108,16 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         }
 
         try {
+            UUID userId = jwtServices.extractUserId(refreshToken);
+            String newRefreshToken = jwtServices.generateRefreshToken(userId);
 
-            UUID userId = sessionService.validateAndUpdateSession(refreshToken, deviceId);
-            Set<Role> roles = appUserRepository.findRolesById(userId);
+            UUID validatedUserId = sessionService.validateAndRotateSession(refreshToken, newRefreshToken, deviceId);
+            Set<Role> roles = appUserRepository.findRolesById(validatedUserId);
 
-            String newAccessToken = jwtServices.refreshAccessToken(refreshToken, roles);
+            String newAccessToken = jwtServices.refreshAccessToken(newRefreshToken, roles);
 
             setAccessToken(response, newAccessToken);
+            setRefreshCookie(response, newRefreshToken);
 
         } catch (BusinessException e) {
             clearRefreshTokenCookie(response);
@@ -180,12 +182,29 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
             // Continue with cookie cleanup even if session revocation fails
             log.warn("Session revocation failed during logout: {}", e.getMessage());
         }
-        //todo session revocation
         clearRefreshTokenCookie(response);
         clearAccessTokenCookie(response);
 
     }
 
+
+
+    private String extractClientIp(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+            String firstIp = xForwardedFor.split(",")[0].trim();
+            if (!firstIp.isBlank()) {
+                return firstIp;
+            }
+        }
+
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isBlank()) {
+            return xRealIp.trim();
+        }
+
+        return request.getRemoteAddr();
+    }
 
     /**
      * Extracts refresh token from HTTP-only cookies.
