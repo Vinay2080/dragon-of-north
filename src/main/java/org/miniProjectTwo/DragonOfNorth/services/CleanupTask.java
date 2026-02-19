@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
+import org.miniProjectTwo.DragonOfNorth.repositories.SessionRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +30,11 @@ import java.time.temporal.ChronoUnit;
 public class CleanupTask {
     private final OtpTokenRepository otpTokenRepository;
     private final AppUserRepository appUserRepository;
+    private final SessionRepository sessionRepository;
 
+
+    @Value("${session.cleanup.revoked-retention-days}")
+    private long revokedRetentionDays;
 
     /**
      * Removes expired OTP tokens from a database.
@@ -62,6 +68,15 @@ public class CleanupTask {
         log.info("Cleaned up all unverified users");
     }
 
-//todo cleanup sessions
+    @Scheduled(fixedDelayString = "${session.cleanup.delay-ms}")
+    @Transactional
+    public void cleanupSessions() {
+        Instant now = Instant.now();
+        long expiredDeleted = sessionRepository.deleteByExpiryDateBefore(now);
+
+        Instant revokedCutoff = now.minus(revokedRetentionDays, ChronoUnit.DAYS);
+        long revokedDeleted = sessionRepository.deleteByRevokedTrueAndUpdatedAtBefore(revokedCutoff);
+        log.info("Session cleanup completed: expired deleted={}, revoked deleted={}", expiredDeleted, revokedDeleted);
+    }
 
 }
