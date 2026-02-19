@@ -6,8 +6,10 @@ import org.jspecify.annotations.NonNull;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.model.Role;
+import org.miniProjectTwo.DragonOfNorth.model.Session;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
+import org.miniProjectTwo.DragonOfNorth.repositories.SessionRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
@@ -16,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
+import java.time.Instant;
 
 import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.CREATED;
 import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.VERIFIED;
@@ -43,6 +46,7 @@ public class TestDataInitializer implements CommandLineRunner {
 
     private final AppUserRepository appUserRepository;
     private final RoleRepository roleRepository;
+    private final SessionRepository sessionRepository;
     private final PasswordEncoder passwordEncoder;
 
     /**
@@ -67,8 +71,41 @@ public class TestDataInitializer implements CommandLineRunner {
         
         // Initialize phone users
         initializePhoneUsers(userRole, adminRole);
+
+        // Initialize deterministic sessions for testing session endpoints
+        initializeTestSessions();
         
         log.info("Test users initialized successfully");
+    }
+
+    private void initializeTestSessions() {
+        appUserRepository.findByEmail("user2@example.com")
+                .ifPresent(user -> {
+                    createSessionIfAbsent(user, "test-device-web", "127.0.0.10", "Chrome/Test");
+                    createSessionIfAbsent(user, "test-device-mobile", "127.0.0.11", "Mobile Safari/Test");
+                });
+
+        appUserRepository.findByEmail("admin2@example.com")
+                .ifPresent(user -> createSessionIfAbsent(user, "test-device-admin", "127.0.0.12", "Firefox/Test"));
+    }
+
+    private void createSessionIfAbsent(AppUser user, String deviceId, String ipAddress, String userAgent) {
+        if (sessionRepository.findByAppUserAndDeviceId(user, deviceId).isPresent()) {
+            return;
+        }
+
+        Session session = new Session();
+        session.setAppUser(user);
+        session.setDeviceId(deviceId);
+        session.setIpAddress(ipAddress);
+        session.setUserAgent(userAgent);
+        session.setRefreshTokenHash("seed-refresh-token-hash-" + deviceId);
+        session.setLastUsedAt(Instant.now());
+        session.setExpiryDate(Instant.now().plusSeconds(7 * 24 * 60 * 60));
+        session.setRevoked(false);
+
+        sessionRepository.save(session);
+        log.info("Created test session for user {} and device {}", user.getId(), deviceId);
     }
 
     /**
