@@ -1,8 +1,6 @@
 import {API_CONFIG} from '../config';
+import {getDeviceId} from '../utils/device';
 
-/**
- * API Service utility for making HTTP requests with rate limit handling
- */
 class ApiService {
     constructor() {
         this.rateLimitInfo = {
@@ -11,13 +9,11 @@ class ApiService {
             retryAfter: null,
         };
         this.rateLimitListeners = [];
+
+        this.isRefreshing = false;
+        this.refreshPromise = null;
     }
 
-    /**
-     * Subscribe to rate limit updates
-     * @param {Function} callback - Function to call when rate limit info changes
-     * @returns {Function} Unsubscribe function
-     */
     onRateLimitUpdate(callback) {
         this.rateLimitListeners.push(callback);
         return () => {
@@ -25,17 +21,10 @@ class ApiService {
         };
     }
 
-    /**
-     * Notify all listeners of rate limit changes
-     */
     notifyRateLimitUpdate() {
         this.rateLimitListeners.forEach(callback => callback(this.rateLimitInfo));
     }
 
-    /**
-     * Extract rate limit headers from response
-     * @param {Response} response - Fetch API response
-     */
     extractRateLimitHeaders(response) {
         const remaining = response.headers.get('X-RateLimit-Remaining');
         const capacity = response.headers.get('X-RateLimit-Capacity');
@@ -50,13 +39,36 @@ class ApiService {
         this.notifyRateLimitUpdate();
     }
 
-    /**
-     * Make an API request with rate limit handling
-     * @param {string} endpoint - API endpoint
-     * @param {Object} options - Fetch options
-     * @returns {Promise<Object>} Response data
-     */
-    async request(endpoint, options = {}) {
+    async refreshToken() {
+        if (this.isRefreshing) {
+            return this.refreshPromise;
+        }
+
+        this.isRefreshing = true;
+
+        this.refreshPromise = fetch(
+            `${API_CONFIG.BASE_URL}/api/v1/auth/jwt/refresh`,
+            {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'include',
+                body: JSON.stringify({
+                    device_id: getDeviceId(),
+                }),
+            }
+        ).then(res => {
+            if (!res.ok) {
+                throw new Error('Refresh failed');
+            }
+            return res.json();
+        }).finally(() => {
+            this.isRefreshing = false;
+        });
+
+        return this.refreshPromise;
+    }
+
+    async request(endpoint, options = {}, retry = true) {
         const url = `${API_CONFIG.BASE_URL}${endpoint}`;
 
         const defaultOptions = {
@@ -64,30 +76,38 @@ class ApiService {
                 'Content-Type': 'application/json',
                 ...options.headers,
             },
-            credentials: 'include', // Important for cookies
+            credentials: 'include',
             ...options,
         };
 
         try {
             const response = await fetch(url, defaultOptions);
 
-            // Extract rate limit headers
             this.extractRateLimitHeaders(response);
+
+            if (response.status === 401 && retry) {
+                try {
+                    await this.refreshToken();
+                    return this.request(endpoint, options, false);
+                } catch (refreshError) {
+                    localStorage.removeItem('isAuthenticated');
+                    window.location.href = '/login';
+                    throw refreshError;
+                }
+            }
 
             const data = await response.json();
 
             if (!response.ok) {
-                // Handle rate limit exceeded
                 if (response.status === 429) {
                     return {
                         type: 'RATE_LIMIT_EXCEEDED',
-                        message: data.message || 'Too many requests. Please try again later.',
+                        message: data.message || 'Too many requests',
                         retryAfter: this.rateLimitInfo.retryAfter,
                         data,
                     };
                 }
 
-                // Handle other errors
                 return {
                     type: 'API_ERROR',
                     message: data.message || 'An error occurred',
@@ -98,25 +118,18 @@ class ApiService {
 
             return data;
         } catch (error) {
-            // Network or other errors
             return {
                 type: 'NETWORK_ERROR',
-                message: 'Failed to connect to the server. Please try again later.',
+                message: 'Failed to connect to server',
                 originalError: error,
             };
         }
     }
 
-    /**
-     * GET request
-     */
     async get(endpoint, options = {}) {
         return this.request(endpoint, {...options, method: 'GET'});
     }
 
-    /**
-     * POST request
-     */
     async post(endpoint, body, options = {}) {
         return this.request(endpoint, {
             ...options,
@@ -125,9 +138,6 @@ class ApiService {
         });
     }
 
-    /**
-     * PUT request
-     */
     async put(endpoint, body, options = {}) {
         return this.request(endpoint, {
             ...options,
@@ -136,23 +146,14 @@ class ApiService {
         });
     }
 
-    /**
-     * DELETE request
-     */
     async delete(endpoint, options = {}) {
         return this.request(endpoint, {...options, method: 'DELETE'});
     }
 
-    /**
-     * Get current rate limit info
-     */
     getRateLimitInfo() {
         return {...this.rateLimitInfo};
     }
 
-    /**
-     * Reset rate limit info
-     */
     resetRateLimitInfo() {
         this.rateLimitInfo = {
             remaining: null,
@@ -163,5 +164,4 @@ class ApiService {
     }
 }
 
-// Export singleton instance
 export const apiService = new ApiService();

@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {apiService} from '../services/apiService';
 import {AuthContext} from './authContext';
+import {getDeviceId} from "../utils/device.js";
 
 /**
  * Auth Provider Component
@@ -55,13 +56,12 @@ export const AuthProvider = ({children}) => {
      */
     const logout = async () => {
         try {
-            // Call logout API
-            await apiService.post('/api/v1/auth/identifier/logout');
+            await apiService.post('/api/v1/auth/identifier/logout', {
+                device_id: getDeviceId(),
+            });
         } catch (error) {
             console.error('Logout API failed:', error);
-            // Continue with local logout even if API fails
         } finally {
-            // Clear local state
             setIsAuthenticated(false);
             setUser(null);
             localStorage.removeItem('isAuthenticated');

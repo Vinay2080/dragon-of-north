@@ -4,6 +4,7 @@ import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import {useAuth} from '../context/authUtils';
 import RateLimitInfo from '../components/RateLimitInfo';
+import {getDeviceId} from "../utils/device.js";
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -26,6 +27,7 @@ const LoginPage = () => {
             const result = await apiService.post(API_CONFIG.ENDPOINTS.LOGIN, {
                 identifier,
                 password,
+                device_id: getDeviceId(),
             });
 
             if (result.api_response_status === 'success') {

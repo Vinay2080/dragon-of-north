@@ -84,7 +84,7 @@ public class RateLimitConfig {
 
     /**
      * Creates and configures the Redis client for rate limiting storage.
-     * Establishes connection to Redis server using configured host, port,
+     * Establishes connection to Redis server using a configured host, port,
      * and optional password. The client is configured for proper shutdown
      * when the application context closes.
      *
