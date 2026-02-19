@@ -4,6 +4,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.config.security.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.config.security.JwtServicesImpl;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
@@ -16,6 +17,7 @@ import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.JwtServices;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.SessionService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -37,12 +39,14 @@ import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.VERIFIED;
  */
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class AuthCommonServiceImpl implements AuthCommonServices {
 
     private final AuthenticationManager authenticationManager;
     private final JwtServices jwtServices;
     private final AppUserRepository appUserRepository;
     private final RoleRepository roleRepository;
+    private final SessionService sessionService;
 
     /**
      * Authenticates user credentials and issues JWT tokens.
@@ -56,7 +60,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * @throws BusinessException if authentication fails or principal is invalid
      */
     @Override
-    public void login(String identifier, String password, HttpServletResponse response) {
+    public void login(String identifier, String password, HttpServletResponse response, HttpServletRequest request, String deviceId) {
         final Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(identifier, password));
 
         if (authentication.getPrincipal() == null) {
@@ -72,6 +76,11 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         final String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
         final String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
         //todo session store
+
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        String userAgent = request.getHeader("User-Agent");
+
+        sessionService.createSession(appUser, refreshToken, ipAddress, deviceId, userAgent);
 
         setAccessToken(response, accessToken);
         setRefreshCookie(response, refreshToken);
@@ -89,16 +98,19 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * @throws BusinessException if the refresh token is missing, invalid, or expired
      */
     @Override
-    public void refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    public void refreshToken(HttpServletRequest request, HttpServletResponse response, String deviceId) {
         String refreshToken = extractRefreshToken(request);
         if (refreshToken == null) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "Refresh token missing");
         }
 
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "device ID missing");
+        }
+
         try {
 
-            //todo validate session
-            UUID userId = jwtServices.extractUserId(refreshToken);
+            UUID userId = sessionService.validateAndUpdateSession(refreshToken, deviceId);
             Set<Role> roles = appUserRepository.findRolesById(userId);
 
             String newAccessToken = jwtServices.refreshAccessToken(refreshToken, roles);
@@ -152,10 +164,21 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     }
 
     @Override
-    public void logoutUser(HttpServletRequest request, HttpServletResponse response) {
+    public void logoutUser(HttpServletRequest request, HttpServletResponse response, String deviceId) {
         String refreshToken = extractRefreshToken(request);
         if (refreshToken == null || refreshToken.isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "refresh token missing");
+        }
+
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "device ID missing");
+        }
+
+        try {
+            sessionService.revokeSession(refreshToken, deviceId);
+        } catch (BusinessException e) {
+            // Continue with cookie cleanup even if session revocation fails
+            log.warn("Session revocation failed during logout: {}", e.getMessage());
         }
         //todo session revocation
         clearRefreshTokenCookie(response);

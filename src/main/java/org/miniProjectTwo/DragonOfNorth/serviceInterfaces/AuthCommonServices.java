@@ -7,13 +7,13 @@ import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 
 public interface AuthCommonServices {
 
-    void login(String identifier, String password, HttpServletResponse response);
+    void login(String identifier, String password, HttpServletResponse response, HttpServletRequest request, String deviceId);
 
-    void refreshToken(HttpServletRequest request, HttpServletResponse response);
+    void refreshToken(HttpServletRequest request, HttpServletResponse response, String deviceId);
 
     void assignDefaultRole(AppUser appUser);
 
     void updateUserStatus(AppUserStatus appUserStatus, AppUser appUser);
 
-    void logoutUser(HttpServletRequest request, HttpServletResponse response);
+    void logoutUser(HttpServletRequest request, HttpServletResponse response, String deviceId);
 }

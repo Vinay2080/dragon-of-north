@@ -30,6 +30,11 @@ public record AppUserLoginRequest(
         String identifier,
 
         @NotBlank(message = "password cannot be blank")
-        String password) {
+        String password,
+
+        @NotBlank
+        String deviceId
+
+) {
 
 }

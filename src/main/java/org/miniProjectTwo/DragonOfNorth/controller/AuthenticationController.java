@@ -5,10 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserLoginRequest;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpCompleteRequest;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserStatusFinderRequest;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.*;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
@@ -109,9 +106,10 @@ public class AuthenticationController {
             @RequestBody
             @Valid
             AppUserLoginRequest request,
-            HttpServletResponse httpServletResponse
+            HttpServletResponse httpServletResponse,
+            HttpServletRequest httpServletRequest
     ) {
-        authCommonServices.login(request.identifier(), request.password(), httpServletResponse);
+        authCommonServices.login(request.identifier(), request.password(), httpServletResponse, httpServletRequest, request.deviceId());
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.successMessage("log in successful"));
     }
 
@@ -128,18 +126,24 @@ public class AuthenticationController {
     @PostMapping("/jwt/refresh")
     public ResponseEntity<ApiResponse<?>> refreshToken(
             HttpServletRequest request,
-            HttpServletResponse response
+            HttpServletResponse response,
+            @RequestBody
+            @Valid
+            DeviceIdRequest deviceIdRequest
     ) {
-        authCommonServices.refreshToken(request, response);
+        authCommonServices.refreshToken(request, response, deviceIdRequest.deviceId());
         return ResponseEntity.ok(ApiResponse.successMessage("refresh token sent"));
     }
 
     @PostMapping("/identifier/logout")
     public ResponseEntity<ApiResponse<?>> logoutUser(
             HttpServletResponse response,
-            HttpServletRequest request
+            HttpServletRequest request,
+            @RequestBody
+            @Valid
+            DeviceIdRequest deviceIdRequest
     ) {
-        authCommonServices.logoutUser(request, response);
+        authCommonServices.logoutUser(request, response, deviceIdRequest.deviceId());
         return ResponseEntity.ok(ApiResponse.successMessage("user logged out successfully"));
     }
 }
