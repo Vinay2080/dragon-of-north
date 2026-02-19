@@ -107,3 +107,8 @@ springdoc:
         name: EC2
       - url: http://localhost:8080/v3/api-docs
         name: LOCAL
+
+session:
+  cleanup:
+    delay-ms: 900000
+    revoked-retention-days: 7

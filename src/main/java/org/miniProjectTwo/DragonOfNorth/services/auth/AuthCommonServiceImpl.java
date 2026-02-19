@@ -13,7 +13,6 @@ import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.model.Role;
-import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.JwtServices;
@@ -44,7 +43,6 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
     private final AuthenticationManager authenticationManager;
     private final JwtServices jwtServices;
-    private final AppUserRepository appUserRepository;
     private final RoleRepository roleRepository;
     private final SessionService sessionService;
 
@@ -83,7 +81,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         sessionService.createSession(appUser, refreshToken, ipAddress, deviceId, userAgent);
 
         setAccessToken(response, accessToken);
-        setRefreshCookie(response, refreshToken);
+        setRefreshToken(response, refreshToken);
 
     }
 
@@ -99,8 +97,8 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      */
     @Override
     public void refreshToken(HttpServletRequest request, HttpServletResponse response, String deviceId) {
-        String refreshToken = extractRefreshToken(request);
-        if (refreshToken == null) {
+        String oldRefreshToken = extractRefreshToken(request);
+        if (oldRefreshToken == null) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "Refresh token missing");
         }
 
@@ -109,14 +107,16 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         }
 
         try {
+            UUID userIdFromOldToken = jwtServices.extractUserId(oldRefreshToken);
+            String newRefreshToken = jwtServices.generateRefreshToken(userIdFromOldToken);
 
-            UUID userId = sessionService.validateAndUpdateSession(refreshToken, deviceId);
-            Set<Role> roles = appUserRepository.findRolesById(userId);
+            UUID userId = sessionService.validateAndRotateSession(oldRefreshToken, newRefreshToken, deviceId);
+            Set<Role> roles = roleRepository.findRolesById(userId);
 
-            String newAccessToken = jwtServices.refreshAccessToken(refreshToken, roles);
+            String newAccessToken = jwtServices.refreshAccessToken(newRefreshToken, roles);
 
             setAccessToken(response, newAccessToken);
-
+            setRefreshToken(response, newRefreshToken);
         } catch (BusinessException e) {
             clearRefreshTokenCookie(response);
             throw e;
@@ -265,7 +265,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * @param response HTTP response for cookie setting
      * @param token    JWT refresh token value
      */
-    private void setRefreshCookie(HttpServletResponse response, String token) {
+    private void setRefreshToken(HttpServletResponse response, String token) {
         Cookie refreshCookie = new Cookie("refresh_token", token);
         refreshCookie.setHttpOnly(true);
         refreshCookie.setSecure(true);
