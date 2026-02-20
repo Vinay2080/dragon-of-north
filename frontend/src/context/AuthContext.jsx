@@ -1,34 +1,34 @@
 import React, {useEffect, useState} from 'react';
 import {apiService} from '../services/apiService';
 import {AuthContext} from './authContext';
-import {getDeviceId} from "../utils/device.js";
+import {API_CONFIG} from '../config';
+import {getDeviceId} from '../utils/device.js';
 
-/**
- * Auth Provider Component
- * Manages authentication state across the application
- */
 export const AuthProvider = ({children}) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState(null);
 
     useEffect(() => {
-        // Check if a user is authenticated on the mount
         checkAuthStatus();
     }, []);
 
-    /**
-     * Check authentication status
-     * For now, we'll check if there's a session by trying to access a protected endpoint
-     * or by checking localStorage
-     */
     const checkAuthStatus = async () => {
         try {
-            // Check if user was previously authenticated (stored in localStorage)
-            const storedAuth = localStorage.getItem('isAuthenticated');
-            if (storedAuth === 'true') {
-                setIsAuthenticated(true);
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
             }
+
+            const sessionResult = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS_ALL);
+            if (!apiService.isErrorResponse(sessionResult) && Array.isArray(sessionResult?.data)) {
+                setIsAuthenticated(true);
+                localStorage.setItem('isAuthenticated', 'true');
+                return;
+            }
+
+            setIsAuthenticated(false);
+            localStorage.removeItem('isAuthenticated');
         } catch (error) {
             console.error('Auth check failed:', error);
             setIsAuthenticated(false);
@@ -37,10 +37,6 @@ export const AuthProvider = ({children}) => {
         }
     };
 
-    /**
-     * Login function
-     * Sets authentication state after successful login
-     */
     const login = (userData = null) => {
         setIsAuthenticated(true);
         setUser(userData);
@@ -50,13 +46,9 @@ export const AuthProvider = ({children}) => {
         }
     };
 
-    /**
-     * Logout function
-     * Calls logout API and clears authentication state
-     */
     const logout = async () => {
         try {
-            await apiService.post('/api/v1/auth/identifier/logout', {
+            await apiService.post(API_CONFIG.ENDPOINTS.LOGOUT, {
                 device_id: getDeviceId(),
             });
         } catch (error) {
@@ -76,6 +68,7 @@ export const AuthProvider = ({children}) => {
         user,
         login,
         logout,
+        checkAuthStatus,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

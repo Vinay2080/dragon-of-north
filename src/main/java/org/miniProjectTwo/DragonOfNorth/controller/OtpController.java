@@ -1,6 +1,10 @@
 package org.miniProjectTwo.DragonOfNorth.controller;
 
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse;
@@ -19,26 +23,29 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST controller for OTP (One-Time Password) operations.
- * Provides endpoints for generating and verifying OTP codes for both email
- * and phone number authentication. Supports various OTP purposes like registration,
- * login, and account recovery through the OtpService.
  */
 @RestController
 @RequestMapping("/api/v1/otp")
 @RequiredArgsConstructor
+@Tag(name = "OTP", description = "OTP generation and verification endpoints for email and phone flows")
 public class OtpController {
     private final OtpService otpService;
 
-    /**
-     * Requests an OTP to be sent to the specified email address.
-     * Generates and sends a one-time password via email for the specified purpose
-     * (registration, login, etc.). The OTP will have a limited validity period.
-     *
-     * @param request the email OTP request containing the email address and purpose
-     * @return success message indicating OTP was sent
-     */
     @PostMapping("/email/request")
+    @Operation(summary = "Request OTP on email", description = "Generates a purpose-scoped OTP and dispatches it to the provided email.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "OTP generated and sent"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "OTP rate limit exceeded")
+    })
     public ResponseEntity<ApiResponse<?>> requestEmailOtp(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "email": "intern.candidate@example.com",
+                              "otp_purpose": "SIGNUP"
+                            }
+                            """)))
             @RequestBody @Valid EmailOtpRequest request) {
         otpService.createEmailOtp(request.email(), request.otpPurpose());
         return ResponseEntity
@@ -46,16 +53,21 @@ public class OtpController {
                 .body(ApiResponse.successMessage("OTP sent"));
     }
 
-    /**
-     * Requests an OTP to be sent to the specified phone number.
-     * Generates and sends a one-time password via SMS for the specified purpose
-     * (registration, login, etc.). The OTP will have a limited validity period.
-     *
-     * @param request the phone OTP request containing phone number and purpose
-     * @return success message indicating OTP was sent
-     */
     @PostMapping("/phone/request")
+    @Operation(summary = "Request OTP on phone", description = "Generates a purpose-scoped OTP and dispatches it via SMS.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "OTP generated and sent"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "OTP rate limit exceeded")
+    })
     public ResponseEntity<ApiResponse<?>> requestPhoneOtp(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "phone": "9876543210",
+                              "otp_purpose": "LOGIN"
+                            }
+                            """)))
             @RequestBody
             @Valid
             PhoneOtpRequest request) {
@@ -64,17 +76,22 @@ public class OtpController {
                 .body(ApiResponse.successMessage("OTP Sent"));
     }
 
-    /**
-     * Verifies an OTP sent to an email address.
-     * Validates the provided OTP code against the stored value for the email
-     * and purpose. Returns success status if valid, otherwise returns failure
-     * with appropriate error details.
-     *
-     * @param request the email verification request containing email and OTP
-     * @return verification status with success/failure details
-     */
     @PostMapping("/email/verify")
+    @Operation(summary = "Verify email OTP", description = "Verifies OTP for an email + purpose combination and returns verification outcome.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "OTP verified"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "OTP invalid, expired, or mismatched purpose")
+    })
     public ResponseEntity<ApiResponse<OtpVerificationStatus>> verifyEmailOtp(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "email": "intern.candidate@example.com",
+                              "otp": "123456",
+                              "otp_purpose": "SIGNUP"
+                            }
+                            """)))
             @Valid
             @RequestBody
             EmailVerifyRequest request) {
@@ -84,17 +101,22 @@ public class OtpController {
                 ResponseEntity.badRequest().body(ApiResponse.failed(otpVerificationStatus));
     }
 
-    /**
-     * Verifies an OTP sent to a phone number.
-     * Validates the provided OTP code against the stored value for the phone
-     * number and purpose. Returns success status if valid, otherwise returns
-     * failure with appropriate error details.
-     *
-     * @param request the phone verification request containing phone number and OTP
-     * @return verification status with success/failure details
-     */
     @PostMapping("/phone/verify")
+    @Operation(summary = "Verify phone OTP", description = "Verifies OTP for a phone + purpose combination and returns verification outcome.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "OTP verified"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "OTP invalid, expired, or mismatched purpose")
+    })
     public ResponseEntity<ApiResponse<OtpVerificationStatus>> verifyPhoneOtp(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "phone": "9876543210",
+                              "otp": "123456",
+                              "otp_purpose": "LOGIN"
+                            }
+                            """)))
             @Valid
             @RequestBody
             PhoneVerifyRequest request) {

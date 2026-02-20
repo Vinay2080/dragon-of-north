@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.dto.auth.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
 /**
@@ -27,12 +28,15 @@ import jakarta.validation.constraints.NotBlank;
  */
 public record AppUserLoginRequest(
         @NotBlank
+        @Schema(description = "Email or phone used for login.", example = "intern.candidate@example.com")
         String identifier,
 
         @NotBlank(message = "password cannot be blank")
+        @Schema(description = "Password created during sign-up.", example = "Intern@123")
         String password,
 
         @NotBlank
+        @Schema(description = "Unique device fingerprint for session tracking.", example = "web-chrome-macos")
         String deviceId
 
 ) {
