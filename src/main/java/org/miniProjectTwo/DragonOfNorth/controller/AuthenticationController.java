@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.success;
+import static org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.successMessage;
 import static org.springframework.http.HttpStatus.CREATED;
 
 /**
@@ -60,7 +62,7 @@ public class AuthenticationController {
     ) {
         AuthenticationService service = resolver.resolve(request.identifier(), request.identifierType());
         AppUserStatusFinderResponse response = service.getUserStatus(request.identifier());
-        return ResponseEntity.ok(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.success(response));
+        return ResponseEntity.ok(success(response));
     }
 
     @PostMapping("/identifier/sign-up")
@@ -88,7 +90,7 @@ public class AuthenticationController {
 
         AuthenticationService service = resolver.resolve(request.identifier(), request.identifierType());
         AppUserStatusFinderResponse response = service.signUpUser(request);
-        return ResponseEntity.status(CREATED).body(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.success(response));
+        return ResponseEntity.status(CREATED).body(success(response));
     }
 
     @PostMapping("/identifier/sign-up/complete")
@@ -113,7 +115,7 @@ public class AuthenticationController {
     ) {
         AuthenticationService service = resolver.resolve(request.identifier(), request.identifierType());
         AppUserStatusFinderResponse response = service.completeSignUp(request.identifier());
-        return ResponseEntity.status(CREATED).body(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.success(response));
+        return ResponseEntity.status(CREATED).body(success(response));
     }
 
     @PostMapping("/identifier/login")
@@ -141,7 +143,7 @@ public class AuthenticationController {
             @Parameter(hidden = true) HttpServletRequest httpServletRequest
     ) {
         authCommonServices.login(request.identifier(), request.password(), httpServletResponse, httpServletRequest, request.deviceId());
-        return ResponseEntity.status(HttpStatus.OK).body(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.successMessage("log in successful"));
+        return ResponseEntity.status(HttpStatus.OK).body(successMessage("log in successful"));
     }
 
     @PostMapping("/jwt/refresh")
@@ -166,7 +168,7 @@ public class AuthenticationController {
             DeviceIdRequest deviceIdRequest
     ) {
         authCommonServices.refreshToken(request, response, deviceIdRequest.deviceId());
-        return ResponseEntity.ok(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.successMessage("refresh token sent"));
+        return ResponseEntity.ok(successMessage("refresh token sent"));
     }
 
     @PostMapping("/identifier/logout")
@@ -191,6 +193,6 @@ public class AuthenticationController {
             DeviceIdRequest deviceIdRequest
     ) {
         authCommonServices.logoutUser(request, response, deviceIdRequest.deviceId());
-        return ResponseEntity.ok(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.successMessage("user logged out successfully"));
+        return ResponseEntity.ok(successMessage("user logged out successfully"));
     }
 }
