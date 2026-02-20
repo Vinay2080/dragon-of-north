@@ -15,7 +15,7 @@ This repository is designed as an interview-ready portfolio project that demonst
 ## Table of Contents
 
 - [1) Executive Summary](#1-executive-summary)
-- [2) Why This Project Is Strong for Interviews](#2-why-this-project-is-strong-for-interviews)
+- [2) Index for features](#2-index-for-features)
 - [3) Major Features](#3-major-features)
 - [4) Minor-but-Important Engineering Features](#4-minor-but-important-engineering-features)
 - [5) Tech Stack](#5-tech-stack)
@@ -33,10 +33,9 @@ This repository is designed as an interview-ready portfolio project that demonst
 - [17) Testing Strategy](#17-testing-strategy)
 - [18) Local Development Setup](#18-local-development-setup)
 - [19) Deployment Notes](#19-deployment-notes)
-- [20) Interview Talking Guide](#20-interview-talking-guide)
+- [20) Summary in short](#205-summary-in-short)
 - [21) What to Improve Next](#21-what-to-improve-next)
 - [22) Project Structure](#22-project-structure)
-- [23) License](#23-license)
 
 ---
 
@@ -62,7 +61,7 @@ This project intentionally goes beyond “basic login/signup” by adding:
 
 ---
 
-## 2) Why This Project Is Strong for Interviews
+## 2) Index for features
 
 - End-to-end auth + session lifecycle
 - Explicit access/refresh token split
@@ -884,9 +883,7 @@ npm run dev
 
 ---
 
-## 20) Interview Talking Guide
-
-Use these directly during interviews.
+## 20) Key points to note.
 
 ### 20.1 One-minute project pitch
 
@@ -900,7 +897,7 @@ Use these directly during interviews.
 4. Why enum-driven states improve correctness.
 5. How rate-limit headers improve UX.
 
-### 20.3 Typical interview Q&A
+### 20.3 Some of very few questions I asked myself while building project.
 
 **Q: Why not only JWT and no session table?**  
 A: JWT provides stateless auth checks, but session table is needed for revocation/device visibility/rotation controls.
@@ -926,7 +923,7 @@ A: refresh-on-401 with single-flight refresh lock and one retry.
 8. Revoke others
 9. Trigger rate-limited response
 
-### 20.5 Resume bullet suggestions
+### 20.5 Summary in short
 
 - Built a secure authentication platform with JWT access/refresh lifecycle, HttpOnly cookie transport, and refresh token rotation.
 - Implemented device-aware session management with per-device metadata and revoke controls.
@@ -967,43 +964,119 @@ A: refresh-on-401 with single-flight refresh lock and one retry.
 ## 22) Project Structure
 
 ```text
-.
-├── src/main/java/org/miniProjectTwo/DragonOfNorth
-│   ├── config
-│   │   ├── initializer
-│   │   ├── security
-│   │   └── OtpConfig
-│   ├── controller
-│   ├── dto
-│   │   ├── api
-│   │   ├── auth
-│   │   ├── otp
-│   │   └── session
-│   ├── enums
-│   ├── exception
-│   ├── model
-│   ├── ratelimit
-│   ├── repositories
-│   ├── resolver
-│   ├── serviceInterfaces
-│   └── services
-│       ├── auth
-│       └── otp
-├── src/main/resources
-├── src/test/java/org/miniProjectTwo/DragonOfNorth
-├── frontend
-│   ├── src/components
-│   ├── src/context
-│   ├── src/pages
-│   ├── src/services
-│   └── src/utils
-├── docs
-├── Dockerfile
-├── pom.xml
-└── README.md
-```
-
----
+src
+├── main
+│   ├── java
+│   │   └── org
+│   │       └── miniProjectTwo
+│   │           └── DragonOfNorth
+│   │               ├── DragonOfNorthApplication.java
+│   │               ├── components
+│   │               │   └── TokenHasher.java
+│   │               ├── config
+│   │               │   ├── AuditorAwareImpl.java
+│   │               │   ├── BeansConfig.java
+│   │               │   ├── JpaConfig.java
+│   │               │   ├── OpenApiConfig.java
+│   │               │   ├── OtpConfig
+│   │               │   │   ├── SesConfig.java
+│   │               │   │   └── SnsConfig.java
+│   │               │   ├── RateLimitConfig.java
+│   │               │   ├── RateLimitProperties.java
+│   │               │   ├── initializer
+│   │               │   │   ├── RolesInitializer.java
+│   │               │   │   └── TestDataInitializer.java
+│   │               │   └── security
+│   │               │       ├── AppUserDetails.java
+│   │               │       ├── CorsConfig.java
+│   │               │       ├── JwtFilter.java
+│   │               │       ├── JwtServicesImpl.java
+│   │               │       ├── KeyUtils.java
+│   │               │       └── SecurityConfig.java
+│   │               ├── controller
+│   │               │   ├── AuthenticationController.java
+│   │               │   ├── OtpController.java
+│   │               │   └── SessionController.java
+│   │               ├── dto
+│   │               │   ├── api
+│   │               │   │   ├── ApiResponse.java
+│   │               │   │   └── ErrorResponse.java
+│   │               │   ├── auth
+│   │               │   │   ├── request
+│   │               │   │   │   ├── AppUserLoginRequest.java
+│   │               │   │   │   ├── AppUserSignUpCompleteRequest.java
+│   │               │   │   │   ├── AppUserSignUpRequest.java
+│   │               │   │   │   ├── AppUserStatusFinderRequest.java
+│   │               │   │   │   └── DeviceIdRequest.java
+│   │               │   │   └── response
+│   │               │   │       └── AppUserStatusFinderResponse.java
+│   │               │   ├── otp
+│   │               │   │   └── request
+│   │               │   │       ├── EmailOtpRequest.java
+│   │               │   │       ├── EmailVerifyRequest.java
+│   │               │   │       ├── PhoneOtpRequest.java
+│   │               │   │       └── PhoneVerifyRequest.java
+│   │               │   ├── package-info.java
+│   │               │   └── session
+│   │               │       └── response
+│   │               │           └── SessionSummaryResponse.java
+│   │               ├── enums
+│   │               │   ├── ApiResponseStatus.java
+│   │               │   ├── AppUserStatus.java
+│   │               │   ├── ErrorCode.java
+│   │               │   ├── IdentifierType.java
+│   │               │   ├── OtpPurpose.java
+│   │               │   ├── OtpVerificationStatus.java
+│   │               │   ├── RateLimitType.java
+│   │               │   └── RoleName.java
+│   │               ├── exception
+│   │               │   ├── ApplicationExceptionHandler.java
+│   │               │   ├── BusinessException.java
+│   │               │   └── ExceptionHandlerFilter.java
+│   │               ├── model
+│   │               │   ├── AppUser.java
+│   │               │   ├── BaseEntity.java
+│   │               │   ├── OtpToken.java
+│   │               │   ├── Permission.java
+│   │               │   ├── Role.java
+│   │               │   └── Session.java
+│   │               ├── ratelimit
+│   │               │   ├── RateLimitBucketServiceImpl.java
+│   │               │   └── RateLimitFilter.java
+│   │               ├── repositories
+│   │               │   ├── AppUserRepository.java
+│   │               │   ├── OtpTokenRepository.java
+│   │               │   ├── RoleRepository.java
+│   │               │   └── SessionRepository.java
+│   │               ├── resolver
+│   │               │   ├── AuthenticationServiceResolver.java
+│   │               │   └── RateLimitKeyResolver.java
+│   │               ├── serviceInterfaces
+│   │               │   ├── AuthCommonServices.java
+│   │               │   ├── AuthenticationService.java
+│   │               │   ├── JwtServices.java
+│   │               │   ├── OtpSender.java
+│   │               │   ├── OtpService.java
+│   │               │   ├── RateLimitBucketService.java
+│   │               │   └── SessionService.java
+│   │               └── services
+│   │                   ├── AppUserDetailService.java
+│   │                   ├── CleanupTask.java
+│   │                   ├── auth
+│   │                   │   ├── AuthCommonServiceImpl.java
+│   │                   │   ├── EmailAuthenticationServiceImpl.java
+│   │                   │   ├── PhoneAuthenticationServiceImpl.java
+│   │                   │   └── SessionServiceImpl.java
+│   │                   ├── otp
+│   │                   │   ├── EmailOtpSender.java
+│   │                   │   ├── OtpServiceImpl.java
+│   │                   │   ├── PhoneOtpSender.java
+│   │                   │   └── SesEmailService.java
+│   │                   └── package-info.java
+│   └── resources
+│       ├── META-INF
+│       │   └── additional-spring-configuration-metadata.json
+│       └── application.yaml
 
 ## 23) License
 
@@ -1084,9 +1157,7 @@ MIT
 
 ---
 
-## Appendix C: Final Interview Reminder
-
-When you present this project, always emphasize:
+## Appendix C: Topics focused while building this project
 
 1. **Security design** (not just endpoint count)
 2. **Lifecycle modeling** (user, token, OTP, session)
