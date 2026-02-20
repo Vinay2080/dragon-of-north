@@ -16,6 +16,8 @@ spring:
       port: 6379
       password: ""
       timeout: 100ms
+  main:
+    register-shutdown-hook: false
 
 db_name: postgresql
 db_url: localhost
