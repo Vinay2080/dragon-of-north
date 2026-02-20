@@ -14,9 +14,10 @@ class OpenApiConfigTest {
         OpenAPI openAPI = openApiConfig.customOpenAPI();
 
         assertNotNull(openAPI);
-        assertEquals("Dragon of North API", openAPI.getInfo().getTitle());
-        assertEquals("1.0", openAPI.getInfo().getVersion());
+        assertEquals("Dragon of North Authentication API", openAPI.getInfo().getTitle());
+        assertEquals("v1", openAPI.getInfo().getVersion());
+
         assertFalse(openAPI.getServers().isEmpty());
-        assertEquals("/", openAPI.getServers().get(0).getUrl());
+        assertEquals("/", openAPI.getServers().getFirst().getUrl());
     }
 }

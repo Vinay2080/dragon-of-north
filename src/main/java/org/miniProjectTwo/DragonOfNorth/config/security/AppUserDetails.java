@@ -10,6 +10,7 @@ import org.springframework.modulith.NamedInterface;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.util.StringUtils;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -70,9 +71,16 @@ public class AppUserDetails implements UserDetails {
     @Override
     @NullMarked
     public String getUsername() {
+        if (StringUtils.hasText(appUser.getEmail())) {
+            return appUser.getEmail();
+        }
+        if (StringUtils.hasText(appUser.getPhone())) {
+            return appUser.getPhone();
+        }
         return appUser.getId().toString();
     }
     // todo following methods need to return specific values will be defined later...
+
     /**
      * Indicates whether the user's account has expired.
      * TODO: Implement proper account expiration logic.
@@ -82,7 +90,7 @@ public class AppUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() {
-        return UserDetails.super.isAccountNonExpired();
+        return true;
     }
 
     /**
@@ -106,7 +114,7 @@ public class AppUserDetails implements UserDetails {
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return UserDetails.super.isCredentialsNonExpired();
+        return true;
     }
 
     /**

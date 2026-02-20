@@ -1,7 +1,9 @@
 package org.miniProjectTwo.DragonOfNorth.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
+import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -20,9 +22,11 @@ import org.springframework.data.domain.AuditorAware;
  * even in background tasks or unauthenticated operations.</p>
  */
 @Configuration
+@RequiredArgsConstructor
 public class BeansConfig {
 
     private static final Logger log = LoggerFactory.getLogger(BeansConfig.class);
+    private final AppUserRepository appUserRepository;
 
     /**
      * Registers the application's {@link AuditorAware} bean.
@@ -33,7 +37,7 @@ public class BeansConfig {
     @NullMarked
     public AuditorAware<String> auditorAware() {
         log.info("AuditorAware bean initialized using AuditorAwareImpl");
-        return new AuditorAwareImpl();
+        return new AuditorAwareImpl(appUserRepository);
     }
 
     /**

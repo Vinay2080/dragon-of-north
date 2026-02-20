@@ -41,7 +41,7 @@ class AppUserDetailServiceTest {
 
         // assert
         assertNotNull(userDetails);
-        assertEquals(appUser.getId().toString(), userDetails.getUsername());
+        assertEquals(email, userDetails.getUsername());
         assertInstanceOf(AppUserDetails.class, userDetails);
         assertEquals(appUser, ((AppUserDetails) userDetails).getAppUser());
 
@@ -65,7 +65,7 @@ class AppUserDetailServiceTest {
 
         // assert
         assertNotNull(userDetails);
-        assertEquals(appUser.getId().toString(), userDetails.getUsername());
+        assertEquals(phone, userDetails.getUsername());
 
         // verify
         verify(repository).findByPhone(phone);

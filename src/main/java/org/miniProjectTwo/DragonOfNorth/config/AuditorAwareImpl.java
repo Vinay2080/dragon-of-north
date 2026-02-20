@@ -1,13 +1,18 @@
 package org.miniProjectTwo.DragonOfNorth.config;
 
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
+import org.miniProjectTwo.DragonOfNorth.config.security.AppUserDetails;
+import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Provides the current authenticated user for JPA auditing.
@@ -20,9 +25,12 @@ import java.util.Optional;
  * <p>Designed to integrate seamlessly with JWT-based authentication.</p>
  */
 @NullMarked
+@RequiredArgsConstructor
 public class AuditorAwareImpl implements AuditorAware<String> {
 
     private static final Logger log = LoggerFactory.getLogger(AuditorAwareImpl.class);
+    private final AppUserRepository appUserRepository;
+
 
     /**
      * Retrieves the current auditor for JPA auditing operations.
@@ -45,10 +53,34 @@ public class AuditorAwareImpl implements AuditorAware<String> {
             log.debug("Auditor resolved as SYSTEM (no authenticated user found)");
             return Optional.of("SYSTEM");
         }
+        Object principal = authentication.getPrincipal();
 
-        String username = authentication.getName();
-        log.debug("Auditor resolved as user: {}", username);
+        if (principal instanceof AppUserDetails appUserDetails) {
+            String email = appUserDetails.getAppUser().getEmail();
+            if (StringUtils.hasText(email)) {
+                log.debug("Auditor resolved as email from AppUserDetails: {}", email);
+                return Optional.of(email);
+            }
+            String phone = appUserDetails.getAppUser().getPhone();
+            if (StringUtils.hasText(phone)) {
+                log.debug("Auditor resolved as phone from AppUserDetails: {}", phone);
+                return Optional.of(phone);
+            }
+        }
+        if (principal instanceof UUID userId) {
+            Optional<String> emailOrPhone = appUserRepository.findById(userId)
+                    .map(user -> StringUtils.hasText(user.getEmail()) ? user.getEmail() : user.getPhone())
+                    .filter(StringUtils::hasText);
 
-        return Optional.of(username);
+            if (emailOrPhone.isPresent()) {
+                log.debug("Auditor resolved via UUID principal lookup: {}", emailOrPhone.get());
+                return emailOrPhone;
+            }
+        }
+
+        String fallbackPrincipal = authentication.getName();
+        log.debug("Auditor resolved from authentication name: {}", fallbackPrincipal);
+        return Optional.of(fallbackPrincipal);
+
     }
 }
