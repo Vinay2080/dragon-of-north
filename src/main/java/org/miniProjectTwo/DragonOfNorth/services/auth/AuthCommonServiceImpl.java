@@ -73,7 +73,6 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
         final String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
         final String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
-        //todo session store
 
         String ipAddress = request.getHeader("X-Forwarded-For");
         String userAgent = request.getHeader("User-Agent");
@@ -180,7 +179,6 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
             // Continue with cookie cleanup even if session revocation fails
             log.warn("Session revocation failed during logout: {}", e.getMessage());
         }
-        //todo session revocation
         clearRefreshTokenCookie(response);
         clearAccessTokenCookie(response);
 

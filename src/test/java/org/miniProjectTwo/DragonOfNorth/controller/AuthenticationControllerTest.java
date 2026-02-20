@@ -92,7 +92,5 @@ class AuthenticationControllerTest {
         verify(authenticationService).completeSignUp(request.identifier());
     }
 
-    //todo login method test
-    //todo logout method test
 
 }

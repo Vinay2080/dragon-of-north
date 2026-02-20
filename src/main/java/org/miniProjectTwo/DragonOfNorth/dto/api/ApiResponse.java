@@ -15,7 +15,6 @@ import java.time.Instant;
  *            JsonInclude(JsonInclude.Include.NON_NULL) ensures that null fields are not included in JSON serialization
  */
 @Getter
-// todo maybe it should in common module
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {

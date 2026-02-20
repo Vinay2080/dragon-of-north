@@ -33,7 +33,7 @@ public class AppUserDetails implements UserDetails {
 
     /**
      * Returns the authorities granted to the user.
-     * Currently returns an empty list. TODO: Implement role-based authorities.
+     * Currently returns an empty list.
      *
      * @return a collection of granted authorities
      */
@@ -79,12 +79,9 @@ public class AppUserDetails implements UserDetails {
         }
         return appUser.getId().toString();
     }
-    // todo following methods need to return specific values will be defined later...
 
     /**
      * Indicates whether the user's account has expired.
-     * TODO: Implement proper account expiration logic.
-     *
      * @return true if the user's account is valid (non-expired), false otherwise
      */
 
@@ -95,8 +92,6 @@ public class AppUserDetails implements UserDetails {
 
     /**
      * Indicates whether the user is locked or unlocked.
-     * TODO: Implement proper account locking logic.
-     *
      * @return true if the user is not locked, false otherwise
      */
 
@@ -107,8 +102,6 @@ public class AppUserDetails implements UserDetails {
 
     /**
      * Indicates whether the user's credentials (password) has expired.
-     * TODO: Implement proper credentials expiration logic.
-     *
      * @return true if the user's credentials are valid (non-expired), false otherwise
      */
 
@@ -119,8 +112,6 @@ public class AppUserDetails implements UserDetails {
 
     /**
      * Indicates whether the user is enabled or disabled.
-     * TODO: Implement proper user enabling/disabling logic.
-     *
      * @return true if the user is enabled, false otherwise
      */
 

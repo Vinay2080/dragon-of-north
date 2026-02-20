@@ -19,10 +19,10 @@ public class Session extends BaseEntity {
     @Column(name = "refresh_token_hash", nullable = false, length = 512)
     private String refreshTokenHash;
 
-    @Column(name = "device_id", nullable = false, unique = true)
+    @Column(name = "device_id", nullable = false)
     private String deviceId;
 
-    @Column(name = "ip_address", unique = true)
+    @Column(name = "ip_address")
     private String ipAddress;
 
     @Column(name = "user_agent", length = 1000)

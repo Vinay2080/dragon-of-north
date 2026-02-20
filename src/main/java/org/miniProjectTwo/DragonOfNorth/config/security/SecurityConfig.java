@@ -45,7 +45,6 @@ public class SecurityConfig {
      * - "/swagger-ui/**" and "/v3/api-docs/**" for API documentation
      * - "/health", "/actuator/**" for health checks/actuator
      */
-    // todo add urls later;
     public static final String[] public_urls = {
             "/api/v1/auth/**",
             "/api/v1/otp/**",

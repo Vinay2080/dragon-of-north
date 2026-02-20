@@ -47,6 +47,5 @@ class CleanupTaskTest {
                 any(Instant.class)
         );
     }
-    //todo session cleanup tests
 
 }
