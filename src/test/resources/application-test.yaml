@@ -18,6 +18,10 @@ spring:
       timeout: 100ms
   main:
     register-shutdown-hook: false
+  autoconfigure:
+    exclude:
+      - org.springframework.modulith.events.config.EventPublicationAutoConfiguration
+      - org.springframework.modulith.events.jpa.JpaEventPublicationAutoConfiguration
 
 db_name: postgresql
 db_url: localhost
