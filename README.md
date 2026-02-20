@@ -1,243 +1,162 @@
 # Dragon of North
 
-A production-style **authentication and session management platform** built with Spring Boot + React.
-This project demonstrates backend engineering depth for internship/recruiter evaluation: secure auth design, OTP verification, session lifecycle control, abuse prevention, cloud integrations, and test coverage.
+A production-style **authentication and session management platform** built with **Spring Boot + React**.
 
-## Why this project stands out
+This project is designed for internship/job interviews and demonstrates:
 
-- End-to-end auth system (signup → OTP verification → login → refresh → logout → session revoke)
-- Security-first architecture (JWT + HTTP-only cookies, Redis rate limiting, account protection)
-- Real infrastructure integrations (PostgreSQL, Redis, AWS SES/SNS)
-- Strong engineering hygiene (clean layering, DTO validation, global exception handling, automated tests)
-- Interview-friendly API docs (OpenAPI/Swagger with request/response examples)
+- secure authentication architecture,
+- OTP lifecycle design,
+- device-aware session management,
+- distributed rate limiting,
+- structured API error contracts,
+- full-stack integration.
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Why This Project Stands Out](#why-this-project-stands-out)
+- [Core Features](#core-features)
+- [Architecture](#architecture)
+- [Visual Flows](#visual-flows)
+- [Security Design Decisions](#security-design-decisions)
+- [API Overview](#api-overview)
+- [API Examples](#api-examples)
+- [Data Model](#data-model)
+- [Error Handling Contract](#error-handling-contract)
+- [Rate Limiting](#rate-limiting)
+- [Frontend Highlights](#frontend-highlights)
+- [Testing](#testing)
+- [Local Setup](#local-setup)
+- [Deployment Notes](#deployment-notes)
+- [Interview Talking Points](#interview-talking-points)
+- [Roadmap](#roadmap)
+- [Project Structure](#project-structure)
+- [License](#license)
+
+---
+
+## Overview
+
+Dragon of North implements a complete auth journey:
+
+1. Identifier status check
+2. Signup initiation
+3. OTP request + verification
+4. Signup completion
+5. Login with access/refresh cookies
+6. Device-aware session creation
+7. Refresh token rotation
+8. Logout and session revoke flows
+
+This is intentionally **not** a simple login/signup demo — it includes real-world auth lifecycle concerns.
+
+---
+
+## Why This Project Stands Out
+
+- End-to-end auth and session lifecycle
+- JWT access/refresh split with explicit token-type handling
+- HttpOnly cookie-first model + Bearer compatibility
+- Refresh token hash-at-rest session persistence
+- Purpose-aware OTP engine (signup/login/reset/2FA)
+- Redis-backed distributed throttling with Bucket4j
+- Global exception handling + enum-based error contract
+- Frontend integrated with refresh-on-401 retry flow
+- Session dashboard with revoke controls
 
 ---
 
 ## Core Features
 
-### Authentication & User Lifecycle
-- Identifier-based auth using **email** or **phone**.
-- Signup and signup-complete flow with explicit user lifecycle statuses:
-  - `NOT_EXIST`, `CREATED`, `VERIFIED`, `DELETED`
-- Secure login with credential validation and device-aware session tracking.
+### 1) Authentication & User Lifecycle
 
-### OTP Engine
-- Email OTP and phone OTP generation.
-- Purpose-aware OTP workflows:
-  - `SIGNUP`, `LOGIN`, `PASSWORD_RESET`, `TWO_FACTOR_AUTH`
-- OTP verification outcomes include states like `SUCCESS`, `INVALID_OTP`, `EXPIRED_OTP`, `ALREADY_USED`, etc.
+- Identifier-based auth: **EMAIL** and **PHONE**
+- Status model:
+    - `NOT_EXIST`
+    - `CREATED`
+    - `VERIFIED`
+    - `DELETED`
+- Signup is split into:
+    - `/sign-up` (create account in `CREATED`)
+    - `/sign-up/complete` (promote to `VERIFIED`)
 
-### Session Management
-- Multiple-device session support.
-- List current user sessions.
-- Revoke single session by ID.
-- Revoke all other sessions except current device.
+### 2) JWT + Cookie Model
 
-### Security & Abuse Prevention
-- JWT-based auth (access + refresh token flow).
-- HTTP-only secure cookies for token delivery.
-- Redis-backed rate limiting with Bucket4j.
-- Endpoint-specific controls for signup/login/OTP flows.
-- Strong DTO validation and centralized error handling.
+- Access token for protected API auth
+- Refresh token for refresh-only endpoint
+- `token_type` claim validation (`access_token`, `refresh_token`)
+- RSA signing and verification
+- Access token extraction supports:
+    - `Authorization: Bearer <token>`
+    - `access_token` cookie
 
-### Operations & Production Readiness
-- PostgreSQL persistence via Spring Data JPA.
-- Redis cache/rate-limit store.
-- AWS SES/SNS integration for messaging.
-- Prometheus metrics + Actuator endpoints.
-- Docker-ready backend and Vite-based frontend.
+### 3) Device-Aware Session Management
+
+- Session stores:
+    - `device_id`
+    - `ip_address`
+    - `user_agent`
+    - `last_used_at`
+    - `expiry_date`
+    - `revoked`
+- Session operations:
+    - list all sessions
+    - revoke one session by ID
+    - revoke all other sessions (except current device)
+- Refresh flow rotates refresh token hash
+
+### 4) OTP Engine
+
+- Email OTP + phone OTP
+- Purpose-scoped OTP:
+    - `SIGNUP`
+    - `LOGIN`
+    - `PASSWORD_RESET`
+    - `TWO_FACTOR_AUTH`
+- Verification outcomes:
+    - `SUCCESS`
+    - `INVALID_OTP`
+    - `EXPIRED_OTP`
+    - `MAX_ATTEMPT_EXCEEDED`
+    - `ALREADY_USED`
+    - `INVALID_PURPOSE`
+- OTP stored hashed (BCrypt)
+
+### 5) Abuse Prevention
+
+- Endpoint-specific rate limits
+- Redis distributed token bucket state (Bucket4j)
+- Client-visible headers:
+    - `X-RateLimit-Remaining`
+    - `X-RateLimit-Capacity`
+    - `Retry-After`
+
+### 6) Operations Readiness
+
+- PostgreSQL persistence
+- Redis integration
+- AWS SES/SNS OTP delivery hooks
+- Prometheus + Actuator
+- Scheduled cleanup for OTP/session/unverified-user records
+- Docker-ready backend
 
 ---
 
-## Tech Stack
-
-### Backend
-- Java 21
-- Spring Boot 4
-- Spring Security
-- Spring Data JPA
-- Springdoc OpenAPI (Swagger UI)
-- PostgreSQL
-- Redis + Bucket4j
-- Micrometer + Prometheus
-- AWS SDK (SES/SNS)
-
-### Frontend
-- React
-- Vite
-- TailwindCSS
-
-### Testing
-- JUnit 5
-- Spring Boot Test
-- Testcontainers
-
----
-
-## High-Level Architecture
+## Architecture
 
 ```text
 React Frontend
    ↓
 Spring Boot REST API
    ├── Controllers (Auth / OTP / Sessions)
-   ├── Services (Business Logic)
+   ├── Services (Business logic)
    ├── Repositories (JPA)
-   ├── Security (JWT filter, token services)
-   ├── Rate Limiter (Redis + Bucket4j)
+   ├── Security (JWT filter + auth manager)
+   ├── Rate Limiter (Redis + Bucket4j filter)
+   ├── Exception Layer (global mapping)
+   ├── Scheduler (cleanup tasks)
    └── Integrations (AWS SES/SNS)
         ↓
 PostgreSQL + Redis
-```
-
----
-
-## API Overview
-
-Base path: ` /api/v1 `
-
-### Authentication
-- `POST /auth/identifier/status`
-- `POST /auth/identifier/sign-up`
-- `POST /auth/identifier/sign-up/complete`
-- `POST /auth/identifier/login`
-- `POST /auth/jwt/refresh`
-- `POST /auth/identifier/logout`
-
-### OTP
-- `POST /otp/email/request`
-- `POST /otp/email/verify`
-- `POST /otp/phone/request`
-- `POST /otp/phone/verify`
-
-### Sessions
-- `GET /sessions/get/all`
-- `DELETE /sessions/delete/{sessionId}`
-- `POST /sessions/revoke-others`
-
-Swagger UI: `/swagger-ui/index.html`
-OpenAPI JSON: `/v3/api-docs`
-
----
-
-## Getting Started (Local)
-
-### 1) Clone the repository
-```bash
-git clone https://github.com/Vinay2080/dragon-of-north.git
-cd dragon-of-north
-```
-
-### 2) Configure environment
-Create a `.env` file in project root with values referenced in `application.yaml`.
-Important groups:
-- DB: `db_name`, `db_url`, `db_port`, `db_username`, `db_password`
-- JWT: `access_token`, `refresh_token`, `public_key_path`, `private_key_path`
-- Redis: `redis_host`, `redis_password`
-- OTP/auth throttling values
-- AWS: `aws_region`, `aws_ses_sender`
-
-### 3) Run backend
-```bash
-./mvnw spring-boot:run
-```
-
-### 4) Run frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
----
-
-## Example API Requests
-
-### Sign up
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/identifier/sign-up \
-  -H "Content-Type: application/json" \
-  -d '{
-    "identifier": "intern.candidate@example.com",
-    "identifier_type": "EMAIL",
-    "password": "Intern@123"
-  }'
-```
-
-### Request OTP (email)
-```bash
-curl -X POST http://localhost:8080/api/v1/otp/email/request \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "intern.candidate@example.com",
-    "otp_purpose": "SIGNUP"
-  }'
-```
-
-### Verify OTP (email)
-```bash
-curl -X POST http://localhost:8080/api/v1/otp/email/verify \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "intern.candidate@example.com",
-    "otp": "123456",
-    "otp_purpose": "SIGNUP"
-  }'
-```
-
-### Login
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/identifier/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "identifier": "intern.candidate@example.com",
-    "password": "Intern@123",
-    "device_id": "web-chrome-macos"
-  }' \
-  -c cookies.txt
-```
-
----
-
-## Testing
-
-Run all tests:
-```bash
-./mvnw test
-```
-
----
-
-## Project Structure
-
-```text
-src/main/java/org/miniProjectTwo/DragonOfNorth
-├── config
-├── controller
-├── dto
-├── enums
-├── exception
-├── model
-├── ratelimit
-├── repositories
-├── resolver
-├── serviceInterfaces
-└── services
-```
-
----
-
-## Career/Interview Talking Points
-
-If you're presenting this for internships, highlight:
-- How you designed secure cookie + JWT refresh flows
-- How rate limiting strategy differs by endpoint risk profile
-- How session revocation supports real multi-device account security
-- How you modeled account lifecycle and OTP purpose as enums for safety
-- How your tests protect auth-critical paths
-
----
-
-## License
-
-MIT

@@ -33,7 +33,7 @@ public class AppUserDetails implements UserDetails {
 
     /**
      * Returns the authorities granted to the user.
-     * Currently returns an empty list.
+     * Currently, it returns an empty list.
      *
      * @return a collection of granted authorities
      */
@@ -101,7 +101,7 @@ public class AppUserDetails implements UserDetails {
     }
 
     /**
-     * Indicates whether the user's credentials (password) has expired.
+     * Indicates whether the user's credentials (password) have expired.
      * @return true if the user's credentials are valid (non-expired), false otherwise
      */
 
