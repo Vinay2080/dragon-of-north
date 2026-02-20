@@ -13,6 +13,7 @@ spring:
     database: ${db_name}
     hibernate:
       ddl-auto: ${db_ddl_auto}
+    open-in-view: false
   jackson:
     property-naming-strategy: SNAKE_CASE
   data:
@@ -20,6 +21,9 @@ spring:
       host: ${redis_host}
       port: 6379
       password: ${redis_password}
+      repositories:
+        enabled: false
+
 
 app:
   security:
