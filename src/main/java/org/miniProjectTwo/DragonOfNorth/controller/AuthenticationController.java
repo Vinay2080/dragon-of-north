@@ -1,10 +1,17 @@
 package org.miniProjectTwo.DragonOfNorth.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.*;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.resolver.AuthenticationServiceResolver;
@@ -21,47 +28,59 @@ import static org.springframework.http.HttpStatus.CREATED;
 
 /**
  * REST controller for authentication operations.
- * Provides endpoints for user authentication including status checking, registration,
- * login, and token refresh. Supports multiple authentication methods (email, phone)
- * through the AuthenticationServiceResolver and handles JWT token management.
  */
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Identifier based sign-up, login, logout, and JWT refresh endpoints")
 public class AuthenticationController {
 
     private final AuthenticationServiceResolver resolver;
     private final AuthCommonServices authCommonServices;
 
-    /**
-     * Checks the status of a user identifier.
-     * Determines if the user exists and their current registration status.
-     * Useful for frontend to determine what authentication steps are needed.
-     *
-     * @param request the user identifier request containing identifier and type
-     * @return response with user status information
-     */
     @PostMapping("/identifier/status")
-    public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> findUserStatus(
+    @Operation(summary = "Check user status by identifier", description = "Returns current account lifecycle state for a given identifier.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Status found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request payload")
+    })
+    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse<AppUserStatusFinderResponse>> findUserStatus(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Identifier and type to inspect",
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "identifier": "intern.candidate@example.com",
+                              "identifier_type": "EMAIL"
+                            }
+                            """)))
             @RequestBody
             @Valid
             AppUserStatusFinderRequest request
     ) {
         AuthenticationService service = resolver.resolve(request.identifier(), request.identifierType());
         AppUserStatusFinderResponse response = service.getUserStatus(request.identifier());
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.success(response));
     }
 
-    /**
-     * Initiates user registration process.
-     * Starts the sign-up flow by creating a user account in CREATED status.
-     * The user will need to complete verification before being fully registered.
-     *
-     * @param request the sign-up request with user details
-     * @return response with registration status and next steps
-     */
     @PostMapping("/identifier/sign-up")
-    public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> signupUser(
+    @Operation(summary = "Start sign-up", description = "Creates user in CREATED status and starts verification flow.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Sign-up started"),
+            @ApiResponse(responseCode = "409", description = "Identifier already exists"),
+            @ApiResponse(responseCode = "400", description = "Validation failure")
+    })
+    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse<AppUserStatusFinderResponse>> signupUser(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Registration payload",
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "identifier": "intern.candidate@example.com",
+                              "identifier_type": "EMAIL",
+                              "password": "Intern@123"
+                            }
+                            """)))
             @RequestBody
             @Valid
             AppUserSignUpRequest request
@@ -69,81 +88,109 @@ public class AuthenticationController {
 
         AuthenticationService service = resolver.resolve(request.identifier(), request.identifierType());
         AppUserStatusFinderResponse response = service.signUpUser(request);
-        return ResponseEntity.status(CREATED).body(ApiResponse.success(response));
+        return ResponseEntity.status(CREATED).body(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.success(response));
     }
 
-    /**
-     * Completes the user registration process.
-     * Finalizes the sign-up process by verifying the user and upgrading
-     * their status to VERIFIED, enabling full authentication capabilities.
-     *
-     * @param request the completion request with user identifier
-     * @return response with final registration status
-     */
     @PostMapping("/identifier/sign-up/complete")
-    public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> completeUserSignup(
+    @Operation(summary = "Complete sign-up", description = "Marks user as VERIFIED after OTP validation completes.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Sign-up completed"),
+            @ApiResponse(responseCode = "400", description = "Invalid request or not yet verified")
+    })
+    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse<AppUserStatusFinderResponse>> completeUserSignup(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Identifier to finalize",
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "identifier": "intern.candidate@example.com",
+                              "identifier_type": "EMAIL"
+                            }
+                            """)))
             @RequestBody
             @Valid
             AppUserSignUpCompleteRequest request
     ) {
         AuthenticationService service = resolver.resolve(request.identifier(), request.identifierType());
         AppUserStatusFinderResponse response = service.completeSignUp(request.identifier());
-        return ResponseEntity.status(CREATED).body(ApiResponse.success(response));
+        return ResponseEntity.status(CREATED).body(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.success(response));
     }
 
-    /**
-     * Authenticates a user and issues JWT tokens.
-     * Validates user credentials and sets secure HTTP-only cookies containing
-     * access and refresh tokens. The access token is short-lived while the refresh
-     * token can be used to get new access tokens.
-     *
-     * @param request             the login request with identifier and password
-     * @param httpServletResponse the response for setting secure cookies
-     * @return success message indicating authentication was successful
-     */
     @PostMapping("/identifier/login")
-    public ResponseEntity<ApiResponse<?>> loginUser(
+    @Operation(summary = "Login and issue auth cookies", description = "Authenticates credentials and sets access_token + refresh_token HTTP-only cookies.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login successful"),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials"),
+            @ApiResponse(responseCode = "423", description = "User blocked")
+    })
+    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse<?>> loginUser(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Login credentials",
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "identifier": "intern.candidate@example.com",
+                              "password": "Intern@123",
+                              "device_id": "web-chrome-macos"
+                            }
+                            """)))
             @RequestBody
             @Valid
             AppUserLoginRequest request,
-            HttpServletResponse httpServletResponse,
-            HttpServletRequest httpServletRequest
+            @Parameter(hidden = true) HttpServletResponse httpServletResponse,
+            @Parameter(hidden = true) HttpServletRequest httpServletRequest
     ) {
         authCommonServices.login(request.identifier(), request.password(), httpServletResponse, httpServletRequest, request.deviceId());
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.successMessage("log in successful"));
+        return ResponseEntity.status(HttpStatus.OK).body(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.successMessage("log in successful"));
     }
 
-    /**
-     * Refreshes JWT access tokens using a valid refresh token.
-     * Extracts the refresh token from HTTP-only cookies, validates it,
-     * and issues a new access token. Maintains user session without requiring
-     * re-authentication.
-     *
-     * @param request  the HTTP request containing refresh token cookie
-     * @param response the HTTP response for setting a new access token cookie
-     * @return success message indicating token refresh was successful
-     */
     @PostMapping("/jwt/refresh")
-    public ResponseEntity<ApiResponse<?>> refreshToken(
-            HttpServletRequest request,
-            HttpServletResponse response,
+    @Operation(summary = "Refresh access token", description = "Uses refresh_token cookie + device id to rotate tokens and return new auth cookies.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token refreshed"),
+            @ApiResponse(responseCode = "401", description = "Refresh token missing/invalid/expired")
+    })
+    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse<?>> refreshToken(
+            @Parameter(hidden = true) HttpServletRequest request,
+            @Parameter(hidden = true) HttpServletResponse response,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Device id associated with the session",
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "device_id": "web-chrome-macos"
+                            }
+                            """)))
             @RequestBody
             @Valid
             DeviceIdRequest deviceIdRequest
     ) {
         authCommonServices.refreshToken(request, response, deviceIdRequest.deviceId());
-        return ResponseEntity.ok(ApiResponse.successMessage("refresh token sent"));
+        return ResponseEntity.ok(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.successMessage("refresh token sent"));
     }
 
     @PostMapping("/identifier/logout")
-    public ResponseEntity<ApiResponse<?>> logoutUser(
-            HttpServletResponse response,
-            HttpServletRequest request,
+    @Operation(summary = "Logout current device", description = "Revokes current device session and clears authentication cookies.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logout successful"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated")
+    })
+    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse<?>> logoutUser(
+            @Parameter(hidden = true) HttpServletResponse response,
+            @Parameter(hidden = true) HttpServletRequest request,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Device id to revoke",
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "device_id": "web-chrome-macos"
+                            }
+                            """)))
             @RequestBody
             @Valid
             DeviceIdRequest deviceIdRequest
     ) {
         authCommonServices.logoutUser(request, response, deviceIdRequest.deviceId());
-        return ResponseEntity.ok(ApiResponse.successMessage("user logged out successfully"));
+        return ResponseEntity.ok(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.successMessage("user logged out successfully"));
     }
 }

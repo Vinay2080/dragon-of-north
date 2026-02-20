@@ -1,28 +1,23 @@
 package org.miniProjectTwo.DragonOfNorth.dto.otp.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import org.miniProjectTwo.DragonOfNorth.config.OtpConfig.SnsConfig;
 import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
-import org.miniProjectTwo.DragonOfNorth.services.otp.OtpServiceImpl;
 
 /**
  * Request DTO for generating OTP codes via SMS delivery.
- * Triggers OTP generation and SMS delivery through SNS service. Phone validation
- * ensures the proper Indian mobile format (6-9 prefix, 10 digits). Purpose-based routing
- * controls verification flows and prevents SMS spam to invalid numbers.
- * @see OtpServiceImpl for generation logic
- * @see SnsConfig for SMS delivery configuration
  */
-
 public record PhoneOtpRequest(
         @Size(message = "invalid phone number size", min = 10, max = 14)
         @Pattern(message = "invalid phone number", regexp = "[6-9]\\d{9}$")
         @NotBlank(message = "phone number cannot be blank")
+        @Schema(description = "Phone number used for OTP delivery.", example = "9876543210")
         String phone,
         @NotNull(message = "OTP purpose cannot be null")
+        @Schema(description = "Business flow for OTP issuance.", allowableValues = {"SIGNUP", "LOGIN", "PASSWORD_RESET", "TWO_FACTOR_AUTH"}, example = "LOGIN")
         OtpPurpose otpPurpose) {
 
 }

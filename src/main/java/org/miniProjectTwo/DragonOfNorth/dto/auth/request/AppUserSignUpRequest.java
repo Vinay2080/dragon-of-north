@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.dto.auth.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -33,9 +34,11 @@ import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 public record AppUserSignUpRequest(
 
         @NotBlank
+        @Schema(description = "Email address or phone number used as username.", example = "intern.candidate@example.com")
         String identifier,
 
         @NotNull(message = "identifier type cannot be null")
+        @Schema(description = "Type of identifier. Use EMAIL or PHONE.", allowableValues = {"EMAIL", "PHONE"}, example = "EMAIL")
         IdentifierType identifierType,
 
         @Size(message = "password length must be between 8 and 50", min = 8, max = 50)
@@ -45,5 +48,6 @@ public record AppUserSignUpRequest(
                 At least one number
                 At least one special character""")
         @NotBlank(message = "password cannot be blank")
+        @Schema(description = "Strong password: 8-50 chars with upper, lower, number, and special character.", example = "Intern@123")
         String password) {
 }
