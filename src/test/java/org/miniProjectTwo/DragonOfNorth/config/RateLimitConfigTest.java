@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.config;
 import io.github.bucket4j.distributed.proxy.ProxyManager;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.api.sync.RedisCommands;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,8 @@ class RateLimitConfigTest {
     @SuppressWarnings("unchecked")
     void bucket4jProxyManager_shouldCreateManager() {
         StatefulRedisConnection<String, byte[]> connection = Mockito.mock(StatefulRedisConnection.class);
+        RedisCommands<String, byte[]> redisCommands = Mockito.mock(RedisCommands.class);
+        when(connection.sync()).thenReturn(redisCommands);
         ProxyManager<String> manager = rateLimitConfig.bucket4jProxyManager(connection);
         assertNotNull(manager);
     }

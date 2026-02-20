@@ -52,9 +52,6 @@ class TestDataInitializerTest {
         when(appUserRepository.findByPhone(anyString())).thenReturn(Optional.empty());
         when(sessionRepository.findByAppUserAndDeviceId(any(), anyString())).thenReturn(Optional.empty());
 
-        AppUser seededUser = new AppUser();
-        when(appUserRepository.save(any(AppUser.class))).thenReturn(seededUser);
-
         testDataInitializer.run();
 
         verify(appUserRepository, atLeast(10)).save(any(AppUser.class));
