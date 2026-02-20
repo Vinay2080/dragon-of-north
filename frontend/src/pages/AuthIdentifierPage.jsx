@@ -1,15 +1,9 @@
 import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
+import {apiService} from '../services/apiService';
 
-/**
- * Regex for basic email validation.
- */
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/**
- * Regex for basic phone validation (10-digit number starting with 6-9)
- */
 const PHONE_REGEX = /^[6-9]\d{9}$/;
 
 const AuthIdentifierPage = () => {
@@ -25,6 +19,29 @@ const AuthIdentifierPage = () => {
         return null;
     };
 
+    const sendSignupOtp = async (idType, processedIdentifier) => {
+        const otpEndpoint = idType === 'EMAIL'
+            ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST
+            : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
+
+        const otpPayload = idType === 'EMAIL'
+            ? {email: processedIdentifier, otp_purpose: 'SIGNUP'}
+            : {phone: processedIdentifier, otp_purpose: 'SIGNUP'};
+
+        const otpResult = await apiService.post(otpEndpoint, otpPayload);
+
+        if (apiService.isErrorResponse(otpResult)) {
+            if (otpResult.type === 'RATE_LIMIT_EXCEEDED') {
+                setError(`Too many OTP requests. Please wait ${otpResult.retryAfter ?? 60} seconds before trying again.`);
+                return false;
+            }
+            setError(otpResult.message || 'Failed to send OTP. Please try again.');
+            return false;
+        }
+
+        return otpResult?.api_response_status === 'success';
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -33,7 +50,6 @@ const AuthIdentifierPage = () => {
         let processedIdentifier = identifier.trim();
         const identifierType = detectIdentifierType(processedIdentifier);
 
-        // If it's a phone number, clean it up (remove all non-digit characters)
         if (identifierType === 'PHONE') {
             processedIdentifier = processedIdentifier.replace(/\D/g, '');
         }
@@ -45,102 +61,58 @@ const AuthIdentifierPage = () => {
 
         setLoading(true);
 
-        try {
-            const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/auth/identifier/status`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    identifier: processedIdentifier,
-                    identifier_type: identifierType,
-                }),
-            });
+        const result = await apiService.post(API_CONFIG.ENDPOINTS.IDENTIFIER_STATUS, {
+            identifier: processedIdentifier,
+            identifier_type: identifierType,
+        });
 
-            if (!response.ok) {
-                // Handle non-2xx responses
-                try {
-
-                    const errorData = await response.json().catch(() => ({}));
-                    setError(errorData.message || 'An error occurred. Please try again.');
-                } catch {
-                    setError('Network error. Please check your connection and try again.');
-                }
-
-            }
-
-            const result = await response.json();
-
-            // Read response using snake_case keys as per requirement
-            if (result.api_response_status === 'success') {
-                const status = result.data.app_user_status;
-
-                switch (status) {
-                    case 'NOT_EXIST':
-                        navigate('/signup', { state: { identifier: processedIdentifier, identifierType } });
-                        break;
-                    case 'CREATED':
-                        setLoading(true);
-                        try {
-                            const otpEndpoint = identifierType === 'EMAIL'
-                                ? `${API_CONFIG.BASE_URL}/api/v1/otp/email/request`
-                                : `${API_CONFIG.BASE_URL}/api/v1/otp/phone/request`;
-
-                            const otpPayload = identifierType === 'EMAIL'
-                                ? {email: processedIdentifier, otp_purpose: 'SIGNUP'}
-                                : {phone: processedIdentifier, otp_purpose: 'SIGNUP'};
-
-                            const otpResponse = await fetch(otpEndpoint, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify(otpPayload),
-                            });
-
-                            if (!otpResponse.ok) {
-                                const otpError = await otpResponse.json().catch(() => ({}));
-                                setError(otpError.message || 'Failed to send OTP. Please try again.');
-                                return;
-                            }
-
-                            navigate('/otp', {state: {identifier: processedIdentifier, identifierType}});
-                        } catch (otpErr) {
-                            setError('Failed to send OTP. Please check your connection.');
-                            console.error('OTP API Error:', otpErr);
-                        } finally {
-                            setLoading(false);
-                        }
-                        break;
-                    case 'VERIFIED':
-                        navigate('/login', { state: { identifier: processedIdentifier } });
-                        break;
-                    case 'BLOCKED':
-                        setBlockedMessage('Your account is blocked. Please contact support.');
-                        break;
-                    default:
-                        setError(`Unexpected user status: ${status}`);
-                }
+        if (apiService.isErrorResponse(result)) {
+            if (result.type === 'RATE_LIMIT_EXCEEDED') {
+                setError(`Too many attempts. Please wait ${result.retryAfter ?? 60} seconds and retry.`);
             } else {
-                setError(result.message || 'Something went wrong');
+                setError(result.message || 'An error occurred. Please try again.');
             }
-        } catch (err) {
-            setError(err.message || 'Failed to connect to the server. Please try again later.');
-            console.error('API Error:', err);
-        } finally {
             setLoading(false);
+            return;
         }
+
+        if (result?.api_response_status !== 'success') {
+            setError(result?.message || 'Something went wrong');
+            setLoading(false);
+            return;
+        }
+
+        const status = result.data?.app_user_status;
+        switch (status) {
+            case 'NOT_EXIST':
+                navigate('/signup', {state: {identifier: processedIdentifier, identifierType}});
+                break;
+            case 'CREATED': {
+                const otpSent = await sendSignupOtp(identifierType, processedIdentifier);
+                if (otpSent) {
+                    navigate('/otp', {state: {identifier: processedIdentifier, identifierType}});
+                }
+                break;
+            }
+            case 'VERIFIED':
+                navigate('/login', {state: {identifier: processedIdentifier}});
+                break;
+            case 'DELETED':
+                setBlockedMessage('This account is deleted. Please contact support to recover access.');
+                break;
+            default:
+                setError(`Unexpected user status: ${status}`);
+        }
+
+        setLoading(false);
     };
+
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
             <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-8 shadow-2xl">
-                <h2 className="text-2xl font-bold text-white">
-                    Sign In / Sign Up
-                </h2>
+                <h2 className="text-2xl font-bold text-white">Sign In / Sign Up</h2>
 
-                <p className="mt-1 mb-6 text-sm text-slate-400">
-                    Continue with email or phone number
-                </p>
+                <p className="mt-1 mb-6 text-sm text-slate-400">Continue with email or phone number</p>
 
                 {blockedMessage && (
                     <div className="mb-4 rounded-lg border border-red-800 bg-red-950 px-4 py-3 text-sm text-red-300">
@@ -149,39 +121,33 @@ const AuthIdentifierPage = () => {
                 )}
 
                 <form onSubmit={handleSubmit} noValidate>
-                    <input
-                        type="text"
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        disabled={loading}
-                        placeholder="Email or phone number"
-                        className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none disabled:opacity-50"
-                        required
-                    />
+                    <div className="space-y-4">
+                        <div>
+                            <label className="mb-1 block text-sm font-medium text-slate-400">Email or Phone</label>
+                            <input
+                                type="text"
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
+                                placeholder="Enter email or phone number"
+                                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                                required
+                            />
+                        </div>
 
-                    {error && (
-                        <p className="mt-3 text-sm text-red-400">
-                            {error}
-                        </p>
-                    )}
+                        {error && <p className="text-sm text-red-400">{error}</p>}
 
-                    <button
-                        type="submit"
-                        disabled={loading || !identifier.trim()}
-                        className="mt-5 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        {loading ? 'Processing…' : 'Continue'}
-                    </button>
+                        <button
+                            type="submit"
+                            disabled={loading || !identifier}
+                            className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {loading ? 'Checking...' : 'Continue'}
+                        </button>
+                    </div>
                 </form>
-
-                <p className="mt-6 text-center text-xs text-slate-500">
-                    We may send an OTP if required
-                </p>
             </div>
         </div>
     );
-
 };
-
 
 export default AuthIdentifierPage;

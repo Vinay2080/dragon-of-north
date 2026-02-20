@@ -18,6 +18,11 @@ export const API_CONFIG = {
         EMAIL_OTP_VERIFY: '/api/v1/otp/email/verify',
         PHONE_OTP_REQUEST: '/api/v1/otp/phone/request',
         PHONE_OTP_VERIFY: '/api/v1/otp/phone/verify',
+
+        // Sessions
+        SESSIONS_ALL: '/api/v1/sessions/get/all',
+        SESSION_REVOKE: (sessionId) => `/api/v1/sessions/delete/${sessionId}`,
+        SESSION_REVOKE_OTHERS: '/api/v1/sessions/revoke-others',
     },
 
     // Timeout for API requests (in milliseconds)

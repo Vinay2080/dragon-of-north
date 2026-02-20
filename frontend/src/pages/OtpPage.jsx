@@ -7,7 +7,7 @@ import RateLimitInfo from '../components/RateLimitInfo';
 const OtpPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { identifier, identifierType } = location.state || {};
+    const {identifier, identifierType} = location.state || {};
 
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [error, setError] = useState('');
@@ -17,8 +17,8 @@ const OtpPage = () => {
         const savedTimer = localStorage.getItem('otpTimer');
         const savedTime = localStorage.getItem('otpTimerTimestamp');
         if (savedTimer && savedTime) {
-            const elapsed = Math.floor((Date.now() - parseInt(savedTime)) / 1000);
-            const remaining = parseInt(savedTimer) - elapsed;
+            const elapsed = Math.floor((Date.now() - parseInt(savedTime, 10)) / 1000);
+            const remaining = parseInt(savedTimer, 10) - elapsed;
             return remaining > 0 ? remaining : 0;
         }
         return 60;
@@ -33,53 +33,48 @@ const OtpPage = () => {
         let interval;
         if (timer > 0) {
             interval = setInterval(() => {
-                setTimer((prev) => {
-                    const next = prev - 1;
-                    return next >= 0 ? next : 0;
-                });
+                setTimer((prev) => (prev > 0 ? prev - 1 : 0));
             }, 1000);
         }
         return () => clearInterval(interval);
     }, [timer]);
 
     const handleChange = (element, index) => {
-        if (isNaN(element.value)) return false;
+        if (Number.isNaN(Number(element.value)) && element.value !== '') return;
 
         setOtp([...otp.map((d, idx) => (idx === index ? element.value : d))]);
 
-        // Focus next input
         if (element.nextSibling && element.value) {
             element.nextSibling.focus();
         }
     };
 
     const handleKeyDown = (e, index) => {
-        if (e.key === 'Backspace') {
-            if (!otp[index] && e.target.previousSibling) {
-                e.target.previousSibling.focus();
-            }
+        if (e.key === 'Backspace' && !otp[index] && e.target.previousSibling) {
+            e.target.previousSibling.focus();
         }
     };
 
-    const completeSignup = async (otpCode) => {
-        try {
-            const result = await apiService.post(API_CONFIG.ENDPOINTS.SIGNUP_COMPLETE, {
-                identifier,
-                identifier_type: identifierType,
-                otp: otpCode
-            });
+    const completeSignup = async () => {
+        const result = await apiService.post(API_CONFIG.ENDPOINTS.SIGNUP_COMPLETE, {
+            identifier,
+            identifier_type: identifierType,
+        });
 
-            if (result.api_response_status === 'success') {
-                localStorage.removeItem('otpTimer');
-                localStorage.removeItem('otpTimerTimestamp');
-                navigate('/login', {state: {identifier}});
-            } else {
-                setError(result.message || 'Failed to complete registration.');
-            }
-        } catch (err) {
-            setError(err.message || 'Failed to complete registration. Please try again.');
-            console.error('Complete Signup Error:', err);
+        if (apiService.isErrorResponse(result)) {
+            setError(result.message || 'Failed to complete registration.');
+            return false;
         }
+
+        if (result?.api_response_status === 'success') {
+            localStorage.removeItem('otpTimer');
+            localStorage.removeItem('otpTimerTimestamp');
+            navigate('/login', {state: {identifier}});
+            return true;
+        }
+
+        setError(result?.message || 'Failed to complete registration.');
+        return false;
     };
 
     const handleVerifyOtp = async (e) => {
@@ -98,31 +93,29 @@ const OtpPage = () => {
             : API_CONFIG.ENDPOINTS.PHONE_OTP_VERIFY;
 
         const payload = identifierType === 'EMAIL'
-            ? { email: identifier, otp: otpCode, otp_purpose: 'SIGNUP' }
-            : { phone: identifier, otp: otpCode, otp_purpose: 'SIGNUP' };
+            ? {email: identifier, otp: otpCode, otp_purpose: 'SIGNUP'}
+            : {phone: identifier, otp: otpCode, otp_purpose: 'SIGNUP'};
 
-        try {
-            // First verify the OTP
-            const verifyResult = await apiService.post(endpoint, payload);
+        const verifyResult = await apiService.post(endpoint, payload);
 
-            if (verifyResult.api_response_status === 'success') {
-                // If OTP is verified, complete the signup
-                await completeSignup(otpCode);
+        if (apiService.isErrorResponse(verifyResult)) {
+            if (verifyResult.type === 'RATE_LIMIT_EXCEEDED') {
+                setError(`Too many verification attempts. Please wait ${verifyResult.retryAfter ?? 60} seconds before trying again.`);
             } else {
-                setError(verifyResult.message || 'Invalid OTP. Please try again.');
+                setError(verifyResult.message || 'OTP verification failed.');
             }
-        } catch (err) {
-            if (err.type === 'RATE_LIMIT_EXCEEDED') {
-                setError(`Too many verification attempts. Please wait ${err.retryAfter} seconds before trying again.`);
-            } else {
-                setError(err.message || 'Failed to connect to the server. Please try again later.');
-            }
-            console.error('Verify OTP Error:', err);
-        } finally {
             setLoading(false);
+            return;
         }
-    };
 
+        if (verifyResult?.api_response_status === 'success') {
+            await completeSignup();
+        } else {
+            setError(verifyResult?.message || 'Invalid OTP. Please try again.');
+        }
+
+        setLoading(false);
+    };
 
     const handleResendOtp = async () => {
         if (timer > 0) return;
@@ -135,28 +128,24 @@ const OtpPage = () => {
             : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
 
         const payload = identifierType === 'EMAIL'
-            ? { email: identifier, otp_purpose: 'SIGNUP' }
-            : { phone: identifier, otp_purpose: 'SIGNUP' };
+            ? {email: identifier, otp_purpose: 'SIGNUP'}
+            : {phone: identifier, otp_purpose: 'SIGNUP'};
 
-        try {
-            const result = await apiService.post(endpoint, payload);
+        const result = await apiService.post(endpoint, payload);
 
-            if (result.api_response_status === 'success') {
-                setTimer(60);
-                setOtp(['', '', '', '', '', '']);
+        if (apiService.isErrorResponse(result)) {
+            if (result.type === 'RATE_LIMIT_EXCEEDED') {
+                setError(`Too many OTP requests. Please wait ${result.retryAfter ?? 60} seconds before trying again.`);
             } else {
-                setError(result.message || 'Failed to resend OTP.');
+                setError(result.message || 'Failed to resend OTP. Please try again.');
             }
-        } catch (err) {
-            if (err.type === 'RATE_LIMIT_EXCEEDED') {
-                setError(`Too many OTP requests. Please wait ${err.retryAfter} seconds before trying again.`);
-            } else {
-                setError(err.message || 'Failed to resend OTP. Please try again.');
-            }
-            console.error('Resend OTP Error:', err);
-        } finally {
             setResendLoading(false);
+            return;
         }
+
+        setTimer(60);
+        setOtp(['', '', '', '', '', '']);
+        setResendLoading(false);
     };
 
     if (!identifier) {
@@ -167,9 +156,7 @@ const OtpPage = () => {
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
             <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-8 shadow-2xl">
-                <h2 className="text-2xl font-bold text-white">
-                    Verify OTP
-                </h2>
+                <h2 className="text-2xl font-bold text-white">Verify OTP</h2>
 
                 <p className="mt-1 mb-6 text-sm text-slate-400">
                     Enter the 6-digit code sent to <span className="text-blue-400 font-medium">{identifier}</span>
@@ -190,11 +177,7 @@ const OtpPage = () => {
                         ))}
                     </div>
 
-                    {error && (
-                        <p className="mb-4 text-sm text-red-400 text-center">
-                            {error}
-                        </p>
-                    )}
+                    {error && <p className="mb-4 text-sm text-red-400 text-center">{error}</p>}
 
                     <button
                         type="submit"
@@ -222,15 +205,6 @@ const OtpPage = () => {
                             </button>
                         )}
                     </p>
-                </div>
-
-                <div className="mt-6">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="text-xs text-slate-500 hover:text-white transition"
-                    >
-                        &larr; Back
-                    </button>
                 </div>
             </div>
         </div>

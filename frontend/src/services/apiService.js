@@ -39,6 +39,18 @@ class ApiService {
         this.notifyRateLimitUpdate();
     }
 
+    isErrorResponse(result) {
+        return !!result && ['RATE_LIMIT_EXCEEDED', 'API_ERROR', 'NETWORK_ERROR'].includes(result.type);
+    }
+
+    async parseBody(response) {
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            return null;
+        }
+        return response.json();
+    }
+
     async refreshToken() {
         if (this.isRefreshing) {
             return this.refreshPromise;
@@ -47,7 +59,7 @@ class ApiService {
         this.isRefreshing = true;
 
         this.refreshPromise = fetch(
-            `${API_CONFIG.BASE_URL}/api/v1/auth/jwt/refresh`,
+            `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REFRESH_TOKEN}`,
             {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -60,7 +72,7 @@ class ApiService {
             if (!res.ok) {
                 throw new Error('Refresh failed');
             }
-            return res.json();
+            return this.parseBody(res);
         }).finally(() => {
             this.isRefreshing = false;
         });
@@ -82,7 +94,6 @@ class ApiService {
 
         try {
             const response = await fetch(url, defaultOptions);
-
             this.extractRateLimitHeaders(response);
 
             if (response.status === 401 && retry) {
@@ -91,18 +102,19 @@ class ApiService {
                     return this.request(endpoint, options, false);
                 } catch (refreshError) {
                     localStorage.removeItem('isAuthenticated');
+                    localStorage.removeItem('user');
                     window.location.href = '/login';
                     throw refreshError;
                 }
             }
 
-            const data = await response.json();
+            const data = await this.parseBody(response);
 
             if (!response.ok) {
                 if (response.status === 429) {
                     return {
                         type: 'RATE_LIMIT_EXCEEDED',
-                        message: data.message || 'Too many requests',
+                        message: data?.message || 'Too many requests',
                         retryAfter: this.rateLimitInfo.retryAfter,
                         data,
                     };
@@ -110,7 +122,7 @@ class ApiService {
 
                 return {
                     type: 'API_ERROR',
-                    message: data.message || 'An error occurred',
+                    message: data?.message || 'An error occurred',
                     status: response.status,
                     data,
                 };
