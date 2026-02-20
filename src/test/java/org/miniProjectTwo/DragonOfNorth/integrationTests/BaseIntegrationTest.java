@@ -119,13 +119,13 @@ public abstract class BaseIntegrationTest {
 
         @Bean
         @Primary
-        EmailOtpSender emailOtpSender() {
+        EmailOtpSender mockedEmailOtpSender() {
             return Mockito.mock(EmailOtpSender.class);
         }
 
         @Bean
         @Primary
-        PhoneOtpSender phoneOtpSender() {
+        PhoneOtpSender mockedPhoneOtpSender() {
             return Mockito.mock(PhoneOtpSender.class);
         }
     }
