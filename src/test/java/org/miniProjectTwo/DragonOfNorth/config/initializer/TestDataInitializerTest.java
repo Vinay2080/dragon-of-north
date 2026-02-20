@@ -7,7 +7,6 @@ import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
-import org.miniProjectTwo.DragonOfNorth.repositories.SessionRepository;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -30,8 +29,6 @@ class TestDataInitializerTest {
     @Mock
     private RoleRepository roleRepository;
 
-    @Mock
-    private SessionRepository sessionRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -50,7 +47,6 @@ class TestDataInitializerTest {
 
         when(appUserRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         when(appUserRepository.findByPhone(anyString())).thenReturn(Optional.empty());
-        when(sessionRepository.findByAppUserAndDeviceId(any(), anyString())).thenReturn(Optional.empty());
 
         testDataInitializer.run();
 

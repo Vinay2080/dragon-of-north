@@ -3,7 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.config;
 import io.github.bucket4j.distributed.proxy.ProxyManager;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.sync.RedisCommands;
+import io.lettuce.core.codec.RedisCodec;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,7 @@ class RateLimitConfigTest {
     void redisConnection_shouldDelegateToRedisClient() {
         RedisClient redisClient = Mockito.mock(RedisClient.class);
         StatefulRedisConnection<String, byte[]> connection = Mockito.mock(StatefulRedisConnection.class);
-        when(redisClient.connect(Mockito.any())).thenReturn(connection);
+        when(redisClient.connect(Mockito.any(RedisCodec.class))).thenReturn(connection);
 
         StatefulRedisConnection<String, byte[]> actual = rateLimitConfig.redisConnection(redisClient);
 
@@ -53,8 +53,9 @@ class RateLimitConfigTest {
     @SuppressWarnings("unchecked")
     void bucket4jProxyManager_shouldCreateManager() {
         StatefulRedisConnection<String, byte[]> connection = Mockito.mock(StatefulRedisConnection.class);
-        RedisCommands<String, byte[]> redisCommands = Mockito.mock(RedisCommands.class);
-        when(connection.sync()).thenReturn(redisCommands);
+        // Mock async() method which LettuceBasedProxyManager actually needs
+        when(connection.async()).thenReturn(Mockito.mock(io.lettuce.core.api.async.RedisAsyncCommands.class));
+
         ProxyManager<String> manager = rateLimitConfig.bucket4jProxyManager(connection);
         assertNotNull(manager);
     }
