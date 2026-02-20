@@ -4,9 +4,14 @@ package org.miniProjectTwo.DragonOfNorth.redis;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.modulith.events.core.EventPublicationRegistry;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -93,6 +98,16 @@ public class RedisTest {
     }
 
     private record KeyPaths(Path privateKeyPath, Path publicKeyPath) {
+    }
+
+    @TestConfiguration
+    static class RedisTestConfig {
+
+        @Bean(name = "eventPublicationRegistry")
+        @Primary
+        EventPublicationRegistry mockedEventPublicationRegistry() {
+            return Mockito.mock(EventPublicationRegistry.class);
+        }
     }
 
     private final StringRedisTemplate redisTemplate;
