@@ -1,17 +1,19 @@
 name: CI-CD
-# CI
+
 on:
   push:
     branches: [ "main", "master" ]
     tags:
       - "v*"
   pull_request:
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,20 +35,14 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x mvnw
 
-      - name: Run unit tests (without Docker-dependent tests)
+      - name: Run tests
         run: ./mvnw test
-        # Tests with @Testcontainers(disabledWithoutDocker = true) are automatically skipped when Docker is unavailable
 
-      - name: Verify test results
-        run: |
-          if grep -q "Tests run: 144" target/surefire-reports/*.txt 2>/dev/null || grep -q "Tests run" target/surefire-reports/*.txt 2>/dev/null; then
-            echo "✅ Tests completed successfully"
-          else
-            echo "⚠️  Some tests may have been skipped due to Docker unavailability (expected in CI)"
-          fi
+      # -----------------------
+      # Build & Push Docker Image
+      # -----------------------
 
-      # CD
-      - name: Log in to GitHub Container Registry
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -56,15 +52,17 @@ jobs:
       - name: Build Docker image
         run: |
           IMAGE=ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')/backend
-          docker build -t $IMAGE:latest -t $IMAGE:${{ github.sha }} .
+          docker build -t $IMAGE:${{ github.sha }} .
 
       - name: Push Docker image
         run: |
           IMAGE=ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')/backend
-          docker push $IMAGE:latest
           docker push $IMAGE:${{ github.sha }}
 
+      # -----------------------
       # Deploy
+      # -----------------------
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -72,7 +70,16 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd app                              # 🔹 directory with docker-compose.yml
+            cd app
+
             export IMAGE_TAG=${{ github.sha }}
-            docker compose pull backend        # 🔹 FORCE pull latest image (core fix)
+
+            docker compose pull backend
             docker compose up -d
+
+            echo "Waiting for application to start..."
+            sleep 15
+
+            curl -f http://localhost:8080/actuator/health || exit 1
+
+            echo "Deployment successful."

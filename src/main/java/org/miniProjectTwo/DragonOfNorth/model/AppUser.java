@@ -33,10 +33,6 @@ import java.util.Set;
         indexes = {
                 @Index(name = "idx_users_email", columnList = "email"),
                 @Index(name = "idx_users_phone", columnList = "phone_number")
-        },
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = "email"),
-                @UniqueConstraint(columnNames = "phone_number")
         })
 
 
@@ -126,8 +122,11 @@ public class AppUser extends BaseEntity {
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "roles_id")
+            joinColumns = @JoinColumn(name = "user_id",
+                    foreignKey = @ForeignKey(name = "fk_user_roles_user")),
+            inverseJoinColumns = @JoinColumn(name = "roles_id",
+                    foreignKey = @ForeignKey(name = "fk_user_roles_role")
+            )
     )
     private Set<Role> roles = new HashSet<>();
 

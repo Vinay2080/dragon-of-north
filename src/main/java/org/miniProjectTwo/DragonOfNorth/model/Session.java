@@ -13,7 +13,8 @@ import java.time.Instant;
 public class Session extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, referencedColumnName = "id")
+    @JoinColumn(name = "user_id", nullable = false, referencedColumnName = "id"
+            , foreignKey = @ForeignKey(name = "fk_user_session_user"))
     private AppUser appUser;
 
     @Column(name = "refresh_token_hash", nullable = false, length = 512)

@@ -33,7 +33,7 @@ public abstract class BaseIntegrationTest {
     @Container
     @SuppressWarnings("resource")
     static final PostgreSQLContainer<?> postgres =
-            new PostgreSQLContainer<>("postgres:16-alpine")
+            new PostgreSQLContainer<>("postgres:16")
                     .withDatabaseName("testDB")
                     .withUsername("test")
                     .withPassword("test")
@@ -42,7 +42,7 @@ public abstract class BaseIntegrationTest {
     @Container
     @SuppressWarnings("resource")
     static final GenericContainer<?> redis =
-            new GenericContainer<>("redis:7-alpine")
+            new GenericContainer<>("redis:7")
                     .withExposedPorts(6379)
                     .withReuse(false);
 
