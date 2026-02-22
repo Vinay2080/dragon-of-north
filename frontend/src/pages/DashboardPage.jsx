@@ -115,8 +115,10 @@ const DashboardPage = () => {
             <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
                 <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
                     <h2 className="mb-4 text-xl font-semibold text-white">Account Information</h2>
-                    <p className="text-slate-300">Identifier: <span className="text-white font-medium">{user?.identifier || 'Not available'}</span></p>
-                    <p className="text-slate-300">Current Device ID: <span className="text-white font-mono text-sm">{currentDeviceId}</span></p>
+                    <p className="text-slate-300">Identifier: <span
+                        className="text-white font-medium">{user?.identifier || 'Not available'}</span></p>
+                    <p className="text-slate-300">Current Device ID: <span
+                        className="text-white font-mono text-sm">{currentDeviceId}</span></p>
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-3">
@@ -176,7 +178,8 @@ const DashboardPage = () => {
                                         <tr key={session.session_id} className="border-b border-slate-900">
                                             <td className="py-3 pr-4 font-mono text-xs">
                                                 {session.device_id}
-                                                {isCurrentDevice && <span className="ml-2 rounded bg-blue-600/20 px-2 py-0.5 text-[10px] text-blue-300">current</span>}
+                                                {isCurrentDevice && <span
+                                                    className="ml-2 rounded bg-blue-600/20 px-2 py-0.5 text-[10px] text-blue-300">current</span>}
                                             </td>
                                             <td className="py-3 pr-4">{session.ip_address || '-'}</td>
                                             <td className="py-3 pr-4">{session.last_used_at ? new Date(session.last_used_at).toLocaleString() : '-'}</td>

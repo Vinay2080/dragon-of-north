@@ -177,6 +177,7 @@ These are “small” decisions that have real production value:
 - Spring Boot
 - Spring Security
 - Spring Data JPA
+- Flyway (database migration)
 - Springdoc OpenAPI (Swagger)
 - PostgreSQL
 - Redis + Bucket4j
@@ -746,6 +747,15 @@ Cleanup tasks keep OTP/session tables healthy and remove stale records.
 
 These controls reduce long-term data growth and improve runtime maintainability.
 
+### 16.6 Database migrations (Flyway)
+
+- Schema changes are versioned and applied automatically at startup using Flyway.
+- Migration scripts are stored in `src/main/resources/db/migration`.
+- Naming convention follows Flyway defaults: `V<version>__<description>.sql`
+  (example: `V1__init.sql`, `V2__added_column_nickname.sql`).
+- `spring.flyway.baseline-on-migrate=true` is enabled for smoother adoption on existing environments.
+- Keep migrations immutable once committed; add a new versioned script for any change.
+
 ---
 
 ## 17) Testing Strategy
@@ -805,7 +815,9 @@ Create `.env` in project root using keys referenced in `application.yaml`.
 - `db_port`
 - `db_username`
 - `db_password`
-- `db_ddl_auto`
+
+> Note: The project uses Flyway for schema evolution. Keep `db_ddl_auto` conservative in shared environments
+> (typically `validate`), and make schema changes through versioned migration scripts.
 
 #### JWT variables
 - `access_token`
@@ -843,6 +855,8 @@ Create `.env` in project root using keys referenced in `application.yaml`.
 ```bash
 ./mvnw spring-boot:run
 ```
+
+On startup, Flyway will automatically apply pending migrations before the application becomes ready.
 
 ### 18.4 Run frontend
 

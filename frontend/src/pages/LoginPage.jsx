@@ -50,7 +50,8 @@ const LoginPage = () => {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
+        <div
+            className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
             <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-8 shadow-2xl">
                 <h2 className="text-2xl font-bold text-white">Login</h2>
 
@@ -106,7 +107,8 @@ const LoginPage = () => {
                 </form>
 
                 <div className="mt-6 text-center">
-                    <button onClick={() => navigate('/')} className="text-xs text-slate-500 hover:text-white transition">
+                    <button onClick={() => navigate('/')}
+                            className="text-xs text-slate-500 hover:text-white transition">
                         Back to Welcome
                     </button>
                 </div>
