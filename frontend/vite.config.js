@@ -4,8 +4,13 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-    build: {
-        outDir: 'dist',
-        assetsDir: 'assets'
-    }
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets'
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setupTests.js',
+    globals: true,
+  },
 })
