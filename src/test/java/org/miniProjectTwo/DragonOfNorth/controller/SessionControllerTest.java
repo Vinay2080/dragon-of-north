@@ -16,8 +16,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SessionControllerTest {
@@ -44,6 +46,7 @@ class SessionControllerTest {
         ResponseEntity<ApiResponse<List<SessionSummaryResponse>>> response = sessionController.getMySessions(authentication);
 
         assertEquals(200, response.getStatusCode().value());
+        assertNotNull(response.getBody(), "response body should not be null");
         assertEquals(1, response.getBody().getData().size());
     }
 
@@ -57,6 +60,7 @@ class SessionControllerTest {
 
         verify(sessionService).revokeSessionById(userId, sessionId);
         assertEquals(200, response.getStatusCode().value());
+        assertNotNull(response.getBody(), "response body should not be null");
         assertEquals("session revoked", response.getBody().getMessage());
     }
 
@@ -70,6 +74,7 @@ class SessionControllerTest {
 
         verify(sessionService).revokeAllOtherSessions(userId, "device-1");
         assertEquals(200, response.getStatusCode().value());
+        assertNotNull(response.getBody(), "response body should not be null");
         assertEquals("revoked 2 other session(s)", response.getBody().getMessage());
     }
 }

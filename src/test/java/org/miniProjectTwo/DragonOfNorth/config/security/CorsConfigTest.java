@@ -21,9 +21,12 @@ class CorsConfigTest {
 
         CorsConfiguration config = source.getCorsConfiguration(request);
         assertNotNull(config);
-        assertTrue(config.getAllowedOriginPatterns().contains("http://localhost:*"));
-        assertTrue(config.getAllowedMethods().contains("GET"));
-        assertTrue(config.getAllowCredentials());
-        assertTrue(config.getExposedHeaders().contains("Authorization"));
+        assertTrue(config.getAllowedOriginPatterns() != null &&
+                config.getAllowedOriginPatterns().contains("http://localhost:*"));
+        assertTrue(config.getAllowedMethods() != null &&
+                config.getAllowedMethods().contains("GET"));
+        assertTrue(config.getExposedHeaders() != null &&
+                config.getExposedHeaders().contains("Authorization"));
+        assertEquals(Boolean.TRUE, config.getAllowCredentials());
     }
 }

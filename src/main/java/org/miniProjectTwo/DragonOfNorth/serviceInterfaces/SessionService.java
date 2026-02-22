@@ -26,4 +26,7 @@ public interface SessionService {
 
     @Transactional
     UUID validateAndRotateSession(String oldRefreshToken, String newRefreshToken, String deviceId);
+
+    @Transactional
+    void revokeAllSessionsByUserId(UUID userId);
 }

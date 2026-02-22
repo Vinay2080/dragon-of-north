@@ -27,8 +27,8 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
             update Session s
             set s.revoked = true
             where s.appUser.id = :userId
-            and s.deviceId <> :currentDeviceId
-            and s.revoked = false
+                and s.deviceId <> :currentDeviceId
+                    and s.revoked = false
             """)
     int revokeAllOtherSessions(@Param("userId") UUID userId,
                                @Param("currentDeviceId") String currentDeviceId);
@@ -36,4 +36,13 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
     long deleteByExpiryDateBefore(Instant now);
 
     long deleteByRevokedTrueAndUpdatedAtBefore(Instant cutoff);
+
+    @Modifying
+    @Query("""
+            update Session s
+            set s.revoked = true
+            where s.appUser.id = :userId
+                and s.revoked = false
+            """)
+    int revokeAllSessionsByUserId(UUID userId);
 }

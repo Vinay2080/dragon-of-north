@@ -40,3 +40,4 @@ public class SnsConfig {
                 .build();
     }
 }
+//todo easiest ways to send sms

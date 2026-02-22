@@ -17,8 +17,8 @@ import org.springframework.modulith.NamedInterface;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
 import java.time.Instant;
+import java.util.Set;
 
 import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.CREATED;
 import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.VERIFIED;

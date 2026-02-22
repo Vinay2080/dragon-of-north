@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.services.auth;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -7,19 +8,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.config.security.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.config.security.JwtServicesImpl;
-import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
-import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
-import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.PasswordResetConfirmRequest;
+import org.miniProjectTwo.DragonOfNorth.enums.*;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.model.Role;
+import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.JwtServices;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.OtpService;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.SessionService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -45,6 +48,10 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final JwtServices jwtServices;
     private final RoleRepository roleRepository;
     private final SessionService sessionService;
+    private final OtpService otpService;
+    private final MeterRegistry meterRegistry;
+    private final AppUserRepository appUserRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Authenticates user credentials and issues JWT tokens.
@@ -182,6 +189,42 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         clearRefreshTokenCookie(response);
         clearAccessTokenCookie(response);
 
+    }
+
+    @Override
+    public void requestPasswordResetOtp(String identifier, IdentifierType identifierType) {
+        if (identifierType == IdentifierType.EMAIL) {
+            otpService.createEmailOtp(identifier, OtpPurpose.PASSWORD_RESET);
+        } else {
+            otpService.createPhoneOtp(identifier, OtpPurpose.PASSWORD_RESET);
+        }
+        meterRegistry.counter("auth.password_reset.requested").increment();
+        //todo explain
+        log.info("audit=password_reset_otp_request identifier={} identifierType={}", identifier, identifierType);
+    }
+
+    @Override
+    public void resetPassword(PasswordResetConfirmRequest request) {
+        OtpVerificationStatus status = request.identifierType() == IdentifierType.EMAIL
+                ? otpService.verifyEmailOtp(request.identifier(), request.otp(), OtpPurpose.PASSWORD_RESET)
+                : otpService.verifyPhoneOtp(request.identifier(), request.otp(), OtpPurpose.PASSWORD_RESET);
+
+        if (!status.isSuccess()) {
+            meterRegistry.counter("auth.password_reset.failure").increment();
+            throw new BusinessException(ErrorCode.INVALID_INPUT, status.getMessage());
+        }
+
+        AppUser appUser = request.identifierType() == IdentifierType.EMAIL
+                ? appUserRepository.findByEmail(request.identifier())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND))
+                : appUserRepository.findByPhone(request.identifier())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        appUser.setPassword(passwordEncoder.encode(request.newPassword()));
+        sessionService.revokeAllSessionsByUserId(appUser.getId());
+
+        meterRegistry.counter("auth.password_reset.success").increment();
+        log.info("audit=password_reset_success userId={}, identifierType={}", appUser.getId(), request.identifierType());
     }
 
 

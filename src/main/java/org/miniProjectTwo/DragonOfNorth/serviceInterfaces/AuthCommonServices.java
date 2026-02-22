@@ -2,7 +2,9 @@ package org.miniProjectTwo.DragonOfNorth.serviceInterfaces;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.PasswordResetConfirmRequest;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
+import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 
 public interface AuthCommonServices {
@@ -16,4 +18,8 @@ public interface AuthCommonServices {
     void updateUserStatus(AppUserStatus appUserStatus, AppUser appUser);
 
     void logoutUser(HttpServletRequest request, HttpServletResponse response, String deviceId);
+
+    void requestPasswordResetOtp(String identifier, IdentifierType identifierType);
+
+    void resetPassword(PasswordResetConfirmRequest request);
 }

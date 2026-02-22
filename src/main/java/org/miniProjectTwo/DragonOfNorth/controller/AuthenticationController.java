@@ -195,4 +195,30 @@ public class AuthenticationController {
         authCommonServices.logoutUser(request, response, deviceIdRequest.deviceId());
         return ResponseEntity.ok(successMessage("user logged out successfully"));
     }
+
+    @PostMapping("/password/forgot/request")
+    @Operation(
+            summary = "Request password reset OTP",
+            description = "Generates and sends OTP for PASSWORD_RESET purpose to email or phone."
+    )
+    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse<?>> requestPasswordResetOtp(
+            @Valid
+            @RequestBody
+            PasswordResetRequestOtpRequest request
+    ) {
+        authCommonServices.requestPasswordResetOtp(request.identifier(), request.identifierType());
+        return ResponseEntity.ok(successMessage("password reset OTP sent successfully."));
+    }
+
+    @PostMapping("/password/forgot/reset")
+    @Operation(
+            summary = "Reset password using OTP",
+            description = "Validates PASSWORD_RESET OTP and updates password. Revokes all active sessions."
+    )
+    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse<?>> resetPassword(
+            @Valid @org.springframework.web.bind.annotation.RequestBody PasswordResetConfirmRequest request
+    ) {
+        authCommonServices.resetPassword(request);
+        return ResponseEntity.ok(successMessage("password reset successful"));
+    }
 }

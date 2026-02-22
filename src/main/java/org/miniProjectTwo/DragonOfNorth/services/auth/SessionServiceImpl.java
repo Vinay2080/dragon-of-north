@@ -136,4 +136,11 @@ public class SessionServiceImpl implements SessionService {
         return appUser.getId();
 
     }
+
+    @Override
+    @Transactional
+    public void revokeAllSessionsByUserId(UUID userId) {
+        int revoked = sessionRepository.revokeAllSessionsByUserId(userId);
+        log.info("audit=session_revoked_all user_id={} revoked_count={}", userId, revoked);
+    }
 }
