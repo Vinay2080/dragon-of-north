@@ -6,11 +6,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpCompleteRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserStatusFinderRequest;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.PasswordResetConfirmRequest;
+import org.miniProjectTwo.DragonOfNorth.dto.auth.request.PasswordResetRequestOtpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.exception.ApplicationExceptionHandler;
 import org.miniProjectTwo.DragonOfNorth.resolver.AuthenticationServiceResolver;
+import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthenticationService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -40,6 +43,9 @@ class AuthenticationControllerTest {
 
     @Mock
     private AuthenticationService authenticationService;
+
+    @Mock
+    private AuthCommonServices authCommonServices;
 
     @BeforeEach
     void setUp() {
@@ -90,6 +96,37 @@ class AuthenticationControllerTest {
 
         verify(resolver).resolve(request.identifier(), request.identifierType());
         verify(authenticationService).completeSignUp(request.identifier());
+    }
+
+    @Test
+    void requestPasswordResetOtp_shouldReturnOk_whenRequestIsValid() throws Exception {
+        PasswordResetRequestOtpRequest request = new PasswordResetRequestOtpRequest("test@example.com", IdentifierType.EMAIL);
+
+        mockMvc.perform(post("/api/v1/auth/password/forgot/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"));
+
+        verify(authCommonServices).requestPasswordResetOtp("test@example.com", IdentifierType.EMAIL);
+    }
+
+    @Test
+    void resetPassword_shouldReturnOk_whenRequestIsValid() throws Exception {
+        PasswordResetConfirmRequest request = new PasswordResetConfirmRequest(
+                "test@example.com",
+                IdentifierType.EMAIL,
+                "123456",
+                "NewPass@123"
+        );
+
+        mockMvc.perform(post("/api/v1/auth/password/forgot/reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"));
+
+        verify(authCommonServices).resetPassword(request);
     }
 
 

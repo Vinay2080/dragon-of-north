@@ -10,10 +10,10 @@ const LoginPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const {login} = useAuth();
-    const {identifier: initialIdentifier} = location.state || {};
+    const {identifier: initialIdentifier, password: initialPassword} = location.state || {};
 
     const [identifier, setIdentifier] = useState(initialIdentifier || '');
-    const [password, setPassword] = useState('');
+    const [password, setPassword] = useState(initialPassword || '');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -106,7 +106,17 @@ const LoginPage = () => {
                     <RateLimitInfo/>
                 </form>
 
-                <div className="mt-6 text-center">
+                <div className="mt-4 text-center">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/forgot-password')}
+                        className="text-sm text-blue-400 hover:text-blue-300 transition"
+                    >
+                        Forgot password?
+                    </button>
+                </div>
+
+                <div className="mt-4 text-center">
                     <button onClick={() => navigate('/')}
                             className="text-xs text-slate-500 hover:text-white transition">
                         Back to Welcome
