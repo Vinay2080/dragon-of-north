@@ -131,7 +131,17 @@ const LoginPage = () => {
                     <RateLimitInfo/>
                 </form>
 
-                <div className="mt-6 text-center">
+                <div className="mt-4 text-center">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/forgot-password')}
+                        className="text-sm text-blue-400 hover:text-blue-300 transition"
+                    >
+                        Forgot password?
+                    </button>
+                </div>
+
+                <div className="mt-4 text-center">
                     <button
                         onClick={() => navigate('/')}
                         className="text-xs text-slate-500 hover:text-white transition"

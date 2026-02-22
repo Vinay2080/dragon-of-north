@@ -12,6 +12,8 @@ export const API_CONFIG = {
         LOGIN: '/api/v1/auth/identifier/login',
         LOGOUT: '/api/v1/auth/identifier/logout',
         REFRESH_TOKEN: '/api/v1/auth/jwt/refresh',
+        PASSWORD_RESET_REQUEST: '/api/v1/auth/password/forgot/request',
+        PASSWORD_RESET_CONFIRM: '/api/v1/auth/password/forgot/reset',
 
         // OTP
         EMAIL_OTP_REQUEST: '/api/v1/otp/email/request',

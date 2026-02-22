@@ -1,5 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -28,6 +30,7 @@ import static org.springframework.http.HttpStatus.CREATED;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Authentication and token lifecycle endpoints")
 public class AuthenticationController {
 
     private final AuthenticationServiceResolver resolver;
@@ -42,6 +45,7 @@ public class AuthenticationController {
      * @return response with user status information
      */
     @PostMapping("/identifier/status")
+    @Operation(summary = "Check identifier status", description = "Returns account status for provided identifier and type.")
     public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> findUserStatus(
             @RequestBody
             @Valid
@@ -61,6 +65,7 @@ public class AuthenticationController {
      * @return response with registration status and next steps
      */
     @PostMapping("/identifier/sign-up")
+    @Operation(summary = "Start signup", description = "Creates user in CREATED status and prepares OTP verification flow.")
     public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> signupUser(
             @RequestBody
             @Valid
@@ -81,6 +86,7 @@ public class AuthenticationController {
      * @return response with final registration status
      */
     @PostMapping("/identifier/sign-up/complete")
+    @Operation(summary = "Complete signup", description = "Moves account to VERIFIED status after OTP verification step.")
     public ResponseEntity<ApiResponse<AppUserStatusFinderResponse>> completeUserSignup(
             @RequestBody
             @Valid
@@ -102,6 +108,7 @@ public class AuthenticationController {
      * @return success message indicating authentication was successful
      */
     @PostMapping("/identifier/login")
+    @Operation(summary = "Login", description = "Authenticates user, creates device-bound session, and sets access/refresh cookies.")
     public ResponseEntity<ApiResponse<?>> loginUser(
             @RequestBody
             @Valid
@@ -124,6 +131,7 @@ public class AuthenticationController {
      * @return success message indicating token refresh was successful
      */
     @PostMapping("/jwt/refresh")
+    @Operation(summary = "Refresh tokens", description = "Validates refresh cookie + device id, rotates refresh token, and returns fresh cookies.")
     public ResponseEntity<ApiResponse<?>> refreshToken(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -136,6 +144,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/identifier/logout")
+    @Operation(summary = "Logout", description = "Revokes current device session and clears cookies.")
     public ResponseEntity<ApiResponse<?>> logoutUser(
             HttpServletResponse response,
             HttpServletRequest request,

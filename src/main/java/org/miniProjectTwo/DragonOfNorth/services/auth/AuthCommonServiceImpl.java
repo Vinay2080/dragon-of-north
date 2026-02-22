@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.services.auth;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -47,6 +48,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final AppUserRepository appUserRepository;
     private final RoleRepository roleRepository;
     private final SessionService sessionService;
+    private final MeterRegistry meterRegistry;
 
     /**
      * Authenticates user credentials and issues JWT tokens.
@@ -75,15 +77,17 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
         final String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
         final String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
-        //todo session store
 
-        String ipAddress = request.getHeader("X-Forwarded-For");
+        String ipAddress = extractClientIp(request);
         String userAgent = request.getHeader("User-Agent");
 
         sessionService.createSession(appUser, refreshToken, ipAddress, deviceId, userAgent);
 
         setAccessToken(response, accessToken);
         setRefreshCookie(response, refreshToken);
+
+        meterRegistry.counter("auth.login.success").increment();
+        log.info("audit=login_success user_id={} identifier={} device_id={} ip_address={}", appUser.getId(), identifier, deviceId, ipAddress);
 
     }
 
@@ -109,16 +113,24 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         }
 
         try {
+            UUID userId = jwtServices.extractUserId(refreshToken);
+            String newRefreshToken = jwtServices.generateRefreshToken(userId);
 
-            UUID userId = sessionService.validateAndUpdateSession(refreshToken, deviceId);
-            Set<Role> roles = appUserRepository.findRolesById(userId);
+            UUID validatedUserId = sessionService.validateAndRotateSession(refreshToken, newRefreshToken, deviceId);
+            Set<Role> roles = appUserRepository.findRolesById(validatedUserId);
 
-            String newAccessToken = jwtServices.refreshAccessToken(refreshToken, roles);
+            String newAccessToken = jwtServices.refreshAccessToken(newRefreshToken, roles);
 
             setAccessToken(response, newAccessToken);
+            setRefreshCookie(response, newRefreshToken);
+
+            meterRegistry.counter("auth.refresh.success").increment();
+            log.info("audit=refresh_success user_id={} device_id={}", validatedUserId, deviceId);
 
         } catch (BusinessException e) {
             clearRefreshTokenCookie(response);
+            meterRegistry.counter("auth.refresh.failure").increment();
+            log.warn("audit=refresh_failure device_id={} reason={}", deviceId, e.getMessage());
             throw e;
         }
     }
@@ -174,18 +186,40 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "device ID missing");
         }
 
+        UUID userId = jwtServices.extractUserId(refreshToken);
+
         try {
             sessionService.revokeSession(refreshToken, deviceId);
+            meterRegistry.counter("auth.logout.success").increment();
+            log.info("audit=logout_success user_id={} device_id={}", userId, deviceId);
         } catch (BusinessException e) {
+            meterRegistry.counter("auth.logout.failure").increment();
             // Continue with cookie cleanup even if session revocation fails
-            log.warn("Session revocation failed during logout: {}", e.getMessage());
+            log.warn("audit=logout_failure user_id={} device_id={} reason={}", userId, deviceId, e.getMessage());
         }
-        //todo session revocation
         clearRefreshTokenCookie(response);
         clearAccessTokenCookie(response);
 
     }
 
+
+
+    private String extractClientIp(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+            String firstIp = xForwardedFor.split(",")[0].trim();
+            if (!firstIp.isBlank()) {
+                return firstIp;
+            }
+        }
+
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isBlank()) {
+            return xRealIp.trim();
+        }
+
+        return request.getRemoteAddr();
+    }
 
     /**
      * Extracts refresh token from HTTP-only cookies.

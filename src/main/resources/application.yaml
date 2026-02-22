@@ -39,6 +39,11 @@ otp:
   cleanup:
     delay-ms: ${otp_cleanup_delay_ms}
 
+session:
+  cleanup:
+    delay-ms: ${session_cleanup_delay_ms:900000}
+    revoked-retention-days: ${session_cleanup_revoked_retention_days:7}
+
 auth:
   signup:
     request-window-seconds: ${auth_signup_request_window_seconds}

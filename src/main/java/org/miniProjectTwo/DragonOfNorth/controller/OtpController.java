@@ -1,6 +1,8 @@
 package org.miniProjectTwo.DragonOfNorth.controller;
 
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/otp")
 @RequiredArgsConstructor
+@Tag(name = "OTP", description = "Request and verify one-time passwords")
 public class OtpController {
     private final OtpService otpService;
 
@@ -38,6 +41,7 @@ public class OtpController {
      * @return success message indicating OTP was sent
      */
     @PostMapping("/email/request")
+    @Operation(summary = "Request email OTP", description = "Generates OTP for email and sends through configured provider.")
     public ResponseEntity<ApiResponse<?>> requestEmailOtp(
             @RequestBody @Valid EmailOtpRequest request) {
         otpService.createEmailOtp(request.email(), request.otpPurpose());
@@ -55,6 +59,7 @@ public class OtpController {
      * @return success message indicating OTP was sent
      */
     @PostMapping("/phone/request")
+    @Operation(summary = "Request phone OTP", description = "Generates OTP for phone and sends through configured provider.")
     public ResponseEntity<ApiResponse<?>> requestPhoneOtp(
             @RequestBody
             @Valid
@@ -74,6 +79,7 @@ public class OtpController {
      * @return verification status with success/failure details
      */
     @PostMapping("/email/verify")
+    @Operation(summary = "Verify email OTP", description = "Verifies OTP code for email + purpose.")
     public ResponseEntity<ApiResponse<OtpVerificationStatus>> verifyEmailOtp(
             @Valid
             @RequestBody
@@ -94,6 +100,7 @@ public class OtpController {
      * @return verification status with success/failure details
      */
     @PostMapping("/phone/verify")
+    @Operation(summary = "Verify phone OTP", description = "Verifies OTP code for phone + purpose.")
     public ResponseEntity<ApiResponse<OtpVerificationStatus>> verifyPhoneOtp(
             @Valid
             @RequestBody

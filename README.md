@@ -1655,7 +1655,11 @@ dragon-of-north/
 
 ### 🚧 In Progress (v1.1)
 
-- [ ] Redis integration for distributed rate limiting
+- [x] Session management per device (list, revoke single, revoke others)
+- [x] Refresh token rotation on refresh flow
+- [x] Session lifecycle cleanup scheduler
+- [x] Session observability and audit logs
+- [x] Redis integration for distributed rate limiting
 - [ ] OAuth 2.0 integration (Google, GitHub, LinkedIn)
 - [ ] WebSocket support for real-time notifications
 - [ ] Enhanced logging with ELK stack
