@@ -14,6 +14,7 @@ This repository is designed as an interview-ready portfolio project that demonst
 
 ## Table of Contents
 
+- [0) Recent Updates](#0-recent-updates)
 - [1) Executive Summary](#1-executive-summary)
 - [2) Index for features](#2-index-for-features)
 - [3) Major Features](#3-major-features)
@@ -39,6 +40,62 @@ This repository is designed as an interview-ready portfolio project that demonst
 
 ---
 
+## 0) Recent Updates
+
+### ✅ Forgot Password (Phase 1)
+
+- Added endpoints:
+    - `POST /api/v1/auth/password/forgot/request`
+    - `POST /api/v1/auth/password/forgot/reset`
+- Reuses OTP purpose `PASSWORD_RESET`.
+- Resets password and revokes all active sessions for the user.
+- Frontend includes complete request+reset flow pages.
+
+### ✅ Structured Audit Logs (Phase 2)
+
+- Standardized backend audit log format across auth/session/otp-critical flows:
+    - `event`, `user_id`, `device_id`, `ip`, `result`, `reason`, `request_id`
+- Coverage includes:
+    - login success/failure
+    - refresh success/failure
+    - logout success/failure
+    - session revoke (current/by-id/others/all)
+    - password reset request/confirm
+    - signup and signup complete
+    - otp request/verify outcomes
+
+### ✅ Metrics Completeness (Phase 3)
+
+- Added and normalized Micrometer counters for auth/session/otp:
+    - `auth.login.success|failure`
+    - `auth.refresh.success|failure`
+    - `auth.logout.success|failure`
+    - `auth.password_reset.requested|success|failure`
+    - `auth.signup.success|failure`
+    - `auth.signup.complete.success|failure`
+    - `auth.otp.request.success|failure`
+    - `auth.otp.verify.success|failure`
+    - `session.revoked.current|by_id|others|all_user|failure`
+
+### ✅ DB Migration Status
+
+- Flyway migrations are currently present:
+    - `V1__init.sql`
+    - `V2__added_column_nickname.sql`
+    - `V3__removed_column_nickname.sql`
+    - `V4__match_prod_and_local.sql`
+
+### 🧪 Testing Status Notes
+
+- Existing controller/service/repository/unit/integration tests remain in place.
+- Added/updated tests to align with observability dependencies where service constructors were expanded.
+- Recommended next incremental coverage:
+    - explicit assertions for audit logger interactions (event names/reasons)
+    - metrics counter assertions for success/failure branches
+    - integration smoke for password-reset + session-revocation side effects
+
+---
+
 ## 1) Executive Summary
 
 Dragon of North implements a complete identity flow:
@@ -49,7 +106,7 @@ Dragon of North implements a complete identity flow:
 4. Verify OTP
 5. Complete signup
 6. Login and issue access/refresh cookies
-7. Create device-aware session
+7. Create a device-aware session
 8. Refresh with token rotation
 9. Logout and revoke session(s)
 
@@ -63,14 +120,14 @@ This project intentionally goes beyond “basic login/signup” by adding:
 
 ## 2) Index for features
 
-- End-to-end auth + session lifecycle
+- End-to-end auth and session lifecycle
 - Explicit access/refresh token split
 - HttpOnly cookie transport with Bearer fallback
 - Refresh token hash-at-rest persistence
 - Purpose-scoped OTP engine
 - Distributed rate limiting via Redis + Bucket4j
 - Structured error code catalog and global exception mapping
-- Frontend behavior aligned with backend security model
+- Frontend behavior aligned with a backend security model
 - Session management UI actions (revoke one/revoke others)
 
 ---
@@ -110,7 +167,7 @@ This project intentionally goes beyond “basic login/signup” by adding:
   - `last_used_at`
   - `expiry_date`
   - `revoked`
-- Refresh flow validates session and rotates refresh token state.
+- Refresh flow validates the session and rotates the refresh token state.
 - Endpoints to:
   - list sessions,
   - revoke one,
@@ -137,7 +194,7 @@ This project intentionally goes beyond “basic login/signup” by adding:
 
 - Endpoint-specific rate limiting.
 - Distributed bucket state in Redis.
-- Headers exposed to client for better UX:
+- Headers exposed to a client for better UX:
   - `X-RateLimit-Remaining`
   - `X-RateLimit-Capacity`
   - `Retry-After`
@@ -156,16 +213,16 @@ This project intentionally goes beyond “basic login/signup” by adding:
 
 These are “small” decisions that have real production value:
 
-- Resolver pattern for identifier-type based service routing.
+- Resolver pattern for identifier-type-based service routing.
 - DTO validation at controller boundaries.
 - Standard API envelope for success/failure.
 - Enum-driven error catalog for stability.
 - Global exception handler with consistent payload shapes.
-- Session summary DTO designed for frontend session dashboard.
-- Single-flight refresh logic in frontend API layer.
-- Rate-limit listener in frontend for live quota UI.
-- Protected route with loading gate to avoid auth flicker.
-- Device ID persistence in frontend for session continuity.
+- Session summary DTO designed for the frontend session dashboard.
+- Single-flight refresh logic in the frontend API layer.
+- Rate-limit listener in the frontend for live quota UI.
+- Protected route with a loading gate to avoid auth flicker.
+- Device ID persistence in the frontend for session continuity.
 
 ---
 
@@ -214,7 +271,7 @@ Spring Boot REST API
    ├── Scheduler (cleanup)
    └── Integrations (AWS SES/SNS)
         ↓
-PostgreSQL + Redis
+PostgresSQL + Redis
 ```
 
 ### Layering principles
@@ -322,7 +379,7 @@ flowchart TD
 
 ### 8.1 Authentication strategy routing
 
-The service resolver dispatches authentication logic based on identifier type.
+The service resolver dispatches authentication logic based on an identifier type.
 
 Benefits:
 - clean channel-specific logic,
@@ -376,7 +433,7 @@ OTP service does:
 - generation,
 - hashing,
 - persistence,
-- send through sender interface,
+- send it through the sender interface,
 - verify with status-based outcomes.
 
 ### 8.8 Cleanup scheduler behavior
@@ -428,7 +485,7 @@ Dashboard capabilities:
 
 ### 9.5 Route protection
 
-Protected routes include loading gate to avoid false redirects while auth is being resolved.
+Protected routes include a loading gate to avoid false redirects while auth is being resolved.
 
 ### 9.6 Rate-limit UX
 
@@ -441,7 +498,7 @@ Rate-limit component displays:
 
 ## 10) Security Decisions & Tradeoffs
 
-### 10.1 Why JWT + session table together?
+### 10.1 Why JWT and session table together?
 
 JWT gives stateless authorization checks.
 Session table gives revocation and device lifecycle control.
@@ -451,12 +508,12 @@ This hybrid model balances:
 - control,
 - and user security visibility.
 
-### 10.2 Access vs refresh token split
+### 10.2 Access vs. refresh token split
 
 - Access token: short-lived, used on protected APIs.
 - Refresh token: longer-lived, restricted to refresh flow.
 
-This reduces exposure window and improves UX.
+This reduces an exposure window and improves UX.
 
 ### 10.3 Why HttpOnly cookies?
 
@@ -464,10 +521,10 @@ This reduces exposure window and improves UX.
 - Works naturally with browser credential flows.
 - Supports secure cross-origin policy with proper CORS setup.
 
-### 10.4 Why hash refresh tokens in DB?
+### 10.4 Why are hash refresh tokens in DB?
 
 - Avoids storing raw long-lived credentials.
-- Reduces blast radius of DB leaks.
+- Reduces the blast radius of DB leaks.
 
 ### 10.5 Why purpose-scoped OTP?
 
@@ -487,31 +544,31 @@ Base path: `/api/v1`
 
 ### 11.1 Authentication
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/auth/identifier/status` | Get status for identifier |
-| POST | `/auth/identifier/sign-up` | Start signup |
-| POST | `/auth/identifier/sign-up/complete` | Complete signup |
-| POST | `/auth/identifier/login` | Login and set cookies |
-| POST | `/auth/jwt/refresh` | Rotate refresh and issue new access |
-| POST | `/auth/identifier/logout` | Revoke current session |
+| Method | Endpoint                            | Description                         |
+|--------|-------------------------------------|-------------------------------------|
+| POST   | `/auth/identifier/status`           | Get status for identifier           |
+| POST   | `/auth/identifier/sign-up`          | Start signup                        |
+| POST   | `/auth/identifier/sign-up/complete` | Complete signup                     |
+| POST   | `/auth/identifier/login`            | Login and set cookies               |
+| POST   | `/auth/jwt/refresh`                 | Rotate refresh and issue new access |
+| POST   | `/auth/identifier/logout`           | Revoke current session              |
 
 ### 11.2 OTP
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/otp/email/request` | Generate and send email OTP |
-| POST | `/otp/email/verify` | Verify email OTP |
-| POST | `/otp/phone/request` | Generate and send phone OTP |
-| POST | `/otp/phone/verify` | Verify phone OTP |
+| Method | Endpoint             | Description                 |
+|--------|----------------------|-----------------------------|
+| POST   | `/otp/email/request` | Generate and send email OTP |
+| POST   | `/otp/email/verify`  | Verify email OTP            |
+| POST   | `/otp/phone/request` | Generate and send phone OTP |
+| POST   | `/otp/phone/verify`  | Verify phone OTP            |
 
 ### 11.3 Sessions
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/sessions/get/all` | List sessions for current user |
-| DELETE | `/sessions/delete/{sessionId}` | Revoke one session |
-| POST | `/sessions/revoke-others` | Revoke all except current device |
+| Method | Endpoint                       | Description                      |
+|--------|--------------------------------|----------------------------------|
+| GET    | `/sessions/get/all`            | List sessions for current user   |
+| DELETE | `/sessions/delete/{sessionId}` | Revoke one session               |
+| POST   | `/sessions/revoke-others`      | Revoke all except current device |
 
 ### 11.4 Documentation endpoints
 
@@ -685,7 +742,7 @@ Error codes are centralized and typed via enum to ensure stable API behavior.
 
 ### 14.4 Validation error structure
 
-Validation errors include field-level detail so frontend can render actionable feedback.
+Validation errors include field-level detail, so frontend can render actionable feedback.
 
 ### 14.5 Interview angle
 
@@ -733,7 +790,7 @@ Actuator endpoints expose health and metrics.
 ### 16.2 Metrics
 
 Prometheus export is enabled.
-Rate-limit counters are tagged by type.
+Type tags rate-limit counters.
 
 ### 16.3 Logging
 
@@ -892,7 +949,7 @@ npm run dev
 - rotate signing keys periodically,
 - monitor auth error rates,
 - tune rate-limit thresholds,
-- tighten CORS allow-list,
+- tighten CORS allowlist,
 - configure operational alerts.
 
 ---
@@ -905,16 +962,16 @@ npm run dev
 
 ### 20.2 Key architecture points to explain
 
-1. Why hybrid JWT + session persistence is used.
+1. Why hybrid JWT and session persistence are used.
 2. How refresh-token rotation is enforced.
 3. How device ID enables targeted revocation.
 4. Why enum-driven states improve correctness.
 5. How rate-limit headers improve UX.
 
-### 20.3 Some of very few questions I asked myself while building project.
+### 20.3 Some of the very few questions I asked myself while building a project.
 
 **Q: Why not only JWT and no session table?**  
-A: JWT provides stateless auth checks, but session table is needed for revocation/device visibility/rotation controls.
+A: JWT provides stateless auth checks, but a session table is needed for revocation/device visibility/rotation controls.
 
 **Q: How do you reduce token theft risk?**  
 A: Short-lived access token, HttpOnly cookies, refresh rotation, and hash-at-rest storage.
@@ -923,14 +980,14 @@ A: Short-lived access token, HttpOnly cookies, refresh rotation, and hash-at-res
 A: OTP cooldown + request windows + attempt limits + distributed endpoint throttling.
 
 **Q: How does frontend handle access expiry?**  
-A: refresh-on-401 with single-flight refresh lock and one retry.
+A: refresh-on-401 with a single-flight refresh lock and one retry.
 
 ### 20.4 Suggested live demo order
 
 1. Identifier status check
 2. Signup
 3. OTP request + verify
-4. Signup complete
+4. Signup completes
 5. Login
 6. Session list
 7. Refresh
