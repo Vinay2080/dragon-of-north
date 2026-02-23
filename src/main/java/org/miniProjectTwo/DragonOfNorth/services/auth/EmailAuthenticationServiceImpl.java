@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.services.auth;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
@@ -9,6 +10,7 @@ import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.services.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthenticationService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,8 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthCommonServices authCommonServices;
+    private final MeterRegistry meterRegistry;
+    private final AuditEventLogger auditEventLogger;
 
 
     /**
@@ -60,6 +64,7 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
      */
     @Override
     public AppUserStatusFinderResponse getUserStatus(String identifier) {
+        meterRegistry.counter("auth.status_lookup.requested").increment();
         return appUserRepository
                 .findAppUserStatusByEmail(identifier).map(AppUserStatusFinderResponse::new)
                 .orElseGet(() -> new AppUserStatusFinderResponse(NOT_EXIST));
@@ -81,8 +86,16 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
         user.setEmail(request.identifier());
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setAppUserStatus(CREATED);
-        appUserRepository.save(user);
-        return getUserStatus(request.identifier());
+        try {
+            appUserRepository.save(user);
+            meterRegistry.counter("auth.signup.success").increment();
+            auditEventLogger.log("auth.signup", null, null, null, "success", "identifier_type=EMAIL", null);
+            return getUserStatus(request.identifier());
+        } catch (RuntimeException ex) {
+            meterRegistry.counter("auth.signup.failure").increment();
+            auditEventLogger.log("auth.signup", null, null, null, "failure", ex.getMessage(), null);
+            throw ex;
+        }
     }
 
 
@@ -100,13 +113,20 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     @Transactional
     @Override
     public AppUserStatusFinderResponse completeSignUp(String identifier) {
-        AppUser appUser = appUserRepository.findByEmail(identifier).orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
-        authCommonServices.updateUserStatus(appUser.getAppUserStatus(), appUser);
-        authCommonServices.assignDefaultRole(appUser);
-        appUser.setEmailVerified(true);
-        appUserRepository.save(appUser);
-        return getUserStatus(identifier);
+        try {
+            AppUser appUser = appUserRepository.findByEmail(identifier).orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+            authCommonServices.updateUserStatus(appUser.getAppUserStatus(), appUser);
+            authCommonServices.assignDefaultRole(appUser);
+            appUser.setEmailVerified(true);
+            appUserRepository.save(appUser);
+            meterRegistry.counter("auth.signup.complete.success").increment();
+            auditEventLogger.log("auth.signup.complete", appUser.getId(), null, null, "success", "identifier_type=EMAIL", null);
+            return getUserStatus(identifier);
+        } catch (RuntimeException ex) {
+            meterRegistry.counter("auth.signup.complete.failure").increment();
+            auditEventLogger.log("auth.signup.complete", null, null, null, "failure", ex.getMessage(), null);
+            throw ex;
+        }
     }
 
 }
-

@@ -2,6 +2,8 @@ package org.miniProjectTwo.DragonOfNorth.services.auth;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
@@ -10,6 +12,7 @@ import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.services.AuditEventLogger;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -35,6 +38,13 @@ class PhoneAuthenticationServiceImplTest {
 
     @Mock
     private AuthCommonServices authCommonServices;
+    @Mock
+    private MeterRegistry meterRegistry;
+    @Mock
+    private Counter counter;
+    @Mock
+    private AuditEventLogger auditEventLogger;
+
 
     @InjectMocks
     private PhoneAuthenticationServiceImpl phoneAuthenticationService;
@@ -54,6 +64,8 @@ class PhoneAuthenticationServiceImplTest {
 
     @Test
     void getUserStatus_ShouldReturnStatus_WhenUserExists() {
+
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
         //arrange
         AppUserStatus expectedStatus = CREATED;
 
@@ -73,6 +85,8 @@ class PhoneAuthenticationServiceImplTest {
 
     @Test
     void getUserStatus_ShouldReturnNOT_EXISTS_WhenUserDoesNotExists() {
+
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
         //arrange
         when(appUserRepository.findAppUserStatusByPhone(phoneNumber)).thenReturn(Optional.empty());
 
@@ -99,6 +113,8 @@ class PhoneAuthenticationServiceImplTest {
 
     @Test
     void signUpUser_ShouldReturnStatusCREATED_AndSaveUser_WhenCalled() {
+
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
         //arrange
         String password = "encoded@Password123";
         AppUserSignUpRequest request = new AppUserSignUpRequest(phoneNumber, PHONE, password);
@@ -139,6 +155,8 @@ class PhoneAuthenticationServiceImplTest {
 
     @Test
     void completeSignUp_UpdateUserStatusAndSetRolesAndSaveUser_whenCalledWithValidPhoneNumber() {
+
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
         //arrange
         AppUser appUser = new AppUser();
         appUser.setPhone(phoneNumber);
@@ -162,6 +180,8 @@ class PhoneAuthenticationServiceImplTest {
 
     @Test
     void completeSignUp_returnUSER_NOT_FOUND_whenCalledWithInvalidPhoneNumber() {
+
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
         //arrange
         when(appUserRepository.findByPhone(phoneNumber)).thenReturn(Optional.empty());
 

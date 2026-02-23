@@ -16,12 +16,14 @@ import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.services.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.OtpService;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.SessionService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +55,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final MeterRegistry meterRegistry;
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditEventLogger auditEventLogger;
 
     /**
      * Authenticates user credentials and issues JWT tokens.
@@ -67,28 +70,35 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      */
     @Override
     public void login(String identifier, String password, HttpServletResponse response, HttpServletRequest request, String deviceId) {
-        final Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(identifier, password));
-
-        if (authentication.getPrincipal() == null) {
-            throw new BusinessException(ErrorCode.AUTHENTICATION_FAILED, "Authentication principal is null");
-        }
-
-        if (!(authentication.getPrincipal() instanceof AppUserDetails appUserDetails)) {
-            throw new BusinessException(ErrorCode.AUTHENTICATION_FAILED, "Invalid principal type");
-        }
-
-        AppUser appUser = appUserDetails.getAppUser();
-
-        final String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
-        final String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
-
         String ipAddress = request.getHeader("X-Forwarded-For");
-        String userAgent = request.getHeader("User-Agent");
+        String requestId = request.getHeader("X-Request-Id");
+        try {
+            final Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(identifier, password));
 
-        sessionService.createSession(appUser, refreshToken, ipAddress, deviceId, userAgent);
+            if (authentication.getPrincipal() == null) {
+                throw new BusinessException(ErrorCode.AUTHENTICATION_FAILED, "Authentication principal is null");
+            }
 
-        setAccessToken(response, accessToken);
-        setRefreshToken(response, refreshToken);
+            if (!(authentication.getPrincipal() instanceof AppUserDetails appUserDetails)) {
+                throw new BusinessException(ErrorCode.AUTHENTICATION_FAILED, "Invalid principal type");
+            }
+
+            AppUser appUser = appUserDetails.getAppUser();
+            final String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
+            final String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
+            String userAgent = request.getHeader("User-Agent");
+
+            sessionService.createSession(appUser, refreshToken, ipAddress, deviceId, userAgent);
+            setAccessToken(response, accessToken);
+            setRefreshToken(response, refreshToken);
+
+            meterRegistry.counter("auth.login.success").increment();
+            auditEventLogger.log("auth.login", appUser.getId(), deviceId, ipAddress, "success", null, requestId);
+        } catch (AuthenticationException | BusinessException exception) {
+            meterRegistry.counter("auth.login.failure").increment();
+            auditEventLogger.log("auth.login", null, deviceId, ipAddress, "failure", exception.getMessage(), requestId);
+            throw exception;
+        }
 
     }
 
@@ -105,11 +115,17 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     @Override
     public void refreshToken(HttpServletRequest request, HttpServletResponse response, String deviceId) {
         String oldRefreshToken = extractRefreshToken(request);
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        String requestId = request.getHeader("X-Request-Id");
         if (oldRefreshToken == null) {
+            meterRegistry.counter("auth.refresh.failure").increment();
+            auditEventLogger.log("auth.refresh", null, deviceId, ipAddress, "failure", "Refresh token missing", requestId);
             throw new BusinessException(ErrorCode.UNAUTHORIZED, "Refresh token missing");
         }
 
         if (deviceId == null || deviceId.trim().isEmpty()) {
+            meterRegistry.counter("auth.refresh.failure").increment();
+            auditEventLogger.log("auth.refresh", null, deviceId, ipAddress, "failure", "device ID missing", requestId);
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "device ID missing");
         }
 
@@ -124,8 +140,12 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
             setAccessToken(response, newAccessToken);
             setRefreshToken(response, newRefreshToken);
+            meterRegistry.counter("auth.refresh.success").increment();
+            auditEventLogger.log("auth.refresh", userId, deviceId, ipAddress, "success", null, requestId);
         } catch (BusinessException e) {
             clearRefreshTokenCookie(response);
+            meterRegistry.counter("auth.refresh.failure").increment();
+            auditEventLogger.log("auth.refresh", null, deviceId, ipAddress, "failure", e.getMessage(), requestId);
             throw e;
         }
     }
@@ -173,22 +193,40 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     @Override
     public void logoutUser(HttpServletRequest request, HttpServletResponse response, String deviceId) {
         String refreshToken = extractRefreshToken(request);
+        String ipAddress = request.getHeader("X-Forwarded-For");
+        String requestId = request.getHeader("X-Request-Id");
         if (refreshToken == null || refreshToken.isEmpty()) {
+            meterRegistry.counter("auth.logout.failure").increment();
+            auditEventLogger.log("auth.logout", null, deviceId, ipAddress, "failure", "refresh token missing", requestId);
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "refresh token missing");
         }
 
         if (deviceId == null || deviceId.trim().isEmpty()) {
+            meterRegistry.counter("auth.logout.failure").increment();
+            auditEventLogger.log("auth.logout", null, deviceId, ipAddress, "failure", "device ID missing", requestId);
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "device ID missing");
+        }
+
+        UUID userId = null;
+        try {
+            userId = jwtServices.extractUserId(refreshToken);
+        } catch (BusinessException ignored) {
+            // keep nullable userId in audit event when token extraction fails
         }
 
         try {
             sessionService.revokeSession(refreshToken, deviceId);
         } catch (BusinessException e) {
-            // Continue with cookie cleanup even if session revocation fails
-            log.warn("Session revocation failed during logout: {}", e.getMessage());
+            meterRegistry.counter("auth.logout.failure").increment();
+            auditEventLogger.log("auth.logout", userId, deviceId, ipAddress, "failure", e.getMessage(), requestId);
+            clearRefreshTokenCookie(response);
+            clearAccessTokenCookie(response);
+            return;
         }
         clearRefreshTokenCookie(response);
         clearAccessTokenCookie(response);
+        meterRegistry.counter("auth.logout.success").increment();
+        auditEventLogger.log("auth.logout", userId, deviceId, ipAddress, "success", null, requestId);
 
     }
 
@@ -200,8 +238,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
             otpService.createPhoneOtp(identifier, OtpPurpose.PASSWORD_RESET);
         }
         meterRegistry.counter("auth.password_reset.requested").increment();
-        //todo explain
-        log.info("audit=password_reset_otp_request identifier={} identifierType={}", identifier, identifierType);
+        auditEventLogger.log("auth.password_reset.request", null, null, null, "success", "identifier_type=" + identifierType, null);
     }
 
     @Override
@@ -213,6 +250,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
         if (!status.isSuccess()) {
             meterRegistry.counter("auth.password_reset.failure").increment();
+            auditEventLogger.log("auth.password_reset.confirm", null, null, null, "failure", status.getMessage(), null);
             throw new BusinessException(ErrorCode.INVALID_INPUT, status.getMessage());
         }
 
@@ -226,8 +264,10 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         sessionService.revokeAllSessionsByUserId(appUser.getId());
 
         meterRegistry.counter("auth.password_reset.success").increment();
-        log.info("audit=password_reset_success userId={}, identifierType={}", appUser.getId(), request.identifierType());
+        auditEventLogger.log("auth.password_reset.confirm", appUser.getId(), null, null, "success", "identifier_type=" + request.identifierType(), null);
     }
+
+
 
 
     /**

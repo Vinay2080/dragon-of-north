@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.services.auth;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.components.TokenHasher;
@@ -11,6 +12,7 @@ import org.miniProjectTwo.DragonOfNorth.model.Session;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.JwtServices;
+import org.miniProjectTwo.DragonOfNorth.services.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.SessionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,8 @@ public class SessionServiceImpl implements SessionService {
     private final SessionRepository sessionRepository;
     private final JwtServices jwtServices;
     private final AppUserRepository appUserRepository;
+    private final MeterRegistry meterRegistry;
+    private final AuditEventLogger auditEventLogger;
 
     @Value("${app.security.jwt.expiration.refresh-token}")
     private long refreshTokenDurationMs;
@@ -63,10 +67,16 @@ public class SessionServiceImpl implements SessionService {
 
         String tokenHash = tokenHasher.hashToken(refreshToken);
 
-        sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser(tokenHash, deviceId, appUser)
-                .ifPresent(session ->
-                        session.setRevoked(true));
-        log.info("Revoked session for user {} on device {}", userId, deviceId);
+        var sessionOptional = sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser(tokenHash, deviceId, appUser);
+        if (sessionOptional.isEmpty()) {
+            meterRegistry.counter("session.revoked.failure").increment();
+            auditEventLogger.log("session.revoke.current", userId, deviceId, null, "failure", "session not found", null);
+            return;
+        }
+
+        sessionOptional.get().setRevoked(true);
+        meterRegistry.counter("session.revoked.current").increment();
+        auditEventLogger.log("session.revoke.current", userId, deviceId, null, "success", null, null);
 
     }
 
@@ -90,23 +100,31 @@ public class SessionServiceImpl implements SessionService {
     @Transactional
     public void revokeSessionById(UUID userId, UUID sessionId) {
         Session session = sessionRepository.findByIdAndAppUserId(sessionId, userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN, "Session not found"));
+                .orElseThrow(() -> {
+                    meterRegistry.counter("session.revoked.failure").increment();
+                    auditEventLogger.log("session.revoke.by_id", userId, null, null, "failure", "Session not found", null);
+                    return new BusinessException(ErrorCode.INVALID_TOKEN, "Session not found");
+                });
 
         if (!session.isRevoked()) {
             session.setRevoked(true);
         }
 
-        log.info("Revoked session {} for user {}", sessionId, userId);
+        meterRegistry.counter("session.revoked.by_id").increment();
+        auditEventLogger.log("session.revoke.by_id", userId, session.getDeviceId(), null, "success", null, null);
     }
 
     @Override
     @Transactional
     public int revokeAllOtherSessions(UUID userId, String currentDeviceId) {
         if (currentDeviceId == null || currentDeviceId.trim().isEmpty()) {
+            meterRegistry.counter("session.revoked.failure").increment();
+            auditEventLogger.log("session.revoke.others", userId, currentDeviceId, null, "failure", "device ID missing", null);
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "device ID missing");
         }
         int revokedCount = sessionRepository.revokeAllOtherSessions(userId, currentDeviceId);
-        log.info("Revoked {} other sessions for user {} (kept devices{})", revokedCount, userId, currentDeviceId);
+        meterRegistry.counter("session.revoked.others").increment(revokedCount);
+        auditEventLogger.log("session.revoke.others", userId, currentDeviceId, null, "success", "revoked_count=" + revokedCount, null);
         return revokedCount;
     }
 
@@ -141,6 +159,7 @@ public class SessionServiceImpl implements SessionService {
     @Transactional
     public void revokeAllSessionsByUserId(UUID userId) {
         int revoked = sessionRepository.revokeAllSessionsByUserId(userId);
-        log.info("audit=session_revoked_all user_id={} revoked_count={}", userId, revoked);
+        meterRegistry.counter("session.revoked.all_user").increment(revoked);
+        auditEventLogger.log("session.revoke.all_user", userId, null, null, "success", "revoked_count=" + revoked, null);
     }
 }

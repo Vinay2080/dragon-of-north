@@ -2,6 +2,8 @@ package org.miniProjectTwo.DragonOfNorth.services.auth;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
@@ -10,6 +12,7 @@ import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.services.AuditEventLogger;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -39,8 +42,15 @@ class EmailAuthenticationServiceImplTest {
 
     @Mock
     private AuthCommonServices authCommonServices;
+    @Mock
+    private MeterRegistry meterRegistry;
+    @Mock
+    private Counter counter;
+    @Mock
+    private AuditEventLogger auditEventLogger;
 
     private final String email = "test@mockito.com";
+
 
     @Test
     void support_ShouldReturnEMAIL_whenCalled() {
@@ -53,6 +63,8 @@ class EmailAuthenticationServiceImplTest {
 
     @Test
     void getUserStatus_shouldReturnCREATED_whenCalledWithValidEmail() {
+
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
 
         // arrange
         AppUserStatus appUserStatus = CREATED;
@@ -73,6 +85,8 @@ class EmailAuthenticationServiceImplTest {
     @Test
     void getUserStatus_shouldReturnNOT_EXISTS_whenCalledWithInvalidEmail() {
 
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
+
         //arrange
         when(appUserRepository.findAppUserStatusByEmail(email)).thenReturn(Optional.empty());
 
@@ -90,6 +104,8 @@ class EmailAuthenticationServiceImplTest {
 
     @Test
     void signUpUser_shouldSaveUserWithEncodedPassword_AndSetUserStatusAsCREATED_whenCalled() {
+
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
 
         //arrange
         String password = "encoded@Password123";
@@ -130,6 +146,8 @@ class EmailAuthenticationServiceImplTest {
 
     @Test
     void completeSignUp_shouldUpdateUserStatusToVERIFIED_andShouldAssignDefaultUSER_whenCalledWithInvalidEmail() {
+
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
 
         //arrange
 
