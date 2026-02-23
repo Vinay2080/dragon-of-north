@@ -2,6 +2,8 @@ package org.miniProjectTwo.DragonOfNorth.services.auth;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.miniProjectTwo.DragonOfNorth.components.TokenHasher;
 import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
@@ -10,6 +12,7 @@ import org.miniProjectTwo.DragonOfNorth.model.Session;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.JwtServices;
+import org.miniProjectTwo.DragonOfNorth.services.AuditEventLogger;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -39,9 +42,16 @@ class SessionServiceImplTest {
     private JwtServices jwtServices;
     @Mock
     private AppUserRepository appUserRepository;
+    @Mock
+    private MeterRegistry meterRegistry;
+    @Mock
+    private Counter counter;
+    @Mock
+    private AuditEventLogger auditEventLogger;
 
     @Test
     void createSession_shouldReplaceExistingDeviceSession() {
+        when(meterRegistry.counter(any())).thenReturn(counter);
         ReflectionTestUtils.setField(sessionService, "refreshTokenDurationMs", 60000L);
 
         AppUser user = new AppUser();
@@ -79,6 +89,7 @@ class SessionServiceImplTest {
 
     @Test
     void revokeAllOtherSessions_shouldThrow_whenDeviceIdBlank() {
+        when(meterRegistry.counter(any())).thenReturn(counter);
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> sessionService.revokeAllOtherSessions(UUID.randomUUID(), " "));
 
@@ -87,6 +98,7 @@ class SessionServiceImplTest {
 
     @Test
     void validateAndRotateSession_shouldThrow_whenSessionRevoked() {
+        when(meterRegistry.counter(any())).thenReturn(counter);
         UUID userId = UUID.randomUUID();
         AppUser user = new AppUser();
         user.setId(userId);
@@ -108,6 +120,7 @@ class SessionServiceImplTest {
 
     @Test
     void validateAndRotateSession_shouldRotateHash_whenValid() {
+        when(meterRegistry.counter(any())).thenReturn(counter);
         UUID userId = UUID.randomUUID();
         AppUser user = new AppUser();
         user.setId(userId);

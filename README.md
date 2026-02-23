@@ -14,6 +14,7 @@ This repository is designed as an interview-ready portfolio project that demonst
 
 ## Table of Contents
 
+- [0) Recent Updates](#0-recent-updates)
 - [1) Executive Summary](#1-executive-summary)
 - [2) Index for features](#2-index-for-features)
 - [3) Major Features](#3-major-features)
@@ -36,6 +37,57 @@ This repository is designed as an interview-ready portfolio project that demonst
 - [20) Summary in short](#205-summary-in-short)
 - [21) What to Improve Next](#21-what-to-improve-next)
 - [22) Project Structure](#22-project-structure)
+
+---
+
+## 0) Recent Updates
+
+### ✅ Forgot Password (Phase 1)
+- Added endpoints:
+  - `POST /api/v1/auth/password/forgot/request`
+  - `POST /api/v1/auth/password/forgot/reset`
+- Reuses OTP purpose `PASSWORD_RESET`.
+- Resets password and revokes all active sessions for the user.
+- Frontend includes complete request+reset flow pages.
+
+### ✅ Structured Audit Logs (Phase 2)
+- Standardized backend audit log format across auth/session/otp-critical flows:
+  - `event`, `user_id`, `device_id`, `ip`, `result`, `reason`, `request_id`
+- Coverage includes:
+  - login success/failure
+  - refresh success/failure
+  - logout success/failure
+  - session revoke (current/by-id/others/all)
+  - password reset request/confirm
+  - signup and signup complete
+  - otp request/verify outcomes
+
+### ✅ Metrics Completeness (Phase 3)
+- Added and normalized Micrometer counters for auth/session/otp:
+  - `auth.login.success|failure`
+  - `auth.refresh.success|failure`
+  - `auth.logout.success|failure`
+  - `auth.password_reset.requested|success|failure`
+  - `auth.signup.success|failure`
+  - `auth.signup.complete.success|failure`
+  - `auth.otp.request.success|failure`
+  - `auth.otp.verify.success|failure`
+  - `session.revoked.current|by_id|others|all_user|failure`
+
+### ✅ DB Migration Status
+- Flyway migrations currently present:
+  - `V1__init.sql`
+  - `V2__added_column_nickname.sql`
+  - `V3__removed_column_nickname.sql`
+  - `V4__match_prod_and_local.sql`
+
+### 🧪 Testing Status Notes
+- Existing controller/service/repository/unit/integration tests remain in place.
+- Added/updated tests to align with observability dependencies where service constructors were expanded.
+- Recommended next incremental coverage:
+  - explicit assertions for audit logger interactions (event names/reasons)
+  - metrics counter assertions for success/failure branches
+  - integration smoke for password-reset + session-revocation side effects
 
 ---
 

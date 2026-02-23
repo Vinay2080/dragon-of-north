@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.services.otp;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
@@ -11,6 +12,7 @@ import org.miniProjectTwo.DragonOfNorth.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.OtpSender;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.OtpService;
+import org.miniProjectTwo.DragonOfNorth.services.AuditEventLogger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,8 @@ public class OtpServiceImpl implements OtpService {
     private final OtpTokenRepository otpTokenRepository;
     private final OtpSender emailOtpSender;
     private final OtpSender phoneOtpSender;
+    private final MeterRegistry meterRegistry;
+    private final AuditEventLogger auditEventLogger;
 
     @Value("${otp.length}")
     private int otpLength;
@@ -105,14 +109,24 @@ public class OtpServiceImpl implements OtpService {
     public void createOtp(OtpSender sender, OtpPurpose otpPurpose,
                           String identifier, IdentifierType otpType, Function<String, String> normalizer) {
         String normalizedIdentifier = normalizer.apply(identifier);
-        enforceRateLimits(normalizedIdentifier, otpType, otpPurpose);
+        try {
+            enforceRateLimits(normalizedIdentifier, otpType, otpPurpose);
 
-        String otp = generateOtp();
-        String hash = BCrypt.hashpw(otp, BCrypt.gensalt());
+            String otp = generateOtp();
+            String hash = BCrypt.hashpw(otp, BCrypt.gensalt());
 
-        OtpToken otpToken = new OtpToken(normalizedIdentifier, otpType, hash, ttlMinutes, otpPurpose);
-        otpTokenRepository.save(otpToken);
-        sender.send(normalizedIdentifier, otp, ttlMinutes);
+            OtpToken otpToken = new OtpToken(normalizedIdentifier, otpType, hash, ttlMinutes, otpPurpose);
+            otpTokenRepository.save(otpToken);
+            sender.send(normalizedIdentifier, otp, ttlMinutes);
+
+            meterRegistry.counter("auth.otp.request.success").increment();
+            auditEventLogger.log("auth.otp.request", null, null, null, "success",
+                    "identifier_type=" + otpType + ",purpose=" + otpPurpose, null);
+        } catch (RuntimeException ex) {
+            meterRegistry.counter("auth.otp.request.failure").increment();
+            auditEventLogger.log("auth.otp.request", null, null, null, "failure", ex.getMessage(), null);
+            throw ex;
+        }
     }
 
     /**
@@ -173,17 +187,25 @@ public class OtpServiceImpl implements OtpService {
     @Override
     public OtpVerificationStatus verifyToken(OtpToken otpToken, String providedOtp, OtpPurpose otpPurpose) {
         if (otpToken.isExpired()) {
+            meterRegistry.counter("auth.otp.verify.failure").increment();
+            auditEventLogger.log("auth.otp.verify", null, null, null, "failure", EXPIRED_OTP.getMessage(), null);
             return EXPIRED_OTP;
         }
 
         if (otpToken.getAttempts() >= maxAttempts) {
+            meterRegistry.counter("auth.otp.verify.failure").increment();
+            auditEventLogger.log("auth.otp.verify", null, null, null, "failure", MAX_ATTEMPT_EXCEEDED.getMessage(), null);
             return MAX_ATTEMPT_EXCEEDED;
         }
         if (otpToken.isConsumed()) {
+            meterRegistry.counter("auth.otp.verify.failure").increment();
+            auditEventLogger.log("auth.otp.verify", null, null, null, "failure", ALREADY_USED.getMessage(), null);
             return ALREADY_USED;
         }
 
         if (otpToken.getOtpPurpose() != otpPurpose) {
+            meterRegistry.counter("auth.otp.verify.failure").increment();
+            auditEventLogger.log("auth.otp.verify", null, null, null, "failure", INVALID_PURPOSE.getMessage(), null);
             return INVALID_PURPOSE;
         }
 
@@ -193,11 +215,16 @@ public class OtpServiceImpl implements OtpService {
 
         if (!correct) {
             otpTokenRepository.save(otpToken);
+            meterRegistry.counter("auth.otp.verify.failure").increment();
+            auditEventLogger.log("auth.otp.verify", null, null, null, "failure", INVALID_OTP.getMessage(), null);
             return INVALID_OTP;
         }
 
         otpToken.markVerified();
         otpTokenRepository.save(otpToken);
+        meterRegistry.counter("auth.otp.verify.success").increment();
+        auditEventLogger.log("auth.otp.verify", null, null, null, "success",
+                "identifier_type=" + otpToken.getType() + ",purpose=" + otpToken.getOtpPurpose(), null);
         return SUCCESS;
     }
 
