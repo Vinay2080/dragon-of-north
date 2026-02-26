@@ -49,7 +49,8 @@ class SecurityConfigTest {
                 "/swagger/resources/**",
                 "/actuator",
                 "/actuator/health",
-                "/actuator/health/**"
+                "/actuator/health/**",
+                "/actuator/prometheus"
         }, SecurityConfig.public_urls);
     }
 
