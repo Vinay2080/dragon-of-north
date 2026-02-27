@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
@@ -21,6 +21,31 @@ const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [rateLimitInfo, setRateLimitInfo] = useState(() => apiService.getRateLimitInfo());
+
+    useEffect(() => {
+        // Subscribe to rate limit updates
+        const unsubscribe = apiService.onRateLimitUpdate((info) => {
+            setRateLimitInfo(info);
+        });
+
+        // Countdown timer for rate limit
+        const interval = setInterval(() => {
+            setRateLimitInfo(prev => {
+                if (prev.retryAfter > 0) {
+                    return {...prev, retryAfter: prev.retryAfter - 1};
+                }
+                return prev;
+            });
+        }, 1000);
+
+        return () => {
+            unsubscribe();
+            clearInterval(interval);
+        };
+    }, []);
+
+    const isRateLimited = rateLimitInfo.retryAfter > 0;
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -66,6 +91,8 @@ const LoginPage = () => {
                 <h2 className="text-2xl font-bold text-white">Login</h2>
                 <p className="mt-1 mb-6 text-sm text-slate-400">Enter your credentials to access your account</p>
 
+                <RateLimitInfo/>
+
                 <form onSubmit={handleLogin} noValidate>
                     <div className="space-y-4">
                         <div>
@@ -108,11 +135,11 @@ const LoginPage = () => {
                             Remember me on this device
                         </label>
 
-                        <button type="submit" disabled={loading || !identifier || !password} className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">
-                            {loading ? 'Logging in...' : 'Login'}
+                        <button type="submit" disabled={loading || !identifier || !password || isRateLimited}
+                                className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">
+                            {isRateLimited ? `Rate limited. Try again in ${rateLimitInfo.retryAfter}s...` : loading ? 'Logging in...' : 'Login'}
                         </button>
                     </div>
-                    <RateLimitInfo/>
                 </form>
 
                 <div className="mt-4 text-center">

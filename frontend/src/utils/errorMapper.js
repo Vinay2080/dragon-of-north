@@ -1,8 +1,9 @@
 const ERROR_MESSAGES = {
-    TOK_001: 'Your session has expired. Please log in again.',
+    TOK_001: 'Authentication failed. Please check your credentials and try again.',
     TOK_002: 'Invalid authentication token. Please log in again.',
     AUTH_001: "The identifier doesn't match the expected format.",
     AUTH_004: "Account status doesn't allow this action.",
+    AUTH_005: 'Invalid username or password. Please check your credentials.',
     USER_001: 'User account not found. Please check your credentials.',
     USER_002: 'Your account is already verified.',
     VAL_001: 'Please check your input and try again.',

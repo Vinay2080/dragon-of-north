@@ -62,8 +62,8 @@ jobs:
       # -----------------------
       # Deploy
       # -----------------------
-
       - name: Deploy to EC2
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}

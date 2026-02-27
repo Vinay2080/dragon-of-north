@@ -45,7 +45,12 @@ class ApiService {
         if (!contentType.includes('application/json')) {
             return null;
         }
-        return response.json();
+        try {
+            return await response.json();
+        } catch {
+            // If JSON parsing fails, return null instead of throwing
+            return null;
+        }
     }
 
     async refreshToken() {
@@ -103,20 +108,34 @@ class ApiService {
             this.extractRateLimitHeaders(response);
 
             if (response.status === 401 && retry) {
-                try {
-                    await this.refreshToken();
-                    return this.request(endpoint, options, false, attempt);
-                } catch (refreshError) {
-                    localStorage.removeItem('isAuthenticated');
-                    localStorage.removeItem('user');
-                    window.location.href = '/login';
-                    throw refreshError;
+                const data = await this.parseBody(response);
+
+                // Only refresh token for actual token expiration, not for login authentication failures
+                if (data?.error_code === 'TOK_001' && endpoint !== API_CONFIG.ENDPOINTS.LOGIN) {
+                    try {
+                        await this.refreshToken();
+                        return this.request(endpoint, options, false, attempt);
+                    } catch (refreshError) {
+                        localStorage.removeItem('isAuthenticated');
+                        localStorage.removeItem('user');
+                        window.location.href = '/login';
+                        throw refreshError;
+                    }
                 }
+                // If it's not a token expiration, continue to normal error handling
             }
 
             const data = await this.parseBody(response);
 
             if (!response.ok) {
+                // Debug logging to understand the error response
+                console.log('API Error Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    data: data,
+                    headers: Object.fromEntries(response.headers.entries())
+                });
+                
                 const normalizedError = this.normalizeApiError(data, 'An error occurred');
 
                 if (response.status === 429) {
@@ -124,6 +143,27 @@ class ApiService {
                         type: 'RATE_LIMIT_EXCEEDED',
                         status: response.status,
                         retryAfter: this.rateLimitInfo.retryAfter,
+                        ...normalizedError,
+                        data,
+                    };
+                }
+
+                // Handle specific auth errors with better messages
+                if (response.status === 401) {
+                    return {
+                        type: 'API_ERROR',
+                        status: response.status,
+                        message: data?.message || 'Invalid credentials. Please check your email and password.',
+                        ...normalizedError,
+                        data,
+                    };
+                }
+
+                if (response.status === 403) {
+                    return {
+                        type: 'API_ERROR',
+                        status: response.status,
+                        message: data?.message || 'Access denied. You do not have permission to perform this action.',
                         ...normalizedError,
                         data,
                     };
