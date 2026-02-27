@@ -57,6 +57,7 @@ const RateLimitInfo = () => {
     const percentage = (rateLimitInfo.remaining / rateLimitInfo.capacity) * 100;
     const isLow = percentage < 30;
     const isBlocked = rateLimitInfo.retryAfter && countdown;
+    const remainingAttempts = Number.isInteger(rateLimitInfo.remaining) ? rateLimitInfo.remaining : null;
 
     return (
         <div className="mt-4">
@@ -79,7 +80,7 @@ const RateLimitInfo = () => {
                         <span className="text-sm font-medium">Rate limit exceeded</span>
                     </div>
                     <p className="mt-1 text-sm text-red-300">
-                        Please wait {countdown} second{countdown !== 1 ? 's' : ''} before trying again
+                        For security, login attempts are temporarily blocked. Please wait {countdown} second{countdown !== 1 ? 's' : ''} before trying again.
                     </p>
                 </div>
             ) : (
@@ -100,7 +101,7 @@ const RateLimitInfo = () => {
                     </div>
                     {isLow && (
                         <p className="mt-2 text-xs text-yellow-400">
-                            ⚠ You're running low on requests. Please slow down.
+                            ⚠ You're running low on requests. {remainingAttempts} attempt{remainingAttempts === 1 ? '' : 's'} left before a temporary block.
                         </p>
                     )}
                 </div>

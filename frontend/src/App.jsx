@@ -1,17 +1,44 @@
-import {Route, Routes} from "react-router-dom";
-import {AuthProvider} from "./context/AuthContext.jsx";
-import ProtectedRoute from "./components/ProtectedRoute";
-import AuthIdentifierPage from "./pages/AuthIdentifierPage";
-import SignupPage from "./pages/SignupPage";
-import OtpPage from "./pages/OtpPage";
-import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
-import ForgotPasswordRequestPage from "./pages/ForgotPasswordRequestPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
+import {Route, Routes, useNavigate} from 'react-router-dom';
+import {useCallback} from 'react';
+import {AuthProvider} from './context/AuthContext.jsx';
+import ProtectedRoute from './components/ProtectedRoute';
+import AuthIdentifierPage from './pages/AuthIdentifierPage';
+import SignupPage from './pages/SignupPage';
+import OtpPage from './pages/OtpPage';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import ForgotPasswordRequestPage from './pages/ForgotPasswordRequestPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import {ToastProvider} from './context/ToastContext.jsx';
+import ToastContainer from './components/Toast/ToastContainer';
+import NetworkStatus from './components/NetworkStatus/NetworkStatus';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import {useSessionTimeout} from './hooks/useSessionTimeout';
+import {useToast} from './hooks/useToast';
 
-export default function App() {
+const AppShell = () => {
+    const navigate = useNavigate();
+    const {toast} = useToast();
+
+    const onTimeout = useCallback(() => {
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('user');
+        toast.error('Your session timed out. Please log in again.');
+        navigate('/login');
+    }, [navigate, toast]);
+
+    useSessionTimeout({
+        enabled: !!localStorage.getItem('isAuthenticated'),
+        warningMs: 120000,
+        sessionMs: 3600000,
+        onWarning: () => toast.warning('Your session will expire soon. Please save your work.'),
+        onTimeout,
+    });
+
     return (
-        <AuthProvider>
+        <>
+            <ToastContainer/>
+            <NetworkStatus/>
             <Routes>
                 <Route path="/" element={<AuthIdentifierPage/>}/>
                 <Route path="/signup" element={<SignupPage/>}/>
@@ -19,15 +46,20 @@ export default function App() {
                 <Route path="/login" element={<LoginPage/>}/>
                 <Route path="/forgot-password" element={<ForgotPasswordRequestPage/>}/>
                 <Route path="/reset-password" element={<ResetPasswordPage/>}/>
-                <Route
-                    path="/dashboard"
-                    element={
-                        <ProtectedRoute>
-                            <DashboardPage/>
-                        </ProtectedRoute>
-                    }
-                />
+                <Route path="/dashboard" element={<ProtectedRoute><DashboardPage/></ProtectedRoute>}/>
             </Routes>
-        </AuthProvider>
+        </>
+    );
+};
+
+export default function App() {
+    return (
+        <ErrorBoundary>
+            <ToastProvider>
+                <AuthProvider>
+                    <AppShell/>
+                </AuthProvider>
+            </ToastProvider>
+        </ErrorBoundary>
     );
 }

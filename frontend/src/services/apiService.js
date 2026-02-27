@@ -1,15 +1,12 @@
 import {API_CONFIG} from '../config';
 import {getDeviceId} from '../utils/device';
+import {mapErrorCodeToMessage} from '../utils/errorMapper';
+import {exponentialBackoffDelay, shouldRetryRequest, wait} from '../utils/networkUtils';
 
 class ApiService {
     constructor() {
-        this.rateLimitInfo = {
-            remaining: null,
-            capacity: null,
-            retryAfter: null,
-        };
+        this.rateLimitInfo = {remaining: null, capacity: null, retryAfter: null};
         this.rateLimitListeners = [];
-
         this.isRefreshing = false;
         this.refreshPromise = null;
     }
@@ -48,7 +45,12 @@ class ApiService {
         if (!contentType.includes('application/json')) {
             return null;
         }
-        return response.json();
+        try {
+            return await response.json();
+        } catch {
+            // If JSON parsing fails, return null instead of throwing
+            return null;
+        }
     }
 
     async refreshToken() {
@@ -58,17 +60,12 @@ class ApiService {
 
         this.isRefreshing = true;
 
-        this.refreshPromise = fetch(
-            `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REFRESH_TOKEN}`,
-            {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                credentials: 'include',
-                body: JSON.stringify({
-                    device_id: getDeviceId(),
-                }),
-            }
-        ).then(res => {
+        this.refreshPromise = fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REFRESH_TOKEN}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            credentials: 'include',
+            body: JSON.stringify({device_id: getDeviceId()}),
+        }).then(res => {
             if (!res.ok) {
                 throw new Error('Refresh failed');
             }
@@ -80,14 +77,31 @@ class ApiService {
         return this.refreshPromise;
     }
 
-    async request(endpoint, options = {}, retry = true) {
-        const url = `${API_CONFIG.BASE_URL}${endpoint}`;
+    normalizeApiError(data, fallbackMessage) {
+        const errorCode = data?.error_code || data?.errorCode || data?.code;
+        const message = data?.message || data?.defaultMessage;
+        const fieldErrors = data?.validation_error_list || data?.validationErrorList || [];
+        return {
+            errorCode,
+            message: mapErrorCodeToMessage(errorCode, data),
+            backendMessage: message,
+            fieldErrors,
+            raw: data,
+            fallbackMessage,
+        };
+    }
 
+    async request(endpoint, options = {}, retry = true, attempt = 0) {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            return {
+                type: 'NETWORK_ERROR',
+                message: 'You appear to be offline. Please check your connection and try again.',
+            };
+        }
+
+        const url = `${API_CONFIG.BASE_URL}${endpoint}`;
         const defaultOptions = {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers,
-            },
+            headers: {'Content-Type': 'application/json', ...options.headers},
             credentials: 'include',
             ...options,
         };
@@ -97,81 +111,106 @@ class ApiService {
             this.extractRateLimitHeaders(response);
 
             if (response.status === 401 && retry) {
-                try {
-                    await this.refreshToken();
-                    return this.request(endpoint, options, false);
-                } catch (refreshError) {
-                    localStorage.removeItem('isAuthenticated');
-                    localStorage.removeItem('user');
-                    window.location.href = '/login';
-                    throw refreshError;
+                const data = await this.parseBody(response);
+
+                // Only refresh token for actual token expiration, not for login authentication failures
+                if (data?.error_code === 'TOK_001' && endpoint !== API_CONFIG.ENDPOINTS.LOGIN) {
+                    try {
+                        await this.refreshToken();
+                        return this.request(endpoint, options, false, attempt);
+                    } catch (refreshError) {
+                        localStorage.removeItem('isAuthenticated');
+                        localStorage.removeItem('user');
+                        window.location.href = '/login';
+                        throw refreshError;
+                    }
                 }
+                // If it's not a token expiration, continue to normal error handling
             }
 
             const data = await this.parseBody(response);
 
             if (!response.ok) {
+                const normalizedError = this.normalizeApiError(data, 'An error occurred');
+
                 if (response.status === 429) {
                     return {
                         type: 'RATE_LIMIT_EXCEEDED',
-                        message: data?.message || 'Too many requests',
+                        status: response.status,
                         retryAfter: this.rateLimitInfo.retryAfter,
+                        ...normalizedError,
                         data,
                     };
                 }
 
+                // Handle specific auth errors with better messages
+                if (response.status === 401) {
+                    const defaultMessage = endpoint === API_CONFIG.ENDPOINTS.LOGIN
+                        ? 'Invalid email or password. Please check your credentials and try again.'
+                        : 'Authentication failed. Please log in again.';
+                    return {
+                        type: 'API_ERROR',
+                        status: response.status,
+                        ...normalizedError,
+                        message: data?.message || defaultMessage,
+                        data,
+                    };
+                }
+
+                if (response.status === 403) {
+                    return {
+                        type: 'API_ERROR',
+                        status: response.status,
+                        ...normalizedError,
+                        message: data?.message || 'Too many failed attempts. Please wait a few minutes before trying again.',
+                        data,
+                    };
+                }
+
+                if (attempt < 2 && shouldRetryRequest(response.status)) {
+                    await wait(exponentialBackoffDelay(attempt));
+                    return this.request(endpoint, options, retry, attempt + 1);
+                }
+
                 return {
                     type: 'API_ERROR',
-                    message: data?.message || 'An error occurred',
                     status: response.status,
+                    ...normalizedError,
                     data,
                 };
             }
 
             return data;
         } catch (error) {
+            if (attempt < 2) {
+                await wait(exponentialBackoffDelay(attempt));
+                return this.request(endpoint, options, retry, attempt + 1);
+            }
+
             return {
                 type: 'NETWORK_ERROR',
-                message: 'Failed to connect to server',
+                message: 'Failed to connect to server. Please try again.',
                 originalError: error,
             };
         }
     }
 
-    async get(endpoint, options = {}) {
-        return this.request(endpoint, {...options, method: 'GET'});
+    get(endpoint, options = {}) { return this.request(endpoint, {...options, method: 'GET'}); }
+
+    post(endpoint, body, options = {}) {
+        return this.request(endpoint, {...options, method: 'POST', body: JSON.stringify(body)});
     }
 
-    async post(endpoint, body, options = {}) {
-        return this.request(endpoint, {
-            ...options,
-            method: 'POST',
-            body: JSON.stringify(body),
-        });
+    put(endpoint, body, options = {}) {
+        return this.request(endpoint, {...options, method: 'PUT', body: JSON.stringify(body)});
     }
 
-    async put(endpoint, body, options = {}) {
-        return this.request(endpoint, {
-            ...options,
-            method: 'PUT',
-            body: JSON.stringify(body),
-        });
-    }
+    delete(endpoint, options = {}) { return this.request(endpoint, {...options, method: 'DELETE'}); }
 
-    async delete(endpoint, options = {}) {
-        return this.request(endpoint, {...options, method: 'DELETE'});
-    }
-
-    getRateLimitInfo() {
-        return {...this.rateLimitInfo};
-    }
+    getRateLimitInfo() { return {...this.rateLimitInfo}; }
 
     resetRateLimitInfo() {
-        this.rateLimitInfo = {
-            remaining: null,
-            capacity: null,
-            retryAfter: null,
-        };
+        this.rateLimitInfo = {remaining: null, capacity: null, retryAfter: null};
         this.notifyRateLimitUpdate();
     }
 }

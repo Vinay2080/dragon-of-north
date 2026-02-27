@@ -1,25 +1,43 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import RateLimitInfo from '../components/RateLimitInfo';
+import {useToast} from '../hooks/useToast';
+import ValidationError from '../components/Validation/ValidationError';
+import AuthFlowProgress from '../components/AuthFlowProgress';
+import {validatePassword} from '../utils/validation';
 
 const SignupPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const {toast} = useToast();
     const {identifier, identifierType} = location.state || {};
 
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [errors, setErrors] = useState([]);
+    const [fieldErrors, setFieldErrors] = useState({});
     const [loading, setLoading] = useState(false);
+
+    const passwordStrengthHint = useMemo(() => {
+        if (!password) return 'Use at least 8 characters with uppercase, lowercase, number and symbol.';
+        const errors = validatePassword(password);
+        if (errors.length === 0) return 'Strong password ✅';
+        return `Needs: ${errors.join(' ')}`;
+    }, [password]);
+
+    const handlePasswordChange = (value) => {
+        setPassword(value);
+        const errors = validatePassword(value);
+        setFieldErrors(prev => ({...prev, password: value ? errors : []}));
+    };
 
     const handleGetOtp = async (e) => {
         e.preventDefault();
-        setErrors([]);
-
-        if (!password) {
-            setErrors(['Please enter a password.']);
+        setFieldErrors({});
+        const passwordErrors = validatePassword(password);
+        if (passwordErrors.length) {
+            setFieldErrors({password: passwordErrors});
             return;
         }
 
@@ -32,44 +50,33 @@ const SignupPage = () => {
         });
 
         if (apiService.isErrorResponse(signupResult)) {
-            if (signupResult.type === 'RATE_LIMIT_EXCEEDED') {
-                setErrors([`Too many signup attempts. Please wait ${signupResult.retryAfter ?? 60} seconds before trying again.`]);
-            } else {
-                const validationErrors = signupResult?.data?.validation_error_list
-                    ?.filter(e => e.field === 'password')
-                    ?.map(e => e.message);
-                setErrors(validationErrors?.length ? validationErrors : [signupResult.message || 'Signup failed']);
-            }
+            const errors = signupResult?.fieldErrors?.reduce((acc, item) => {
+                acc[item.field] = [...(acc[item.field] || []), item.message];
+                return acc;
+            }, {}) || {};
+            setFieldErrors(errors);
+            toast.error(signupResult.message || 'Signup failed.');
             setLoading(false);
             return;
         }
 
         if (signupResult?.api_response_status !== 'success') {
-            setErrors([signupResult?.message || 'Something went wrong']);
+            toast.error(signupResult?.message || 'Something went wrong');
             setLoading(false);
             return;
         }
 
-        const otpEndpoint = identifierType === 'EMAIL'
-            ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST
-            : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
-
-        const otpPayload = identifierType === 'EMAIL'
-            ? {email: identifier, otp_purpose: 'SIGNUP'}
-            : {phone: identifier, otp_purpose: 'SIGNUP'};
-
+        const otpEndpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
+        const otpPayload = identifierType === 'EMAIL' ? {email: identifier, otp_purpose: 'SIGNUP'} : {phone: identifier, otp_purpose: 'SIGNUP'};
         const otpResult = await apiService.post(otpEndpoint, otpPayload);
 
         if (apiService.isErrorResponse(otpResult)) {
-            if (otpResult.type === 'RATE_LIMIT_EXCEEDED') {
-                setErrors([`Too many OTP requests. Please wait ${otpResult.retryAfter ?? 60} seconds before trying again.`]);
-            } else {
-                setErrors([otpResult.message || 'Failed to send OTP. Please try again.']);
-            }
+            toast.error(otpResult.message || 'Failed to send OTP. Please try again.');
             setLoading(false);
             return;
         }
 
+        toast.success('OTP sent. Complete verification to finish signup.');
         navigate('/otp', {state: {identifier, identifierType}});
         setLoading(false);
     };
@@ -80,52 +87,21 @@ const SignupPage = () => {
     }
 
     return (
-        <div
-            className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
+        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
             <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-8 shadow-2xl">
                 <h2 className="text-2xl font-bold text-white">Create Account</h2>
-
-                <p className="mt-1 mb-6 text-sm text-slate-400">
-                    Setting up account for <span className="text-blue-400 font-medium">{identifier}</span>
-                </p>
-
+                <p className="mt-1 mb-6 text-sm text-slate-400">Setting up account for <span className="text-blue-400 font-medium">{identifier}</span></p>
+                <AuthFlowProgress currentStep="signup"/>
                 <form onSubmit={handleGetOtp} noValidate>
                     <div className="space-y-4">
                         <div className="relative">
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Enter password"
-                                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 pr-12 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-                                required
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition"
-                            >
-                                {showPassword ? '🙈' : '👁️'}
-                            </button>
+                            <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => handlePasswordChange(e.target.value)} placeholder="Enter password" className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 pr-12 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" aria-describedby="password-hint password-errors" required/>
+                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition">{showPassword ? '🙈' : '👁️'}</button>
                         </div>
-
-                        {errors.length > 0 && (
-                            <ul className="mt-3 list-disc pl-5 space-y-1">
-                                {errors.map((err, index) => (
-                                    <li key={index} className="text-sm text-red-400">{err}</li>
-                                ))}
-                            </ul>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={loading || !password}
-                            className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {loading ? 'Processing...' : 'Get OTP'}
-                        </button>
+                        <p id="password-hint" className="text-xs text-slate-400">{passwordStrengthHint}</p>
+                        <ValidationError id="password-errors" errors={fieldErrors.password || []}/>
+                        <button type="submit" disabled={loading || !password} className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Processing...' : 'Get OTP'}</button>
                     </div>
-
                     <RateLimitInfo/>
                 </form>
             </div>
