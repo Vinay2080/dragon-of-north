@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useAuth} from '../context/authUtils';
 import {apiService} from '../services/apiService';
@@ -10,7 +10,7 @@ import {useToast} from '../hooks/useToast';
 
 const DashboardPage = () => {
     const navigate = useNavigate();
-    const {user, logout} = useAuth();
+    const {user, logout, isAuthenticated} = useAuth();
     const {toast} = useToast();
 
     const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -25,7 +25,12 @@ const DashboardPage = () => {
     }, [sessions]);
     const activeOtherDevices = useMemo(() => sessions.filter(s => !s.revoked && s.device_id !== currentDeviceId).length, [sessions, currentDeviceId]);
 
-    const loadSessions = async () => {
+    const loadSessions = useCallback(async () => {
+        if (!isAuthenticated) {
+            toast.warning('Please log in first to manage sessions.');
+            setLoadingSessions(false);
+            return;
+        }
         setLoadingSessions(true);
         const result = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS_ALL);
         if (apiService.isErrorResponse(result)) {
@@ -37,9 +42,13 @@ const DashboardPage = () => {
         if (result?.api_response_status === 'success' && Array.isArray(result?.data)) setSessions(result.data);
         else toast.warning('Unexpected sessions response from server.');
         setLoadingSessions(false);
-    };
+    }, [isAuthenticated, toast]);
 
-    useEffect(() => { loadSessions(); }, []);
+    useEffect(() => {
+        if (isAuthenticated) {
+            loadSessions();
+        }
+    }, [isAuthenticated, loadSessions]);
 
     const handleLogout = async () => {
         setIsLoggingOut(true);
@@ -104,7 +113,7 @@ const DashboardPage = () => {
 
                 <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
                     <div className="mb-4 flex flex-wrap gap-3">
-                        <button onClick={loadSessions} className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">Refresh Sessions</button>
+                        <button onClick={loadSessions} disabled={!isAuthenticated} className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed">Refresh Sessions</button>
                         <button onClick={revokeOthers} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500">Graceful logout on all devices</button>
                     </div>
 

@@ -78,11 +78,14 @@ class ApiService {
     }
 
     normalizeApiError(data, fallbackMessage) {
-        const errorCode = data?.error_code || data?.code;
+        const errorCode = data?.error_code || data?.errorCode || data?.code;
+        const message = data?.message || data?.defaultMessage;
+        const fieldErrors = data?.validation_error_list || data?.validationErrorList || [];
         return {
             errorCode,
             message: mapErrorCodeToMessage(errorCode, data),
-            fieldErrors: data?.validation_error_list || [],
+            backendMessage: message,
+            fieldErrors,
             raw: data,
             fallbackMessage,
         };
@@ -128,14 +131,6 @@ class ApiService {
             const data = await this.parseBody(response);
 
             if (!response.ok) {
-                // Debug logging to understand the error response
-                console.log('API Error Response:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    data: data,
-                    headers: Object.fromEntries(response.headers.entries())
-                });
-                
                 const normalizedError = this.normalizeApiError(data, 'An error occurred');
 
                 if (response.status === 429) {

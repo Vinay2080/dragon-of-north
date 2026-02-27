@@ -5,6 +5,8 @@ import {apiService} from '../services/apiService';
 import RateLimitInfo from '../components/RateLimitInfo';
 import {useToast} from '../hooks/useToast';
 import ValidationError from '../components/Validation/ValidationError';
+import AuthFlowProgress from '../components/AuthFlowProgress';
+import {validatePassword} from '../utils/validation';
 
 const SignupPage = () => {
     const location = useLocation();
@@ -18,16 +20,24 @@ const SignupPage = () => {
     const [loading, setLoading] = useState(false);
 
     const passwordStrengthHint = useMemo(() => {
-        if (!password) return 'Use at least 8 characters with letters, numbers and symbols.';
-        if (password.length < 8) return 'Password is too short.';
-        return 'Password length looks good.';
+        if (!password) return 'Use at least 8 characters with uppercase, lowercase, number and symbol.';
+        const errors = validatePassword(password);
+        if (errors.length === 0) return 'Strong password ✅';
+        return `Needs: ${errors.join(' ')}`;
     }, [password]);
+
+    const handlePasswordChange = (value) => {
+        setPassword(value);
+        const errors = validatePassword(value);
+        setFieldErrors(prev => ({...prev, password: value ? errors : []}));
+    };
 
     const handleGetOtp = async (e) => {
         e.preventDefault();
         setFieldErrors({});
-        if (!password) {
-            setFieldErrors({password: ['Please enter a password.']});
+        const passwordErrors = validatePassword(password);
+        if (passwordErrors.length) {
+            setFieldErrors({password: passwordErrors});
             return;
         }
 
@@ -81,10 +91,11 @@ const SignupPage = () => {
             <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-8 shadow-2xl">
                 <h2 className="text-2xl font-bold text-white">Create Account</h2>
                 <p className="mt-1 mb-6 text-sm text-slate-400">Setting up account for <span className="text-blue-400 font-medium">{identifier}</span></p>
+                <AuthFlowProgress currentStep="signup"/>
                 <form onSubmit={handleGetOtp} noValidate>
                     <div className="space-y-4">
                         <div className="relative">
-                            <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 pr-12 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" aria-describedby="password-hint password-errors" required/>
+                            <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => handlePasswordChange(e.target.value)} placeholder="Enter password" className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 pr-12 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" aria-describedby="password-hint password-errors" required/>
                             <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition">{showPassword ? '🙈' : '👁️'}</button>
                         </div>
                         <p id="password-hint" className="text-xs text-slate-400">{passwordStrengthHint}</p>

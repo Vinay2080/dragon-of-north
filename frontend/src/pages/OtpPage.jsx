@@ -4,6 +4,7 @@ import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import RateLimitInfo from '../components/RateLimitInfo';
 import {useToast} from '../hooks/useToast';
+import AuthFlowProgress from '../components/AuthFlowProgress';
 
 const OtpPage = () => {
     const location = useLocation();
@@ -123,6 +124,7 @@ const OtpPage = () => {
             <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-8 shadow-2xl">
                 <h2 className="text-2xl font-bold text-white">Verify OTP</h2>
                 <p className="mt-1 mb-6 text-sm text-slate-400">Enter the 6-digit code sent to <span className="text-blue-400 font-medium">{identifier}</span></p>
+                <AuthFlowProgress currentStep="otp"/>
                 <form onSubmit={handleVerifyOtp} noValidate>
                     <div className="flex justify-between gap-2 mb-6">
                         {otp.map((data, index) => (

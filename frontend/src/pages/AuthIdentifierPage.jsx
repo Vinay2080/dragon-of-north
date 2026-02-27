@@ -5,6 +5,8 @@ import {useAuth} from '../context/authUtils';
 import {apiService} from '../services/apiService';
 import {useToast} from '../hooks/useToast';
 import ValidationError from '../components/Validation/ValidationError';
+import AuthFlowProgress from '../components/AuthFlowProgress';
+import {getIdentifierType, normalizePhone, validateIdentifier} from '../utils/validation';
 
 const TEST_USERS = [{label: 'shaking.121@gmail.com', identifier: 'shaking.121@gmail.com', password: 'Example@123'}];
 
@@ -21,10 +23,13 @@ const AuthIdentifierPage = () => {
         if (!isLoading && isAuthenticated) navigate('/dashboard', {replace: true});
     }, [isAuthenticated, isLoading, navigate]);
 
-    const detectIdentifierType = (value) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? 'EMAIL' : 'PHONE');
-    const normalizePhone = (value) => value.replace(/\D/g, '');
-
     const handleQuickLogin = (user) => navigate('/login', {state: {identifier: user.identifier, password: user.password}});
+
+    const handleIdentifierChange = (value) => {
+        setIdentifier(value);
+        const error = validateIdentifier(value);
+        setFieldErrors(prev => ({...prev, identifier: error ? [error] : []}));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -37,7 +42,13 @@ const AuthIdentifierPage = () => {
             return;
         }
 
-        const identifierType = detectIdentifierType(trimmed);
+        const identifierError = validateIdentifier(trimmed);
+        if (identifierError) {
+            setFieldErrors({identifier: [identifierError]});
+            return;
+        }
+
+        const identifierType = getIdentifierType(trimmed);
         const processedIdentifier = identifierType === 'PHONE' ? normalizePhone(trimmed) : trimmed;
         setLoading(true);
 
@@ -104,9 +115,10 @@ const AuthIdentifierPage = () => {
             <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-8 shadow-2xl">
                 <h2 className="text-2xl font-bold text-white">Sign In / Sign Up</h2>
                 <p className="mt-1 mb-6 text-sm text-slate-400">Continue with email or phone number</p>
+                <AuthFlowProgress currentStep="identifier"/>
                 {blockedMessage && <div className="mb-4 rounded-lg border border-red-800 bg-red-950 px-4 py-3 text-sm text-red-300">{blockedMessage}</div>}
                 <form onSubmit={handleSubmit} noValidate>
-                    <input type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} disabled={loading} placeholder="Email or phone number" className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none disabled:opacity-50" aria-invalid={!!fieldErrors.identifier?.length} aria-describedby="identifier-field-errors" required/>
+                    <input type="text" value={identifier} onChange={(e) => handleIdentifierChange(e.target.value)} disabled={loading} placeholder="Email or phone number" className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none disabled:opacity-50" aria-invalid={!!fieldErrors.identifier?.length} aria-describedby="identifier-field-errors" required/>
                     <ValidationError id="identifier-field-errors" errors={fieldErrors.identifier || []}/>
                     <button type="submit" disabled={loading || !identifier.trim()} className="mt-5 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Processing…' : 'Continue'}</button>
                 </form>

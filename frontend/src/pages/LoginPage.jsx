@@ -7,6 +7,8 @@ import RateLimitInfo from '../components/RateLimitInfo';
 import {getDeviceId} from '../utils/device.js';
 import {useToast} from '../hooks/useToast';
 import ValidationError from '../components/Validation/ValidationError';
+import AuthFlowProgress from '../components/AuthFlowProgress';
+import {validateIdentifier} from '../utils/validation';
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -47,10 +49,32 @@ const LoginPage = () => {
 
     const isRateLimited = rateLimitInfo.retryAfter > 0;
 
+    const handleIdentifierChange = (value) => {
+        setIdentifier(value);
+        const error = validateIdentifier(value);
+        setFieldErrors(prev => ({...prev, identifier: error ? [error] : []}));
+    };
+
+    const handlePasswordChange = (value) => {
+        setPassword(value);
+        setFieldErrors(prev => ({...prev, password: value ? [] : ['Please enter your password.']}));
+    };
+
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
         setFieldErrors({});
+
+        const identifierError = validateIdentifier(identifier);
+        const passwordErrors = password ? [] : ['Please enter your password.'];
+        if (identifierError || passwordErrors.length) {
+            setFieldErrors({
+                identifier: identifierError ? [identifierError] : [],
+                password: passwordErrors,
+            });
+            setLoading(false);
+            return;
+        }
 
         const result = await apiService.post(API_CONFIG.ENDPOINTS.LOGIN, {
             identifier,
@@ -90,6 +114,7 @@ const LoginPage = () => {
             <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-8 shadow-2xl">
                 <h2 className="text-2xl font-bold text-white">Login</h2>
                 <p className="mt-1 mb-6 text-sm text-slate-400">Enter your credentials to access your account</p>
+                <AuthFlowProgress currentStep="login"/>
 
                 <RateLimitInfo/>
 
@@ -100,7 +125,7 @@ const LoginPage = () => {
                             <input
                                 type="text"
                                 value={identifier}
-                                onChange={(e) => setIdentifier(e.target.value)}
+                                onChange={(e) => handleIdentifierChange(e.target.value)}
                                 placeholder="Email or phone number"
                                 className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
                                 aria-invalid={!!fieldErrors.identifier?.length}
@@ -116,7 +141,7 @@ const LoginPage = () => {
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) => handlePasswordChange(e.target.value)}
                                     placeholder="Enter password"
                                     className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 pr-12 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
                                     aria-invalid={!!fieldErrors.password?.length}
@@ -135,7 +160,7 @@ const LoginPage = () => {
                             Remember me on this device
                         </label>
 
-                        <button type="submit" disabled={loading || !identifier || !password || isRateLimited}
+                        <button type="submit" disabled={loading || !identifier || !password || isRateLimited || !!fieldErrors.identifier?.length}
                                 className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">
                             {isRateLimited ? `Rate limited. Try again in ${rateLimitInfo.retryAfter}s...` : loading ? 'Logging in...' : 'Login'}
                         </button>

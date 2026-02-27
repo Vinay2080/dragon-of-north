@@ -1,7 +1,12 @@
 const ERROR_MESSAGES = {
     TOK_001: 'Authentication failed. Please check your credentials and try again.',
     TOK_002: 'Invalid authentication token. Please log in again.',
+    TOK_003: 'Unsupported authentication token. Please log in again.',
+    TOK_004: 'Invalid authentication token. Please log in again.',
+    TOK_005: 'Your session is missing. Please log in again.',
     AUTH_001: "The identifier doesn't match the expected format.",
+    AUTH_002: 'Too many requests. Please wait and try again.',
+    AUTH_003: 'Too many requests. Please wait and try again.',
     AUTH_004: "Account status doesn't allow this action.",
     AUTH_005: 'Invalid username or password. Please check your credentials.',
     USER_001: 'User account not found. Please check your credentials.',
@@ -24,7 +29,7 @@ const getTemplateValue = (data, keys, fallback) => {
 
 export const mapErrorCodeToMessage = (errorCode, data = {}) => {
     if (!errorCode || !ERROR_MESSAGES[errorCode]) {
-        return data?.message || 'Something went wrong. Please try again.';
+        return data?.message || data?.defaultMessage || 'Something went wrong. Please try again.';
     }
 
     const seconds = getTemplateValue(data, ['seconds', 'retry_after', 'retryAfter'], 60);
@@ -36,7 +41,7 @@ export const mapErrorCodeToMessage = (errorCode, data = {}) => {
 };
 
 export const getFieldValidationErrors = (data = {}) => {
-    const validationList = data?.validation_error_list;
+    const validationList = data?.validation_error_list || data?.validationErrorList;
     if (!Array.isArray(validationList)) {
         return {};
     }

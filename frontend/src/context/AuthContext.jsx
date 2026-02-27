@@ -15,9 +15,15 @@ export const AuthProvider = ({children}) => {
 
     const checkAuthStatus = async () => {
         try {
+            const wasAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
             const storedUser = localStorage.getItem('user');
             if (storedUser) {
                 setUser(JSON.parse(storedUser));
+            }
+
+            if (!wasAuthenticated) {
+                setIsAuthenticated(false);
+                return;
             }
 
             const sessionResult = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS_ALL);
