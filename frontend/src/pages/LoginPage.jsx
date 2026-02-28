@@ -8,6 +8,7 @@ import {getDeviceId} from '../utils/device.js';
 import {useToast} from '../hooks/useToast';
 import ValidationError from '../components/Validation/ValidationError';
 import AuthFlowProgress from '../components/AuthFlowProgress';
+import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 import {validateIdentifier} from '../utils/validation';
 
 const LoginPage = () => {
@@ -58,6 +59,21 @@ const LoginPage = () => {
     const handlePasswordChange = (value) => {
         setPassword(value);
         setFieldErrors(prev => ({...prev, password: value ? [] : ['Please enter your password.']}));
+    };
+
+    const handleGoogleSuccess = () => {
+        if (rememberMe) {
+            localStorage.setItem('rememberMe', 'true');
+        } else {
+            localStorage.removeItem('rememberMe');
+        }
+        login({identifier: 'google-user'});
+        toast.success('Logged in with Google successfully.');
+        navigate('/dashboard');
+    };
+
+    const handleGoogleError = (message) => {
+        toast.error(message || 'Google sign-in failed.');
     };
 
     const handleLogin = async (e) => {
@@ -166,6 +182,18 @@ const LoginPage = () => {
                         </button>
                     </div>
                 </form>
+
+                <div className="my-6 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-slate-800"/>
+                    <span className="text-xs uppercase tracking-wide text-slate-500">or</span>
+                    <div className="h-px flex-1 bg-slate-800"/>
+                </div>
+
+                <GoogleLoginButton
+                    disabled={loading || isRateLimited}
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                />
 
                 <div className="mt-4 text-center">
                     <button type="button" onClick={() => navigate('/forgot-password')} className="text-sm text-blue-400 hover:text-blue-300 transition">Forgot password?</button>

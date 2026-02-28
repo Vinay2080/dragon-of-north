@@ -12,6 +12,7 @@ export const API_CONFIG = {
         LOGIN: '/api/v1/auth/identifier/login',
         LOGOUT: '/api/v1/auth/identifier/logout',
         REFRESH_TOKEN: '/api/v1/auth/jwt/refresh',
+        OAUTH_GOOGLE: '/api/v1/auth/oauth/google',
         PASSWORD_RESET_REQUEST: '/api/v1/auth/password/forgot/request',
         PASSWORD_RESET_CONFIRM: '/api/v1/auth/password/forgot/reset',
 
@@ -26,6 +27,9 @@ export const API_CONFIG = {
         SESSION_REVOKE: (sessionId) => `/api/v1/sessions/delete/${sessionId}`,
         SESSION_REVOKE_OTHERS: '/api/v1/sessions/revoke-others',
     },
+
+    // Google Identity Services Client ID
+    GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID,
 
     // Timeout for API requests (in milliseconds)
     TIMEOUT: 10000,

@@ -63,24 +63,33 @@ public class OAuthServiceImpl implements OAuthService {
         if (existingByProviderId.isPresent()) {
             return existingByProviderId.get();
         }
+
         Optional<Provider> existingProvider = appUserRepository.findProviderByEmail(userInfo.email());
         if (existingProvider.isPresent()) {
             Provider provider = existingProvider.get();
 
-            if (provider == Provider.LOCAL) {
-                // Need to fetch the full user to update it
-                Optional<AppUser> existingByEmail = appUserRepository.findByEmail(userInfo.email());
-                if (existingByEmail.isPresent()) {
-                    AppUser appUser = existingByEmail.get();
+            AppUser existingByEmail = appUserRepository.findByEmail(userInfo.email())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "User not found"));
 
-                    appUser.setProvider(Provider.GOOGLE);
-                    appUser.setProviderId(userInfo.sub());
-                    appUser.setEmailVerified(true);
-                    return appUser;
-                }//todo throw exception
-            } else {
-                throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS, "Email already associated with another OAuth provider");
+            if (provider == Provider.LOCAL) {
+                existingByEmail.setProvider(Provider.GOOGLE);
+                existingByEmail.setProviderId(userInfo.sub());
+                existingByEmail.setEmailVerified(true);
+                return existingByEmail;
             }
+
+            if (provider == Provider.GOOGLE) {
+                if (existingByEmail.getProviderId() == null) {
+                    existingByEmail.setProviderId(userInfo.sub());
+                    existingByEmail.setEmailVerified(true);
+                    return existingByEmail;
+                }
+                if (userInfo.sub().equals(existingByEmail.getProviderId())) {
+                    return existingByEmail;
+                }
+            }
+
+            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS, "Email already associated with another OAuth provider");
         }
         return createNewUserWithRetry(userInfo);
     }
@@ -113,8 +122,26 @@ public class OAuthServiceImpl implements OAuthService {
 
         } catch (DataIntegrityViolationException e) {
             log.warn("Race condition during user creation, refetching: {}", userInfo.sub());
-            // Handle race condition - another thread created by the user
-            return appUserRepository.findByProviderId(userInfo.sub())
+
+            Optional<AppUser> byProviderId = appUserRepository.findByProviderId(userInfo.sub());
+            if (byProviderId.isPresent()) {
+                return byProviderId.get();
+            }
+
+            return appUserRepository.findByEmail(userInfo.email())
+                    .map(existingUser -> {
+                        if (existingUser.getProvider() == Provider.LOCAL) {
+                            existingUser.setProvider(Provider.GOOGLE);
+                            existingUser.setProviderId(userInfo.sub());
+                            existingUser.setEmailVerified(true);
+                            return existingUser;
+                        }
+                        if (existingUser.getProvider() == Provider.GOOGLE && userInfo.sub().equals(existingUser.getProviderId())) {
+                            return existingUser;
+                        }
+                        throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS,
+                                "Email already associated with another OAuth provider");
+                    })
                     .orElseThrow(() -> new BusinessException(ErrorCode.USER_CREATION_FAILED,
                             "Failed to create user"));
         }

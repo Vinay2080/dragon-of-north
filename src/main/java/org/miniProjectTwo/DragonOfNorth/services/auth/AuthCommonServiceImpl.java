@@ -336,6 +336,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         refrehCookie.setSecure(true);
         refrehCookie.setPath("/");
         refrehCookie.setMaxAge(0);
+        refrehCookie.setAttribute("SameSite", "None");
         response.addCookie(refrehCookie);
     }
 
