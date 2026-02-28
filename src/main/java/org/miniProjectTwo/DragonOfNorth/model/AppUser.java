@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
+import org.miniProjectTwo.DragonOfNorth.enums.Provider;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -59,7 +60,7 @@ public class AppUser extends BaseEntity {
      * This field is required and should always be stored in a hashed format.
      * Never store plain text passwords in the database.
      */
-    @Column(name = "password", nullable = false)
+    @Column(name = "password")
     private String password;
 
     /**
@@ -108,6 +109,13 @@ public class AppUser extends BaseEntity {
      * Can be used for security monitoring and session management.
      */
     private LocalDateTime lastLoginAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider", nullable = false)
+    private Provider provider = Provider.LOCAL;
+
+    @Column(name = "provider_id")
+    private String providerId;
 
 
     /**

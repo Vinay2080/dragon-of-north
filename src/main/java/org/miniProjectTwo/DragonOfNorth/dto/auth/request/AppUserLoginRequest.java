@@ -40,5 +40,5 @@ public record AppUserLoginRequest(
         String deviceId
 
 ) {
-
+//todo max input size
 }

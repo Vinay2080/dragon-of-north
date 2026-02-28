@@ -1,12 +1,10 @@
 package org.miniProjectTwo.DragonOfNorth.serviceInterfaces;
 
 import io.github.bucket4j.BucketConfiguration;
-import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import org.miniProjectTwo.DragonOfNorth.enums.RateLimitType;
 
 public interface RateLimitBucketService {
-    @PostConstruct
     void initializeConfigurations();
 
     ConsumptionResult tryConsume(String key, RateLimitType type);

@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.repositories;
 import lombok.NonNull;
 import org.jspecify.annotations.NullMarked;
 import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
+import org.miniProjectTwo.DragonOfNorth.enums.Provider;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -36,6 +37,11 @@ public interface AppUserRepository extends JpaRepository<@NonNull AppUser, @NonN
 
     @Query("select u.roles from AppUser u where u.id = :userId")
     Set<Role> findRolesById(@Param("userId") UUID uuid);
+
+    Optional<AppUser> findByProviderId(String providerId);
+
+    @Query("select u.provider from AppUser u where u.email = :email")
+    Optional<Provider> findProviderByEmail(String email);
 
 }
 

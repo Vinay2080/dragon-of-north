@@ -302,7 +302,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * @param response HTTP response for cookie setting
      * @param token    JWT access token value
      */
-    private void setAccessToken(HttpServletResponse response, String token) {
+    public void setAccessToken(HttpServletResponse response, String token) {
         Cookie accessCookie = new Cookie("access_token", token);
         accessCookie.setHttpOnly(true);
         accessCookie.setSecure(true);
@@ -312,7 +312,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         response.addCookie(accessCookie);
     }
 
-    private void clearAccessTokenCookie(HttpServletResponse response) {
+    public void clearAccessTokenCookie(HttpServletResponse response) {
         Cookie accessCookie = new Cookie("access_token", "");
         accessCookie.setHttpOnly(true);
         accessCookie.setSecure(true);
@@ -330,7 +330,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      *
      * @param response HTTP response for cookie clearing
      */
-    private void clearRefreshTokenCookie(HttpServletResponse response) {
+    public void clearRefreshTokenCookie(HttpServletResponse response) {
         Cookie refrehCookie = new Cookie("refresh_token", "");
         refrehCookie.setHttpOnly(true);
         refrehCookie.setSecure(true);
@@ -348,7 +348,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * @param response HTTP response for cookie setting
      * @param token    JWT refresh token value
      */
-    private void setRefreshToken(HttpServletResponse response, String token) {
+    public void setRefreshToken(HttpServletResponse response, String token) {
         Cookie refreshCookie = new Cookie("refresh_token", token);
         refreshCookie.setHttpOnly(true);
         refreshCookie.setSecure(true);
