@@ -123,3 +123,9 @@ session:
   cleanup:
     delay-ms: 900000
     revoked-retention-days: 7
+
+google:
+  client-id: ${google_client_id}
+
+
+#todo configuration and validated

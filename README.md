@@ -21,6 +21,14 @@ This repository is designed as an interview-ready portfolio project that demonst
 - [4) Minor-but-Important Engineering Features](#4-minor-but-important-engineering-features)
 - [5) Tech Stack](#5-tech-stack)
 - [6) Architecture Overview](#6-architecture-overview)
+- [6.1) Spring Security Filter Layers](#61-spring-security-filter-layers)
+- [6.2) Database Schema & Entity Relationships](#62-database-schema--entity-relationships)
+- [6.3) Service Architecture & Dependency Injection](#63-service-architecture--dependency-injection)
+- [6.4) AWS Integration Architecture](#64-aws-integration-architecture)
+- [6.5) Rate Limiting Algorithm Flow](#65-rate-limiting-algorithm-flow)
+- [6.6) Token Lifecycle Management](#66-token-lifecycle-management)
+- [6.7) Design Patterns & Architecture Decisions](#67-design-patterns--architecture-decisions)
+- [6.8) Performance & Scalability Considerations](#68-performance--scalability-considerations)
 - [7) Visual Flows](#7-visual-flows)
 - [8) Backend Deep Dive](#8-backend-deep-dive)
 - [9) Frontend Deep Dive](#9-frontend-deep-dive)
@@ -31,10 +39,12 @@ This repository is designed as an interview-ready portfolio project that demonst
 - [14) Error Handling & API Contract](#14-error-handling--api-contract)
 - [15) Rate Limiting & Abuse Prevention](#15-rate-limiting--abuse-prevention)
 - [16) Observability & Operations](#16-observability--operations)
+- [16.1) EC2 Cron Jobs for Image Cleanup](#161-ec2-cron-jobs-for-image-cleanup)
+- [16.2) Testing Architecture](#162-testing-architecture)
+- [16.3) Monitoring & Observability Deep Dive](#163-monitoring--observability-deep-dive)
 - [17) Testing Strategy](#17-testing-strategy)
 - [18) Local Development Setup](#18-local-development-setup)
 - [19) Deployment Notes](#19-deployment-notes)
-- [20) Summary in short](#205-summary-in-short)
 - [21) What to Improve Next](#21-what-to-improve-next)
 - [22) Project Structure](#22-project-structure)
 
@@ -280,6 +290,1111 @@ PostgresSQL + Redis
 - Services own business logic and transitions.
 - Repositories isolate persistence logic.
 - Security and filter concerns are centralized.
+
+---
+
+## 6.1) Spring Security Filter Layers
+
+The application implements a comprehensive, multi-layered Spring Security filter chain that provides defense-in-depth
+security controls. Each filter adds specific security capabilities in a carefully ordered pipeline.
+
+### 6.1.1 Filter Chain Architecture
+
+```mermaid
+flowchart TD
+    A[HTTP Request] --> B[ExceptionHandlerFilter<br/>Order: 0]
+    B --> C[RateLimitFilter<br/>Order: 1]
+    C --> D[Cors Configuration]
+    D --> E[JwtFilter<br/>Order: Before UsernamePasswordAuth]
+    E --> F[UsernamePasswordAuthenticationFilter]
+    F --> G[Security Context]
+    G --> H[Controller Layer]
+    H --> I[Valid Data Validation]
+    I --> J[PreAuthorize Method Security]
+    J --> K[Business Logic]
+    style B fill: #ff9999
+    style C fill: #ffcc99
+    style E fill: #99ccff
+    style I fill: #ccffcc
+    style J fill: #ffccff
+```
+
+### 6.1.2 Filter Layer Breakdown
+
+#### **ExceptionHandlerFilter** (Order: 0)
+
+- **Purpose**: Global exception handling for a filter chain
+- **Features**:
+    - Catches `BusinessException` from any filter
+    - Returns standardized JSON error responses
+    - Maintains API contract consistency
+- **Implementation**: `ExceptionHandlerFilter.java`
+- **Key Benefit**: Prevents unhandled exceptions from breaking security flow
+
+#### **RateLimitFilter** (Order: 1)
+
+- **Purpose**: Distributed rate limiting and abuse prevention
+- **Features**:
+    - Redis-based distributed bucket state via Bucket4j
+    - Endpoint-specific rate limit policies
+    - User/IP-based key resolution
+    - Client-friendly headers (`X-RateLimit-*`, `Retry-After`)
+    - Prometheus metrics for blocked/success requests
+- **Implementation**: `RateLimitFilter.java`
+- **Key Benefit**: Prevents brute force attacks and API abuse
+
+#### **CORS Configuration**
+
+- **Purpose**: Cross-origin resource sharing control
+- **Features**:
+    - Configurable origin allowlist
+    - Secure header management
+    - Pre-flight request handling
+- **Implementation**: `CorsConfig.java`
+- **Key Benefit**: Enables secure frontend integration
+
+#### **JwtFilter** (Order: Before UsernamePasswordAuth)
+
+- **Purpose**: JWT token validation and authentication
+- **Features**:
+    - Dual token extraction (Bearer header and HttpOnly cookie)
+    - Token type validation (access_token only)
+    - Claims extraction and role mapping
+    - Silent failure for invalid tokens
+    - Spring Security context population
+- **Implementation**: `JwtFilter.java`
+- **Key Benefit**: Stateless authentication with role-based access
+
+#### **UsernamePasswordAuthenticationFilter**
+
+- **Purpose**: Traditional form-based authentication
+- **Features**:
+    - Integration with AuthenticationManager
+    - Bcrypt password validation
+    - Session management fallback
+- **Key Benefit**: Supports multiple authentication mechanisms
+
+### 6.1.3 Controller Layer Security Features
+
+#### **Data Validation** (@Valid/@Validated)
+
+- **Purpose**: Input validation and sanitization
+- **Features**:
+    - DTO-level validation annotations
+    - Automatic constraint violation handling
+    - Field-level error responses
+- **Implementation**: Controller method parameters
+- **Key Benefit**: Prevents malformed data and injection attacks
+
+#### **Method Security** (@PreAuthorize)
+
+- **Purpose**: Fine-grained authorization control
+- **Features**:
+    - Role-based access control
+    - Method-level security rules
+    - SpEL expression support
+- **Example**: `@PreAuthorize("isAuthenticated()")`
+- **Key Benefit**: Zero-trust authorization at business logic level
+
+### 6.1.4 Security Headers & Hardening
+
+The SecurityConfig adds comprehensive security headers:
+
+- **Content Security Policy**: `default-src 'self'`
+- **XSS Protection**: Disabled in favor of CSP
+- **HTTP Strict Transport Security**: HSTS with subdomains
+- **Frame Options**: Same-origin protection
+
+### 6.1.5 Public vs. Private Endpoint Control
+
+**Public Endpoints** (No authentication required):
+
+- `/api/v1/auth/**` - Authentication flows
+- `/api/v1/otp/**` - OTP verification
+- `/swagger-ui/**` - API documentation
+- `/actuator/**` - Health checks and metrics
+
+**Protected Endpoints** (Authentication required):
+
+- `/api/v1/sessions/**` - Session management
+- All other business endpoints
+
+### 6.1.6 Security Flow Summary
+
+1. **Request enters** → ExceptionHandlerFilter catches any filter exceptions
+2. **Rate limiting** → Redis bucket validation with user/IP keys
+3. **CORS check** → Cross-origin policy validation
+4. **JWT validation** → Token extraction, claims validation, context setting
+5. **Authentication** → Spring Security authentication flow
+6. **Authorization** → Method-level @PreAuthorize checks
+7. **Validation** → @Valid DTO validation
+8. **Business logic** → Secure execution with authenticated context
+
+This layered approach ensures that even if one security control fails, multiple layers provide defense-in-depth
+protection.
+
+---
+
+## 6.2) Database Schema & Entity Relationships
+
+The application uses a well-structured relational database design with clear entity relationships and audit
+capabilities.
+
+### 6.2.1 Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    AppUser {
+        uuid id PK
+        string email UK
+        string phone UK
+        string password_hash
+        string app_user_status
+        boolean email_verified
+        boolean phone_verified
+        timestamp created_at
+        timestamp updated_at
+        string created_by
+        string last_modified_by
+        uuid role_id FK
+    }
+
+    Role {
+        uuid id PK
+        string name UK
+        string description
+        timestamp created_at
+        timestamp updated_at
+        string created_by
+        string last_modified_by
+    }
+
+    Permission {
+        uuid id PK
+        string name UK
+        string description
+        timestamp created_at
+        timestamp updated_at
+        string created_by
+        string last_modified_by
+    }
+
+    Session {
+        uuid id PK
+        uuid user_id FK
+        string refresh_token_hash
+        string device_id
+        string ip_address
+        string user_agent
+        timestamp expiry_date
+        boolean revoked
+        timestamp last_used_at
+        timestamp created_at
+        timestamp updated_at
+        string created_by
+        string last_modified_by
+    }
+
+    OtpToken {
+        uuid id PK
+        string identifier
+        string identifier_type
+        string otp_purpose
+        string hashed_otp
+        timestamp expires_at
+        timestamp sent_at
+        timestamp verified_at
+        boolean consumed
+        int attempts
+        int version
+        timestamp created_at
+        timestamp updated_at
+        string created_by
+        string last_modified_by
+    }
+
+    Role_Permission {
+        uuid role_id FK
+        uuid permission_id FK
+    }
+
+    AppUser ||--o{ Session: "has many"
+    AppUser ||--o{ OtpToken: "generates many"
+    AppUser }|--|| Role: "belongs to"
+    Role ||--o{ Role_Permission: "has many"
+    Permission ||--o{ Role_Permission: "belongs to many"
+```
+
+### 6.2.2 Entity Descriptions
+
+#### **AppUser** (Core Entity)
+
+- **Purpose**: Central user identity and authentication data
+- **Key Fields**:
+    - `email`/`phone`: Unique identifiers with mutual exclusivity
+    - `app_user_status`: Lifecycle state (NOT_EXIST, CREATED, VERIFIED, DELETED)
+    - `password_hash`: Bcrypt-encoded credentials
+    - `email_verified`/`phone_verified`: Channel verification status
+- **Audit Fields**: `created_at`, `updated_at`, `created_by`, `last_modified_by`
+- **Relationships**: One-to-many with Sessions and OtpTokens
+
+#### **Session** (Security Entity)
+
+- **Purpose**: Device-aware session management and token storage
+- **Key Fields**:
+    - `refresh_token_hash`: BCrypt hash of refresh token (never store raw)
+    - `device_id`: Unique device identifier for multi-device support
+    - `ip_address`/`user_agent`: Device fingerprinting
+    - `revoked`: Session invalidation flag
+- **Security Features**: Token rotation, device tracking, expiry management
+- **Audit Fields**: Full audit trail for session lifecycle
+
+#### **OtpToken** (Temporary Entity)
+
+- **Purpose**: Short-lived OTP tokens for verification flows
+- **Key Fields**:
+    - `identifier`/`identifier_type`: Target contact information
+    - `otp_purpose`: Usage context (SIGNUP, LOGIN, PASSWORD_RESET, TWO_FACTOR_AUTH)
+    - `hashed_otp`: BCrypt hash of OTP value
+    - `consumed`: Prevents reuse of verified tokens
+- **Security Features**: Attempt limiting, expiration, purpose validation
+- **Optimistic Locking**: `version` field for concurrent updates
+
+#### **Role & Permission** (Authorization Entity)
+
+- **Purpose**: Role-based access control (RBAC) system
+- **Design**: Many-to-many relationship for flexible permissions
+- **Usage**: JWT claims include role names for authorization
+- **Audit Fields**: Complete change tracking for compliance
+
+### 6.2.3 Database Design Principles
+
+#### **Security-First Design**
+
+- **No Plain Secrets**: All sensitive data BCrypt-hashed
+- **Audit Trail**: Every entity tracks creation/modification
+- **Data Minimization**: Only store necessary user data
+- **Temporal Isolation**: Clear separation of permanent vs. temporary data
+
+#### **Performance Considerations**
+
+- **Strategic Indexing**:
+    - Unique constraints on identifiers
+    - Composite indexes on user_id + status
+    - Time-based indexes for cleanup operations
+- **Query Optimization**: Efficient session lookups by device/user
+- **Cleanup-Friendly**: Easy identification of expired records
+
+#### **Scalability Features**
+
+- **Horizontal Scaling**: User-sharding friendly design
+- **Temporal Partitioning**: Easy archival of old sessions/OTPs
+- **Connection Pooling**: Optimized for high-concurrency access
+
+### 6.2.4 Data Flow Patterns
+
+```mermaid
+flowchart LR
+    A[User Request] --> B{Identifier Type}
+    B -->|Email| C[Email Auth Flow]
+    B -->|Phone| D[Phone Auth Flow]
+    C --> E[Email OTP]
+    D --> F[Phone OTP]
+    E --> G[AppUser Creation]
+    F --> G
+    G --> H[Session Creation]
+    H --> I[JWT Generation]
+```
+
+### 6.2.5 Database Migration Strategy
+
+- **Version Control**: Flyway migrations with semantic versioning
+- **Backward Compatibility**: Non-breaking schema changes
+- **Rollback Capability**: Downward migration scripts
+- **Zero-Downtime**: Online schema changes for production
+
+---
+
+## 6.3) Service Architecture & Dependency Injection
+
+The application follows a layered service architecture with clear separation of concerns and dependency injection
+patterns.
+
+### 6.3.1 Service Layer Architecture
+
+```mermaid
+flowchart LR
+    subgraph Controllers
+        A[AuthController]
+        B[OtpController]
+        C[SessionController]
+    end
+
+    subgraph Resolvers
+        D[AuthServiceResolver]
+        E[RateLimitKeyResolver]
+    end
+
+    subgraph Services
+        F[EmailAuthSvc]
+        G[PhoneAuthSvc]
+        H[AuthCommonSvc]
+        I[OtpSvc]
+        J[SessionSvc]
+        K[JwtSvc]
+    end
+
+    subgraph Repos
+        O[AppUserRepo]
+        P[SessionRepo]
+        Q[OtpTokenRepo]
+        R[RoleRepo]
+    end
+
+    subgraph Infra
+        S[RateLimitBucketSvc]
+        T[AuditLogger]
+        U[TokenHasher]
+    end
+
+    A --> D
+    D --> F
+    D --> G
+    F --> H
+    G --> H
+    H --> J
+    J --> K
+    B --> I
+    I --> Q
+    J --> P
+    F --> O
+    G --> O
+    H --> R
+    style D fill: #ffeb3b
+    style I fill: #ff9800
+    style J fill: #9c27b0
+```
+
+### 6.3.2 Dependency Injection Patterns
+
+#### **Strategy Pattern Implementation**
+
+```mermaid
+flowchart LR
+    A[Client Request] --> B[AuthenticationServiceResolver]
+    B --> C{Identifier Type}
+    C -->|EMAIL| D[EmailAuthenticationServiceImpl]
+    C -->|PHONE| E[PhoneAuthenticationServiceImpl]
+    D --> F[Common Auth Logic]
+    E --> F
+```
+
+#### **Service Resolution Logic**
+
+- **Dynamic Resolution**: Runtime service selection based on an identifier type
+- **Validation**: Built-in format validation for email/phone patterns
+- **Extensibility**: Easy addition of new identifier types
+- **Error Handling**: Clear exceptions for mismatched identifiers
+
+### 6.3.3 Service Responsibilities
+
+#### **AuthenticationServiceResolver**
+
+- **Purpose**: Strategy pattern implementation for identifier-based routing
+- **Features**:
+    - Format validation (email regex, phone pattern)
+    - Service mapping and resolution
+    - Type safety and error handling
+- **Design Benefit**: Clean separation of channel-specific logic
+
+#### **AuthCommonService**
+
+- **Purpose**: Shared authentication business logic
+- **Features**:
+    - User lifecycle management
+    - Password validation and encoding
+    - Common authentication flows
+- **Design Benefit**: DRY principle and consistency
+
+#### **OtpService**
+
+- **Purpose**: OTP generation, validation, and delivery
+- **Features**:
+    - Purpose-scoped OTP generation
+    - BCrypt hashing for security
+    - Anti-abuse controls
+    - Multi-channel delivery
+- **Design Benefit**: Centralized OTP management
+
+#### **SessionService**
+
+- **Purpose**: Device-aware session lifecycle management
+- **Features**:
+    - Session creation and validation
+    - Refresh token rotation
+    - Device tracking and revocation
+    - Security event logging
+- **Design Benefit**: Enhanced security and user control
+
+### 6.3.4 External Service Integration
+
+#### **AWS Service Integration**
+
+```mermaid
+flowchart TD
+    A[OtpService] --> B[SesEmailService]
+    A --> C[SnsPhoneService]
+    B --> D[Amazon SES]
+    C --> E[Amazon SNS]
+    D --> F[Email Delivery]
+    E --> G[SMS Delivery]
+    style B fill: #ff9800
+    style C fill: #ff9800
+    style D fill: #ffc107
+    style E fill: #ffc107
+```
+
+#### **Configuration Management**
+
+- **Environment-specific**: Configuration comes from `application.yaml` + environment variables
+- **Secure Credentials**: AWS config is provided via environment variables (no hardcoding)
+
+### 6.3.5 Infrastructure Services
+
+#### **RateLimitBucketService**
+
+- **Purpose**: Distributed rate limiting via Redis
+- **Features**:
+    - Token bucket algorithm implementation
+    - Redis-based distributed state
+    - Configurable policies per endpoint
+- **Design Benefit**: Scalable abuse prevention
+
+#### **AuditEventLogger**
+
+- **Purpose**: Structured audit logging
+- **Features**:
+    - Consistent event schema
+    - Structured logging format
+    - Security event tracking
+- **Design Benefit**: Compliance and debugging support
+
+---
+
+## 6.4) AWS Integration Architecture
+
+The application leverages AWS services for scalable and reliable communication capabilities.
+
+### 6.4.1 AWS Service Integration Diagram
+
+```mermaid
+flowchart TB
+    subgraph "Application Layer"
+        A[Spring Boot App]
+        B[OtpService]
+        C[SesEmailService]
+        D[SnsPhoneService]
+    end
+
+    subgraph "AWS Services"
+        E[Amazon SES]
+        F[Amazon SNS]
+        G[IAM Roles]
+        H[CloudWatch]
+    end
+
+    subgraph "External Communication"
+        I[Email Delivery]
+        J[SMS Delivery]
+        K[Monitoring & Logs]
+    end
+
+    A --> B
+    B --> C
+    B --> D
+    C --> E
+    D --> F
+    E --> I
+    F --> J
+    A -.-> H
+    E -.-> H
+    F -.-> H
+    H --> K
+    G --> E
+    G --> F
+    style A fill: #2196f3
+    style E fill: #ff9800
+    style F fill: #ff9800
+    style G fill: #4caf50
+    style H fill: #9c27b0
+```
+
+### 6.4.2 AWS Service Configurations
+
+#### **Amazon SES (Simple Email Service)**
+
+- **Purpose**: Email OTP delivery
+- **Features**:
+    - Verified sender identity
+    - HTML/text email templates
+    - Delivery tracking and metrics
+    - Bounce/complaint handling
+- **Configuration**:
+    - Region-specific endpoints
+    - Rate limiting quotas
+    - DKIM/SPF authentication
+
+#### **Amazon SNS (Simple Notification Service)**
+
+- **Purpose**: SMS OTP delivery
+- **Features**:
+    - International SMS support
+    - Delivery status callbacks
+    - Message filtering
+    - Cost optimization
+- **Configuration**:
+    - SMS pricing optimization
+    - Country-specific routing
+    - Delivery receipts
+
+#### **IAM Security**
+
+- **Purpose**: Secure AWS access
+- **Features**:
+    - Least privilege principle
+    - Service-specific roles
+    - Temporary credentials
+    - Access logging
+- **Best Practices**:
+    - No hard-coded credentials
+    - Role-based access control
+    - Regular credential rotation
+
+### 6.4.3 Error Handling & Resilience
+
+```mermaid
+flowchart TD
+    A[Send OTP] --> B{AWS Service}
+    B -->|Success| C[Delivery Confirmed]
+    B -->|Rate Limited| D[Exponential Backoff]
+    B -->|Service Error| E[Circuit Breaker]
+    B -->|Invalid Recipient| F[Validation Error]
+    D --> G[Retry Logic]
+    E --> H[Fallback Service]
+    F --> I[User Notification]
+    G --> B
+    H --> J[Manual Review]
+    style B fill: #ff9800
+    style D fill: #ff5722
+    style E fill: #f44336
+    style F fill: #ff9800
+```
+
+#### **Resilience Notes (what exists today)**
+
+- Delivery failures surface as exceptions from the sender implementation.
+- OTP persistence + audit logging and metrics are present around send/verify flows.
+
+### 6.4.4 Monitoring & Observability
+
+#### **CloudWatch Integration**
+
+- **Metrics**: Delivery success rates, latency, error rates
+- **Alarms**: Service health, quota utilization
+- **Logs**: Structured logging for debugging
+- **Dashboards**: Real-time monitoring
+
+#### **Cost Optimization**
+
+- **SMS Optimization**: Country-specific routing
+- **Email Optimization**: Bulk sending, template reuse
+- **Monitoring**: Usage quotas and alerts
+- **Budget Controls**: Cost tracking and alerts
+
+---
+
+## 6.5) Rate Limiting Algorithm Flow
+
+The application implements a sophisticated distributed rate limiting system using the token bucket algorithm.
+
+### 6.5.1 Rate Limiting Flow Diagram
+
+```mermaid
+flowchart TD
+    A[Incoming Request] --> B[RateLimitFilter]
+    B --> C[Endpoint Pattern Match]
+    C --> D{Rate Limit Type?}
+    D -->|AUTH_SIGNUP| E[Signup Bucket]
+    D -->|AUTH_LOGIN| F[Login Bucket]
+    D -->|OTP_REQUEST| G[OTP Bucket]
+    D -->|No Match| H[Bypass Rate Limit]
+    E --> I[RateLimitKeyResolver]
+    F --> I
+    G --> I
+    I --> J{Key Resolution}
+    J -->|Authenticated| K[User ID Key]
+    J -->|Anonymous| L[IP Address Key]
+    K --> M[Redis Bucket Service]
+    L --> M
+    M --> N[Consume Token]
+    N --> O{Consumption Result}
+    O -->|Allowed| P[Set Headers]
+    O -->|Blocked| Q[Set Retry-After]
+    P --> R[Continue to Controller]
+    Q --> S[Throw RateLimitException]
+    style B fill: #ff9800
+    style M fill: #f44336
+    style O fill: #4caf50
+    style S fill: #f44336
+```
+
+### 6.5.2 Token Bucket Algorithm
+
+```mermaid
+stateDiagram-v2
+    [*] --> BucketCreated
+    BucketCreated --> TokenAvailable: Refill
+    BucketCreated --> TokenConsumed: Request
+    TokenAvailable --> TokenConsumed: Consume
+    TokenConsumed --> TokenAvailable: Refill
+    TokenConsumed --> BucketEmpty: Exhausted
+    BucketEmpty --> TokenAvailable: Refill
+    BucketEmpty --> RequestBlocked: New Request
+    RequestBlocked --> TokenAvailable: Retry After
+    RequestBlocked --> [*]: Give Up
+```
+
+### 6.5.3 Rate Limiting Configuration
+
+#### **Endpoint-Specific Policies**
+
+```mermaid
+flowchart LR
+    A[Endpoint] --> B[Rate Limit Type]
+    B --> C[Bucket Capacity]
+    B --> D[Refill Rate]
+    B --> E[Key Strategy]
+    C --> F[Tokens Available]
+    D --> G[Refill Interval]
+    E --> H[User/IP Resolution]
+```
+
+#### **Bucket Configuration Examples**
+
+- **AUTH_SIGNUP**: 5 requests per 15 minutes per IP
+- **AUTH_LOGIN**: 10 requests per 5 minutes per user
+- **OTP_REQUEST**: 3 requests per hour per identifier
+- **SESSION_MANAGE**: 20 requests per minute per user
+
+### 6.5.4 Distributed State Management
+
+#### **Redis Bucket Storage**
+
+```mermaid
+flowchart TD
+    A[RateLimitBucketService] --> B[Redis Connection]
+    B --> C[Bucket Key: user:123:login]
+    B --> D[Bucket Key: ip:192.168.1.1:signup]
+    C --> E[Token Count: 7]
+    C --> F[Last Refill: timestamp]
+    C --> G[Capacity: 10]
+    D --> H[Token Count: 2]
+    D --> I[Last Refill: timestamp]
+    D --> J[Capacity: 5]
+    style B fill: #dc382d
+    style C fill: #4caf50
+    style D fill: #4caf50
+```
+
+#### **Key Resolution Strategy**
+
+- **Authenticated Users**: `rate_limit:user:{userId}:{endpointType}`
+- **Anonymous Users**: `rate_limit:ip:{clientIp}:{endpointType}`
+- **Global Limits**: `rate_limit:global:{endpointType}`
+
+### 6.5.5 Client Experience Features
+
+#### **Response Headers**
+
+- `X-RateLimit-Remaining`: Tokens left in bucket
+- `X-RateLimit-Capacity`: Maximum bucket capacity
+- `Retry-After`: Seconds until next available token
+
+#### **Frontend Integration**
+
+```mermaid
+flowchart TD
+    A[API Request] --> B[Rate Limit Headers]
+    B --> C[UI Rate Limit Component]
+    C --> D[Display Remaining]
+    C --> E[Show Warning]
+    C --> F[Block Actions]
+    D --> G[User Feedback]
+    E --> G
+    F --> H[Retry Countdown]
+```
+
+---
+
+## 6.6) Token Lifecycle Management
+
+The application implements a comprehensive JWT token lifecycle with security-first design principles.
+
+### 6.6.1 Token Lifecycle State Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> Generated: Login/Signup
+    Generated --> Active: Token Valid
+    Active --> Refreshed: Refresh Flow
+    Active --> Expired: Time Expiry
+    Active --> Revoked: Logout/Revoke
+    Refreshed --> Active: New Tokens
+    Expired --> [*]: Cleanup
+    Revoked --> [*]: Immediate Invalid
+    note right of Active
+        - Used for API access
+        - Short-lived (15 mins)
+        - Contains user roles
+    end note
+    note right of Refreshed
+        - Rotates refresh token
+        - Updates session metadata
+        - Extends session lifetime
+    end note
+```
+
+### 6.6.2 Token Generation Flow
+
+```mermaid
+flowchart TD
+    A[User Authentication] --> B[Validate Credentials]
+    B --> C[Create Session Record]
+    C --> D[Generate Access Token]
+    D --> E[Generate Refresh Token]
+    E --> F[Hash Refresh Token]
+    F --> G[Store Session + Hash]
+    G --> H[Set HttpOnly Cookies]
+    H --> I[Return Success Response]
+    style D fill: #4caf50
+    style E fill: #ff9800
+    style F fill: #f44336
+    style G fill: #2196f3
+```
+
+### 6.6.3 Token Validation Flow
+
+```mermaid
+flowchart TD
+    A[API Request] --> B[Extract Token]
+    B --> C{Token Found?}
+    C -->|No| D[401 Unauthorized]
+    C -->|Yes| E[Parse JWT]
+    E --> F{Valid Signature?}
+    F -->|No| G[401 Invalid Token]
+    F -->|Yes| H{Expired?}
+    H -->|Yes| I[401 Token Expired]
+    H -->|No| J{Correct Type?}
+    J -->|No| K[401 Wrong Token Type]
+    J -->|Yes| L[Extract Claims]
+    L --> M[Load User Context]
+    M --> N[Set Security Context]
+    N --> O[Continue to Controller]
+    style B fill: #ff9800
+    style E fill: #4caf50
+    style N fill: #2196f3
+```
+
+### 6.6.4 Refresh Token Rotation
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant F as JwtFilter
+    participant S as SessionService
+    participant DB as Database
+    C ->> F: POST /auth/jwt/refresh + device_id
+    F ->> F: Extract refresh cookie
+    F ->> S: validateRefreshToken()
+    S ->> DB: Find session by device_id + user_id
+    DB -->> S: Session record
+    S ->> S: Verify refresh token hash
+    S ->> S: Generate new refresh token
+    S ->> DB: Update session with new hash
+    S ->> S: Generate new access token
+    S -->> F: New tokens
+    F -->> C: Set new HttpOnly cookies
+```
+
+### 6.6.5 Session Security Features
+
+#### **Device-Aware Management**
+
+```mermaid
+flowchart TD
+    A[Login Request] --> B[Device ID Extraction]
+    B --> C[Session Creation]
+    C --> D[Device Metadata Storage]
+    D --> E[Refresh Token Binding]
+    E --> F[Device-Specific Validation]
+    style B fill: #ff9800
+    style C fill: #4caf50
+    style D fill: #2196f3
+    style E fill: #f44336
+```
+
+#### **Multi-Device Support**
+
+- **Device Tracking**: Unique device identifiers
+- **Session Isolation**: Independent sessions per device
+- **Selective Revocation**: Revoke specific devices
+- **Device Limits**: Configurable session limits per user
+
+#### **Security Controls**
+
+- **Token Hashing**: Refresh tokens stored as BCrypt hashes
+- **Rotation**: New refresh token on each use
+- **Expiration**: Time-based token invalidation
+- **Revocation**: Immediate session termination
+
+---
+
+## 6.7) Design Patterns & Architecture Decisions
+
+The application employs several design patterns and architectural decisions to ensure maintainability, scalability, and
+security.
+
+### 6.7.1 Design Patterns Implementation
+
+```mermaid
+flowchart TD
+    subgraph "Strategy Pattern"
+        A[AuthenticationServiceResolver]
+        A --> B[EmailAuthService]
+        A --> C[PhoneAuthService]
+    end
+
+    subgraph "Template Method Pattern"
+        D[AbstractAuthService]
+        D --> E[EmailAuthServiceImpl]
+        D --> F[PhoneAuthServiceImpl]
+    end
+
+    subgraph "Factory Pattern"
+        G[JwtService]
+        G --> H[TokenFactory]
+        H --> I[AccessToken]
+        H --> J[RefreshToken]
+    end
+
+    subgraph "Observer Pattern"
+        K[AuditEventLogger]
+        K --> L[AuthEvents]
+        K --> M[SessionEvents]
+        K --> N[OtpEvents]
+    end
+
+    style A fill: #ffeb3b
+    style D fill: #4caf50
+    style G fill: #2196f3
+    style K fill: #ff9800
+```
+
+### 6.7.2 Pattern Descriptions
+
+#### **Strategy Pattern** - Authentication Resolution
+
+- **Implementation**: `AuthenticationServiceResolver`
+- **Purpose**: Dynamic service selection based on an identifier type
+- **Benefits**:
+    - Easy addition of new authentication methods
+    - Clean separation of channel-specific logic
+    - Runtime service resolution
+- **Usage**: Email vs. Phone authentication routing
+
+#### **Template Method Pattern** – Common Auth Flow
+
+- **Implementation**: Abstract base classes with a common flow
+- **Purpose**: Standardized authentication steps
+- **Benefits**:
+    - Consistent user experience
+    - Code reuse across channels
+    - Enforced security patterns
+- **Usage**: Common signup/login validation steps
+
+#### **Factory Pattern** – Token Creation
+
+- **Implementation**: `JwtService` token generation
+- **Purpose**: Centralized token creation logic
+- **Benefits**:
+    - Consistent token structure
+    - Easy token type management
+    - Centralized validation rules
+- **Usage**: Access and refresh token generation
+
+#### **Observer Pattern** - Audit Logging
+
+- **Implementation**: `AuditEventLogger` component
+- **Purpose**: Decoupled event tracking
+- **Benefits**:
+    - Non-intrusive logging
+    - Consistent audit format
+    - Easy addition of new events
+- **Usage**: Security event tracking and compliance
+
+### 6.7.3 Architectural Decisions
+
+#### **Layered Architecture**
+
+```mermaid
+flowchart TD
+    A[Presentation Layer<br/>Controllers] --> B[Business Layer<br/>Services]
+    B --> C[Data Access Layer<br/>Repositories]
+    C --> D[Database Layer<br/>PostgresSQL]
+    E[Cross-Cutting Concerns<br/>Security, Logging, Validation] --> A
+    E --> B
+    E --> C
+    style A fill: #e3f2fd
+    style B fill: #e8f5e8
+    style C fill: #fff3e0
+    style D fill: #fce4ec
+    style E fill: #f3e5f5
+```
+
+#### **Dependency Injection Strategy**
+
+- **Framework**: Spring IoC Container
+- **Scope**: Singleton for services, Request for controllers
+- **Configuration**: Java-based configuration with @Configuration
+- **Benefits**: Loose coupling, easy testing, configuration management
+
+#### **Exception Handling Architecture**
+
+```mermaid
+flowchart TD
+    A[Business Exception] --> B[Global Exception Handler]
+    A --> C[Filter Exception Handler]
+    B --> D[Standardized API Response]
+    C --> D
+    D --> E[Error Code Catalog]
+    E --> F[Client-Friendly Messages]
+    style B fill: #ff9800
+    style C fill: #ff9800
+    style D fill: #4caf50
+```
+
+### 6.7.4 Security Architecture Decisions
+
+#### **Defense in Depth**
+
+- **Multiple Layers**: Filter → Controller → Service → Repository
+- **Fail Secure**: Default deny, explicit allow
+- **Least Privilege**: Minimal required permissions
+- **Zero Trust**: Validate at every layer
+
+#### **Token Management Strategy**
+
+- **Stateless + Stateful Hybrid**: JWT for authorization, DB for revocation
+- **Short-Lived Access**: 15-minute access tokens
+- **Refresh Rotation**: New refresh token on each use
+- **Secure Storage**: BCrypt hashes for refresh tokens
+
+---
+
+## 6.8) Performance & Scalability Considerations
+
+The application includes several performance-friendly design choices. (This section only lists items that are
+implemented in this repository.)
+
+### 6.8.1 Performance-Focused Design Choices
+
+```mermaid
+flowchart LR
+    A[Stateless API] --> B[JWT auth]
+    B --> C[No server sessions]
+    D[Redis] --> E[Rate limiting]
+    F[DB cleanup] --> G[Scheduled tasks]
+```
+
+### 6.8.2 Database Performance
+
+#### **Indexing Strategy**
+
+```mermaid
+flowchart LR
+    A[Query Patterns] --> B[Index Design]
+    B --> C[Unique Indexes]
+    B --> D[Composite Indexes]
+    B --> E[Partial Indexes]
+    C --> F[Email/Phone Uniqueness]
+    D --> G[User + Status Queries]
+    E --> H[Active Sessions Only]
+    style B fill: #ff9800
+    style C fill: #4caf50
+    style D fill: #2196f3
+    style E fill: #9c27b0
+```
+
+#### **Query Optimization**
+
+- **N+1 Prevention**: Strategic entity loading
+- **Batch Operations**: Bulk updates for cleanup
+- **Connection Pooling**: HikariCP configuration
+- **Read Replicas**: Query distribution for scaling
+
+#### **Database Scaling Patterns**
+
+```mermaid
+flowchart TD
+    A[Single Database] --> B[Read Replicas]
+    A --> C[Connection Pooling]
+    B --> D[Query Distribution]
+    C --> E[Concurrency Management]
+    D --> F[Horizontal Scaling]
+    E --> F
+```
+
+### 6.8.2 Redis Usage (Implemented)
+
+- **Rate limiting bucket state**: Bucket4j distributed buckets stored in Redis.
+- **No general application caching layer** is implemented.
+
+### 6.8.3 Background Work (Implemented)
+
+- Cleanup is implemented using Spring `@Scheduled` jobs (see `CleanupTask`).
+
+### 6.8.4 Scaling Notes (What the code supports)
+
+- **Stateless HTTP**: `SessionCreationPolicy.STATELESS` allows running multiple instances.
+- **Shared rate-limit state**: Redis-backed bucket state works across instances.
+
+### 6.8.6 Performance Monitoring
+
+#### **Key Metrics**
+
+```mermaid
+flowchart TD
+    A[Performance Metrics] --> B[Response Time]
+    A --> C[Throughput]
+    A --> D[Error Rate]
+    A --> E[Resource Utilization]
+    B --> F[API Latency]
+    C --> G[Requests/Second]
+    D --> H[4xx/5xx Rates]
+    E --> I[CPU/Memory/Disk]
+    style A fill: #ff9800
+    style B fill: #4caf50
+    style C fill: #2196f3
+    style D fill: #f44336
+    style E fill: #9c27b0
+```
+
+#### **Performance Testing**
+
+- **Load Testing**: Simulated user traffic
+- **Stress Testing**: Breaking point identification
+- **Endurance Testing**: Long-running stability
+- **Spike Testing**: Traffic burst handling
 
 ---
 
@@ -812,6 +1927,393 @@ These controls reduce long-term data growth and improve runtime maintainability.
   (example: `V1__init.sql`, `V2__added_column_nickname.sql`).
 - `spring.flyway.baseline-on-migrate=true` is enabled for smoother adoption on existing environments.
 - Keep migrations immutable once committed; add a new versioned script for any change.
+
+---
+
+## 16.1) EC2 Cron Jobs for Image Cleanup
+
+### 16.1.1 Overview
+
+The application runs automated cleanup jobs on EC2 instances to maintain system hygiene and prevent resource exhaustion.
+These cron jobs are configured to run during off-peak hours (3:00 AM) to minimize impact on user experience.
+
+### 16.1.2 Cleanup Schedule
+
+Runs daily at **03:00 AM** (server time) on the EC2 host.
+
+### 16.1.3 Cleanup Operations
+
+#### **Docker System Prune**
+
+- **Schedule**: Daily at 3:00 AM
+- **Purpose**: Remove unused Docker resources
+- **Scope**:
+    - Stopped containers
+    - Unused networks
+    - Dangling images
+    - Unused build cache
+    - Anonymous volumes (with --volumes flag)
+- **Impact**: Frees significant disk space and improves container startup performance
+
+#### **Image Prune with Age Filter**
+
+- **Schedule**: Daily at 3:00 AM
+- **Purpose**: Remove old Docker images older than 72 hours
+- **Filter**: `--filter "until=72h"`
+- **Retention**: Keeps recent images for potential rollbacks
+- **Impact**: Prevents image bloat while maintaining operational safety
+
+#### **Volume Prune**
+
+- **Schedule**: Daily at 3:00 AM
+- **Purpose**: Remove unused Docker volumes
+- **Safety**: Only removes volumes not attached to any container
+- **Impact**: Recovers storage from orphaned volumes
+
+### 16.1.4 Notes
+
+- The CI/CD workflow deploys the backend container to EC2 (see `.github/workflows/CI-CD.yaml`).
+- The cron job itself is configured on the EC2 host (outside this repository).
+
+### 16.1.5 Benefits
+
+1. **Storage Optimization**: Prevents disk space exhaustion on long-running instances
+2. **Performance Improvement**: Faster container startup with cleaner image cache
+3. **Cost Management**: Reduces EBS volume usage and associated costs
+4. **Operational Stability**: Automated maintenance reduces manual intervention
+5. **Security Hygiene**: Removes potentially vulnerable old images
+
+### 16.1.6 Troubleshooting
+
+#### **Common Issues**
+
+- **Insufficient permissions**: Ensure cron user has Docker daemon access
+- **Disk still full**: Check for large application logs or database files
+- **Container restart failures**: Verify required images aren't being pruned
+
+#### **Manual Cleanup Commands**
+
+```bash
+# Emergency manual cleanup
+docker system df                    # Check usage
+docker system prune -af --volumes  # Aggressive cleanup
+docker image ls --filter "dangling=true"  # Check dangling images
+```
+
+#### **Monitoring Commands**
+
+```bash
+# Monitor cleanup effectiveness
+df -h                              # Disk usage
+docker system df                    # Docker usage
+tail -f /var/log/docker-cleanup.log # Cleanup logs
+```
+
+This automated cleanup strategy ensures the EC2 instances maintain optimal performance and storage efficiency without
+requiring manual intervention.
+
+---
+
+## 16.2) Testing Architecture
+
+The application implements a comprehensive testing strategy with multiple test layers and specialized testing patterns.
+
+### 16.2.1 Testing Pyramid (What exists in this repo)
+
+```mermaid
+flowchart TB
+    A[Unit tests] --> B[Service tests]
+    B --> C[Integration tests IT]
+    C --> D[Redis/Postgres via Testcontainers]
+```
+
+### 16.2.2 Test Layer Breakdown
+
+#### **Unit Tests** (Foundation Layer)
+
+- **Purpose**: Test individual components in isolation
+- **Coverage**: Business logic, utility functions, data transformations
+- **Tools**: JUnit 5, Mockito
+- **Examples**:
+    - Service method logic validation
+    - Utility function correctness
+    - Entity validation rules
+    - Password encoding/decoding
+
+#### **Component Tests** (Spring Context)
+
+- **Purpose**: Test Spring components with mocked dependencies
+- **Coverage**: Individual controllers, services, repositories
+- **Tools**: Spring Boot Test, @WebMvcTest, @DataJpaTest
+- **Examples**:
+    - Controller endpoint validation
+    - Service dependency injection
+    - Repository query methods
+
+#### **Integration Tests** (Full Stack)
+
+- **Purpose**: Test component interactions with real infrastructure
+- **Coverage**: API endpoints, database operations, external services
+- **Tools**: Testcontainers,@SpringBootTest
+- **Examples**:
+    - Complete authentication flows
+    - Database transaction handling
+    - Redis rate limiting integration
+
+#### **End-to-End Tests**
+
+- Not present in this repository.
+
+### 16.2.3 Security Testing Architecture
+
+```mermaid
+flowchart TD
+    subgraph "Security Test Types"
+        A[Authentication Tests]
+        B[Authorization Tests]
+        C[Rate Limiting Tests]
+        D[Input Validation Tests]
+    end
+
+    subgraph "Test Scenarios"
+        E[Valid Credentials]
+        F[Invalid Tokens]
+        G[Rate Limit Bypass]
+        H[SQL Injection]
+        I[XSS Prevention]
+        J[CSRF Protection]
+    end
+
+    A --> E
+    A --> F
+    B --> E
+    B --> F
+    C --> G
+    D --> H
+    D --> I
+    D --> J
+    style A fill: #f44336
+    style B fill: #ff9800
+    style C fill: #4caf50
+    style D fill: #2196f3
+```
+
+#### **Security Test Coverage**
+
+- **JWT Token Validation**: Expired, invalid, malformed tokens
+- **Authorization**: Role-based access control testing
+- **Rate Limiting**: Boundary testing and bypass attempts
+- **Input Validation**: SQL injection, XSS, CSRF prevention
+- **Session Security**: Token rotation, device management
+
+### 16.2.4 Test Data Management
+
+#### **Test Data Strategy**
+
+```mermaid
+flowchart LR
+    A[Test Data Setup] --> B[In-Memory DB]
+    A --> C[Testcontainers]
+    A --> D[Mock Services]
+    B --> E[H2 Database]
+    C --> F[PostgresSQL]
+    C --> G[Redis]
+    D --> H[AWS Services]
+    style A fill: #ff9800
+    style B fill: #4caf50
+    style C fill: #2196f3
+    style D fill: #9c27b0
+```
+
+#### **Data Isolation**
+
+- **Test Databases**: Separate schemas per test suite
+- **Transaction Rollback**: Clean state after each test
+- **Mock Data**: Consistent test data fixtures
+- **Environment Variables**: Test-specific configurations
+
+### 16.2.5 Performance Testing
+
+- Dedicated load/stress testing tooling is not included in this repository.
+
+### 16.2.6 Test Automation & CI/CD
+
+#### **Continuous Testing Pipeline**
+
+```mermaid
+flowchart LR
+    A[Code Commit] --> B[Unit Tests]
+    B --> C[Integration Tests]
+    C --> D[Security Tests]
+    D --> E[Performance Tests]
+    E --> F[Deployment]
+    B -->|Fail| G[Block PR]
+    C -->|Fail| G
+    D -->|Fail| G
+    E -->|Fail| G
+    style A fill: #2196f3
+    style B fill: #4caf50
+    style C fill: #ff9800
+    style D fill: #f44336
+    style E fill: #9c27b0
+    style G fill: #ff5722
+```
+
+#### **Quality Gates**
+
+- CI runs unit/integration tests (see GitHub Actions workflow).
+
+---
+
+## 16.3) Monitoring & Observability Deep Dive
+
+This repository includes Actuator + Prometheus metrics export and structured audit logging.
+
+### 16.3.1 Observability Stack Architecture
+
+```mermaid
+flowchart LR
+    A[Spring Boot] --> B[Micrometer]
+    B --> C[/actuator/prometheus/]
+    A --> D[AuditEventLogger]
+    A --> E[/actuator/health/]
+```
+
+### 16.3.2 Metrics Architecture
+
+#### **Business Metrics**
+
+```mermaid
+flowchart TD
+    A[Authentication Events] --> B[Login Success Rate]
+    A --> C[Signup Conversion]
+    A --> D[OTP Verification Rate]
+    E[Session Management] --> F[Active Sessions]
+    E --> G[Session Duration]
+    E --> H[Multi-Device Usage]
+    I[Security Events] --> J[Failed Login Attempts]
+    I --> K[Rate Limit Blocks]
+    I --> L[Token Revocations]
+    style A fill: #4caf50
+    style E fill: #ff9800
+    style I fill: #f44336
+```
+
+#### **Technical Metrics**
+
+- **Application Metrics**: JVM memory, CPU usage, thread pools
+- **Database Metrics**: Connection pool usage, query performance
+- **Redis Metrics**: Connection count, memory usage, hit rates
+- **HTTP Metrics**: Request rates, response times, error rates
+
+#### **Custom Metrics (actually used in code)**
+
+```yaml
+auth.login.success: Counter
+auth.login.failure: Counter
+auth.refresh.success: Counter
+auth.refresh.failure: Counter
+auth.otp.request.success: Counter
+auth.otp.request.failure: Counter
+auth.otp.verify.success: Counter
+auth.otp.verify.failure: Counter
+
+rate_limit.success{type=...}: Counter
+rate_limit.blocked{type=...}: Counter
+```
+
+### 16.3.3 Logging Architecture
+
+#### **Structured Logging Schema**
+
+```mermaid
+flowchart TD
+    A[Log Event] --> B[Timestamp]
+    A --> C[Log Level]
+    A --> D[Service Name]
+    A --> E[Request ID]
+    A --> F[User ID]
+    A --> G[Event Type]
+    A --> H[Message]
+    A --> I[Context]
+    style A fill: #ff9800
+    style B fill: #4caf50
+    style C fill: #2196f3
+    style G fill: #f44336
+```
+
+#### **Audit Event Schema**
+
+```json
+{
+  "timestamp": "2026-02-28T02:17:00Z",
+  "level": "INFO",
+  "service": "dragon-of-north",
+  "request_id": "req_123456",
+  "user_id": "user_789",
+  "device_id": "device_456",
+  "event": "LOGIN_SUCCESS",
+  "ip_address": "192.168.1.100",
+  "user_agent": "Mozilla/5.0...",
+  "result": "SUCCESS",
+  "reason": "Valid credentials",
+  "duration_ms": 150
+}
+```
+
+#### **Log Levels & Usage**
+
+- **ERROR**: System failures, security breaches
+- **WARN**: Performance issues, rate limiting
+- **INFO**: Business events, state changes
+- **DEBUG**: Detailed execution flow
+- **TRACE**: Fine-grained debugging
+
+### 16.3.4 Distributed Tracing
+
+- Not implemented in this repository.
+
+### 16.3.5 Health Check Architecture
+
+#### **Health Check Hierarchy**
+
+```mermaid
+flowchart TD
+    A[Health Check] --> B[Application Health]
+    A --> C[Database Health]
+    A --> D[Redis Health]
+    A --> E[External Service Health]
+    B --> F[Startup Check]
+    B --> G[Readiness Check]
+    B --> H[Liveness Check]
+    C --> I[Connection Pool]
+    C --> J[Query Performance]
+    D --> K[Redis Connection]
+    D --> L[Memory Usage]
+    E --> M[AWS SES]
+    E --> N[AWS SNS]
+    style A fill: #ff9800
+    style B fill: #4caf50
+    style C fill: #2196f3
+    style D fill: #9c27b0
+    style E fill: #f44336
+```
+
+#### **Health Check Endpoints**
+
+- `/actuator/health`: Overall application health
+- `/actuator/health/readiness`: Readiness probe
+- `/actuator/health/liveness`: Liveness probe
+- `/actuator/health/db`: Database connectivity
+- `/actuator/health/redis`: Redis connectivity
+
+### 16.3.6 Alerting Strategy
+
+- Alerting integrations are not defined in this repository.
+
+### 16.3.7 Dashboards
+
+- Dashboards (Grafana/Kibana) are not included in this repository.
 
 ---
 
