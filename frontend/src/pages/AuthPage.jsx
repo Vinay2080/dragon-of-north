@@ -14,6 +14,12 @@ const AUTH_STEP = {
     GOOGLE_ONLY: 'GOOGLE_ONLY',
     LOCAL_AND_GOOGLE: 'LOCAL_AND_GOOGLE',
     SIGNUP_CREATE_PASSWORD: 'SIGNUP_CREATE_PASSWORD',
+    GOOGLE_SIGNUP: 'GOOGLE_SIGNUP',
+};
+
+const isGoogleEmail = (value) => {
+    const emailValue = value.trim().toLowerCase();
+    return emailValue.endsWith('@gmail.com') || emailValue.endsWith('@googlemail.com');
 };
 
 const AuthPage = () => {
@@ -46,7 +52,7 @@ const AuthPage = () => {
         const hasGoogle = providers.includes('GOOGLE');
 
         if (!exists) {
-            setStep(AUTH_STEP.SIGNUP_CREATE_PASSWORD);
+            setStep(isGoogleEmail(normalizedEmail) ? AUTH_STEP.GOOGLE_SIGNUP : AUTH_STEP.SIGNUP_CREATE_PASSWORD);
             return;
         }
         if (hasLocal && hasGoogle) {
@@ -166,6 +172,24 @@ const AuthPage = () => {
                         >
                             Continue to create account
                         </button>
+                    </div>
+                )}
+
+                {step === AUTH_STEP.GOOGLE_SIGNUP && (
+                    <div className="mt-6 space-y-3">
+                        <p className="text-sm text-slate-300">No account found. Choose how you want to sign up.</p>
+                        <button
+                            className="w-full rounded-lg bg-blue-600 py-3 font-semibold"
+                            onClick={() => navigate('/signup', {state: {identifier: normalizedEmail, identifierType: 'EMAIL'}})}
+                        >
+                            Create password account
+                        </button>
+                        <GoogleLoginButton
+                            mode="signup"
+                            onSuccess={handleGoogleSuccess}
+                            onError={handleGoogleError}
+                            disabled={loading}
+                        />
                     </div>
                 )}
 

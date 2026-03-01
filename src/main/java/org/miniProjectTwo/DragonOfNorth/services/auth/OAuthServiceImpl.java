@@ -45,11 +45,22 @@ public class OAuthServiceImpl implements OAuthService {
     @Transactional
     public void authenticatedWithGoogle(String idToken, String deviceId, HttpServletRequest httpRequest, HttpServletResponse response) {
         OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
+        AppUser appUser = findExistingGoogleUser(userInfo);
+        finalizeAuthentication(appUser, deviceId, httpRequest, response);
+    }
 
+    @Override
+    @Transactional
+    public void signupWithGoogle(String idToken, String deviceId, HttpServletRequest httpRequest, HttpServletResponse response) {
+        OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
+        AppUser appUser = findOrCreateUserForSignup(userInfo);
+        finalizeAuthentication(appUser, deviceId, httpRequest, response);
+    }
+
+    private void finalizeAuthentication(AppUser appUser, String deviceId, HttpServletRequest httpRequest, HttpServletResponse response) {
         String ipAddress = httpRequest.getHeader("X-Forwarded-For");
         String userAgent = httpRequest.getHeader("User-Agent");
 
-        AppUser appUser = findOrCreateUser(userInfo);
         updateLoginInfo(appUser);
 
         String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
@@ -61,11 +72,32 @@ public class OAuthServiceImpl implements OAuthService {
         sessionService.createSession(appUser, refreshToken, ipAddress, deviceId, userAgent);
     }
 
-    private AppUser findOrCreateUser(OAuthUserInfo userInfo) {
+    private AppUser findExistingGoogleUser(OAuthUserInfo userInfo) {
         Optional<UserAuthProvider> existingByProviderId = userAuthProviderRepository.findByProviderAndProviderId(Provider.GOOGLE, userInfo.sub());
         if (existingByProviderId.isPresent()) {
             return existingByProviderId.get().getUser();
         }
+
+        AppUser existingByEmail = appUserRepository.findByEmailForUpdate(userInfo.email())
+                .orElseThrow(() -> new BusinessException(ErrorCode.AUTHENTICATION_FAILED, "Google account is not registered. Please sign up first."));
+        linkGoogleProvider(existingByEmail, userInfo.sub());
+        return existingByEmail;
+    }
+
+    private AppUser findOrCreateUserForSignup(OAuthUserInfo userInfo) {
+        Optional<UserAuthProvider> existingByProviderId = userAuthProviderRepository.findByProviderAndProviderId(Provider.GOOGLE, userInfo.sub());
+        if (existingByProviderId.isPresent()) {
+            return existingByProviderId.get().getUser();
+        }
+
+        Optional<AppUser> existingByEmail = appUserRepository.findByEmailForUpdate(userInfo.email());
+        if (existingByEmail.isPresent()) {
+            AppUser user = existingByEmail.get();
+            linkGoogleProvider(user, userInfo.sub());
+            user.setEmailVerified(true);
+            return user;
+        }
+
         return createNewUserWithRetry(userInfo);
     }
 
@@ -73,7 +105,6 @@ public class OAuthServiceImpl implements OAuthService {
         user.setLastLoginAt(LocalDateTime.now());
         user.setFailedLoginAttempts(0);
         user.setAccountLocked(false);
-        // Dirty checking will save within transaction
     }
 
     private AppUser createNewUserWithRetry(OAuthUserInfo userInfo) {
@@ -86,7 +117,6 @@ public class OAuthServiceImpl implements OAuthService {
             newUser.setFailedLoginAttempts(0);
             newUser.setAccountLocked(false);
 
-            // Assign default USER role
             Role userRole = roleRepository.findByRoleName(RoleName.USER)
                     .orElseThrow(() -> new BusinessException(ErrorCode.ROLE_NOT_FOUND, "USER role not found"));
             newUser.setRoles(Set.of(userRole));
@@ -96,7 +126,7 @@ public class OAuthServiceImpl implements OAuthService {
             return savedUser;
 
         } catch (DataIntegrityViolationException e) {
-            log.warn("Race condition during user creation, refetching: {}", userInfo.sub());
+            log.warn("Race condition during OAuth signup, refetching: {}", userInfo.sub());
 
             Optional<UserAuthProvider> byProviderId = userAuthProviderRepository.findByProviderAndProviderId(Provider.GOOGLE, userInfo.sub());
             if (byProviderId.isPresent()) {
@@ -106,6 +136,7 @@ public class OAuthServiceImpl implements OAuthService {
             AppUser existingUser = appUserRepository.findByEmailForUpdate(userInfo.email())
                     .orElseThrow(() -> new BusinessException(ErrorCode.USER_CREATION_FAILED, "Failed to create user"));
             existingUser.setEmailVerified(true);
+            existingUser.setPassword(null);
             linkGoogleProvider(existingUser, userInfo.sub());
             return existingUser;
         }
@@ -121,5 +152,4 @@ public class OAuthServiceImpl implements OAuthService {
         provider.setProviderId(providerId);
         userAuthProviderRepository.save(provider);
     }
-
 }

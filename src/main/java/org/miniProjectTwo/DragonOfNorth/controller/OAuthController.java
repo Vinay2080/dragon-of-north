@@ -47,4 +47,19 @@ public class OAuthController {
         oAuthService.authenticatedWithGoogle(request.idToken(), request.deviceId(), httpRequest, httpResponse);
         return ResponseEntity.ok(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.successMessage("OAuth authentication successful"));
     }
+
+    @PostMapping("/google/signup")
+    @Operation(summary = "Sign up with Google OAuth",
+            description = "Creates a new account from Google ID token and sets auth cookies")
+    @ApiResponse(responseCode = "200", description = "Signup successful")
+    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse<?>> signupWithGoogle(
+            @RequestBody
+            @Valid
+            OAuthLoginRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse
+    ) {
+        oAuthService.signupWithGoogle(request.idToken(), request.deviceId(), httpRequest, httpResponse);
+        return ResponseEntity.ok(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.successMessage("OAuth signup successful"));
+    }
 }

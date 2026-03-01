@@ -6,18 +6,23 @@ import RateLimitInfo from '../components/RateLimitInfo';
 import {useToast} from '../hooks/useToast';
 import ValidationError from '../components/Validation/ValidationError';
 import AuthFlowProgress from '../components/AuthFlowProgress';
+import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 import {validatePassword} from '../utils/validation';
+import {useAuth} from '../context/authUtils';
 
 const SignupPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const {toast} = useToast();
+    const {login} = useAuth();
     const {identifier, identifierType} = location.state || {};
 
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({});
     const [loading, setLoading] = useState(false);
+
+    const isEmailIdentifier = identifierType === 'EMAIL';
 
     const passwordStrengthHint = useMemo(() => {
         if (!password) return 'Use at least 8 characters with uppercase, lowercase, number and symbol.';
@@ -30,6 +35,11 @@ const SignupPage = () => {
         setPassword(value);
         const errors = validatePassword(value);
         setFieldErrors(prev => ({...prev, password: value ? errors : []}));
+    };
+
+    const handleGoogleSignup = () => {
+        login({identifier});
+        navigate('/dashboard');
     };
 
     const handleGetOtp = async (e) => {
@@ -92,6 +102,19 @@ const SignupPage = () => {
                 <h2 className="text-2xl font-bold text-white">Create Account</h2>
                 <p className="mt-1 mb-6 text-sm text-slate-400">Setting up account for <span className="text-blue-400 font-medium">{identifier}</span></p>
                 <AuthFlowProgress currentStep="signup"/>
+
+                {isEmailIdentifier && (
+                    <div className="mb-6 space-y-3">
+                        <GoogleLoginButton
+                            mode="signup"
+                            onSuccess={handleGoogleSignup}
+                            onError={(message) => toast.error(message || 'Google signup failed.')}
+                            disabled={loading}
+                        />
+                        <p className="text-center text-xs text-slate-500">or create a password account below</p>
+                    </div>
+                )}
+
                 <form onSubmit={handleGetOtp} noValidate>
                     <div className="space-y-4">
                         <div className="relative">

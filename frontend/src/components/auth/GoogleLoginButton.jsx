@@ -5,7 +5,7 @@ import {getDeviceId} from '../../utils/device';
 
 const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 
-const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = false}) => {
+const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = false, mode = 'login'}) => {
     const buttonRef = useRef(null);
     const hasClientId = Boolean(API_CONFIG.GOOGLE_CLIENT_ID);
     const [isInitializing, setIsInitializing] = useState(hasClientId);
@@ -17,18 +17,22 @@ const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = f
             return;
         }
 
-        const result = await apiService.post(API_CONFIG.ENDPOINTS.OAUTH_GOOGLE, {
+        const endpoint = mode === 'signup' ? API_CONFIG.ENDPOINTS.OAUTH_GOOGLE_SIGNUP : API_CONFIG.ENDPOINTS.OAUTH_GOOGLE;
+        const result = await apiService.post(endpoint, {
             id_token: credential,
             device_id: getDeviceId(),
         });
 
         if (apiService.isErrorResponse(result) || result?.api_response_status !== 'success') {
-            onError?.(result?.message || 'Google sign-in failed. Please try again.');
+            const fallbackMessage = mode === 'signup'
+                ? 'Google signup failed. Please try again.'
+                : 'Google sign-in failed. Please try again.';
+            onError?.(result?.message || fallbackMessage);
             return;
         }
 
         onSuccess?.();
-    }, [onError, onSuccess]);
+    }, [mode, onError, onSuccess]);
 
     useEffect(() => {
         const clientId = API_CONFIG.GOOGLE_CLIENT_ID;

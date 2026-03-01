@@ -6,18 +6,25 @@ import {apiService} from '../services/apiService';
 import {useToast} from '../hooks/useToast';
 import ValidationError from '../components/Validation/ValidationError';
 import AuthFlowProgress from '../components/AuthFlowProgress';
+import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 import {getIdentifierType, normalizePhone, validateIdentifier} from '../utils/validation';
 
 const TEST_USERS = [{label: 'shaking.121@gmail.com', identifier: 'shaking.121@gmail.com', password: 'Example@123'}];
 
+const isGoogleEmail = (value) => {
+    const emailValue = value.trim().toLowerCase();
+    return emailValue.endsWith('@gmail.com') || emailValue.endsWith('@googlemail.com');
+};
+
 const AuthIdentifierPage = () => {
     const navigate = useNavigate();
-    const {isAuthenticated, isLoading} = useAuth();
+    const {login, isAuthenticated, isLoading} = useAuth();
     const {toast} = useToast();
     const [identifier, setIdentifier] = useState('');
     const [loading, setLoading] = useState(false);
     const [blockedMessage, setBlockedMessage] = useState('');
     const [fieldErrors, setFieldErrors] = useState({});
+    const [notExistChoice, setNotExistChoice] = useState(null);
 
     useEffect(() => {
         if (!isLoading && isAuthenticated) navigate('/dashboard', {replace: true});
@@ -27,6 +34,7 @@ const AuthIdentifierPage = () => {
 
     const handleIdentifierChange = (value) => {
         setIdentifier(value);
+        setNotExistChoice(null);
         const error = validateIdentifier(value);
         setFieldErrors(prev => ({...prev, identifier: error ? [error] : []}));
     };
@@ -34,6 +42,7 @@ const AuthIdentifierPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setBlockedMessage('');
+        setNotExistChoice(null);
         setFieldErrors({});
 
         const trimmed = identifier.trim();
@@ -76,7 +85,7 @@ const AuthIdentifierPage = () => {
 
         const status = result.data?.app_user_status;
         if (status === 'NOT_EXIST') {
-            navigate('/signup', {state: {identifier: processedIdentifier, identifierType}});
+            setNotExistChoice({identifier: processedIdentifier, identifierType, allowGoogleSignup: identifierType === 'EMAIL' && isGoogleEmail(processedIdentifier)});
         } else if (status === 'CREATED') {
             const otpEndpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
             const otpPayload = identifierType === 'EMAIL' ? {email: processedIdentifier, otp_purpose: 'SIGNUP'} : {phone: processedIdentifier, otp_purpose: 'SIGNUP'};
@@ -122,6 +131,30 @@ const AuthIdentifierPage = () => {
                     <ValidationError id="identifier-field-errors" errors={fieldErrors.identifier || []}/>
                     <button type="submit" disabled={loading || !identifier.trim()} className="mt-5 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Processing…' : 'Continue'}</button>
                 </form>
+
+                {notExistChoice && (
+                    <div className="mt-6 space-y-3 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+                        <p className="text-sm text-slate-300">No account found. Choose how to continue:</p>
+                        <button
+                            type="button"
+                            onClick={() => navigate('/signup', {state: {identifier: notExistChoice.identifier, identifierType: notExistChoice.identifierType}})}
+                            className="w-full rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-500"
+                        >
+                            Continue with email signup
+                        </button>
+                        {notExistChoice.allowGoogleSignup && (
+                            <GoogleLoginButton
+                                mode="signup"
+                                onSuccess={() => {
+                                    login({identifier: notExistChoice.identifier});
+                                    navigate('/dashboard');
+                                }}
+                                onError={(message) => toast.error(message || 'Google signup failed.')}
+                                disabled={loading}
+                            />
+                        )}
+                    </div>
+                )}
                 <p className="mt-6 text-center text-xs text-slate-500">We may send an OTP if required</p>
             </div>
         </div>

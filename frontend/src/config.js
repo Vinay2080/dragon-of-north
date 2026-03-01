@@ -13,6 +13,7 @@ export const API_CONFIG = {
         LOGOUT: '/api/v1/auth/identifier/logout',
         REFRESH_TOKEN: '/api/v1/auth/jwt/refresh',
         OAUTH_GOOGLE: '/api/v1/auth/oauth/google',
+        OAUTH_GOOGLE_SIGNUP: '/api/v1/auth/oauth/google/signup',
         PASSWORD_RESET_REQUEST: '/api/v1/auth/password/forgot/request',
         PASSWORD_RESET_CONFIRM: '/api/v1/auth/password/forgot/reset',
 
