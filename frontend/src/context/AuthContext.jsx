@@ -36,7 +36,6 @@ export const AuthProvider = ({children}) => {
             setIsAuthenticated(false);
             setUser(null);
             localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('user');
         } catch (error) {
             console.error('Auth check failed:', error);
             setIsAuthenticated(false);

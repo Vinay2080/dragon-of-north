@@ -17,11 +17,27 @@ const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = f
         expectedIdentifierRef.current = expectedIdentifier;
     }, [expectedIdentifier]);
 
+    const decodeJWT = (token) => {
+        try {
+            const parts = token.split('.');
+            if (parts.length !== 3) return null;
+
+            return JSON.parse(atob(parts[1]));
+        } catch (error) {
+            console.error('Failed to decode JWT:', error);
+            return null;
+        }
+    };
+
     const handleGoogleCredential = useCallback(async ({credential}) => {
         if (!credential) {
             onError?.('Google did not return an ID token.');
             return;
         }
+
+        // Extract email from ID token
+        const decodedToken = decodeJWT(credential);
+        const emailFromToken = decodedToken?.email;
 
         const endpoint = mode === 'signup' ? API_CONFIG.ENDPOINTS.OAUTH_GOOGLE_SIGNUP : API_CONFIG.ENDPOINTS.OAUTH_GOOGLE;
         const payload = {
@@ -47,15 +63,24 @@ const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = f
             return;
         }
 
-        onSuccess?.(result?.data);
+        // Pass both the backend response and the email from token
+        onSuccess?.({
+            ...result?.data,
+            email: emailFromToken,
+            identifier: emailFromToken
+        });
     }, [mode, onError, onSuccess]);
 
     useEffect(() => {
         const clientId = API_CONFIG.GOOGLE_CLIENT_ID;
+        console.log("Google Client ID being used:", clientId);
+        console.log("Current origin:", window.location.origin);
         if (!clientId) {
             onError?.('Google login is not configured. Missing client ID.');
-            setIsInitializing(false);
-            setIsReady(false);
+            setTimeout(() => {
+                setIsInitializing(false);
+                setIsReady(false);
+            }, 0);
             return;
         }
 
@@ -80,8 +105,10 @@ const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = f
             });
 
             initializedRef.current = true;
-            setIsInitializing(false);
-            setIsReady(true);
+            setTimeout(() => {
+                setIsInitializing(false);
+                setIsReady(true);
+            }, 0);
         };
 
         if (window.google?.accounts?.id) {
@@ -100,8 +127,10 @@ const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = f
 
         script.addEventListener('load', initializeGoogle);
         script.addEventListener('error', () => {
-            setIsInitializing(false);
-            setIsReady(false);
+            setTimeout(() => {
+                setIsInitializing(false);
+                setIsReady(false);
+            }, 0);
             onError?.('Unable to load Google Identity Services. Please try again later.');
         });
 

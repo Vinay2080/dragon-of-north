@@ -33,13 +33,16 @@ const AuthPage = () => {
     const [step, setStep] = useState(AUTH_STEP.EMAIL_ENTRY);
     const [passwordError, setPasswordError] = useState('');
 
+    const normalizedEmail = useMemo(
+        () => email.trim().toLowerCase(),
+        [email]
+    );
+
     useEffect(() => {
         if (!isLoading && isAuthenticated) {
             navigate('/dashboard', {replace: true});
         }
     }, [isAuthenticated, isLoading, navigate]);
-
-    const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
 
     const resetFlow = () => {
         setStep(AUTH_STEP.EMAIL_ENTRY);
@@ -52,7 +55,11 @@ const AuthPage = () => {
         const hasGoogle = providers.includes('GOOGLE');
 
         if (!exists) {
-            setStep(isGoogleEmail(normalizedEmail) ? AUTH_STEP.GOOGLE_SIGNUP : AUTH_STEP.SIGNUP_CREATE_PASSWORD);
+            setStep(
+                isGoogleEmail(normalizedEmail)
+                    ? AUTH_STEP.GOOGLE_SIGNUP
+                    : AUTH_STEP.SIGNUP_CREATE_PASSWORD
+            );
             return;
         }
 
@@ -79,14 +86,20 @@ const AuthPage = () => {
         setLoading(true);
         setPasswordError('');
 
-        const result = await apiService.post(API_CONFIG.ENDPOINTS.IDENTIFIER_STATUS, {
-            identifier: normalizedEmail,
-            identifier_type: 'EMAIL',
-        });
+        const result = await apiService.post(
+            API_CONFIG.ENDPOINTS.IDENTIFIER_STATUS,
+            {
+                identifier: normalizedEmail,
+                identifier_type: 'EMAIL',
+            }
+        );
 
         setLoading(false);
 
-        if (apiService.isErrorResponse(result) || result?.api_response_status !== 'success') {
+        if (
+            apiService.isErrorResponse(result) ||
+            result?.api_response_status !== 'success'
+        ) {
             toast.error(result?.message || 'Unable to check this email.');
             return;
         }
@@ -94,7 +107,9 @@ const AuthPage = () => {
         const data = result.data || {};
         moveToStepFromProviders({
             exists: Boolean(data.exists),
-            providers: Array.isArray(data.providers) ? data.providers : [],
+            providers: Array.isArray(data.providers)
+                ? data.providers
+                : [],
         });
     };
 
@@ -102,24 +117,39 @@ const AuthPage = () => {
         event.preventDefault();
         if (!password) return;
 
+        if (!normalizedEmail) {
+            toast.error('Email is required');
+            return;
+        }
+
         setPasswordError('');
         setLoading(true);
 
-        const result = await apiService.post(API_CONFIG.ENDPOINTS.LOGIN, {
-            identifier: normalizedEmail,
-            password,
-            device_id: getDeviceId(),
-        });
+        const result = await apiService.post(
+            API_CONFIG.ENDPOINTS.LOGIN,
+            {
+                identifier: normalizedEmail,
+                password,
+                device_id: getDeviceId(),
+            }
+        );
 
         setLoading(false);
 
         if (apiService.isErrorResponse(result)) {
-            const backendMessage = result.backendMessage || result.message || 'Login failed.';
+            const backendMessage =
+                result.backendMessage ||
+                result.message ||
+                'Login failed.';
+
             if (backendMessage.toLowerCase().includes('google')) {
                 resetFlow();
-                toast.error('Please login with Google for this account.');
+                toast.error(
+                    'Please login with Google for this account.'
+                );
                 return;
             }
+
             setPasswordError(backendMessage);
             return;
         }
@@ -128,51 +158,92 @@ const AuthPage = () => {
         navigate('/dashboard');
     };
 
-    const handleGoogleSuccess = () => {
-        login({identifier: normalizedEmail});
+    // 🔥 CLEAN GOOGLE SUCCESS HANDLER
+    const handleGoogleSuccess = (data) => {
+        const backendIdentifier =
+            data?.identifier || data?.email;
+
+        if (!backendIdentifier) {
+            toast.error(
+                'Unable to determine authenticated user.'
+            );
+            return;
+        }
+
+        login({
+            identifier: backendIdentifier.toLowerCase(),
+        });
+
         navigate('/dashboard');
     };
 
     const handleGoogleError = (message) => {
-        const resolvedMessage = message || 'Google authentication failed.';
-        const normalizedMessage = resolvedMessage.toLowerCase();
+        const resolvedMessage =
+            message || 'Google authentication failed.';
+        const normalizedMessage =
+            resolvedMessage.toLowerCase();
 
-        if (normalizedMessage.includes('does not match entered email')) {
+        if (
+            normalizedMessage.includes(
+                'does not match entered email'
+            )
+        ) {
             resetFlow();
-            toast.error('Please login with Google using the same email you entered.');
+            toast.error(
+                'Please login with Google using the same email you entered.'
+            );
             return;
         }
 
-        if (normalizedMessage.includes('registered. please sign up first')) {
+        if (
+            normalizedMessage.includes(
+                'registered. please sign up first'
+            )
+        ) {
             resetFlow();
-            toast.error('Please login with Google using the same email you entered.');
+            toast.error(
+                'Please login with Google using the same email you entered.'
+            );
             return;
         }
 
         toast.error(resolvedMessage);
     };
 
-    const isPasswordStep = step === AUTH_STEP.PASSWORD_LOGIN || step === AUTH_STEP.LOCAL_AND_GOOGLE;
-    const showGoogle = step === AUTH_STEP.EMAIL_ENTRY
-        || step === AUTH_STEP.GOOGLE_ONLY
-        || step === AUTH_STEP.LOCAL_AND_GOOGLE
-        || step === AUTH_STEP.PASSWORD_LOGIN;
+    const isPasswordStep =
+        step === AUTH_STEP.PASSWORD_LOGIN ||
+        step === AUTH_STEP.LOCAL_AND_GOOGLE;
+
+    const showGoogle =
+        step === AUTH_STEP.EMAIL_ENTRY ||
+        step === AUTH_STEP.GOOGLE_ONLY ||
+        step === AUTH_STEP.LOCAL_AND_GOOGLE ||
+        step === AUTH_STEP.PASSWORD_LOGIN;
 
     return (
         <div className="auth-shell">
             <div className="auth-card">
                 <h1 className="auth-title">Auth</h1>
-                <p className="auth-subtitle">Use your email to continue.</p>
+                <p className="auth-subtitle">
+                    Use your email to continue.
+                </p>
 
-                <form onSubmit={checkEmail} className="auth-section">
-                    <label className="auth-helper">Email</label>
+                <form
+                    onSubmit={checkEmail}
+                    className="auth-section"
+                >
+                    <label className="auth-helper">
+                        Email
+                    </label>
                     <input
                         className="auth-input"
                         type="email"
                         value={email}
                         onChange={(e) => {
                             setEmail(e.target.value);
-                            if (step !== AUTH_STEP.EMAIL_ENTRY) {
+                            if (
+                                step !== AUTH_STEP.EMAIL_ENTRY
+                            ) {
                                 resetFlow();
                             }
                         }}
@@ -184,78 +255,62 @@ const AuthPage = () => {
                             type="submit"
                             disabled={loading}
                         >
-                            {loading ? 'Checking...' : 'Continue with Email'}
+                            {loading
+                                ? 'Checking...'
+                                : 'Continue with Email'}
                         </button>
                     )}
                 </form>
 
-                {step === AUTH_STEP.SIGNUP_CREATE_PASSWORD && (
-                    <div className="auth-section">
-                        <p className="auth-helper">No account found. Continue with email signup.</p>
-                        <button
-                            className="btn-primary"
-                            onClick={() => navigate('/signup', {state: {identifier: normalizedEmail, identifierType: 'EMAIL'}})}
-                        >
-                            Continue to create account
-                        </button>
-                    </div>
-                )}
-
-                {step === AUTH_STEP.GOOGLE_SIGNUP && (
-                    <div className="auth-section">
-                        <p className="auth-helper">No account found. Choose how you want to sign up.</p>
-                        <button
-                            className="btn-primary"
-                            onClick={() => navigate('/signup', {state: {identifier: normalizedEmail, identifierType: 'EMAIL'}})}
-                        >
-                            Create password account
-                        </button>
-                        <GoogleLoginButton
-                            mode="signup"
-                            onSuccess={handleGoogleSuccess}
-                            onError={handleGoogleError}
-                            disabled={loading}
-                            expectedIdentifier={normalizedEmail}
-                        />
-                    </div>
-                )}
-
                 {isPasswordStep && (
-                    <form onSubmit={handleLocalLogin} className="auth-section">
-                        <label className="auth-helper block">Password</label>
+                    <form
+                        onSubmit={handleLocalLogin}
+                        className="auth-section"
+                    >
+                        <label className="auth-helper block">
+                            Password
+                        </label>
                         <input
                             className="auth-input"
                             type="password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) =>
+                                setPassword(e.target.value)
+                            }
                             placeholder="Enter your password"
                             required
                         />
-                        <ValidationError errors={passwordError ? [passwordError] : []}/>
-                        <button className="btn-primary" disabled={loading || !password}>
-                            {loading ? 'Logging in...' : 'Login with password'}
-                        </button>
+                        <ValidationError
+                            errors={
+                                passwordError
+                                    ? [passwordError]
+                                    : []
+                            }
+                        />
                         <button
-                            type="button"
-                            className="btn-ghost"
-                            onClick={() => navigate('/forgot-password')}
+                            className="btn-primary"
+                            disabled={loading || !password}
                         >
-                            Forgot password?
+                            {loading
+                                ? 'Logging in...'
+                                : 'Login with password'}
                         </button>
                     </form>
                 )}
 
                 {showGoogle && (
                     <div className="auth-section">
-                        {step === AUTH_STEP.EMAIL_ENTRY && <p className="auth-helper">Continue with Google</p>}
-                        {step === AUTH_STEP.GOOGLE_ONLY && <p className="auth-helper">This account uses Google sign-in.</p>}
-                        {step === AUTH_STEP.PASSWORD_LOGIN && <p className="auth-helper">Or continue with Google instead of resetting your password.</p>}
                         <GoogleLoginButton
                             onSuccess={handleGoogleSuccess}
                             onError={handleGoogleError}
                             disabled={loading}
-                            autoPrompt={step === AUTH_STEP.GOOGLE_ONLY}
-                            expectedIdentifier={normalizedEmail}
+                            autoPrompt={
+                                step ===
+                                AUTH_STEP.GOOGLE_ONLY
+                            }
+                            expectedIdentifier={
+                                normalizedEmail
+                            }
                         />
                     </div>
                 )}
