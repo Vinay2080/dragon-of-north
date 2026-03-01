@@ -114,21 +114,42 @@ const AuthPage = () => {
         setLoading(false);
 
         if (apiService.isErrorResponse(result)) {
-            setPasswordError(result.backendMessage || result.message || 'Login failed.');
+            const backendMessage = result.backendMessage || result.message || 'Login failed.';
+            if (backendMessage.toLowerCase().includes('google')) {
+                resetFlow();
+                toast.error('Please login with Google for this account.');
+                return;
+            }
+            setPasswordError(backendMessage);
             return;
         }
 
-        login();
+        login({identifier: normalizedEmail});
         navigate('/dashboard');
     };
 
     const handleGoogleSuccess = () => {
-        login();
+        login({identifier: normalizedEmail});
         navigate('/dashboard');
     };
 
     const handleGoogleError = (message) => {
-        toast.error(message || 'Google authentication failed.');
+        const resolvedMessage = message || 'Google authentication failed.';
+        const normalizedMessage = resolvedMessage.toLowerCase();
+
+        if (normalizedMessage.includes('does not match entered email')) {
+            resetFlow();
+            toast.error('Please login with Google using the same email you entered.');
+            return;
+        }
+
+        if (normalizedMessage.includes('registered. please sign up first')) {
+            resetFlow();
+            toast.error('Please login with Google using the same email you entered.');
+            return;
+        }
+
+        toast.error(resolvedMessage);
     };
 
     const isPasswordStep = step === AUTH_STEP.PASSWORD_LOGIN || step === AUTH_STEP.LOCAL_AND_GOOGLE;
@@ -194,6 +215,7 @@ const AuthPage = () => {
                             onSuccess={handleGoogleSuccess}
                             onError={handleGoogleError}
                             disabled={loading}
+                            expectedIdentifier={normalizedEmail}
                         />
                     </div>
                 )}
@@ -233,6 +255,7 @@ const AuthPage = () => {
                             onError={handleGoogleError}
                             disabled={loading}
                             autoPrompt={step === AUTH_STEP.GOOGLE_ONLY}
+                            expectedIdentifier={normalizedEmail}
                         />
                     </div>
                 )}

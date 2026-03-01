@@ -44,7 +44,7 @@ public class OAuthController {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse
     ) {
-        oAuthService.authenticatedWithGoogle(request.idToken(), request.deviceId(), httpRequest, httpResponse);
+        oAuthService.authenticatedWithGoogle(request.idToken(), request.deviceId(), request.expectedIdentifier(), httpRequest, httpResponse);
         return ResponseEntity.ok(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.successMessage("OAuth authentication successful"));
     }
 
@@ -59,7 +59,7 @@ public class OAuthController {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse
     ) {
-        oAuthService.signupWithGoogle(request.idToken(), request.deviceId(), httpRequest, httpResponse);
+        oAuthService.signupWithGoogle(request.idToken(), request.deviceId(), request.expectedIdentifier(), httpRequest, httpResponse);
         return ResponseEntity.ok(org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse.successMessage("OAuth signup successful"));
     }
 }

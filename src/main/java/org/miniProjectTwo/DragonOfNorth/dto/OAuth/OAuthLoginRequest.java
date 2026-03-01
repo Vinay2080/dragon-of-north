@@ -12,6 +12,9 @@ public record OAuthLoginRequest(
 
         @NotBlank(message = "Device Id is required")
         @Size(max = 255, message = "Device ID must not exceed 255 characters")
-        String deviceId
+        String deviceId,
+
+        @Size(max = 255, message = "Expected identifier must not exceed 255 characters")
+        String expectedIdentifier
 ) {
 }

@@ -43,18 +43,35 @@ public class OAuthServiceImpl implements OAuthService {
 
     @Override
     @Transactional
-    public void authenticatedWithGoogle(String idToken, String deviceId, HttpServletRequest httpRequest, HttpServletResponse response) {
+    public void authenticatedWithGoogle(String idToken, String deviceId, String expectedIdentifier, HttpServletRequest httpRequest, HttpServletResponse response) {
         OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
+        validateExpectedIdentifier(userInfo, expectedIdentifier);
         AppUser appUser = findExistingGoogleUser(userInfo);
         finalizeAuthentication(appUser, deviceId, httpRequest, response);
     }
 
     @Override
     @Transactional
-    public void signupWithGoogle(String idToken, String deviceId, HttpServletRequest httpRequest, HttpServletResponse response) {
+    public void signupWithGoogle(String idToken, String deviceId, String expectedIdentifier, HttpServletRequest httpRequest, HttpServletResponse response) {
         OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
+        validateExpectedIdentifier(userInfo, expectedIdentifier);
         AppUser appUser = findOrCreateUserForSignup(userInfo);
         finalizeAuthentication(appUser, deviceId, httpRequest, response);
+    }
+
+
+    private void validateExpectedIdentifier(OAuthUserInfo userInfo, String expectedIdentifier) {
+        if (expectedIdentifier == null || expectedIdentifier.trim().isEmpty()) {
+            return;
+        }
+
+        String normalizedExpected = expectedIdentifier.trim().toLowerCase();
+        String oauthEmail = userInfo.email() == null ? "" : userInfo.email().trim().toLowerCase();
+
+        if (!normalizedExpected.equals(oauthEmail)) {
+            throw new BusinessException(ErrorCode.INVALID_OAUTH_TOKEN,
+                    "OAuth identity does not match entered email. Please login with Google using the same email.");
+        }
     }
 
     private void finalizeAuthentication(AppUser appUser, String deviceId, HttpServletRequest httpRequest, HttpServletResponse response) {

@@ -34,7 +34,9 @@ export const AuthProvider = ({children}) => {
             }
 
             setIsAuthenticated(false);
+            setUser(null);
             localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('user');
         } catch (error) {
             console.error('Auth check failed:', error);
             setIsAuthenticated(false);
@@ -44,11 +46,16 @@ export const AuthProvider = ({children}) => {
     };
 
     const login = (userData = null) => {
+        const storedUserRaw = localStorage.getItem('user');
+        const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
+        const resolvedUser = userData || storedUser;
+
         setIsAuthenticated(true);
-        setUser(userData);
+        setUser(resolvedUser || null);
         localStorage.setItem('isAuthenticated', 'true');
-        if (userData) {
-            localStorage.setItem('user', JSON.stringify(userData));
+
+        if (resolvedUser) {
+            localStorage.setItem('user', JSON.stringify(resolvedUser));
         }
     };
 

@@ -56,7 +56,7 @@ const SignupPage = () => {
     };
 
     const handleGoogleSignup = () => {
-        login();
+        login({identifier});
         navigate('/dashboard');
     };
 
@@ -139,6 +139,7 @@ const SignupPage = () => {
                             onSuccess={handleGoogleSignup}
                             onError={(message) => toast.error(message || 'Google signup failed.')}
                             disabled={loading}
+                            expectedIdentifier={identifier}
                         />
                         <p className="text-center text-xs text-slate-500">or create a password account below</p>
                     </div>
