@@ -7,9 +7,15 @@ const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 
 const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = false, mode = 'login', expectedIdentifier = ''}) => {
     const buttonRef = useRef(null);
+    const initializedRef = useRef(false);
+    const expectedIdentifierRef = useRef(expectedIdentifier);
     const hasClientId = Boolean(API_CONFIG.GOOGLE_CLIENT_ID);
     const [isInitializing, setIsInitializing] = useState(hasClientId);
     const [isReady, setIsReady] = useState(false);
+
+    useEffect(() => {
+        expectedIdentifierRef.current = expectedIdentifier;
+    }, [expectedIdentifier]);
 
     const handleGoogleCredential = useCallback(async ({credential}) => {
         if (!credential) {
@@ -19,12 +25,16 @@ const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = f
 
         const endpoint = mode === 'signup' ? API_CONFIG.ENDPOINTS.OAUTH_GOOGLE_SIGNUP : API_CONFIG.ENDPOINTS.OAUTH_GOOGLE;
         const payload = {
+            // Send both payload keys for compatibility across backend naming strategies.
             id_token: credential,
+            idToken: credential,
             device_id: getDeviceId(),
         };
 
-        if (expectedIdentifier) {
-            payload.expected_identifier = expectedIdentifier.trim().toLowerCase();
+        const normalizedExpectedIdentifier = expectedIdentifierRef.current?.trim().toLowerCase();
+        if (normalizedExpectedIdentifier) {
+            payload.expected_identifier = normalizedExpectedIdentifier;
+            payload.expectedIdentifier = normalizedExpectedIdentifier;
         }
 
         const result = await apiService.post(endpoint, payload);
@@ -38,17 +48,19 @@ const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = f
         }
 
         onSuccess?.(result?.data);
-    }, [expectedIdentifier, mode, onError, onSuccess]);
+    }, [mode, onError, onSuccess]);
 
     useEffect(() => {
         const clientId = API_CONFIG.GOOGLE_CLIENT_ID;
         if (!clientId) {
             onError?.('Google login is not configured. Missing client ID.');
+            setIsInitializing(false);
+            setIsReady(false);
             return;
         }
 
         const initializeGoogle = () => {
-            if (!window.google?.accounts?.id || !buttonRef.current) {
+            if (initializedRef.current || !window.google?.accounts?.id || !buttonRef.current) {
                 return;
             }
 
@@ -66,6 +78,8 @@ const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = f
                 size: 'large',
                 width: 320,
             });
+
+            initializedRef.current = true;
             setIsInitializing(false);
             setIsReady(true);
         };
@@ -99,6 +113,10 @@ const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = f
     useEffect(() => {
         if (!autoPrompt || !isReady || !window.google?.accounts?.id) return;
         window.google.accounts.id.prompt();
+
+        return () => {
+            window.google?.accounts?.id?.cancel();
+        };
     }, [autoPrompt, isReady]);
 
     return (

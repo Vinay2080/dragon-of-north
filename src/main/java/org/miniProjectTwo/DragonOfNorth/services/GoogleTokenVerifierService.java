@@ -9,6 +9,7 @@ import org.miniProjectTwo.DragonOfNorth.dto.OAuth.OAuthUserInfo;
 import org.miniProjectTwo.DragonOfNorth.exception.InvalidOAuthTokenException;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.Set;
 
 
@@ -38,10 +39,10 @@ public class GoogleTokenVerifierService {
                 log.warn("Invalid issuer: {}", issuer);
                 throw new InvalidOAuthTokenException("invalid token");
             }
-            // Explicit audience validation
-            String audience = payload.getAudience().toString();
-            if (!config.getClientId().equals(audience)) {
-                log.warn("Invalid audience: expected={}, actual={}", config.getClientId(), audience);
+            // Explicit audience validation (Google may return either a single string or a list)
+            String audience = resolveAudience(payload.get("aud"));
+            if (audience == null || !config.getClientId().equals(audience)) {
+                log.warn("Invalid audience: expected={}, actual={}", config.getClientId(), payload.get("aud"));
                 throw new InvalidOAuthTokenException("Invalid token");
             }
 
@@ -60,7 +61,7 @@ public class GoogleTokenVerifierService {
                     .name((String) payload.get("name"))
                     .picture((String) payload.get("picture"))
                     .issuer(payload.getIssuer())
-                    .audience((String) payload.getAudience())
+                    .audience(audience)
                     .expirationTime(payload.getExpirationTimeSeconds())
                     .issuedAtTime(payload.getIssuedAtTimeSeconds())
                     .build();
@@ -70,5 +71,22 @@ public class GoogleTokenVerifierService {
             log.error("Google token verification failed", e);
             throw new InvalidOAuthTokenException();
         }
+    }
+
+    private String resolveAudience(Object audienceClaim) {
+        if (audienceClaim instanceof String audience) {
+            return audience;
+        }
+
+        if (audienceClaim instanceof Collection<?> audiences) {
+            return audiences.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .filter(config.getClientId()::equals)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        return null;
     }
 }
