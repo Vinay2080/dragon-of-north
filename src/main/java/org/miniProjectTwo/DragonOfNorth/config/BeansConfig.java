@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
@@ -49,6 +50,8 @@ public class BeansConfig {
      */
     @Bean
     public ObjectMapper objectMapper() {
-        return new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+        return objectMapper;
     }
 }
