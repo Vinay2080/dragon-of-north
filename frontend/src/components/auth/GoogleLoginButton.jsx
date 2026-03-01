@@ -1,14 +1,34 @@
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {API_CONFIG} from '../../config';
 import {apiService} from '../../services/apiService';
 import {getDeviceId} from '../../utils/device';
 
 const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 
-const GoogleLoginButton = ({onSuccess, onError, disabled = false}) => {
+const GoogleLoginButton = ({onSuccess, onError, disabled = false, autoPrompt = false}) => {
     const buttonRef = useRef(null);
     const hasClientId = Boolean(API_CONFIG.GOOGLE_CLIENT_ID);
     const [isInitializing, setIsInitializing] = useState(hasClientId);
+    const [isReady, setIsReady] = useState(false);
+
+    const handleGoogleCredential = useCallback(async ({credential}) => {
+        if (!credential) {
+            onError?.('Google did not return an ID token.');
+            return;
+        }
+
+        const result = await apiService.post(API_CONFIG.ENDPOINTS.OAUTH_GOOGLE, {
+            id_token: credential,
+            device_id: getDeviceId(),
+        });
+
+        if (apiService.isErrorResponse(result) || result?.api_response_status !== 'success') {
+            onError?.(result?.message || 'Google sign-in failed. Please try again.');
+            return;
+        }
+
+        onSuccess?.();
+    }, [onError, onSuccess]);
 
     useEffect(() => {
         const clientId = API_CONFIG.GOOGLE_CLIENT_ID;
@@ -24,24 +44,7 @@ const GoogleLoginButton = ({onSuccess, onError, disabled = false}) => {
 
             window.google.accounts.id.initialize({
                 client_id: clientId,
-                callback: async ({credential}) => {
-                    if (!credential) {
-                        onError?.('Google did not return an ID token.');
-                        return;
-                    }
-
-                    const result = await apiService.post(API_CONFIG.ENDPOINTS.OAUTH_GOOGLE, {
-                        id_token: credential,
-                        device_id: getDeviceId(),
-                    });
-
-                    if (apiService.isErrorResponse(result) || result?.api_response_status !== 'success') {
-                        onError?.(result?.message || 'Google sign-in failed. Please try again.');
-                        return;
-                    }
-
-                    onSuccess?.();
-                },
+                callback: handleGoogleCredential,
             });
 
             buttonRef.current.innerHTML = '';
@@ -54,6 +57,7 @@ const GoogleLoginButton = ({onSuccess, onError, disabled = false}) => {
                 width: 320,
             });
             setIsInitializing(false);
+            setIsReady(true);
         };
 
         if (window.google?.accounts?.id) {
@@ -73,13 +77,19 @@ const GoogleLoginButton = ({onSuccess, onError, disabled = false}) => {
         script.addEventListener('load', initializeGoogle);
         script.addEventListener('error', () => {
             setIsInitializing(false);
+            setIsReady(false);
             onError?.('Unable to load Google Identity Services. Please try again later.');
         });
 
         return () => {
             script.removeEventListener('load', initializeGoogle);
         };
-    }, [onError, onSuccess]);
+    }, [handleGoogleCredential, onError]);
+
+    useEffect(() => {
+        if (!autoPrompt || !isReady || !window.google?.accounts?.id) return;
+        window.google.accounts.id.prompt();
+    }, [autoPrompt, isReady]);
 
     return (
         <div className="flex flex-col items-center gap-2" aria-busy={isInitializing}>
