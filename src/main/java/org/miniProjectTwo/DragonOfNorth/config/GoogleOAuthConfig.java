@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
 
-import java.util.Collections;
 
 @Getter
 @Setter
@@ -28,9 +27,11 @@ public class GoogleOAuthConfig {
         return new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(),
                 new GsonFactory()
-        )
-                .setAudience(Collections.singletonList(clientId))
-                .build();
+        ).build();
+    }
+
+    public String normalizedClientId() {
+        return clientId == null ? null : clientId.trim();
     }
 
 }

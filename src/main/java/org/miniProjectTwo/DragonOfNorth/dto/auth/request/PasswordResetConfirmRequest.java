@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.dto.auth.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -7,7 +8,9 @@ import jakarta.validation.constraints.Size;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 
 public record PasswordResetConfirmRequest(
+        @JsonAlias({"email", "phone"})
         @NotBlank String identifier,
+        @JsonAlias("identifier_type")
         @NotNull IdentifierType identifierType,
 
         @NotBlank
@@ -18,6 +21,7 @@ public record PasswordResetConfirmRequest(
                 regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).{8,}$",
                 message = "password must include uppercase, lowercase, number, and special character"
         )
+        @JsonAlias("new_password")
         @NotBlank
         String newPassword
 ) {

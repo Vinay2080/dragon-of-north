@@ -27,10 +27,16 @@ const ForgotPasswordRequestPage = () => {
 
         const identifierType = detectIdentifierType(identifier.trim());
         const processedIdentifier = identifierType === 'PHONE' ? normalizePhone(identifier) : identifier.trim();
-        await apiService.post(API_CONFIG.ENDPOINTS.PASSWORD_RESET_REQUEST, {
+        const result = await apiService.post(API_CONFIG.ENDPOINTS.PASSWORD_RESET_REQUEST, {
             identifier: processedIdentifier,
             identifier_type: identifierType,
         });
+
+        if (apiService.isErrorResponse(result) || result?.api_response_status !== 'success') {
+            toast.error(result?.message || 'Unable to request password reset. Please try again.');
+            setLoading(false);
+            return;
+        }
 
         toast.info('If an account exists, you’ll receive an email or OTP shortly.');
         navigate('/reset-password', {state: {identifier: processedIdentifier, identifierType}});

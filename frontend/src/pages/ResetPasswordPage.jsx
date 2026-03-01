@@ -18,9 +18,12 @@ const ResetPasswordPage = () => {
         e.preventDefault();
         setLoading(true);
 
-        const payload = identifierType === 'EMAIL'
-            ? {email: identifier, otp, new_password: newPassword}
-            : {phone: identifier, otp, new_password: newPassword};
+        const payload = {
+            identifier,
+            identifier_type: identifierType,
+            otp,
+            new_password: newPassword,
+        };
 
         const result = await apiService.post(API_CONFIG.ENDPOINTS.PASSWORD_RESET_CONFIRM, payload);
 
@@ -30,12 +33,18 @@ const ResetPasswordPage = () => {
             return;
         }
 
+        if (result?.api_response_status !== 'success') {
+            toast.error(result?.message || 'Password reset failed.');
+            setLoading(false);
+            return;
+        }
+
         toast.success('Password reset successful. Please log in.');
         navigate('/login', {state: {identifier}});
         setLoading(false);
     };
 
-    if (!identifier) {
+    if (!identifier || !identifierType) {
         navigate('/forgot-password');
         return null;
     }
