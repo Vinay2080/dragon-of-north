@@ -8,6 +8,14 @@ import Skeleton from '../components/Loading/Skeleton';
 import Spinner from '../components/Loading/Spinner';
 import {useToast} from '../hooks/useToast';
 
+const animateTo = (target, duration = 450) => {
+    const steps = 16;
+    const increment = target / steps;
+    const interval = duration / steps;
+    let current = 0;
+    return {steps, increment, interval, current};
+};
+
 const DashboardPage = () => {
     const navigate = useNavigate();
     const {user, logout, isAuthenticated} = useAuth();
@@ -16,6 +24,11 @@ const DashboardPage = () => {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [sessions, setSessions] = useState([]);
     const [loadingSessions, setLoadingSessions] = useState(true);
+    const [refreshSpinning, setRefreshSpinning] = useState(false);
+
+    const [animatedTotal, setAnimatedTotal] = useState(0);
+    const [animatedActive, setAnimatedActive] = useState(0);
+    const [animatedRevoked, setAnimatedRevoked] = useState(0);
 
     const currentDeviceId = getDeviceId();
     const sessionStats = useMemo(() => {
@@ -25,23 +38,63 @@ const DashboardPage = () => {
     }, [sessions]);
     const activeOtherDevices = useMemo(() => sessions.filter(s => !s.revoked && s.device_id !== currentDeviceId).length, [sessions, currentDeviceId]);
 
-    const loadSessions = useCallback(async () => {
+    useEffect(() => {
+        const runCounter = (target, setter) => {
+            const {steps, increment, interval} = animateTo(target);
+            let currentStep = 0;
+            let currentValue = 0;
+
+            const timer = setInterval(() => {
+                currentStep += 1;
+                currentValue += increment;
+                if (currentStep >= steps) {
+                    setter(target);
+                    clearInterval(timer);
+                    return;
+                }
+                setter(Math.round(currentValue));
+            }, interval);
+
+            return timer;
+        };
+
+        const timers = [
+            runCounter(sessionStats.total, setAnimatedTotal),
+            runCounter(sessionStats.active, setAnimatedActive),
+            runCounter(sessionStats.revoked, setAnimatedRevoked),
+        ];
+
+        return () => timers.forEach(clearInterval);
+    }, [sessionStats.active, sessionStats.revoked, sessionStats.total]);
+
+    const loadSessions = useCallback(async (withAnimation = false) => {
         if (!isAuthenticated) {
             toast.warning('Please log in first to manage sessions.');
             setLoadingSessions(false);
             return;
         }
+
+        if (withAnimation) {
+            setRefreshSpinning(true);
+        }
+
         setLoadingSessions(true);
         const result = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS_ALL);
         if (apiService.isErrorResponse(result)) {
             toast.error(result.message || 'Failed to load sessions.');
             setLoadingSessions(false);
+            setRefreshSpinning(false);
             return;
         }
 
-        if (result?.api_response_status === 'success' && Array.isArray(result?.data)) setSessions(result.data);
-        else toast.warning('Unexpected sessions response from server.');
+        if (result?.api_response_status === 'success' && Array.isArray(result?.data)) {
+            setSessions(result.data);
+        } else {
+            toast.warning('Unexpected sessions response from server.');
+        }
+
         setLoadingSessions(false);
+        setRefreshSpinning(false);
     }, [isAuthenticated, toast]);
 
     useEffect(() => {
@@ -88,52 +141,97 @@ const DashboardPage = () => {
         toast.success(result?.message || 'Other sessions revoked successfully.');
     };
 
+    const metricCards = [
+        {label: 'Total Sessions', value: animatedTotal, variant: 'violet'},
+        {label: 'Active Sessions', value: animatedActive, variant: 'mint'},
+        {label: 'Revoked Sessions', value: animatedRevoked, variant: 'amber'},
+    ];
+
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 to-slate-900">
-            <header className="border-b border-slate-800 bg-slate-950/50 backdrop-blur-sm">
-                <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between">
-                    <div><h1 className="text-2xl font-bold text-white">Dashboard</h1><p className="text-sm text-slate-400">Session-aware authentication center</p></div>
-                    <button onClick={handleLogout} disabled={isLoggingOut} className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">{isLoggingOut ? <span className="inline-flex items-center gap-2"><Spinner size="sm"/> Logging out...</span> : 'Logout'}</button>
+        <div className="dashboard-shell">
+            <header className="dashboard-header">
+                <div className="dashboard-header__inner">
+                    <div>
+                        <h1 className="dashboard-title">Dashboard</h1>
+                        <p className="dashboard-subtitle">Session-aware authentication center</p>
+                    </div>
+                    <button onClick={handleLogout} disabled={isLoggingOut} className="db-btn db-btn-secondary">
+                        {isLoggingOut ? <span className="inline-flex items-center gap-2"><Spinner size="sm"/> Logging out...</span> : 'Logout'}
+                    </button>
                 </div>
             </header>
 
-            <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-                <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
-                    <h2 className="mb-4 text-xl font-semibold text-white">Account Information</h2>
-                    <p className="text-slate-300">Identifier: <span className="text-white font-medium">{user?.identifier || 'Not available'}</span></p>
-                    <p className="text-slate-300">Current Device ID: <span className="text-white font-mono text-sm">{currentDeviceId}</span></p>
-                    <p className="mt-2 text-sm text-slate-400">Active sessions on other devices: <span className="font-semibold text-blue-300">{activeOtherDevices}</span></p>
+            <main className="dashboard-main">
+                <div className="db-card db-card-hover">
+                    <h2 className="db-section-title">Account Information</h2>
+                    <p className="db-text-muted">Identifier: <span className="db-text-primary">{user?.identifier || 'Not available'}</span></p>
+                    <p className="db-text-muted">Current Device ID: <span className="db-mono">{currentDeviceId}</span></p>
+                    <p className="mt-3 text-sm text-[#A0A8B8]">Active sessions on other devices: <span className="db-accent-violet">{activeOtherDevices}</span></p>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-3">
-                    {[['Total Sessions', sessionStats.total, 'text-white'], ['Active Sessions', sessionStats.active, 'text-green-400'], ['Revoked Sessions', sessionStats.revoked, 'text-yellow-400']].map(([label, value, color]) => (
-                        <div key={label} className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-2xl"><h3 className="mb-2 text-sm font-medium text-slate-400">{label}</h3><p className={`text-2xl font-bold ${color}`}>{value}</p></div>
+                <div className="db-metric-grid">
+                    {metricCards.map((metric) => (
+                        <div key={metric.label} className="db-card db-card-hover">
+                            <h3 className="db-metric-label">{metric.label}</h3>
+                            <p className={`db-metric-value db-metric-${metric.variant}`}>{metric.value}</p>
+                        </div>
                     ))}
                 </div>
 
-                <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
-                    <div className="mb-4 flex flex-wrap gap-3">
-                        <button onClick={loadSessions} disabled={!isAuthenticated} className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed">Refresh Sessions</button>
-                        <button onClick={revokeOthers} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500">Graceful logout on all devices</button>
+                <div className="db-card">
+                    <div className="mb-5 flex flex-wrap gap-3">
+                        <button onClick={() => loadSessions(true)} disabled={!isAuthenticated} className="db-btn db-btn-secondary">
+                            <span className={`inline-flex items-center gap-2 ${refreshSpinning ? 'db-spin' : ''}`}>↻</span>
+                            Refresh Sessions
+                        </button>
+                        <button onClick={revokeOthers} className="db-btn db-btn-primary">Graceful logout on all devices</button>
                     </div>
 
                     {loadingSessions ? (
-                        <div className="space-y-3"><Skeleton className="h-10 w-full"/><Skeleton className="h-10 w-full"/><Skeleton className="h-10 w-full"/></div>
+                        <div className="space-y-3">
+                            <Skeleton className="h-10 w-full"/>
+                            <Skeleton className="h-10 w-full"/>
+                            <Skeleton className="h-10 w-full"/>
+                        </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full text-sm text-left text-slate-300">
-                                <thead className="text-xs uppercase text-slate-400 border-b border-slate-800"><tr><th className="py-3 pr-4">Device ID</th><th className="py-3 pr-4">IP</th><th className="py-3 pr-4">Last Used</th><th className="py-3 pr-4">Expires</th><th className="py-3 pr-4">Status</th><th className="py-3">Action</th></tr></thead>
+                        <div className="overflow-x-auto rounded-xl border border-white/10">
+                            <table className="db-table">
+                                <thead>
+                                <tr>
+                                    <th>Device ID</th>
+                                    <th>IP</th>
+                                    <th>Last Used</th>
+                                    <th>Expires</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                                </thead>
                                 <tbody>
                                 {sessions.map((session) => {
                                     const isCurrentDevice = session.device_id === currentDeviceId;
                                     return (
-                                        <tr key={session.session_id} className="border-b border-slate-900">
-                                            <td className="py-3 pr-4 font-mono text-xs">{session.device_id}{isCurrentDevice && <span className="ml-2 rounded bg-blue-600/20 px-2 py-0.5 text-[10px] text-blue-300">current</span>}</td>
-                                            <td className="py-3 pr-4">{session.ip_address || '-'}</td>
-                                            <td className="py-3 pr-4">{session.last_used_at ? new Date(session.last_used_at).toLocaleString() : '-'}</td>
-                                            <td className="py-3 pr-4">{session.expiry_date ? new Date(session.expiry_date).toLocaleString() : '-'}</td>
-                                            <td className="py-3 pr-4">{session.revoked ? <span className="text-yellow-400">Revoked</span> : <span className="text-green-400">Active</span>}</td>
-                                            <td className="py-3"><button onClick={() => revokeSession(session.session_id)} disabled={session.revoked || isCurrentDevice} className="rounded border border-slate-700 px-3 py-1 text-xs text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed">Revoke</button></td>
+                                        <tr key={session.session_id} className="db-table-row">
+                                            <td className="db-mono">
+                                                {session.device_id}
+                                                {isCurrentDevice && <span className="db-chip db-chip-violet ml-2">current</span>}
+                                            </td>
+                                            <td>{session.ip_address || '-'}</td>
+                                            <td>{session.last_used_at ? new Date(session.last_used_at).toLocaleString() : '-'}</td>
+                                            <td>{session.expiry_date ? new Date(session.expiry_date).toLocaleString() : '-'}</td>
+                                            <td>
+                                                {session.revoked
+                                                    ? <span className="db-chip db-chip-coral">Revoked</span>
+                                                    : <span className="db-chip db-chip-mint">Active</span>}
+                                            </td>
+                                            <td>
+                                                <button
+                                                    onClick={() => revokeSession(session.session_id)}
+                                                    disabled={session.revoked || isCurrentDevice}
+                                                    className="db-btn db-btn-inline"
+                                                >
+                                                    Revoke
+                                                </button>
+                                            </td>
                                         </tr>
                                     );
                                 })}
