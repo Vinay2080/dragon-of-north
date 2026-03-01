@@ -55,14 +55,17 @@ const AuthPage = () => {
             setStep(isGoogleEmail(normalizedEmail) ? AUTH_STEP.GOOGLE_SIGNUP : AUTH_STEP.SIGNUP_CREATE_PASSWORD);
             return;
         }
+
         if (hasLocal && hasGoogle) {
             setStep(AUTH_STEP.LOCAL_AND_GOOGLE);
             return;
         }
+
         if (hasGoogle) {
             setStep(AUTH_STEP.GOOGLE_ONLY);
             return;
         }
+
         setStep(AUTH_STEP.PASSWORD_LOGIN);
     };
 
@@ -92,7 +95,6 @@ const AuthPage = () => {
         moveToStepFromProviders({
             exists: Boolean(data.exists),
             providers: Array.isArray(data.providers) ? data.providers : [],
-            email_verified: data.email_verified,
         });
     };
 
@@ -116,21 +118,24 @@ const AuthPage = () => {
             return;
         }
 
-        login({identifier: normalizedEmail});
+        login();
         navigate('/dashboard');
     };
 
     const handleGoogleSuccess = () => {
-        login({identifier: normalizedEmail});
+        login();
         navigate('/dashboard');
     };
 
     const handleGoogleError = (message) => {
-        toast.error(message || 'Google login failed.');
+        toast.error(message || 'Google authentication failed.');
     };
 
     const isPasswordStep = step === AUTH_STEP.PASSWORD_LOGIN || step === AUTH_STEP.LOCAL_AND_GOOGLE;
-    const showGoogle = step === AUTH_STEP.GOOGLE_ONLY || step === AUTH_STEP.LOCAL_AND_GOOGLE || step === AUTH_STEP.PASSWORD_LOGIN;
+    const showGoogle = step === AUTH_STEP.EMAIL_ENTRY
+        || step === AUTH_STEP.GOOGLE_ONLY
+        || step === AUTH_STEP.LOCAL_AND_GOOGLE
+        || step === AUTH_STEP.PASSWORD_LOGIN;
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
@@ -158,7 +163,7 @@ const AuthPage = () => {
                             type="submit"
                             disabled={loading}
                         >
-                            {loading ? 'Checking...' : 'Continue'}
+                            {loading ? 'Checking...' : 'Continue with Email'}
                         </button>
                     )}
                 </form>
@@ -220,6 +225,7 @@ const AuthPage = () => {
 
                 {showGoogle && (
                     <div className="mt-6 space-y-3">
+                        {step === AUTH_STEP.EMAIL_ENTRY && <p className="text-sm text-slate-300">Continue with Google</p>}
                         {step === AUTH_STEP.GOOGLE_ONLY && <p className="text-sm text-slate-300">This account uses Google sign-in.</p>}
                         {step === AUTH_STEP.PASSWORD_LOGIN && <p className="text-sm text-slate-300">Or continue with Google instead of resetting your password.</p>}
                         <GoogleLoginButton

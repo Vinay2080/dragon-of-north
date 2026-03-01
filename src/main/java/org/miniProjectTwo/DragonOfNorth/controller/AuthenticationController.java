@@ -213,7 +213,7 @@ public class AuthenticationController {
             PasswordResetRequestOtpRequest request
     ) {
         authCommonServices.requestPasswordResetOtp(request.identifier(), request.identifierType());
-        return ResponseEntity.ok(successMessage("password reset OTP sent successfully."));
+        return ResponseEntity.ok(successMessage("If an account exists, you’ll receive reset instructions."));
     }
 
     @PostMapping("/password/forgot/reset")

@@ -233,13 +233,20 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
     @Override
     public void requestPasswordResetOtp(String identifier, IdentifierType identifierType) {
-        if (identifierType == IdentifierType.EMAIL) {
-            otpService.createEmailOtp(identifier, OtpPurpose.PASSWORD_RESET);
-        } else {
-            otpService.createPhoneOtp(identifier, OtpPurpose.PASSWORD_RESET);
+        AppUser user = identifierType == IdentifierType.EMAIL
+                ? appUserRepository.findByEmail(identifier).orElse(null)
+                : appUserRepository.findByPhone(identifier).orElse(null);
+
+        if (user != null && userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), LOCAL)) {
+            if (identifierType == IdentifierType.EMAIL) {
+                otpService.createEmailOtp(identifier, OtpPurpose.PASSWORD_RESET);
+            } else {
+                otpService.createPhoneOtp(identifier, OtpPurpose.PASSWORD_RESET);
+            }
         }
+
         meterRegistry.counter("auth.password_reset.requested").increment();
-        auditEventLogger.log("auth.password_reset.request", null, null, null, "success", "identifier_type=" + identifierType, null);
+        auditEventLogger.log("auth.password_reset.request", user != null ? user.getId() : null, null, null, "success", "identifier_type=" + identifierType, null);
     }
 
     @Override
@@ -260,6 +267,10 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND))
                 : appUserRepository.findByPhone(request.identifier())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (!userAuthProviderRepository.existsByUserIdAndProvider(appUser.getId(), LOCAL)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Password reset is available only for password-based accounts.");
+        }
 
         appUser.setPassword(passwordEncoder.encode(request.newPassword()));
         sessionService.revokeAllSessionsByUserId(appUser.getId());

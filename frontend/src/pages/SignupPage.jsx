@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
@@ -14,13 +14,22 @@ const SignupPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const {toast} = useToast();
-    const {login} = useAuth();
+    const {login, isAuthenticated, isLoading} = useAuth();
     const {identifier, identifierType} = location.state || {};
 
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [acceptTerms, setAcceptTerms] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({});
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!isLoading && isAuthenticated) {
+            navigate('/dashboard', {replace: true});
+        }
+    }, [isAuthenticated, isLoading, navigate]);
 
     const isEmailIdentifier = identifierType === 'EMAIL';
 
@@ -34,20 +43,40 @@ const SignupPage = () => {
     const handlePasswordChange = (value) => {
         setPassword(value);
         const errors = validatePassword(value);
-        setFieldErrors(prev => ({...prev, password: value ? errors : []}));
+        const confirmPasswordErrors = confirmPassword && value !== confirmPassword ? ['Passwords do not match.'] : [];
+        setFieldErrors(prev => ({...prev, password: value ? errors : [], confirmPassword: confirmPasswordErrors}));
+    };
+
+    const handleConfirmPasswordChange = (value) => {
+        setConfirmPassword(value);
+        setFieldErrors(prev => ({
+            ...prev,
+            confirmPassword: value && value !== password ? ['Passwords do not match.'] : [],
+        }));
     };
 
     const handleGoogleSignup = () => {
-        login({identifier});
+        login();
         navigate('/dashboard');
     };
 
     const handleGetOtp = async (e) => {
         e.preventDefault();
         setFieldErrors({});
+
         const passwordErrors = validatePassword(password);
         if (passwordErrors.length) {
-            setFieldErrors({password: passwordErrors});
+            setFieldErrors(prev => ({...prev, password: passwordErrors}));
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setFieldErrors(prev => ({...prev, confirmPassword: ['Passwords do not match.']}));
+            return;
+        }
+
+        if (!acceptTerms) {
+            setFieldErrors(prev => ({...prev, terms: ['Please accept the terms to continue.']}));
             return;
         }
 
@@ -123,7 +152,25 @@ const SignupPage = () => {
                         </div>
                         <p id="password-hint" className="text-xs text-slate-400">{passwordStrengthHint}</p>
                         <ValidationError id="password-errors" errors={fieldErrors.password || []}/>
-                        <button type="submit" disabled={loading || !password} className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Processing...' : 'Get OTP'}</button>
+
+                        <div className="relative">
+                            <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => handleConfirmPasswordChange(e.target.value)} placeholder="Confirm password" className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 pr-12 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" aria-describedby="confirm-password-errors" required/>
+                            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition">{showConfirmPassword ? '🙈' : '👁️'}</button>
+                        </div>
+                        <ValidationError id="confirm-password-errors" errors={fieldErrors.confirmPassword || []}/>
+
+                        <label className="flex items-start gap-2 text-sm text-slate-300">
+                            <input
+                                type="checkbox"
+                                checked={acceptTerms}
+                                onChange={(e) => setAcceptTerms(e.target.checked)}
+                                className="mt-1 h-4 w-4"
+                            />
+                            <span>I agree to the Terms and Privacy Policy.</span>
+                        </label>
+                        <ValidationError id="terms-errors" errors={fieldErrors.terms || []}/>
+
+                        <button type="submit" disabled={loading || !password || !confirmPassword} className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Processing...' : 'Get OTP'}</button>
                     </div>
                     <RateLimitInfo/>
                 </form>

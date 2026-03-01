@@ -146,7 +146,7 @@ const AuthIdentifierPage = () => {
                             <GoogleLoginButton
                                 mode="signup"
                                 onSuccess={() => {
-                                    login({identifier: notExistChoice.identifier});
+                                    login();
                                     navigate('/dashboard');
                                 }}
                                 onError={(message) => toast.error(message || 'Google signup failed.')}

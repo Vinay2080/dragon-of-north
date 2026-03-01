@@ -78,10 +78,18 @@ public class OAuthServiceImpl implements OAuthService {
             return existingByProviderId.get().getUser();
         }
 
-        AppUser existingByEmail = appUserRepository.findByEmailForUpdate(userInfo.email())
-                .orElseThrow(() -> new BusinessException(ErrorCode.AUTHENTICATION_FAILED, "Google account is not registered. Please sign up first."));
-        linkGoogleProvider(existingByEmail, userInfo.sub());
-        return existingByEmail;
+        Optional<AppUser> existingByEmail = appUserRepository.findByEmailForUpdate(userInfo.email());
+        if (existingByEmail.isEmpty()) {
+            throw new BusinessException(ErrorCode.AUTHENTICATION_FAILED, "Google account is not registered. Please sign up first.");
+        }
+
+        AppUser user = existingByEmail.get();
+        if (userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), Provider.GOOGLE)) {
+            throw new BusinessException(ErrorCode.INVALID_OAUTH_TOKEN, "Google account mismatch. Please login again.");
+        }
+
+        throw new BusinessException(ErrorCode.OAUTH_LINK_CONFIRMATION_REQUIRED,
+                "Account exists with password. Confirm password before linking Google.");
     }
 
     private AppUser findOrCreateUserForSignup(OAuthUserInfo userInfo) {
@@ -93,9 +101,11 @@ public class OAuthServiceImpl implements OAuthService {
         Optional<AppUser> existingByEmail = appUserRepository.findByEmailForUpdate(userInfo.email());
         if (existingByEmail.isPresent()) {
             AppUser user = existingByEmail.get();
-            linkGoogleProvider(user, userInfo.sub());
-            user.setEmailVerified(true);
-            return user;
+            if (userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), Provider.GOOGLE)) {
+                throw new BusinessException(ErrorCode.INVALID_OAUTH_TOKEN, "Google account mismatch. Please login again.");
+            }
+            throw new BusinessException(ErrorCode.OAUTH_LINK_CONFIRMATION_REQUIRED,
+                    "Account already exists. Login with password before linking Google.");
         }
 
         return createNewUserWithRetry(userInfo);

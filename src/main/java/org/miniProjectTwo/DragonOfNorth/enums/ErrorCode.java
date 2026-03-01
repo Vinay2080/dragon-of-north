@@ -39,7 +39,8 @@ public enum ErrorCode {
     OTP_TOO_MANY_REQUESTS("OTP_002", "Too many otp requests. Blocked for %s minutes.", HttpStatus.TOO_MANY_REQUESTS),
 
     INVALID_OAUTH_TOKEN("OAUTH_001", "Invalid OAuth token", HttpStatus.UNAUTHORIZED), EMAIL_ALREADY_EXISTS("OAUTH_002", "email is already associated with another OAuth provider", HttpStatus.CONFLICT),
-    USER_CREATION_FAILED("OAUTH_003", "User creation failed", HttpStatus.INTERNAL_SERVER_ERROR);
+    USER_CREATION_FAILED("OAUTH_003", "User creation failed", HttpStatus.INTERNAL_SERVER_ERROR),
+    OAUTH_LINK_CONFIRMATION_REQUIRED("OAUTH_004", "Password confirmation required before linking OAuth account", HttpStatus.CONFLICT);
 
     private final String code;
     private final String defaultMessage;

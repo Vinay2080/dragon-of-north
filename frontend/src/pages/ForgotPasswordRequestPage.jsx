@@ -1,14 +1,22 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import {useToast} from '../hooks/useToast';
+import {useAuth} from '../context/authUtils';
 
 const ForgotPasswordRequestPage = () => {
     const navigate = useNavigate();
     const {toast} = useToast();
+    const {isAuthenticated, isLoading} = useAuth();
     const [identifier, setIdentifier] = useState('');
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!isLoading && isAuthenticated) {
+            navigate('/dashboard', {replace: true});
+        }
+    }, [isAuthenticated, isLoading, navigate]);
 
     const detectIdentifierType = (value) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? 'EMAIL' : 'PHONE');
     const normalizePhone = (value) => value.replace(/\D/g, '');
@@ -19,20 +27,12 @@ const ForgotPasswordRequestPage = () => {
 
         const identifierType = detectIdentifierType(identifier.trim());
         const processedIdentifier = identifierType === 'PHONE' ? normalizePhone(identifier) : identifier.trim();
-        const payload = identifierType === 'EMAIL'
-            ? {email: processedIdentifier, otp_purpose: 'PASSWORD_RESET'}
-            : {phone: processedIdentifier, otp_purpose: 'PASSWORD_RESET'};
+        await apiService.post(API_CONFIG.ENDPOINTS.PASSWORD_RESET_REQUEST, {
+            identifier: processedIdentifier,
+            identifier_type: identifierType,
+        });
 
-        const endpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
-        const result = await apiService.post(endpoint, payload);
-
-        if (apiService.isErrorResponse(result)) {
-            toast.error(result.message || 'Could not send OTP. Please try again.');
-            setLoading(false);
-            return;
-        }
-
-        toast.success('OTP sent for password reset.');
+        toast.info('If an account exists, you’ll receive an email or OTP shortly.');
         navigate('/reset-password', {state: {identifier: processedIdentifier, identifierType}});
         setLoading(false);
     };
