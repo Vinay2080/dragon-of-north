@@ -4,7 +4,7 @@ import {AuthProvider} from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
 import SignupPage from './pages/SignupPage';
 import OtpPage from './pages/OtpPage';
-import LoginPage from './pages/LoginPage';
+import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import ForgotPasswordRequestPage from './pages/ForgotPasswordRequestPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -39,10 +39,10 @@ const AppShell = () => {
             <ToastContainer/>
             <NetworkStatus/>
             <Routes>
-                <Route path="/" element={<LoginPage/>}/>
+                <Route path="/" element={<AuthPage/>}/>
                 <Route path="/signup" element={<SignupPage/>}/>
                 <Route path="/otp" element={<OtpPage/>}/>
-                <Route path="/login" element={<LoginPage/>}/>
+                <Route path="/login" element={<AuthPage/>}/>
                 <Route path="/forgot-password" element={<ForgotPasswordRequestPage/>}/>
                 <Route path="/reset-password" element={<ResetPasswordPage/>}/>
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardPage/></ProtectedRoute>}/>
