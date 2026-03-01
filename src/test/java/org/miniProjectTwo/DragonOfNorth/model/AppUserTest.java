@@ -31,7 +31,7 @@ class AppUserTest {
         assertNull(appUser.getEmail());
         assertNull(appUser.getPhone());
         assertNull(appUser.getPassword());
-        assertNull(appUser.getAppUserStatus());
+        assertEquals(AppUserStatus.ACTIVE, appUser.getAppUserStatus());
         assertFalse(appUser.isEmailVerified());
         assertFalse(appUser.isPhoneNumberVerified());
         assertEquals(0, appUser.getFailedLoginAttempts());

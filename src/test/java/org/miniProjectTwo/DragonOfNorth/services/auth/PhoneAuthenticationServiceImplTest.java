@@ -7,11 +7,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.components.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
-import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.repositories.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -19,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,6 +44,9 @@ class PhoneAuthenticationServiceImplTest {
     private MeterRegistry meterRegistry;
     @Mock
     private Counter counter;
+    @Mock
+    private UserAuthProviderRepository userAuthProviderRepository;
+
     @Mock
     private AuditEventLogger auditEventLogger;
 
@@ -67,38 +72,44 @@ class PhoneAuthenticationServiceImplTest {
 
         when(meterRegistry.counter(anyString())).thenReturn(counter);
         //arrange
-        AppUserStatus expectedStatus = ACTIVE;
+        AppUser appUser = new AppUser();
+        appUser.setPhone(phoneNumber);
+        appUser.setAppUserStatus(ACTIVE);
+        appUser.setId(java.util.UUID.randomUUID());
 
-        when(appUserRepository.findAppUserStatusByPhone(phoneNumber)).thenReturn(Optional.of(expectedStatus));
+        when(appUserRepository.findByPhone(phoneNumber)).thenReturn(Optional.of(appUser));
+        when(userAuthProviderRepository.findAllByUserId(appUser.getId())).thenReturn(List.of());
 
         //act
         AppUserStatusFinderResponse response = phoneAuthenticationService.getUserStatus(phoneNumber);
 
         //assert
         assertNotNull(response, "status should be returned upon calling this method");
-        assertEquals(expectedStatus, response.appUserStatus(), "user status should be ACTIVE");
+        assertTrue(response.exists());
+        assertEquals(ACTIVE, response.appUserStatus(), "user status should be ACTIVE");
 
         //verify
-        verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
+        verify(appUserRepository).findByPhone(phoneNumber);
 
     }
 
     @Test
-    void getUserStatus_ShouldReturnNull_WhenUserDoesNotExists() {
+    void getUserStatus_ShouldReturnNotFound_WhenUserDoesNotExists() {
 
         when(meterRegistry.counter(anyString())).thenReturn(counter);
         //arrange
-        when(appUserRepository.findAppUserStatusByPhone(phoneNumber)).thenReturn(Optional.empty());
+        when(appUserRepository.findByPhone(phoneNumber)).thenReturn(Optional.empty());
 
         //act
         AppUserStatusFinderResponse response = phoneAuthenticationService.getUserStatus(phoneNumber);
 
         //assert
         assertNotNull(response, "status should be returned upon calling this method");
-        assertNull(response.appUserStatus(), "should return null for user that does not exists");
+        assertFalse(response.exists());
+        assertNull(response.appUserStatus());
 
         //verify
-        verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
+        verify(appUserRepository).findByPhone(phoneNumber);
 
     }
 
@@ -123,10 +134,12 @@ class PhoneAuthenticationServiceImplTest {
         appUser.setPhone(request.identifier());
         appUser.setPassword(request.password());
         appUser.setAppUserStatus(ACTIVE);
+        appUser.setId(java.util.UUID.randomUUID());
 
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
-        when(appUserRepository.findAppUserStatusByPhone(request.identifier())).thenReturn(Optional.of(ACTIVE));
         when(appUserRepository.save(any(AppUser.class))).thenReturn(appUser);
+        when(appUserRepository.findByPhone(request.identifier())).thenReturn(Optional.of(appUser));
+        when(userAuthProviderRepository.findAllByUserId(appUser.getId())).thenReturn(List.of());
 
         //act
         AppUserStatusFinderResponse response = phoneAuthenticationService.signUpUser(request);
@@ -149,8 +162,7 @@ class PhoneAuthenticationServiceImplTest {
         assertEquals("encodedPassword", capturedUser.getPassword(), "password should be encoded");
         assertEquals(ACTIVE, capturedUser.getAppUserStatus(), "Status should be created");
 
-        verify(appUserRepository).findAppUserStatusByPhone(request.identifier());
-
+        verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
         verify(auditEventLogger).log("auth.signup", null, null, null, "success", "identifier_type=PHONE", null);
         verify(auditEventLogger, never()).log(eq("auth.signup"), isNull(), isNull(), isNull(), eq("failure"), anyString(), isNull());
 
@@ -162,11 +174,12 @@ class PhoneAuthenticationServiceImplTest {
         when(meterRegistry.counter(anyString())).thenReturn(counter);
         //arrange
         AppUser appUser = new AppUser();
+        appUser.setId(java.util.UUID.randomUUID());
         appUser.setPhone(phoneNumber);
         appUser.setAppUserStatus(ACTIVE);
 
         when(appUserRepository.findByPhone(phoneNumber)).thenReturn(Optional.of(appUser));
-        when(appUserRepository.findAppUserStatusByPhone(phoneNumber)).thenReturn(Optional.of(ACTIVE));
+        when(userAuthProviderRepository.findAllByUserId(appUser.getId())).thenReturn(List.of());
 
         //act
         AppUserStatusFinderResponse response = phoneAuthenticationService.completeSignUp(phoneNumber);
@@ -175,11 +188,8 @@ class PhoneAuthenticationServiceImplTest {
         assertEquals(ACTIVE, response.appUserStatus(), "method should return status ACTIVE for valid input (i.e. valid phone number, user exists and user status is ACTIVE");
 
         //verify
-        verify(authCommonServices).updateUserStatus(appUser.getAppUserStatus(), appUser);
         verify(authCommonServices).assignDefaultRole(appUser);
         verify(appUserRepository).save(appUser);
-        verify(appUserRepository).findAppUserStatusByPhone(phoneNumber);
-
         verify(auditEventLogger).log("auth.signup.complete", appUser.getId(), null, null, "success", "identifier_type=PHONE", null);
     }
 

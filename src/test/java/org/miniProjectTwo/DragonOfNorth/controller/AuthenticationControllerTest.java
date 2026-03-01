@@ -92,7 +92,7 @@ class AuthenticationControllerTest {
         mockMvc.perform(post("/api/v1/auth/identifier/sign-up/complete")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"))
                 .andExpect(jsonPath("$.data.appUserStatus").value("ACTIVE"));
 

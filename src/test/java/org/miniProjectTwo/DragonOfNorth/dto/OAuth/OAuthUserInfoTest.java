@@ -119,7 +119,7 @@ class OAuthUserInfoTest {
         // assert
         assertEquals("123", userInfo.sub());
         assertEquals("test@example.com", userInfo.email());
-        assertNull(userInfo.emailVerified());
+        assertFalse(userInfo.emailVerified()); // primitive boolean defaults to false
         assertNull(userInfo.name());
         assertNull(userInfo.picture());
         assertNull(userInfo.issuer());

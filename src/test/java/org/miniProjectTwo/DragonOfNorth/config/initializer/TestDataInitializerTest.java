@@ -7,12 +7,16 @@ import org.miniProjectTwo.DragonOfNorth.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.model.Role;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
+import org.miniProjectTwo.DragonOfNorth.repositories.SessionRepository;
+import org.miniProjectTwo.DragonOfNorth.repositories.UserAuthProviderRepository;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -28,6 +32,12 @@ class TestDataInitializerTest {
 
     @Mock
     private RoleRepository roleRepository;
+
+    @Mock
+    private SessionRepository sessionRepository;
+
+    @Mock
+    private UserAuthProviderRepository userAuthProviderRepository;
 
 
     @Mock
@@ -47,6 +57,11 @@ class TestDataInitializerTest {
 
         when(appUserRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         when(appUserRepository.findByPhone(anyString())).thenReturn(Optional.empty());
+        when(appUserRepository.save(any(AppUser.class))).thenAnswer((Answer<AppUser>) invocation -> {
+            AppUser user = invocation.getArgument(0);
+            user.setId(UUID.randomUUID());
+            return user;
+        });
 
         testDataInitializer.run();
 

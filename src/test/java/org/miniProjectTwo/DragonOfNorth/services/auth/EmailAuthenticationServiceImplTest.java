@@ -7,11 +7,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.components.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.request.AppUserSignUpRequest;
 import org.miniProjectTwo.DragonOfNorth.dto.auth.response.AppUserStatusFinderResponse;
-import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.repositories.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthCommonServices;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -19,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,6 +48,9 @@ class EmailAuthenticationServiceImplTest {
     @Mock
     private Counter counter;
     @Mock
+    private UserAuthProviderRepository userAuthProviderRepository;
+
+    @Mock
     private AuditEventLogger auditEventLogger;
 
     private final String email = "test@mockito.com";
@@ -66,38 +71,44 @@ class EmailAuthenticationServiceImplTest {
         when(meterRegistry.counter(anyString())).thenReturn(counter);
 
         // arrange
-        AppUserStatus appUserStatus = ACTIVE;
+        AppUser appUser = new AppUser();
+        appUser.setEmail(email);
+        appUser.setAppUserStatus(ACTIVE);
+        appUser.setEmailVerified(true);
 
-        when(appUserRepository.findAppUserStatusByEmail(email)).thenReturn(Optional.of(appUserStatus));
+        when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(appUser));
+        when(userAuthProviderRepository.findAllByUserId(appUser.getId())).thenReturn(List.of());
 
         //act
         AppUserStatusFinderResponse response = emailAuthenticationService.getUserStatus(email);
 
         //
         assertNotNull(response, "returned object cannot be null");
-        assertEquals(appUserStatus, response.appUserStatus(), "method should be returning status ACTIVE if called with valid email");
+        assertTrue(response.exists());
+        assertEquals(ACTIVE, response.appUserStatus(), "method should be returning status ACTIVE if called with valid email");
 
         //verify
-        verify(appUserRepository).findAppUserStatusByEmail(email);
+        verify(appUserRepository).findByEmail(email);
     }
 
     @Test
-    void getUserStatus_shouldReturnNOT_EXISTS_whenCalledWithInvalidEmail() {
+    void getUserStatus_shouldReturnNotFound_whenCalledWithInvalidEmail() {
 
         when(meterRegistry.counter(anyString())).thenReturn(counter);
 
         //arrange
-        when(appUserRepository.findAppUserStatusByEmail(email)).thenReturn(Optional.empty());
+        when(appUserRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         //act
         AppUserStatusFinderResponse response = emailAuthenticationService.getUserStatus(email);
 
         //assert
         assertNotNull(response, "response object should not be null");
-        assertNull(response.appUserStatus(), "if the user does not exists method should return null status");
+        assertFalse(response.exists());
+        assertNull(response.appUserStatus());
 
         //verify
-        verify(appUserRepository).findAppUserStatusByEmail(email);
+        verify(appUserRepository).findByEmail(email);
     }
 
 
@@ -114,10 +125,12 @@ class EmailAuthenticationServiceImplTest {
         appUser.setEmail(request.identifier());
         appUser.setPassword(request.password());
         appUser.setAppUserStatus(ACTIVE);
+        appUser.setId(java.util.UUID.randomUUID());
 
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
-        when(appUserRepository.findAppUserStatusByEmail(request.identifier())).thenReturn(Optional.of(ACTIVE));
         when(appUserRepository.save(any(AppUser.class))).thenReturn(appUser);
+        when(appUserRepository.findByEmail(request.identifier())).thenReturn(Optional.of(appUser));
+        when(userAuthProviderRepository.findAllByUserId(appUser.getId())).thenReturn(List.of());
 
         //act
         AppUserStatusFinderResponse response = emailAuthenticationService.signUpUser(request);
@@ -139,8 +152,7 @@ class EmailAuthenticationServiceImplTest {
         assertEquals(request.identifier(), capturedUser.getEmail(), "saved email and received email should be same");
         assertEquals(ACTIVE, capturedUser.getAppUserStatus(), "user status should be ACTIVE once the user is saved");
 
-
-        verify(appUserRepository).findAppUserStatusByEmail(request.identifier());
+        verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
         verify(auditEventLogger).log("auth.signup", null, null, null, "success", "identifier_type=EMAIL", null);
         verify(auditEventLogger, never()).log(eq("auth.signup"), isNull(), isNull(), isNull(), eq("failure"), anyString(), isNull());
     }
@@ -151,14 +163,14 @@ class EmailAuthenticationServiceImplTest {
         when(meterRegistry.counter(anyString())).thenReturn(counter);
 
         //arrange
-
         AppUser appUser = new AppUser();
-
+        appUser.setId(java.util.UUID.randomUUID());
         appUser.setEmail(email);
         appUser.setAppUserStatus(ACTIVE);
+        appUser.setEmailVerified(true);
 
         when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(appUser));
-        when(appUserRepository.findAppUserStatusByEmail(appUser.getEmail())).thenReturn(Optional.of(ACTIVE));
+        when(userAuthProviderRepository.findAllByUserId(appUser.getId())).thenReturn(List.of());
 
         //act
         AppUserStatusFinderResponse response = emailAuthenticationService.completeSignUp(email);
@@ -167,7 +179,7 @@ class EmailAuthenticationServiceImplTest {
         assertNotNull(response, "method response should not be null");
         assertEquals(ACTIVE, response.appUserStatus(), "method should return status ACTIVE when called");
 
-        //
+        //verify
         verify(authCommonServices).assignDefaultRole(appUser);
         verify(appUserRepository).save(appUser);
         verify(auditEventLogger).log("auth.signup.complete", appUser.getId(), null, null, "success", "identifier_type=EMAIL", null);
@@ -187,7 +199,6 @@ class EmailAuthenticationServiceImplTest {
 
         //verify
         verify(appUserRepository, never()).save(any());
-        verify(appUserRepository, never()).findAppUserStatusByEmail(any());
         verify(auditEventLogger).log(eq("auth.signup.complete"), isNull(), isNull(), isNull(), eq("failure"), anyString(), isNull());
     }
 
