@@ -130,7 +130,7 @@ const AuthPage = () => {
     };
 
     const isPasswordStep = step === AUTH_STEP.PASSWORD_LOGIN || step === AUTH_STEP.LOCAL_AND_GOOGLE;
-    const showGoogle = step === AUTH_STEP.GOOGLE_ONLY || step === AUTH_STEP.LOCAL_AND_GOOGLE;
+    const showGoogle = step === AUTH_STEP.GOOGLE_ONLY || step === AUTH_STEP.LOCAL_AND_GOOGLE || step === AUTH_STEP.PASSWORD_LOGIN;
 
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
@@ -208,12 +208,20 @@ const AuthPage = () => {
                         <button className="w-full rounded-lg bg-blue-600 py-3 font-semibold disabled:opacity-60" disabled={loading || !password}>
                             {loading ? 'Logging in...' : 'Login with password'}
                         </button>
+                        <button
+                            type="button"
+                            className="w-full text-sm text-blue-400 hover:text-blue-300"
+                            onClick={() => navigate('/forgot-password')}
+                        >
+                            Forgot password?
+                        </button>
                     </form>
                 )}
 
                 {showGoogle && (
                     <div className="mt-6 space-y-3">
                         {step === AUTH_STEP.GOOGLE_ONLY && <p className="text-sm text-slate-300">This account uses Google sign-in.</p>}
+                        {step === AUTH_STEP.PASSWORD_LOGIN && <p className="text-sm text-slate-300">Or continue with Google instead of resetting your password.</p>}
                         <GoogleLoginButton
                             onSuccess={handleGoogleSuccess}
                             onError={handleGoogleError}
