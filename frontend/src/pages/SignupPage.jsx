@@ -126,14 +126,14 @@ const SignupPage = () => {
     }
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
-            <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-8 shadow-2xl">
-                <h2 className="text-2xl font-bold text-white">Create Account</h2>
-                <p className="mt-1 mb-6 text-sm text-slate-400">Setting up account for <span className="text-blue-400 font-medium">{identifier}</span></p>
+        <div className="auth-shell">
+            <div className="auth-card">
+                <h2 className="auth-title">Create Account</h2>
+                <p className="auth-subtitle mb-6">Setting up account for <span className="text-blue-400 font-medium">{identifier}</span></p>
                 <AuthFlowProgress currentStep="signup"/>
 
                 {isEmailIdentifier && (
-                    <div className="mb-6 space-y-3">
+                    <div className="auth-section mb-6">
                         <GoogleLoginButton
                             mode="signup"
                             onSuccess={handleGoogleSignup}
@@ -141,26 +141,26 @@ const SignupPage = () => {
                             disabled={loading}
                             expectedIdentifier={identifier}
                         />
-                        <p className="text-center text-xs text-slate-500">or create a password account below</p>
+                        <p className="auth-helper text-center">or create a password account below</p>
                     </div>
                 )}
 
                 <form onSubmit={handleGetOtp} noValidate>
                     <div className="space-y-4">
                         <div className="relative">
-                            <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => handlePasswordChange(e.target.value)} placeholder="Enter password" className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 pr-12 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" aria-describedby="password-hint password-errors" required/>
-                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition">{showPassword ? '🙈' : '👁️'}</button>
+                            <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => handlePasswordChange(e.target.value)} placeholder="Enter password" className="auth-input pr-12 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" aria-describedby="password-hint password-errors" required/>
+                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition duration-200">{showPassword ? '🙈' : '👁️'}</button>
                         </div>
-                        <p id="password-hint" className="text-xs text-slate-400">{passwordStrengthHint}</p>
+                        <p id="password-hint" className="auth-helper">{passwordStrengthHint}</p>
                         <ValidationError id="password-errors" errors={fieldErrors.password || []}/>
 
                         <div className="relative">
-                            <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => handleConfirmPasswordChange(e.target.value)} placeholder="Confirm password" className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 pr-12 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" aria-describedby="confirm-password-errors" required/>
-                            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition">{showConfirmPassword ? '🙈' : '👁️'}</button>
+                            <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => handleConfirmPasswordChange(e.target.value)} placeholder="Confirm password" className="auth-input pr-12 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" aria-describedby="confirm-password-errors" required/>
+                            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition duration-200">{showConfirmPassword ? '🙈' : '👁️'}</button>
                         </div>
                         <ValidationError id="confirm-password-errors" errors={fieldErrors.confirmPassword || []}/>
 
-                        <label className="flex items-start gap-2 text-sm text-slate-300">
+                        <label className="flex items-start gap-2 auth-helper">
                             <input
                                 type="checkbox"
                                 checked={acceptTerms}
@@ -171,7 +171,7 @@ const SignupPage = () => {
                         </label>
                         <ValidationError id="terms-errors" errors={fieldErrors.terms || []}/>
 
-                        <button type="submit" disabled={loading || !password || !confirmPassword} className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Processing...' : 'Get OTP'}</button>
+                        <button type="submit" disabled={loading || !password || !confirmPassword} className="btn-primary text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Processing...' : 'Get OTP'}</button>
                     </div>
                     <RateLimitInfo/>
                 </form>

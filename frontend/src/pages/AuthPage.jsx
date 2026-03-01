@@ -159,15 +159,15 @@ const AuthPage = () => {
         || step === AUTH_STEP.PASSWORD_LOGIN;
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
-            <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-8 shadow-2xl text-white">
-                <h1 className="text-2xl font-bold">Auth</h1>
-                <p className="mt-2 text-sm text-slate-400">Use your email to continue.</p>
+        <div className="auth-shell">
+            <div className="auth-card">
+                <h1 className="auth-title">Auth</h1>
+                <p className="auth-subtitle">Use your email to continue.</p>
 
-                <form onSubmit={checkEmail} className="mt-6 space-y-3">
-                    <label className="text-sm text-slate-300">Email</label>
+                <form onSubmit={checkEmail} className="auth-section">
+                    <label className="auth-helper">Email</label>
                     <input
-                        className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3"
+                        className="auth-input"
                         type="email"
                         value={email}
                         onChange={(e) => {
@@ -180,7 +180,7 @@ const AuthPage = () => {
                     />
                     {step === AUTH_STEP.EMAIL_ENTRY && (
                         <button
-                            className="w-full rounded-lg bg-blue-600 py-3 font-semibold disabled:opacity-60"
+                            className="btn-primary"
                             type="submit"
                             disabled={loading}
                         >
@@ -190,10 +190,10 @@ const AuthPage = () => {
                 </form>
 
                 {step === AUTH_STEP.SIGNUP_CREATE_PASSWORD && (
-                    <div className="mt-6 space-y-3">
-                        <p className="text-sm text-slate-300">No account found. Continue with email signup.</p>
+                    <div className="auth-section">
+                        <p className="auth-helper">No account found. Continue with email signup.</p>
                         <button
-                            className="w-full rounded-lg bg-blue-600 py-3 font-semibold"
+                            className="btn-primary"
                             onClick={() => navigate('/signup', {state: {identifier: normalizedEmail, identifierType: 'EMAIL'}})}
                         >
                             Continue to create account
@@ -202,10 +202,10 @@ const AuthPage = () => {
                 )}
 
                 {step === AUTH_STEP.GOOGLE_SIGNUP && (
-                    <div className="mt-6 space-y-3">
-                        <p className="text-sm text-slate-300">No account found. Choose how you want to sign up.</p>
+                    <div className="auth-section">
+                        <p className="auth-helper">No account found. Choose how you want to sign up.</p>
                         <button
-                            className="w-full rounded-lg bg-blue-600 py-3 font-semibold"
+                            className="btn-primary"
                             onClick={() => navigate('/signup', {state: {identifier: normalizedEmail, identifierType: 'EMAIL'}})}
                         >
                             Create password account
@@ -221,10 +221,10 @@ const AuthPage = () => {
                 )}
 
                 {isPasswordStep && (
-                    <form onSubmit={handleLocalLogin} className="mt-6 space-y-3">
-                        <label className="text-sm text-slate-300 block">Password</label>
+                    <form onSubmit={handleLocalLogin} className="auth-section">
+                        <label className="auth-helper block">Password</label>
                         <input
-                            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3"
+                            className="auth-input"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -232,12 +232,12 @@ const AuthPage = () => {
                             required
                         />
                         <ValidationError errors={passwordError ? [passwordError] : []}/>
-                        <button className="w-full rounded-lg bg-blue-600 py-3 font-semibold disabled:opacity-60" disabled={loading || !password}>
+                        <button className="btn-primary" disabled={loading || !password}>
                             {loading ? 'Logging in...' : 'Login with password'}
                         </button>
                         <button
                             type="button"
-                            className="w-full text-sm text-blue-400 hover:text-blue-300"
+                            className="btn-ghost"
                             onClick={() => navigate('/forgot-password')}
                         >
                             Forgot password?
@@ -246,10 +246,10 @@ const AuthPage = () => {
                 )}
 
                 {showGoogle && (
-                    <div className="mt-6 space-y-3">
-                        {step === AUTH_STEP.EMAIL_ENTRY && <p className="text-sm text-slate-300">Continue with Google</p>}
-                        {step === AUTH_STEP.GOOGLE_ONLY && <p className="text-sm text-slate-300">This account uses Google sign-in.</p>}
-                        {step === AUTH_STEP.PASSWORD_LOGIN && <p className="text-sm text-slate-300">Or continue with Google instead of resetting your password.</p>}
+                    <div className="auth-section">
+                        {step === AUTH_STEP.EMAIL_ENTRY && <p className="auth-helper">Continue with Google</p>}
+                        {step === AUTH_STEP.GOOGLE_ONLY && <p className="auth-helper">This account uses Google sign-in.</p>}
+                        {step === AUTH_STEP.PASSWORD_LOGIN && <p className="auth-helper">Or continue with Google instead of resetting your password.</p>}
                         <GoogleLoginButton
                             onSuccess={handleGoogleSuccess}
                             onError={handleGoogleError}
