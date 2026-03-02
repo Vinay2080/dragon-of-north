@@ -119,6 +119,6 @@ class OAuthServiceImplTest {
         assertEquals(Provider.GOOGLE, provider.getProvider());
         assertEquals("google-sub-2", provider.getProviderId());
         assertEquals(existingUser, provider.getUser());
-        assertTrue(existingUser.getEmailVerified());
+        assertTrue(existingUser.isEmailVerified());
     }
 }
