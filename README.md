@@ -1,6 +1,6 @@
 # Dragon of North
 
-Production-grade identity platform built with Spring Boot + React, focused on **secure token lifecycle**, **device-aware session control**, and **convergence of federated + local authentication** into one internal trust model.
+Production-oriented identity platform built with Spring Boot + React, focused on **secure token lifecycle**, **device-aware session control**, and **convergence of federated + local authentication** into one internal trust model.
 
 ## Architecture at a Glance
 
@@ -16,14 +16,17 @@ Production-grade identity platform built with Spring Boot + React, focused on **
 
 ### Unified Auth Flow (Local + OAuth)
 
-```mermaid
-flowchart LR
-  A[Local Login or Google OAuth] --> B[Backend verification]
-  B --> C[Issue JWT access + refresh]
-  C --> D[Persist/Update device session]
-  D --> E[Refresh request]
-  E --> F[Rotate refresh token + update session hash]
-```
+`Local Login or Google OAuth`
+↓
+`Backend verification`
+↓
+`Issue JWT access + refresh`
+↓
+`Persist/Update device session`
+↓
+`Refresh request`
+↓
+`Rotate refresh token + update session hash`
 
 ---
 
@@ -127,7 +130,7 @@ Endpoints:
 
 ### Security Posture Summary
 
-| Area | Current posture |
+| Security area | Current posture |
 | --- | --- |
 | Credential storage | Passwords/OTPs hashed before persistence |
 | Token security | Access JWT + rotating single-use refresh tokens with hash-at-rest |
