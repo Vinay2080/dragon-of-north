@@ -1,6 +1,7 @@
 # Dragon of North
 
-Production-oriented identity platform built with Spring Boot + React, focused on **secure token lifecycle**, **device-aware session control**, and **convergence of federated + local authentication** into one internal trust model.
+Production-grade identity platform built with Spring Boot + React, focused on **secure token lifecycle**, **device-aware
+session control**, and **convergence of federated + local authentication** into one internal trust model.
 
 ## Architecture at a Glance
 
@@ -8,7 +9,7 @@ Production-oriented identity platform built with Spring Boot + React, focused on
 
 - **Local auth:** email/phone + password.
 - **Federated auth:** Google OAuth 2.0 Authorization Code flow.
-- **Token model:** short-lived access token + rotating refresh token.
+- **Token model:** short-lived access token and rotating refresh token.
 - **Session model:** per-device session row with refresh hash-at-rest.
 - **Access token TTL:** 15 minutes.
 - **Operational posture:** Flyway migrations, structured audit logs, Micrometer metrics, Redis rate limits, Testcontainers integration tests.
@@ -16,17 +17,14 @@ Production-oriented identity platform built with Spring Boot + React, focused on
 
 ### Unified Auth Flow (Local + OAuth)
 
-`Local Login or Google OAuth`
-↓
-`Backend verification`
-↓
-`Issue JWT access + refresh`
-↓
-`Persist/Update device session`
-↓
-`Refresh request`
-↓
-`Rotate refresh token + update session hash`
+```mermaid
+flowchart LR
+    A[Local Login or Google OAuth] --> B[Backend verification]
+    B --> C[Issue JWT access + refresh]
+    C --> D[Persist/Update device session]
+    D --> E[Refresh request]
+    E --> F[Rotate refresh token + update session hash]
+```
 
 ---
 
@@ -44,11 +42,11 @@ Production-oriented identity platform built with Spring Boot + React, focused on
 - Slightly more complexity than pure JWT.
 - Much stronger support for logout-all, device revoke, and post-incident containment.
 
-### 2) Refresh Token Rotation + Hash-at-Rest
+### 2) Refresh Token Rotation and Hash-at-Rest
 
 - Refresh token is rotated on use.
-- Only hashed refresh token is persisted in session storage.
-- Replay attempts fail once previous hash is invalidated.
+- Only the hashed refresh token is persisted in session storage.
+- Replay attempts fail once the previous hash is invalidated.
 - Enforced as **single-use** with strict sequencing; parallel refresh replays are rejected once rotation commits.
 
 **Tradeoff:**
@@ -65,7 +63,7 @@ Each session stores `device_id`, `ip_address`, `user_agent`, `last_used_at`, `ex
 
 Google identities are stored in a provider-link table and mapped to internal users.
 
-**Why:** keeps auth source flexible while preserving one internal authorization/session model.
+**Why:** keeps an auth source flexible while preserving one internal authorization/session model.
 
 ---
 
@@ -78,7 +76,7 @@ Authorization code exchange happens server-side, and no Google tokens are truste
 - Google ID token is validated on the backend.
 - Verification includes signature checks plus issuer/audience/expiration validation.
 - OAuth `state` is validated to protect the authorization code flow.
-- Verified identity is mapped/linked to local user, then standard internal JWT/session issuance is applied.
+- Verified identity is mapped/linked to a local user, then standard internal JWT/session issuance is applied.
 
 Endpoints:
 - `POST /api/v1/auth/oauth/google` (login)
@@ -99,7 +97,7 @@ Endpoints:
 - **OAuth identity mismatch or unsafe auto-linking**  
   Mitigation: explicit provider-ID linking rules and mismatch rejection.
 - **Password reset account takeover window**  
-  Mitigation: OTP-gated reset + global session revocation on reset.
+  Mitigation: OTP-gated reset and global session revocation on reset.
 - **Migration drift between environments**  
   Mitigation: Flyway versioned schema with startup migration enforcement.
 
@@ -121,7 +119,8 @@ Endpoints:
 - Unauthorized account linking in federated flows.
 
 ### Controls
-- Password hashing + OTP hashing.
+
+- Password hashing and OTP hashing.
 - Refresh token rotation and invalidation.
 - Session-table revocation semantics.
 - Structured audit logs across auth/session/otp events.
@@ -130,14 +129,14 @@ Endpoints:
 
 ### Security Posture Summary
 
-| Security area | Current posture |
-| --- | --- |
-| Credential storage | Passwords/OTPs hashed before persistence |
-| Token security | Access JWT + rotating single-use refresh tokens with hash-at-rest |
-| Session control | Device-aware session table with targeted/global revocation |
-| Abuse prevention | Redis distributed rate limiting per endpoint |
-| Observability | Structured audit events + Micrometer counters + Prometheus export |
-| Schema integrity | Flyway versioned migrations with startup enforcement |
+| Area               | Current posture                                                   |
+|--------------------|-------------------------------------------------------------------|
+| Credential storage | Passwords/OTPs hashed before persistence                          |
+| Token security     | Access JWT + rotating single-use refresh tokens with hash-at-rest |
+| Session control    | Device-aware session table with targeted/global revocation        |
+| Abuse prevention   | Redis distributed rate limiting per endpoint                      |
+| Observability      | Structured audit events + Micrometer counters + Prometheus export |
+| Schema integrity   | Flyway versioned migrations with startup enforcement              |
 
 ---
 
@@ -158,7 +157,7 @@ Environment-resolved values include JWT TTLs, OTP windows, DB/Redis credentials,
 
 ## Error Contract Stability
 
-- Enum-driven error codes keep client handling stable across refactors.
+- Enum-driven error codes keep client handling stable across refactoring.
 - Frontend/backend contracts remain deterministic for auth/session flows.
 - Uniform failures reduce auth edge-case leakage while preserving operator diagnostics.
 
