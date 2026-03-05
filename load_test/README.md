@@ -132,3 +132,35 @@ curl -X POST https://dragon-api.duckdns.org/api/v1/auth/identifier/login \
 ```
 
 Or manually copy the `access_token` cookie value from browser dev tools after logging in.
+
+---
+
+## Additional Authentication Flow Tests
+
+These scripts model full browser-style auth flow using cookies from `Set-Cookie`.
+
+### Required environment variables
+
+```bash
+export EMAIL="your.email@example.com"
+export PASSWORD="your-password"
+```
+
+### Run
+
+```bash
+k6 run login-load-test.js
+k6 run refresh-storm-test.js
+k6 run session-read-test.js
+k6 run logout-test.js
+k6 run multi-device-session-test.js
+```
+
+### Optional manual cookie simulation
+
+Use these for previously authenticated user simulation:
+
+```bash
+export ACCESS_COOKIE="<access_token_cookie_value>"
+export REFRESH_COOKIE="<refresh_token_cookie_value>"
+```
