@@ -38,3 +38,5 @@ private_key.pem
 public_key.pem
 nul
 effective-pom.xml
+
+/load_tests
