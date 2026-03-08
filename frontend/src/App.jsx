@@ -15,6 +15,7 @@ import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import {useSessionTimeout} from './hooks/useSessionTimeout';
 import {useToast} from './hooks/useToast';
 import Navbar from './components/Navbar';
+import HeroSection from './components/HeroSection';
 
 const AppShell = () => {
     const navigate = useNavigate();
@@ -42,7 +43,7 @@ const AppShell = () => {
             <NetworkStatus/>
             <main className="pt-16">
                 <Routes>
-                <Route path="/" element={<AuthPage/>}/>
+                <Route path="/" element={<HeroSection/>}/>
                 <Route path="/signup" element={<SignupPage/>}/>
                 <Route path="/otp" element={<OtpPage/>}/>
                 <Route path="/login" element={<AuthPage/>}/>
