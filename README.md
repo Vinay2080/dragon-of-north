@@ -173,6 +173,21 @@ Environment-resolved values include JWT TTLs, OTP windows, DB/Redis credentials,
 
 ---
 
+
+## Internship-Ready Highlights (What to emphasize)
+
+If you are showcasing this project for internships, **yes**—you should explicitly call out the following because they demonstrate production thinking beyond CRUD:
+
+- **Schema evolution discipline (Flyway):** versioned SQL migrations (`V1`–`V7`) with startup migration enforcement to prevent environment drift.
+- **Automated data hygiene:** scheduled cleanup jobs for expired OTPs, abandoned unverified users, and stale/revoked sessions.
+- **Distributed abuse protection:** Redis + Bucket4j-backed rate limiting (works across instances, not only in-memory).
+- **Security depth:** rotating refresh tokens, hash-at-rest storage, device-scoped revocation, OTP hashing, and audit trail coverage.
+- **Operational readiness:** Micrometer + Prometheus metrics and Testcontainers integration tests for Postgres + Redis parity.
+
+These points are often strong interview differentiators because they map directly to real production incidents: token replay, migration mismatch, data bloat, and distributed brute-force abuse.
+
+---
+
 ## Repository Scope
 
 - Backend: Spring Boot security, token/session lifecycle, OAuth integration, OTP, rate limiting.

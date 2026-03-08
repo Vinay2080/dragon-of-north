@@ -40,8 +40,8 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.OtpVerificationStatu
 @RequiredArgsConstructor
 public class OtpServiceImpl implements OtpService {
     private final OtpTokenRepository otpTokenRepository;
-    private final OtpSender emailOtpSender;
-    private final OtpSender phoneOtpSender;
+    private final EmailOtpSender emailOtpSender;
+    private final PhoneOtpSender phoneOtpSender;
     private final MeterRegistry meterRegistry;
     private final AuditEventLogger auditEventLogger;
 

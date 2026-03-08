@@ -7,7 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.repo.OtpTokenRepository;
-import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpSender;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl.EmailOtpSender;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl.PhoneOtpSender;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl.OtpServiceImpl;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
@@ -38,10 +39,10 @@ class OtpServiceTest {
     private OtpTokenRepository otpTokenRepository;
 
     @Mock
-    private OtpSender emailOtpSender;
+    private EmailOtpSender emailOtpSender;
 
     @Mock
-    private OtpSender phoneOtpSender;
+    private PhoneOtpSender phoneOtpSender;
     @Mock
     private MeterRegistry meterRegistry;
     @Mock
