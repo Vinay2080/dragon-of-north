@@ -2,9 +2,10 @@ package org.miniProjectTwo.DragonOfNorth.services;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.config.security.AppUserDetails;
-import org.miniProjectTwo.DragonOfNorth.model.AppUser;
-import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
+import org.miniProjectTwo.DragonOfNorth.security.service.AppUserDetailService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;

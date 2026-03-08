@@ -2,10 +2,11 @@ package org.miniProjectTwo.DragonOfNorth.controller;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.dto.api.ApiResponse;
-import org.miniProjectTwo.DragonOfNorth.dto.auth.request.DeviceIdRequest;
-import org.miniProjectTwo.DragonOfNorth.dto.session.response.SessionSummaryResponse;
-import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.SessionService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.DeviceIdRequest;
+import org.miniProjectTwo.DragonOfNorth.modules.session.controller.SessionController;
+import org.miniProjectTwo.DragonOfNorth.modules.session.dto.response.SessionSummaryResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
+import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;

@@ -2,9 +2,10 @@ package org.miniProjectTwo.DragonOfNorth.ratelimit;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.config.RateLimitProperties;
-import org.miniProjectTwo.DragonOfNorth.enums.RateLimitType;
-import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.RateLimitBucketService;
+import org.miniProjectTwo.DragonOfNorth.infrastructure.config.RateLimitProperties;
+import org.miniProjectTwo.DragonOfNorth.ratelimit.service.RateLimitBucketService;
+import org.miniProjectTwo.DragonOfNorth.ratelimit.service.impl.RateLimitBucketServiceImpl;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.RateLimitType;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;

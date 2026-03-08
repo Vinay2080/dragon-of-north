@@ -2,16 +2,17 @@ package org.miniProjectTwo.DragonOfNorth.config.initializer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
-import org.miniProjectTwo.DragonOfNorth.model.Role;
-import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
+import org.miniProjectTwo.DragonOfNorth.infrastructure.initializer.RolesInitializer;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
+import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
+import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.CommandLineRunner;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -35,6 +36,6 @@ class RolesInitializerTest {
 
         ArgumentCaptor<Role> roleCaptor = ArgumentCaptor.forClass(Role.class);
         verify(roleRepository, atLeastOnce()).save(roleCaptor.capture());
-        assertEquals(true, roleCaptor.getValue().isSystemRole());
+        assertTrue(roleCaptor.getValue().isSystemRole());
     }
 }

@@ -2,7 +2,11 @@ package org.miniProjectTwo.DragonOfNorth.model;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
+import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
+import org.miniProjectTwo.DragonOfNorth.shared.model.BaseEntity;
+import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -20,7 +24,7 @@ class AppUserTest {
     void setUp() {
         appUser = new AppUser();
         testRole = new Role();
-        testRole.setRoleName(org.miniProjectTwo.DragonOfNorth.enums.RoleName.USER);
+        testRole.setRoleName(RoleName.USER);
     }
 
     @Test

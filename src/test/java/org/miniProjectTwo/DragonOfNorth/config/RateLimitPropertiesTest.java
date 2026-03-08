@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.config;
 
 import org.junit.jupiter.api.Test;
+import org.miniProjectTwo.DragonOfNorth.infrastructure.config.RateLimitProperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -3,17 +3,18 @@ package org.miniProjectTwo.DragonOfNorth.resolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
-import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
-import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
+import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.EMAIL;
-import static org.miniProjectTwo.DragonOfNorth.enums.IdentifierType.PHONE;
+import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.EMAIL;
+import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.PHONE;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)

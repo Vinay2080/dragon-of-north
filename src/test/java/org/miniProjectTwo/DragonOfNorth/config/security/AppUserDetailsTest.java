@@ -1,10 +1,12 @@
 package org.miniProjectTwo.DragonOfNorth.config.security;
 
 import org.junit.jupiter.api.Test;
-import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
-import org.miniProjectTwo.DragonOfNorth.model.AppUser;
-import org.miniProjectTwo.DragonOfNorth.model.Permission;
-import org.miniProjectTwo.DragonOfNorth.model.Role;
+import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
+import org.miniProjectTwo.DragonOfNorth.shared.model.Permission;
+import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
+import org.springframework.security.core.GrantedAuthority;
 
 import java.util.Set;
 import java.util.UUID;
@@ -30,7 +32,7 @@ class AppUserDetailsTest {
 
         AppUserDetails details = new AppUserDetails(user);
 
-        var authorityStrings = details.getAuthorities().stream().map(a -> a.getAuthority()).toList();
+        var authorityStrings = details.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
 
         assertTrue(authorityStrings.contains("ROLE_ADMIN"));
         assertTrue(authorityStrings.contains("PERM_session:read"));

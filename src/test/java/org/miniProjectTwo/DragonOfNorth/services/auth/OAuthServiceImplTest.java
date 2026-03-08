@@ -4,19 +4,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.dto.OAuth.OAuthUserInfo;
-import org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus;
-import org.miniProjectTwo.DragonOfNorth.enums.Provider;
-import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
-import org.miniProjectTwo.DragonOfNorth.model.AppUser;
-import org.miniProjectTwo.DragonOfNorth.model.Role;
-import org.miniProjectTwo.DragonOfNorth.model.UserAuthProvider;
-import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
-import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
-import org.miniProjectTwo.DragonOfNorth.repositories.UserAuthProviderRepository;
-import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.JwtServices;
-import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.SessionService;
-import org.miniProjectTwo.DragonOfNorth.services.GoogleTokenVerifierService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.GoogleTokenVerifierService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl.AuthCommonServiceImpl;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl.OAuthServiceImpl;
+import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
+import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
+import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.Provider;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
+import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
+import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -79,12 +81,16 @@ class OAuthServiceImplTest {
         when(appUserRepository.save(any(AppUser.class))).thenReturn(newUser);
         when(jwtServices.generateAccessToken(eq(newUser.getId()), anySet())).thenReturn("access");
         when(jwtServices.generateRefreshToken(newUser.getId())).thenReturn("refresh");
+        doNothing().when(authCommonServiceImpl).setAccessToken(any(HttpServletResponse.class), anyString());
+        doNothing().when(authCommonServiceImpl).setRefreshToken(any(HttpServletResponse.class), anyString());
 
         oAuthService.authenticatedWithGoogle("token", "device-1", null, request, response);
 
         verify(appUserRepository).save(any(AppUser.class));
         verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
         verify(sessionService).createSession(eq(newUser), eq("refresh"), any(), eq("device-1"), any());
+        verify(authCommonServiceImpl).setAccessToken(response, "access");
+        verify(authCommonServiceImpl).setRefreshToken(response, "refresh");
     }
 
     @Test
@@ -109,11 +115,15 @@ class OAuthServiceImplTest {
         when(userAuthProviderRepository.existsByUserIdAndProvider(existingUser.getId(), Provider.GOOGLE)).thenReturn(false);
         when(jwtServices.generateAccessToken(eq(existingUser.getId()), anySet())).thenReturn("access");
         when(jwtServices.generateRefreshToken(existingUser.getId())).thenReturn("refresh");
+        doNothing().when(authCommonServiceImpl).setAccessToken(any(HttpServletResponse.class), anyString());
+        doNothing().when(authCommonServiceImpl).setRefreshToken(any(HttpServletResponse.class), anyString());
 
         oAuthService.authenticatedWithGoogle("token", "device-2", "existing@example.com", request, response);
 
         ArgumentCaptor<UserAuthProvider> authProviderCaptor = ArgumentCaptor.forClass(UserAuthProvider.class);
         verify(userAuthProviderRepository).save(authProviderCaptor.capture());
+        verify(authCommonServiceImpl).setAccessToken(response, "access");
+        verify(authCommonServiceImpl).setRefreshToken(response, "refresh");
 
         UserAuthProvider provider = authProviderCaptor.getValue();
         assertEquals(Provider.GOOGLE, provider.getProvider());

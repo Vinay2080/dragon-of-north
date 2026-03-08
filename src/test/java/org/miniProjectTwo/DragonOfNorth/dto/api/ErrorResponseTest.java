@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.dto.api;
 
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
+import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ErrorResponse;
 
 import java.util.List;
 

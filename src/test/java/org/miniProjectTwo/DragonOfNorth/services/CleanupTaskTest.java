@@ -2,8 +2,9 @@ package org.miniProjectTwo.DragonOfNorth.services;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
-import org.miniProjectTwo.DragonOfNorth.repositories.OtpTokenRepository;
+import org.miniProjectTwo.DragonOfNorth.infrastructure.scheduler.CleanupTask;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.repo.OtpTokenRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -32,5 +33,14 @@ class CleanupTaskTest {
 
         // verify
         verify(otpTokenRepository).deleteAllByExpiresAtBefore(any(Instant.class));
+    }
+
+    @Test
+    void cleanupUnverifiedUsers_shouldCallDeleteByIsEmailVerifiedFalseAndCreatedAtBefore() {
+        // act
+        cleanupTask.cleanupUnverifiedUsers();
+
+        // verify
+        verify(appUserRepository).deleteByIsEmailVerifiedFalseAndCreatedAtBefore(any(Instant.class));
     }
 }

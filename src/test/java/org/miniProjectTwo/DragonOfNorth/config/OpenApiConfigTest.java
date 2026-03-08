@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import org.junit.jupiter.api.Test;
+import org.miniProjectTwo.DragonOfNorth.infrastructure.config.OpenApiConfig;
 
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -2,6 +2,8 @@ package org.miniProjectTwo.DragonOfNorth.model;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.miniProjectTwo.DragonOfNorth.shared.model.Permission;
+import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 
 import java.util.HashSet;
 import java.util.Set;

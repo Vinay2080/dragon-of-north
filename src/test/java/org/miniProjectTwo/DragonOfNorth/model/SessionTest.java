@@ -2,6 +2,8 @@ package org.miniProjectTwo.DragonOfNorth.model;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
+import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 
 import java.time.Instant;
 import java.util.UUID;

@@ -3,6 +3,8 @@ package org.miniProjectTwo.DragonOfNorth.config.security;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.miniProjectTwo.DragonOfNorth.security.config.SecurityConfig;
+import org.miniProjectTwo.DragonOfNorth.security.filter.JwtFilter;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;

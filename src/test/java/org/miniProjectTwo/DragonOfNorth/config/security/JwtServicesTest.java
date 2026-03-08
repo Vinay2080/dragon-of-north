@@ -3,9 +3,10 @@ package org.miniProjectTwo.DragonOfNorth.config.security;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
-import org.miniProjectTwo.DragonOfNorth.model.Role;
-import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.JwtServices;
+import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
+import org.miniProjectTwo.DragonOfNorth.security.service.impl.JwtServicesImpl;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
+import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.charset.StandardCharsets;

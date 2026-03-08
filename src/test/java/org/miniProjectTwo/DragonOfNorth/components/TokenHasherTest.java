@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.components;
 
 import org.junit.jupiter.api.Test;
+import org.miniProjectTwo.DragonOfNorth.shared.util.TokenHasher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

@@ -2,9 +2,10 @@ package org.miniProjectTwo.DragonOfNorth.repositories;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.enums.IdentifierType;
-import org.miniProjectTwo.DragonOfNorth.enums.OtpPurpose;
-import org.miniProjectTwo.DragonOfNorth.model.OtpToken;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.repo.OtpTokenRepository;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 

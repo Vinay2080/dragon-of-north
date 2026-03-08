@@ -1,7 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.integrationTests;
 
-import org.miniProjectTwo.DragonOfNorth.services.otp.EmailOtpSender;
-import org.miniProjectTwo.DragonOfNorth.services.otp.PhoneOtpSender;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl.EmailOtpSender;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl.PhoneOtpSender;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;

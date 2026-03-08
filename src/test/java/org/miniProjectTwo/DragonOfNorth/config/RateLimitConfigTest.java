@@ -7,7 +7,8 @@ import io.lettuce.core.codec.RedisCodec;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
-import org.miniProjectTwo.DragonOfNorth.enums.RateLimitType;
+import org.miniProjectTwo.DragonOfNorth.infrastructure.config.RateLimitConfig;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.RateLimitType;
 import org.mockito.Mockito;
 
 import java.util.Map;

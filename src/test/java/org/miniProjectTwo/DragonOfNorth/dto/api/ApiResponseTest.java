@@ -1,7 +1,8 @@
 package org.miniProjectTwo.DragonOfNorth.dto.api;
 
 import org.junit.jupiter.api.Test;
-import org.miniProjectTwo.DragonOfNorth.enums.ApiResponseStatus;
+import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ApiResponseStatus;
 
 import java.time.Instant;
 

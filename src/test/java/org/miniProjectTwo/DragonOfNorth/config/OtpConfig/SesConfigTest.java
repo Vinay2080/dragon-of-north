@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.config.OtpConfig;
 
 import org.junit.jupiter.api.Test;
+import org.miniProjectTwo.DragonOfNorth.infrastructure.otpconfig.SesConfig;
 import org.springframework.test.util.ReflectionTestUtils;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ses.SesClient;

@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.config.security;
 
 import org.junit.jupiter.api.Test;
+import org.miniProjectTwo.DragonOfNorth.infrastructure.config.CorsConfig;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;

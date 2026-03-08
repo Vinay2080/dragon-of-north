@@ -2,13 +2,14 @@ package org.miniProjectTwo.DragonOfNorth.config.initializer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
-import org.miniProjectTwo.DragonOfNorth.model.AppUser;
-import org.miniProjectTwo.DragonOfNorth.model.Role;
-import org.miniProjectTwo.DragonOfNorth.repositories.AppUserRepository;
-import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
-import org.miniProjectTwo.DragonOfNorth.repositories.SessionRepository;
-import org.miniProjectTwo.DragonOfNorth.repositories.UserAuthProviderRepository;
+import org.miniProjectTwo.DragonOfNorth.infrastructure.initializer.TestDataInitializer;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
+import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
+import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -55,8 +56,6 @@ class TestDataInitializerTest {
         when(roleRepository.findByRoleName(RoleName.ADMIN)).thenReturn(Optional.of(adminRole));
         when(passwordEncoder.encode(anyString())).thenReturn("encoded");
 
-        when(appUserRepository.findByEmail(anyString())).thenReturn(Optional.empty());
-        when(appUserRepository.findByPhone(anyString())).thenReturn(Optional.empty());
         when(appUserRepository.save(any(AppUser.class))).thenAnswer((Answer<AppUser>) invocation -> {
             AppUser user = invocation.getArgument(0);
             user.setId(UUID.randomUUID());

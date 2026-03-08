@@ -5,9 +5,10 @@ import io.github.bucket4j.ConsumptionProbe;
 import io.github.bucket4j.distributed.BucketProxy;
 import io.github.bucket4j.distributed.proxy.ProxyManager;
 import org.junit.jupiter.api.Test;
-import org.miniProjectTwo.DragonOfNorth.config.RateLimitProperties;
-import org.miniProjectTwo.DragonOfNorth.enums.RateLimitType;
-import org.miniProjectTwo.DragonOfNorth.serviceInterfaces.RateLimitBucketService;
+import org.miniProjectTwo.DragonOfNorth.infrastructure.config.RateLimitProperties;
+import org.miniProjectTwo.DragonOfNorth.ratelimit.service.RateLimitBucketService;
+import org.miniProjectTwo.DragonOfNorth.ratelimit.service.impl.RateLimitBucketServiceImpl;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.RateLimitType;
 
 import java.util.Map;
 import java.util.function.Supplier;

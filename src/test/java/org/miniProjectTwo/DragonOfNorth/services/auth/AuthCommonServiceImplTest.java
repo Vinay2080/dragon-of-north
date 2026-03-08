@@ -2,12 +2,13 @@ package org.miniProjectTwo.DragonOfNorth.services.auth;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.enums.ErrorCode;
-import org.miniProjectTwo.DragonOfNorth.enums.RoleName;
-import org.miniProjectTwo.DragonOfNorth.exception.BusinessException;
-import org.miniProjectTwo.DragonOfNorth.model.AppUser;
-import org.miniProjectTwo.DragonOfNorth.model.Role;
-import org.miniProjectTwo.DragonOfNorth.repositories.RoleRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl.AuthCommonServiceImpl;
+import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
+import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
+import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
+import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,8 +18,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.ACTIVE;
-import static org.miniProjectTwo.DragonOfNorth.enums.AppUserStatus.LOCKED;
+import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.ACTIVE;
+import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.LOCKED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
