@@ -4,6 +4,7 @@ import SessionSecurityGame from '../components/SessionSecurityGame';
 import FeaturesSection from '../components/FeaturesSection';
 import CallToAction from '../components/CallToAction';
 import Footer from '../components/Footer';
+import AuthorSection from '../components/AuthorSection';
 
 const LandingPage = () => {
     return (
@@ -25,6 +26,10 @@ const LandingPage = () => {
 
                 <section className="mb-12 sm:mb-16">
                     <CallToAction />
+                </section>
+
+                <section className="mb-12 sm:mb-16">
+                    <AuthorSection />
                 </section>
             </main>
 
