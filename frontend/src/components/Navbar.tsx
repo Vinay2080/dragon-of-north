@@ -11,6 +11,8 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { logout, authEvents } from "../services/authService";
 import { useTheme } from "../context/ThemeContext";
 
 type ThemeMode = "light" | "dark" | "system";
@@ -31,8 +33,9 @@ const themeLabel = {
 
 const Navbar = () => {
   const { theme, setTheme } = useTheme();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(localStorage.getItem("auth_token")));
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -47,15 +50,23 @@ const Navbar = () => {
   );
 
   useEffect(() => {
+    const syncAuthState = () => setIsAuthenticated(Boolean(localStorage.getItem("auth_token")));
     const handleOutsideClick = (event: MouseEvent) => {
       if (!dropdownRef.current?.contains(event.target as Node)) {
         setIsProfileMenuOpen(false);
       }
     };
 
+    syncAuthState();
     document.addEventListener("mousedown", handleOutsideClick);
+    window.addEventListener("storage", syncAuthState);
+    window.addEventListener(authEvents.AUTH_EVENT, syncAuthState);
 
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      window.removeEventListener("storage", syncAuthState);
+      window.removeEventListener(authEvents.AUTH_EVENT, syncAuthState);
+    };
   }, []);
 
   const cycleTheme = () => {
@@ -113,9 +124,13 @@ const Navbar = () => {
                     <button
                       key={item}
                       type="button"
-                      onClick={() => {
-                        if (item === "Login") setIsAuthenticated(true);
-                        if (item === "Logout") setIsAuthenticated(false);
+                      onClick={async () => {
+                        if (item === "Login") navigate("/login");
+                        if (item === "Sign Up") navigate("/signup");
+                        if (item === "Logout") {
+                          await logout();
+                          navigate("/");
+                        }
                         setIsProfileMenuOpen(false);
                       }}
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-white/50 dark:text-slate-200 dark:hover:bg-white/10"
@@ -130,12 +145,24 @@ const Navbar = () => {
             </AnimatePresence>
           </div>
 
-          <button className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-900/5 dark:text-slate-100 dark:hover:bg-white/10">
-            Login
-          </button>
-          <button className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-400">
-            Sign Up
-          </button>
+          {!isAuthenticated && (
+            <>
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-900/5 dark:text-slate-100 dark:hover:bg-white/10"
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/signup")}
+                className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-400"
+              >
+                Sign Up
+              </button>
+            </>
+          )}
         </div>
 
         <button
@@ -166,12 +193,30 @@ const Navbar = () => {
                 <ThemeIcon size={16} />
                 Theme: {themeLabel[theme]}
               </button>
-              <button className="rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-white/60 dark:text-slate-200 dark:hover:bg-white/10">
-                Login
-              </button>
-              <button className="rounded-lg bg-cyan-500 px-3 py-2 text-left text-sm font-semibold text-white transition hover:bg-cyan-400">
-                Sign Up
-              </button>
+              {!isAuthenticated && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate("/login");
+                    }}
+                    className="rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-white/60 dark:text-slate-200 dark:hover:bg-white/10"
+                  >
+                    Login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate("/signup");
+                    }}
+                    className="rounded-lg bg-cyan-500 px-3 py-2 text-left text-sm font-semibold text-white transition hover:bg-cyan-400"
+                  >
+                    Sign Up
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 onClick={() => setIsProfileMenuOpen((prev) => !prev)}
