@@ -86,20 +86,24 @@ const HeroSection = () => {
                     </p>
 
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <motion.button
+                        <motion.a
+                            href="#session-game"
                             whileHover={{y: -2, scale: 1.02}}
                             whileTap={{scale: 0.98}}
                             className="inline-flex items-center justify-center rounded-lg bg-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_32px_rgba(34,211,238,0.25)] transition hover:bg-cyan-400"
                         >
                             Get Started
-                        </motion.button>
-                        <motion.button
+                        </motion.a>
+                        <motion.a
+                            href="https://dragon-api.duckdns.org/swagger-ui/index.html#/"
+                            target="_blank"
+                            rel="noreferrer"
                             whileHover={{y: -2, scale: 1.02}}
                             whileTap={{scale: 0.98}}
                             className="inline-flex items-center justify-center rounded-lg border border-slate-500/60 bg-slate-900/40 px-6 py-3 text-sm font-semibold text-slate-100 backdrop-blur-sm transition hover:border-cyan-300/70 hover:text-cyan-100"
                         >
-                            View GitHub
-                        </motion.button>
+                            API Documentation
+                        </motion.a>
                     </div>
                 </motion.div>
 

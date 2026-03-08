@@ -16,7 +16,7 @@ const LandingPage = () => {
                     <HeroSection />
                 </section>
 
-                <section className="mb-12 sm:mb-16">
+                <section id="session-game" className="mb-12 scroll-mt-24 sm:mb-16">
                     <SessionSecurityGame />
                 </section>
 

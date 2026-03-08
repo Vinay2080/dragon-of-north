@@ -24,6 +24,36 @@ type SessionApiItem = {
     revoked?: boolean;
 };
 
+const DEMO_SESSIONS: Session[] = [
+    {
+        id: 'demo-1',
+        deviceName: 'Chrome on macOS',
+        deviceType: 'desktop',
+        location: 'Bengaluru, India',
+        ipAddress: '49.37.221.10',
+        lastUsed: 'Just now',
+        riskLevel: 'safe',
+    },
+    {
+        id: 'demo-2',
+        deviceName: 'Safari on iPhone',
+        deviceType: 'mobile',
+        location: 'Mumbai, India',
+        ipAddress: '152.58.14.11',
+        lastUsed: '5 min ago',
+        riskLevel: 'safe',
+    },
+    {
+        id: 'demo-3',
+        deviceName: 'Unknown Linux Client',
+        deviceType: 'desktop',
+        location: 'Unknown location',
+        ipAddress: '185.220.101.10',
+        lastUsed: '12 min ago',
+        riskLevel: 'suspicious',
+    },
+];
+
 const getDeviceIcon = (deviceType: Session['deviceType']) => {
     if (deviceType === 'mobile') return User;
     return Monitor;
@@ -72,6 +102,11 @@ const SessionSecurityGame = () => {
         setErrorMessage('');
 
         try {
+            if (!localStorage.getItem('auth_token')) {
+                setSessions(DEMO_SESSIONS);
+                return;
+            }
+
             const response = await getSessions();
             setSessions(response.map(mapApiSession));
         } catch {
@@ -98,8 +133,12 @@ const SessionSecurityGame = () => {
         if (revokedId) return;
 
         try {
-            await revokeSession(session.id);
-            await loadSessions();
+            if (!localStorage.getItem('auth_token')) {
+                setSessions((prev) => prev.filter((item) => item.id !== session.id));
+            } else {
+                await revokeSession(session.id);
+                await loadSessions();
+            }
             setRevokedId(session.id);
             setWarningMessage('');
             setSuccessMessage('Threat Neutralized');
