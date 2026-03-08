@@ -17,12 +17,18 @@ body {
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
+    background:
+        radial-gradient(circle at 12% 10%, rgba(88, 122, 255, 0.2), transparent 32%),
+        radial-gradient(circle at 88% 14%, rgba(36, 198, 255, 0.16), transparent 30%),
+        radial-gradient(circle at 78% 86%, rgba(168, 85, 247, 0.16), transparent 34%),
+        #090c14;
+    color: #e2e8f0;
 }
 
 
 @layer components {
     .auth-shell {
-        @apply min-h-screen w-full flex items-center justify-center bg-[#111317] bg-[radial-gradient(circle_at_20%_10%,rgba(76,125,255,0.16),transparent_30%),radial-gradient(circle_at_80%_90%,rgba(112,82,255,0.12),transparent_35%)];
+        @apply relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#0b0f1c] bg-[radial-gradient(circle_at_15%_12%,rgba(76,125,255,0.22),transparent_34%),radial-gradient(circle_at_86%_18%,rgba(0,201,255,0.16),transparent_32%),radial-gradient(circle_at_82%_88%,rgba(168,85,247,0.16),transparent_38%)];
     }
 
     .auth-card {
@@ -67,6 +73,15 @@ body {
 }
 
 @layer components {
+    .dynamic-grid-overlay {
+        @apply pointer-events-none absolute inset-0 opacity-30;
+        background-image:
+            linear-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(168, 85, 247, 0.08) 1px, transparent 1px);
+        background-size: 44px 44px;
+        mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.95), transparent 82%);
+    }
+
     .dashboard-shell {
         @apply min-h-screen w-full bg-[#0f1117] text-white bg-[radial-gradient(circle_at_12%_8%,rgba(124,92,255,0.18),transparent_32%),radial-gradient(circle_at_88%_14%,rgba(72,150,255,0.16),transparent_30%),radial-gradient(circle_at_80%_84%,rgba(99,245,196,0.08),transparent_26%)];
     }

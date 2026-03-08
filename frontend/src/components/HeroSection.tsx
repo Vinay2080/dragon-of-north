@@ -40,6 +40,36 @@ const HeroSection = () => {
                 transition={{duration: 16, ease: 'easeInOut', repeat: Infinity}}
             />
 
+
+            <div className="pointer-events-none absolute right-6 top-24 hidden md:block">
+                <svg viewBox="0 0 220 220" className="h-48 w-48 opacity-90" aria-hidden>
+                    <defs>
+                        <radialGradient id="starCore" cx="50%" cy="50%" r="55%">
+                            <stop offset="0%" stopColor="#fef08a" />
+                            <stop offset="55%" stopColor="#f97316" stopOpacity="0.9" />
+                            <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.25" />
+                        </radialGradient>
+                        <linearGradient id="dragonStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#22d3ee" />
+                            <stop offset="100%" stopColor="#a78bfa" />
+                        </linearGradient>
+                    </defs>
+                    <polygon
+                        points="110,16 132,72 192,72 144,108 162,168 110,132 58,168 76,108 28,72 88,72"
+                        fill="url(#starCore)"
+                        opacity="0.9"
+                    />
+                    <path
+                        d="M58 118c16-20 36-26 54-24 17 2 30 11 45 9m-54 1c14 4 21 13 28 22m-27-22c-6 8-10 18-11 30m25-54c11-2 22 4 28 14"
+                        fill="none"
+                        stroke="url(#dragonStroke)"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                    />
+                    <circle cx="155" cy="101" r="3" fill="#fef08a" />
+                </svg>
+            </div>
+
             <div className="pointer-events-none absolute -top-24 left-1/2 h-[24rem] w-[24rem] -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl" />
             <div className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-fuchsia-500/10 blur-3xl" />
 

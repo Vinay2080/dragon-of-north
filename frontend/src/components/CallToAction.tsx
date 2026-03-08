@@ -1,6 +1,9 @@
 import {motion} from 'framer-motion';
+import {useNavigate} from 'react-router-dom';
 
 const CallToAction = () => {
+    const navigate = useNavigate();
+
     return (
         <section className="mx-auto mt-14 w-full max-w-5xl px-2 sm:px-0">
             <motion.div
@@ -15,20 +18,14 @@ const CallToAction = () => {
 
                 <h3 className="text-2xl font-semibold text-white sm:text-3xl">Ready to secure your sessions?</h3>
 
-                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <div className="mt-6 flex items-center justify-center">
                     <motion.button
                         whileHover={{y: -2, scale: 1.03}}
                         whileTap={{scale: 0.98}}
-                        className="w-full rounded-lg bg-cyan-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_30px_rgba(34,211,238,0.35)] transition hover:bg-cyan-400 sm:w-auto"
+                        onClick={() => navigate('/login')}
+                        className="w-full rounded-lg bg-gradient-to-r from-cyan-500 to-violet-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_36px_rgba(96,165,250,0.35)] transition hover:from-cyan-400 hover:to-violet-400 sm:w-auto"
                     >
-                        Sign Up
-                    </motion.button>
-                    <motion.button
-                        whileHover={{y: -2, scale: 1.03}}
-                        whileTap={{scale: 0.98}}
-                        className="w-full rounded-lg border border-slate-500/60 bg-slate-900/40 px-6 py-3 text-sm font-semibold text-slate-100 shadow-[0_0_22px_rgba(129,140,248,0.25)] transition hover:border-cyan-300/70 hover:text-cyan-100 sm:w-auto"
-                    >
-                        Login
+                        Continue to Login / Sign Up
                     </motion.button>
                 </div>
             </motion.div>

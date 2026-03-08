@@ -132,6 +132,15 @@ const SessionSecurityGame = () => {
     const handleRevoke = async (session: Session) => {
         if (revokedId) return;
 
+        if (session.riskLevel !== 'suspicious') {
+            setAttemptedWrongId(session.id);
+            setRevealSuspicious(true);
+            setSuccessMessage('');
+            setWarningMessage('Wrong target. Identify and revoke the suspicious session only.');
+            window.setTimeout(() => setAttemptedWrongId(null), 520);
+            return;
+        }
+
         try {
             if (!localStorage.getItem('auth_token')) {
                 setSessions((prev) => prev.filter((item) => item.id !== session.id));
@@ -146,7 +155,7 @@ const SessionSecurityGame = () => {
             setAttemptedWrongId(session.id);
             setRevealSuspicious(true);
             setSuccessMessage('');
-            setWarningMessage('Unable to fetch sessions. Please try again.');
+            setWarningMessage('Unable to revoke session right now. Please try again.');
             window.setTimeout(() => setAttemptedWrongId(null), 520);
         }
     };
