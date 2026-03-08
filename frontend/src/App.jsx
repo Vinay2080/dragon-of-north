@@ -14,6 +14,7 @@ import NetworkStatus from './components/NetworkStatus/NetworkStatus';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import {useSessionTimeout} from './hooks/useSessionTimeout';
 import {useToast} from './hooks/useToast';
+import LandingPage from './pages/LandingPage';
 
 const AppShell = () => {
     const navigate = useNavigate();
@@ -39,7 +40,7 @@ const AppShell = () => {
             <ToastContainer/>
             <NetworkStatus/>
             <Routes>
-                <Route path="/" element={<AuthPage/>}/>
+                <Route path="/" element={<LandingPage/>}/>
                 <Route path="/signup" element={<SignupPage/>}/>
                 <Route path="/otp" element={<OtpPage/>}/>
                 <Route path="/login" element={<AuthPage/>}/>
