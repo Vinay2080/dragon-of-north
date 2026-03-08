@@ -1,6 +1,7 @@
 import {motion} from 'framer-motion';
 import {Monitor, Shield, User} from 'lucide-react';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
+import {getSessions, revokeSession} from '../services/sessionService';
 
 type RiskLevel = 'safe' | 'suspicious';
 
@@ -14,100 +15,101 @@ type Session = {
     riskLevel: RiskLevel;
 };
 
-const SAFE_SESSIONS: Omit<Session, 'riskLevel'>[] = [
-    {
-        id: 's1',
-        deviceName: 'MacBook Pro · Chrome',
-        deviceType: 'desktop',
-        location: 'Oslo, Norway',
-        ipAddress: '185.220.12.44',
-        lastUsed: '2 min ago',
-    },
-    {
-        id: 's2',
-        deviceName: 'iPhone 15 · Safari',
-        deviceType: 'mobile',
-        location: 'Bergen, Norway',
-        ipAddress: '51.174.92.20',
-        lastUsed: '11 min ago',
-    },
-    {
-        id: 's3',
-        deviceName: 'Windows Workstation · Edge',
-        deviceType: 'desktop',
-        location: 'Stockholm, Sweden',
-        ipAddress: '89.132.201.73',
-        lastUsed: '34 min ago',
-    },
-    {
-        id: 's4',
-        deviceName: 'iPad Air · Safari',
-        deviceType: 'tablet',
-        location: 'Trondheim, Norway',
-        ipAddress: '79.160.18.66',
-        lastUsed: '1 hour ago',
-    },
-    {
-        id: 's5',
-        deviceName: 'Linux Terminal · Firefox',
-        deviceType: 'desktop',
-        location: 'Copenhagen, Denmark',
-        ipAddress: '93.191.114.52',
-        lastUsed: '3 hours ago',
-    },
-];
+type SessionApiItem = {
+    sessionId: string;
+    deviceId?: string;
+    ipAddress?: string;
+    userAgent?: string;
+    lastUsedAt?: string;
+    revoked?: boolean;
+};
 
 const getDeviceIcon = (deviceType: Session['deviceType']) => {
     if (deviceType === 'mobile') return User;
     return Monitor;
 };
 
-const buildMockSessions = (): Session[] => {
-    const shuffled = [...SAFE_SESSIONS].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 5);
-    const suspiciousIndex = Math.floor(Math.random() * selected.length);
+const detectDeviceType = (raw: string) => {
+    const lower = raw.toLowerCase();
+    if (lower.includes('iphone') || lower.includes('android') || lower.includes('mobile')) return 'mobile';
+    if (lower.includes('ipad') || lower.includes('tablet')) return 'tablet';
+    return 'desktop';
+};
 
-    return selected.map((session, index) => ({
-        ...session,
-        riskLevel: index === suspiciousIndex ? 'suspicious' : 'safe',
-    }));
+const formatLastUsed = (iso?: string) => {
+    if (!iso) return 'Unknown';
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return 'Unknown';
+    return date.toLocaleString();
+};
+
+const mapApiSession = (item: SessionApiItem): Session => {
+    const source = item.userAgent || item.deviceId || 'Unknown Device';
+
+    return {
+        id: item.sessionId,
+        deviceName: source,
+        deviceType: detectDeviceType(source),
+        location: 'Unknown location',
+        ipAddress: item.ipAddress || 'Unknown IP',
+        lastUsed: formatLastUsed(item.lastUsedAt),
+        riskLevel: item.revoked ? 'suspicious' : 'safe',
+    };
 };
 
 const SessionSecurityGame = () => {
-    const [sessions, setSessions] = useState<Session[]>(() => buildMockSessions());
+    const [sessions, setSessions] = useState<Session[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState('');
     const [warningMessage, setWarningMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [revokedId, setRevokedId] = useState<string | null>(null);
     const [attemptedWrongId, setAttemptedWrongId] = useState<string | null>(null);
     const [revealSuspicious, setRevealSuspicious] = useState(false);
 
+    const loadSessions = async () => {
+        setLoading(true);
+        setErrorMessage('');
 
-    const resetGame = () => {
-        setSessions(buildMockSessions());
+        try {
+            const response = await getSessions();
+            setSessions(response.map(mapApiSession));
+        } catch {
+            setErrorMessage('Unable to fetch sessions. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadSessions();
+    }, []);
+
+    const resetGame = async () => {
         setWarningMessage('');
         setSuccessMessage('');
         setRevokedId(null);
         setAttemptedWrongId(null);
         setRevealSuspicious(false);
+        await loadSessions();
     };
 
-    const handleRevoke = (session: Session) => {
+    const handleRevoke = async (session: Session) => {
         if (revokedId) return;
 
-
-        if (session.riskLevel === 'suspicious') {
+        try {
+            await revokeSession(session.id);
+            await loadSessions();
             setRevokedId(session.id);
             setWarningMessage('');
             setSuccessMessage('Threat Neutralized');
-            return;
+        } catch {
+            setAttemptedWrongId(session.id);
+            setRevealSuspicious(true);
+            setSuccessMessage('');
+            setWarningMessage('Unable to fetch sessions. Please try again.');
+            window.setTimeout(() => setAttemptedWrongId(null), 520);
         }
-
-        setAttemptedWrongId(session.id);
-        setRevealSuspicious(true);
-        setSuccessMessage('');
-        setWarningMessage('Incorrect target. Re-check telemetry and revoke the suspicious session.');
-
-        window.setTimeout(() => setAttemptedWrongId(null), 520);
     };
 
     return (
@@ -142,6 +144,18 @@ const SessionSecurityGame = () => {
                         </span>
                     ) : null}
                 </div>
+
+                {loading ? (
+                    <div className="mb-5 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">
+                        Loading sessions...
+                    </div>
+                ) : null}
+
+                {errorMessage ? (
+                    <div className="mb-5 rounded-xl border border-rose-300/40 bg-rose-300/10 px-4 py-2 text-sm text-rose-100">
+                        Unable to fetch sessions. Please try again.
+                    </div>
+                ) : null}
 
                 {warningMessage ? (
                     <motion.div
@@ -207,7 +221,7 @@ const SessionSecurityGame = () => {
                                 <motion.button
                                     whileHover={{scale: 1.02}}
                                     whileTap={{scale: 0.98}}
-                                    disabled={Boolean(revokedId)}
+                                    disabled={Boolean(revokedId) || loading}
                                     onClick={() => handleRevoke(session)}
                                     className="mt-4 inline-flex w-full items-center justify-center rounded-lg border border-cyan-300/35 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
