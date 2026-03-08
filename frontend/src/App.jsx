@@ -14,6 +14,7 @@ import NetworkStatus from './components/NetworkStatus/NetworkStatus';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import {useSessionTimeout} from './hooks/useSessionTimeout';
 import {useToast} from './hooks/useToast';
+import Navbar from './components/Navbar';
 
 const AppShell = () => {
     const navigate = useNavigate();
@@ -36,9 +37,11 @@ const AppShell = () => {
 
     return (
         <>
+            <Navbar/>
             <ToastContainer/>
             <NetworkStatus/>
-            <Routes>
+            <main className="pt-16">
+                <Routes>
                 <Route path="/" element={<AuthPage/>}/>
                 <Route path="/signup" element={<SignupPage/>}/>
                 <Route path="/otp" element={<OtpPage/>}/>
@@ -46,7 +49,8 @@ const AppShell = () => {
                 <Route path="/forgot-password" element={<ForgotPasswordRequestPage/>}/>
                 <Route path="/reset-password" element={<ResetPasswordPage/>}/>
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardPage/></ProtectedRoute>}/>
-            </Routes>
+                </Routes>
+            </main>
         </>
     );
 };
