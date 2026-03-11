@@ -13,6 +13,7 @@ export default defineConfig({
         alias: {
             'framer-motion': path.resolve(__dirname, 'src/shims/framer-motion.tsx'),
             'lucide-react': path.resolve(__dirname, 'src/shims/lucide-react.tsx'),
+            '@xyflow/react': path.resolve(__dirname, 'src/shims/xyflow-react.jsx'),
         },
     },
     build: {
