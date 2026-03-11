@@ -2,84 +2,59 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import DocsLayout from '../components/DocsLayout';
 
 const ACCESS_TTL_SECONDS = 15 * 60;
-const JWT_ALGORITHM = 'HS256';
-const USER_ID = 'user_1024';
+const TRAVEL_MS = 600;
+const PROCESS_MS = 300;
 
-const SIM_STATES = {
-    LOGIN_COMPLETE: 'LOGIN_COMPLETE',
-    API_REQUEST: 'API_REQUEST',
-    ACCESS_EXPIRED: 'ACCESS_EXPIRED',
-    REFRESH_REQUEST: 'REFRESH_REQUEST',
-    TOKEN_ROTATED: 'TOKEN_ROTATED',
-    TOKEN_STOLEN: 'TOKEN_STOLEN',
-    TOKEN_REUSE_DETECTED: 'TOKEN_REUSE_DETECTED',
-    SESSION_REVOKED: 'SESSION_REVOKED',
+const NODES = {
+    USER: {x: 190, y: 320, label: 'User', size: 80},
+    ATTACKER: {x: 990, y: 320, label: 'Attacker', size: 80},
+    BACKEND: {x: 590, y: 90, label: 'Backend'},
+    AUTH_FILTER: {x: 470, y: 260, label: 'Auth Filter', size: 120},
+    JWT_VALIDATOR: {x: 590, y: 205, label: 'JWT Validator', size: 120},
+    REDIS: {x: 710, y: 260, label: 'Redis Token Store', size: 120},
+    CONTROLLER: {x: 590, y: 355, label: 'Controller', size: 120},
 };
 
-const COMPONENTS = {
-    USER: 'USER',
-    AUTH_FILTER: 'AUTH_FILTER',
-    JWT_VALIDATOR: 'JWT_VALIDATOR',
-    REDIS: 'REDIS',
-    CONTROLLER: 'CONTROLLER',
-    ATTACKER: 'ATTACKER',
+const STEPS = ['Start Session', 'Send API Request', 'Expire Access Token', 'Run Refresh Flow', 'Simulate Token Theft'];
+
+const initialRefresh = {id: 'rt_100a', version: 1, familyId: 'token_family_42', status: 'active', oldRef: '-'};
+
+const fmt = (s) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(2, '0')}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
+const tokenId = () => `rt_${Math.random().toString(36).slice(2, 6)}`;
+
+const stepDescriptions = {
+    idle: ['Current Step: Waiting', 'Description: Start a session to initialize token lifecycle simulation.'],
+    session: ['Current Step: Session Started', 'Description: Access and refresh tokens are issued and Redis family state is initialized.'],
+    api: ['Current Step: API Request Validation', 'Description: Backend validates JWT signature, expiry, Redis blacklist status, then controller responds.'],
+    expired: ['Current Step: Access Token Expired', 'Description: Access token reached TTL and API requests now return 401 until refresh flow runs.'],
+    refresh: ['Current Step: Refresh Token Rotation', 'Description: Old refresh token is revoked and replaced with a new one; new access token is issued.'],
+    theft: ['Current Step: Token Reuse Detection', 'Description: Attacker reuses stale refresh token; backend detects reuse and revokes token family/session.'],
 };
-
-const COMPONENT_POSITIONS = {
-    USER: {x: 100, y: 170},
-    AUTH_FILTER: {x: 430, y: 90},
-    JWT_VALIDATOR: {x: 620, y: 90},
-    REDIS: {x: 430, y: 250},
-    CONTROLLER: {x: 620, y: 250},
-    ATTACKER: {x: 100, y: 300},
-};
-
-const fmtTtl = (s) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(2, '0')}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
-const tokenId = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 8)}`;
-
-const INITIAL_REFRESH_TOKEN = {
-    id: 'rt_bootstrap',
-    version: 1,
-    familyId: 'family_42',
-    status: 'active',
-    oldRef: '-',
-};
-
-const INITIAL_LOGS = [
-    '[boot] [Auth] login successful',
-    '[boot] [Token] access token issued',
-    '[boot] [Token] refresh token issued',
-];
 
 const SecurityDemoPage = () => {
-    const [simState, setSimState] = useState(SIM_STATES.LOGIN_COMPLETE);
+    const [simKey, setSimKey] = useState('idle');
     const [running, setRunning] = useState(false);
+    const [unlocked, setUnlocked] = useState(0);
     const [accessTtl, setAccessTtl] = useState(ACCESS_TTL_SECONDS);
     const [accessIssuedAt, setAccessIssuedAt] = useState(new Date());
     const [accessStatus, setAccessStatus] = useState('valid');
+    const [sessionStatus, setSessionStatus] = useState('idle');
+    const [refreshToken, setRefreshToken] = useState(initialRefresh);
+    const [redisState, setRedisState] = useState({activeToken: initialRefresh.id, revokedTokens: [], familyBlacklisted: false});
 
-    const [refreshToken, setRefreshToken] = useState(INITIAL_REFRESH_TOKEN);
+    const [activeNode, setActiveNode] = useState('USER');
+    const [activeEdge, setActiveEdge] = useState('');
+    const [packet, setPacket] = useState({visible: false, x: NODES.USER.x, y: NODES.USER.y, color: 'yellow', label: ''});
+    const [logs, setLogs] = useState(['[boot] simulator ready']);
 
-    const [redisStore, setRedisStore] = useState({
-        activeToken: INITIAL_REFRESH_TOKEN.id,
-        revokedTokens: [],
-        familyBlacklisted: false,
-    });
+    const runRef = useRef(0);
+    const expiredLogRef = useRef(false);
 
-    const [sessionStatus, setSessionStatus] = useState('active');
-    const [activeComponent, setActiveComponent] = useState(COMPONENTS.USER);
-    const [packet, setPacket] = useState({x: COMPONENT_POSITIONS.USER.x, y: COMPONENT_POSITIONS.USER.y, color: 'green', visible: false});
-    const [activePath, setActivePath] = useState('');
-    const [alertRed, setAlertRed] = useState(false);
-    const [logs, setLogs] = useState(INITIAL_LOGS);
+    const [title, description] = stepDescriptions[simKey] || stepDescriptions.idle;
 
-    const runIdRef = useRef(0);
-    const expiredLoggedRef = useRef(false);
-
-
-    const addLog = (line) => {
+    const addLog = (msg) => {
         const ts = new Date().toLocaleTimeString();
-        setLogs((prev) => [...prev.slice(-30), `[${ts}] ${line}`]);
+        setLogs((prev) => [...prev.slice(-35), `[${ts}] ${msg}`]);
     };
 
     useEffect(() => {
@@ -87,10 +62,11 @@ const SecurityDemoPage = () => {
             setAccessTtl((prev) => {
                 if (sessionStatus !== 'active' || prev <= 0) return Math.max(prev, 0);
                 const next = prev - 1;
-                if (next <= 0 && !expiredLoggedRef.current) {
-                    expiredLoggedRef.current = true;
+                if (next === 0 && !expiredLogRef.current) {
+                    expiredLogRef.current = true;
                     setAccessStatus('expired');
-                    setSimState(SIM_STATES.ACCESS_EXPIRED);
+                    setSimKey('expired');
+                    setUnlocked((v) => Math.max(v, 2));
                     addLog('[Security] access token expired');
                 }
                 return Math.max(next, 0);
@@ -99,327 +75,212 @@ const SecurityDemoPage = () => {
         return () => clearInterval(timer);
     }, [sessionStatus]);
 
-    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
-    const movePacket = (from, to, color = 'yellow') => {
-        setActivePath(`${from}-${to}`);
-        setPacket({
-            x: COMPONENT_POSITIONS[from].x,
-            y: COMPONENT_POSITIONS[from].y,
-            color,
-            visible: true,
-        });
-
+    const hop = async ({from, to, color = 'yellow', label, log}) => {
+        setActiveNode(from);
+        setActiveEdge(`${from}-${to}`);
+        setPacket({visible: true, x: NODES[from].x, y: NODES[from].y, color, label});
+        if (log) addLog(log);
         requestAnimationFrame(() => {
-            setPacket((prev) => ({
-                ...prev,
-                x: COMPONENT_POSITIONS[to].x,
-                y: COMPONENT_POSITIONS[to].y,
-            }));
+            setPacket((p) => ({...p, x: NODES[to].x, y: NODES[to].y}));
         });
+        await sleep(TRAVEL_MS);
+        setActiveNode(to);
+        await sleep(PROCESS_MS);
     };
 
-    const runSequence = async (steps, nextState) => {
+    const run = async (sequence, key) => {
         if (running) return;
         const runId = Date.now();
-        runIdRef.current = runId;
+        runRef.current = runId;
         setRunning(true);
+        if (key) setSimKey(key);
 
-        for (const step of steps) {
-            if (runIdRef.current !== runId) return;
-            if (step.state) setSimState(step.state);
-            if (step.active) setActiveComponent(step.active);
-            if (step.path) movePacket(step.path.from, step.path.to, step.path.color);
-            if (step.redAlert) setAlertRed(true);
-            if (step.log) addLog(step.log);
-            if (step.after) step.after();
-            await delay(step.delay ?? 420);
+        for (const step of sequence) {
+            if (runRef.current !== runId) return;
+            if (step.action) step.action();
+            if (step.hop) await hop(step.hop);
+            if (step.wait) await sleep(step.wait);
         }
 
-        if (runIdRef.current === runId) {
-            setPacket((prev) => ({...prev, visible: false}));
-            setActivePath('');
-            if (nextState) setSimState(nextState);
+        if (runRef.current === runId) {
+            setPacket((p) => ({...p, visible: false}));
+            setActiveEdge('');
             setRunning(false);
         }
     };
 
-    const rotateTokens = () => {
-        const old = refreshToken;
-        const newId = tokenId('rt');
-        const newVersion = old.version + 1;
-
-        setRefreshToken({
-            id: newId,
-            version: newVersion,
-            familyId: old.familyId,
-            status: 'active',
-            oldRef: old.id,
-        });
-
-        setRedisStore((prev) => ({
-            ...prev,
-            activeToken: newId,
-            revokedTokens: [...prev.revokedTokens, old.id],
-        }));
-
-        setAccessTtl(ACCESS_TTL_SECONDS);
-        setAccessIssuedAt(new Date());
-        setAccessStatus('valid');
-        expiredLoggedRef.current = false;
-
-        addLog(`[Token] old refresh token revoked: ${old.id}`);
-        addLog(`[Token] new refresh token issued: ${newId}`);
-        addLog('[Token] new access token issued');
+    const startSession = async () => {
+        await run([
+            {action: () => { setSessionStatus('active'); setSimKey('session'); setAccessStatus('valid'); setAccessTtl(ACCESS_TTL_SECONDS); setAccessIssuedAt(new Date()); expiredLogRef.current = false; addLog('[Auth] login successful'); }},
+            {action: () => addLog('[Token] access token issued')},
+            {action: () => addLog('[Token] refresh token issued')},
+        ], 'session');
+        setUnlocked(1);
     };
 
     const sendApiRequest = async () => {
-        if (running) return;
-        if (sessionStatus !== 'active') {
-            addLog('[Request] blocked: session revoked');
-            return;
-        }
-
-        if (accessTtl <= 0 || accessStatus === 'expired') {
-            setSimState(SIM_STATES.ACCESS_EXPIRED);
+        if (accessStatus === 'expired') {
             addLog('[Request] 401 Unauthorized');
             return;
         }
 
-        await runSequence([
-            {state: SIM_STATES.API_REQUEST, active: COMPONENTS.USER, path: {from: 'USER', to: 'AUTH_FILTER', color: 'yellow'}, log: '[Request] sending access token to backend'},
-            {active: COMPONENTS.AUTH_FILTER, path: {from: 'AUTH_FILTER', to: 'JWT_VALIDATOR', color: 'yellow'}, log: '[Auth Filter] bearer token extracted'},
-            {active: COMPONENTS.JWT_VALIDATOR, log: '[Security] jwt signature verified'},
-            {active: COMPONENTS.JWT_VALIDATOR, path: {from: 'JWT_VALIDATOR', to: 'REDIS', color: 'yellow'}, log: '[Security] expiration check passed'},
-            {active: COMPONENTS.REDIS, path: {from: 'REDIS', to: 'CONTROLLER', color: 'yellow'}, log: '[Redis] token not blacklisted'},
-            {active: COMPONENTS.CONTROLLER, path: {from: 'CONTROLLER', to: 'USER', color: 'green'}, log: '[Request] response 200'},
-        ], SIM_STATES.LOGIN_COMPLETE);
+        await run([
+            {hop: {from: 'USER', to: 'AUTH_FILTER', color: 'yellow', label: 'Access Token', log: '[Request] sending access token to backend'}},
+            {hop: {from: 'AUTH_FILTER', to: 'JWT_VALIDATOR', color: 'yellow', label: 'JWT Verification', log: '[Auth Filter] request accepted'}},
+            {action: () => addLog('[Security] jwt signature verified')},
+            {hop: {from: 'JWT_VALIDATOR', to: 'REDIS', color: 'yellow', label: 'JWT Verification', log: '[Security] expiration check passed'}},
+            {action: () => addLog('[Redis] token not blacklisted')},
+            {hop: {from: 'REDIS', to: 'CONTROLLER', color: 'yellow', label: 'Access Token', log: '[Controller] endpoint executed'}},
+            {hop: {from: 'CONTROLLER', to: 'USER', color: 'green', label: '200 OK', log: '[Request] response 200'}},
+        ], 'api');
+        setUnlocked(2);
     };
 
-    const forceAccessExpiration = () => {
-        if (running) return;
-        setAccessTtl(0);
-        setAccessStatus('expired');
-        expiredLoggedRef.current = true;
-        setSimState(SIM_STATES.ACCESS_EXPIRED);
-        addLog('[Security] access token forcibly expired for simulation');
+    const expireAccess = async () => {
+        await run([
+            {action: () => { setAccessTtl(0); setAccessStatus('expired'); setSimKey('expired'); expiredLogRef.current = true; addLog('[Security] access token forced to expire'); }},
+            {hop: {from: 'USER', to: 'AUTH_FILTER', color: 'red', label: 'Access Token', log: '[Request] sending expired token'}},
+            {hop: {from: 'AUTH_FILTER', to: 'JWT_VALIDATOR', color: 'red', label: 'JWT Verification', log: '[Security] expiration check failed'}},
+            {hop: {from: 'JWT_VALIDATOR', to: 'USER', color: 'red', label: '401 Unauthorized', log: '[Request] response 401 Unauthorized'}},
+        ], 'expired');
+        setUnlocked(3);
     };
 
-    const runRefreshFlow = async () => {
-        if (running || sessionStatus !== 'active') return;
-
-        await runSequence([
-            {state: SIM_STATES.REFRESH_REQUEST, active: COMPONENTS.USER, path: {from: 'USER', to: 'AUTH_FILTER', color: 'yellow'}, log: '[Refresh] user sent refresh token cookie'},
-            {active: COMPONENTS.AUTH_FILTER, path: {from: 'AUTH_FILTER', to: 'JWT_VALIDATOR', color: 'yellow'}, log: '[Auth] backend reads refresh token from cookie'},
-            {active: COMPONENTS.JWT_VALIDATOR, path: {from: 'JWT_VALIDATOR', to: 'REDIS', color: 'yellow'}, log: '[Redis] checking token version and family state'},
-            {active: COMPONENTS.REDIS, log: '[Security] refresh token accepted for rotation'},
-            {state: SIM_STATES.TOKEN_ROTATED, active: COMPONENTS.CONTROLLER, path: {from: 'REDIS', to: 'CONTROLLER', color: 'green'}, after: rotateTokens, log: '[Token] refresh rotation complete'},
-            {active: COMPONENTS.CONTROLLER, path: {from: 'CONTROLLER', to: 'USER', color: 'green'}, log: '[Refresh] session continued with rotated credentials'},
-        ], SIM_STATES.LOGIN_COMPLETE);
+    const refreshFlow = async () => {
+        const oldId = refreshToken.id;
+        const nextId = tokenId();
+        await run([
+            {hop: {from: 'USER', to: 'AUTH_FILTER', color: 'yellow', label: 'Refresh Token', log: '[Refresh] refresh request started'}},
+            {hop: {from: 'AUTH_FILTER', to: 'JWT_VALIDATOR', color: 'yellow', label: 'Refresh Token', log: '[Auth] refresh token read from cookie'}},
+            {hop: {from: 'JWT_VALIDATOR', to: 'REDIS', color: 'yellow', label: 'Token Rotation', log: '[Redis] token version lookup'}},
+            {action: () => {
+                setRefreshToken((prev) => ({...prev, id: nextId, version: prev.version + 1, oldRef: oldId, status: 'active'}));
+                setRedisState((prev) => ({...prev, activeToken: nextId, revokedTokens: [...prev.revokedTokens, oldId]}));
+                setAccessTtl(ACCESS_TTL_SECONDS); setAccessStatus('valid'); setAccessIssuedAt(new Date()); expiredLogRef.current = false;
+                addLog(`[Token] old refresh token revoked (${oldId})`); addLog(`[Token] new refresh token issued (${nextId})`); addLog('[Token] new access token issued');
+            }},
+            {hop: {from: 'REDIS', to: 'CONTROLLER', color: 'green', label: 'Token Rotation', log: '[Security] rotation committed'}},
+            {hop: {from: 'CONTROLLER', to: 'USER', color: 'green', label: 'Access Token', log: '[Refresh] session resumed'}},
+        ], 'refresh');
+        setUnlocked(4);
     };
 
-    const simulateTokenTheft = async () => {
-        if (running || sessionStatus !== 'active') return;
-        const stolen = refreshToken.id;
-
-        await runSequence([
-            {state: SIM_STATES.TOKEN_STOLEN, active: COMPONENTS.ATTACKER, path: {from: 'USER', to: 'ATTACKER', color: 'yellow'}, log: `[Alert] refresh token stolen (${stolen})`},
-            {active: COMPONENTS.USER, path: {from: 'USER', to: 'AUTH_FILTER', color: 'yellow'}, log: '[User] legitimate refresh executes first'},
-            {active: COMPONENTS.REDIS, path: {from: 'AUTH_FILTER', to: 'REDIS', color: 'yellow'}, log: '[Redis] valid refresh found, rotating token'},
-            {state: SIM_STATES.TOKEN_ROTATED, active: COMPONENTS.CONTROLLER, path: {from: 'REDIS', to: 'CONTROLLER', color: 'green'}, after: rotateTokens, log: '[Token] rotation produced new refresh token'},
-            {active: COMPONENTS.ATTACKER, path: {from: 'ATTACKER', to: 'AUTH_FILTER', color: 'red'}, log: `[Attack] attacker reused old refresh token ${stolen}`},
-            {state: SIM_STATES.TOKEN_REUSE_DETECTED, active: COMPONENTS.JWT_VALIDATOR, path: {from: 'AUTH_FILTER', to: 'JWT_VALIDATOR', color: 'red'}, log: '[Security] refresh token reuse detected', redAlert: true},
-            {
-                state: SIM_STATES.SESSION_REVOKED,
-                active: COMPONENTS.REDIS,
-                path: {from: 'JWT_VALIDATOR', to: 'REDIS', color: 'red'},
-                log: '[Redis] token family blacklisted',
-                after: () => {
-                    setRedisStore((prev) => ({
-                        ...prev,
-                        activeToken: '-',
-                        familyBlacklisted: true,
-                        revokedTokens: [...new Set([...prev.revokedTokens, stolen, refreshToken.id])],
-                    }));
-                },
-            },
-            {
-                active: COMPONENTS.CONTROLLER,
-                path: {from: 'REDIS', to: 'USER', color: 'red'},
-                log: '[Session] user session revoked',
-                after: () => {
-                    setSessionStatus('revoked');
-                    setAccessStatus('expired');
-                    setAccessTtl(0);
-                    setRefreshToken((prev) => ({...prev, status: 'revoked'}));
-                },
-            },
-        ], SIM_STATES.SESSION_REVOKED);
-
-        setTimeout(() => setAlertRed(false), 500);
+    const tokenTheft = async () => {
+        const stolen = refreshToken.oldRef !== '-' ? refreshToken.oldRef : refreshToken.id;
+        await run([
+            {hop: {from: 'USER', to: 'ATTACKER', color: 'yellow', label: 'Refresh Token', log: `[Alert] attacker stole token ${stolen}`}},
+            {hop: {from: 'ATTACKER', to: 'AUTH_FILTER', color: 'red', label: 'Refresh Token', log: '[Attack] attacker sends refresh request'}},
+            {hop: {from: 'AUTH_FILTER', to: 'JWT_VALIDATOR', color: 'red', label: 'Reuse Detection', log: '[Security] refresh token reuse detected'}},
+            {hop: {from: 'JWT_VALIDATOR', to: 'REDIS', color: 'red', label: 'Reuse Detection', log: '[Redis] token family blacklisted'}},
+            {action: () => {
+                setRedisState((prev) => ({...prev, familyBlacklisted: true, activeToken: '-', revokedTokens: [...new Set([...prev.revokedTokens, refreshToken.id, stolen])]}));
+                setRefreshToken((prev) => ({...prev, status: 'revoked'}));
+                setAccessStatus('expired'); setAccessTtl(0); setSessionStatus('revoked');
+                addLog('[Session] forced logout');
+            }},
+            {hop: {from: 'REDIS', to: 'USER', color: 'red', label: 'Session Revoked', log: '[Security] session terminated'}},
+        ], 'theft');
+        setUnlocked(5);
     };
 
-    const resetSimulation = () => {
-        runIdRef.current = 0;
+    const reset = () => {
+        runRef.current = 0;
         setRunning(false);
-        setSimState(SIM_STATES.LOGIN_COMPLETE);
+        setUnlocked(0);
+        setSimKey('idle');
+        setSessionStatus('idle');
         setAccessTtl(ACCESS_TTL_SECONDS);
         setAccessIssuedAt(new Date());
         setAccessStatus('valid');
-
-        const familyId = `family_${Math.floor(Math.random() * 90 + 10)}`;
-        const rt = tokenId('rt');
-        setRefreshToken({id: rt, version: 1, familyId, status: 'active', oldRef: '-'});
-        setRedisStore({activeToken: rt, revokedTokens: [], familyBlacklisted: false});
-
-        setSessionStatus('active');
-        setActiveComponent(COMPONENTS.USER);
-        setPacket({x: COMPONENT_POSITIONS.USER.x, y: COMPONENT_POSITIONS.USER.y, color: 'green', visible: false});
-        setActivePath('');
-        setAlertRed(false);
-        setLogs([]);
-        expiredLoggedRef.current = false;
-        addLog('[Auth] login successful');
-        addLog('[Token] access token issued');
-        addLog('[Token] refresh token issued');
+        setRefreshToken(initialRefresh);
+        setRedisState({activeToken: initialRefresh.id, revokedTokens: [], familyBlacklisted: false});
+        setActiveNode('USER');
+        setActiveEdge('');
+        setPacket({visible: false, x: NODES.USER.x, y: NODES.USER.y, color: 'yellow', label: ''});
+        setLogs(['[boot] simulator reset']);
     };
 
-
-    const pathClass = (name, color) => {
-        if (activePath !== name) return 'stroke-slate-600';
-        if (color === 'green') return 'stroke-emerald-400';
-        if (color === 'red') return 'stroke-rose-400';
-        return 'stroke-amber-300';
-    };
-
-    const componentClass = (component) => {
-        const isActive = activeComponent === component;
-        if (alertRed) {
-            return 'border-rose-400/80 bg-rose-500/20 shadow-[0_0_20px_rgba(251,113,133,0.45)]';
-        }
-        return isActive
-            ? 'border-cyan-300/80 bg-cyan-400/15 shadow-[0_0_20px_rgba(34,211,238,0.45)]'
-            : 'border-white/15 bg-slate-900/80';
-    };
-
-    const redisRevokedPreview = useMemo(() => redisStore.revokedTokens.slice(-3), [redisStore.revokedTokens]);
+    const nodeCls = (id) => activeNode === id ? 'border-cyan-300/90 bg-cyan-400/20 shadow-[0_0_22px_rgba(34,211,238,.45)]' : 'border-white/15 bg-slate-900/80';
+    const edgeCls = (name) => activeEdge === name ? (packet.color === 'green' ? 'stroke-emerald-400' : packet.color === 'red' ? 'stroke-rose-400' : 'stroke-amber-300') : 'stroke-slate-600';
+    const revokedPreview = useMemo(() => redisState.revokedTokens.slice(-3), [redisState.revokedTokens]);
 
     return (
-        <DocsLayout title="Security Demo" subtitle="Interactive security lab: JWT validation, refresh token rotation, and token reuse detection under attack.">
-            <div className="grid gap-5 xl:grid-cols-2">
-                <section className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                    <h3 className="text-lg font-semibold">Panel 1 — Session State</h3>
-                    <article className="rounded-xl border border-emerald-300/25 bg-emerald-300/5 p-4">
-                        <p className="mb-2 font-semibold text-emerald-100">Access Token</p>
-                        <p className="text-sm text-slate-300">status: <span className={accessStatus === 'valid' ? 'text-emerald-300' : 'text-rose-300'}>{accessStatus}</span></p>
-                        <p className="text-sm text-slate-300">TTL countdown: <span className="font-mono text-cyan-200">{fmtTtl(accessTtl)}</span></p>
-                        <p className="text-sm text-slate-300">issued: <span className="text-slate-200">{accessIssuedAt.toLocaleTimeString()}</span></p>
-                        <p className="text-sm text-slate-300">algorithm: <span className="text-cyan-200">{JWT_ALGORITHM}</span></p>
-                        <p className="text-sm text-slate-300">user id: <span className="text-cyan-200">{USER_ID}</span></p>
-                    </article>
+        <DocsLayout title="Security Demo" subtitle="Guided security architecture simulator for JWT validation, refresh rotation, and token reuse defense.">
+            <section className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <div className="rounded-xl border border-cyan-300/25 bg-cyan-300/5 p-4">
+                    <p className="text-sm font-semibold text-cyan-100">{title}</p>
+                    <p className="text-sm text-slate-300">{description}</p>
+                </div>
 
-                    <article className="rounded-xl border border-violet-300/25 bg-violet-300/5 p-4">
-                        <p className="mb-2 font-semibold text-violet-100">Refresh Token</p>
-                        <p className="text-sm text-slate-300">status: <span className={refreshToken.status === 'active' ? 'text-emerald-300' : 'text-rose-300'}>{refreshToken.status}</span></p>
-                        <p className="text-sm text-slate-300">token version: <span className="font-mono text-violet-200">v{refreshToken.version}</span></p>
-                        <p className="text-sm text-slate-300">token family id: <span className="font-mono text-violet-200">{refreshToken.familyId}</span></p>
-                        <p className="text-sm text-slate-300">rotation enabled: <span className="text-cyan-200">true</span></p>
-                        <p className="text-sm text-slate-300">token id: <span className="font-mono text-violet-200">{refreshToken.id}</span></p>
-                        <p className="text-sm text-slate-300">old token ref: <span className="font-mono text-rose-300">{refreshToken.oldRef}</span></p>
-                    </article>
+                <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0c1225] to-[#111a35] p-4" style={{minHeight: 600, height: '68vh'}}>
+                    <svg viewBox="0 0 1180 660" className="h-full w-full">
+                        <circle cx="590" cy="320" r="260" className="fill-none stroke-slate-700/60" strokeDasharray="10 10" />
+                        <rect x="365" y="140" width="450" height="280" rx="20" className="fill-slate-900/60 stroke-slate-600" strokeWidth="2" />
+                        <text x="380" y="165" className="fill-slate-300 text-[14px]">Backend Internal Pipeline</text>
 
-                    <article className="rounded-xl border border-amber-300/25 bg-amber-300/5 p-4">
-                        <p className="mb-2 font-semibold text-amber-100">Redis Token Store</p>
-                        <p className="text-sm text-slate-300">{refreshToken.familyId}</p>
-                        <p className="text-sm text-slate-300">active_token: <span className="font-mono text-emerald-300">{redisStore.activeToken}</span></p>
-                        <p className="text-sm text-slate-300">revoked_token: <span className="font-mono text-rose-300">{redisRevokedPreview.join(', ') || '-'}</span></p>
-                        <p className="text-sm text-slate-300">family_blacklisted: <span className={redisStore.familyBlacklisted ? 'text-rose-300' : 'text-emerald-300'}>{String(redisStore.familyBlacklisted)}</span></p>
-                    </article>
-                </section>
+                        <path d="M230 320 C 300 230, 370 200, 470 200" className={`${edgeCls('USER-AUTH_FILTER')} fill-none stroke-[4]`} />
+                        <path d="M530 260 L 570 235" className={`${edgeCls('AUTH_FILTER-JWT_VALIDATOR')} fill-none stroke-[4]`} />
+                        <path d="M650 235 L 690 260" className={`${edgeCls('JWT_VALIDATOR-REDIS')} fill-none stroke-[4]`} />
+                        <path d="M690 320 L 640 350" className={`${edgeCls('REDIS-CONTROLLER')} fill-none stroke-[4]`} />
+                        <path d="M540 355 C 420 430, 320 430, 230 320" className={`${edgeCls('CONTROLLER-USER')} fill-none stroke-[4]`} />
+                        <path d="M950 320 C 860 230, 780 200, 700 220" className={`${edgeCls('ATTACKER-AUTH_FILTER')} fill-none stroke-[4]`} />
+                        <path d="M230 320 C 400 520, 790 520, 950 320" className={`${edgeCls('USER-ATTACKER')} fill-none stroke-[4]`} />
 
-                <section className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                    <h3 className="text-lg font-semibold">Panel 2 — System Architecture Diagram</h3>
-                    <div className="rounded-xl border border-white/10 bg-gradient-to-br from-[#0d1325] to-[#131a33] p-3">
-                        <div className="mb-2 flex items-center gap-3 text-xs text-slate-400">
-                            <span className="text-emerald-300">green = accepted</span>
-                            <span className="text-amber-300">yellow = processing</span>
-                            <span className="text-rose-300">red = blocked</span>
-                            <span className="rounded border border-white/15 px-2 py-0.5 text-slate-300">state: {simState}</span>
-                        </div>
-                        <svg viewBox="0 0 900 360" className="h-[340px] w-full">
-                            <rect x="320" y="30" width="520" height="300" rx="16" className="fill-slate-900/60 stroke-slate-600" strokeWidth="2" />
-                            <text x="338" y="52" className="fill-slate-300 text-[12px]">Backend</text>
-
-                            <path d="M130 170 H 390 V 90 H 410" className={`${pathClass('USER-AUTH_FILTER', packet.color)} fill-none stroke-[4] transition-all`} />
-                            <path d="M450 90 H 600" className={`${pathClass('AUTH_FILTER-JWT_VALIDATOR', packet.color)} fill-none stroke-[4] transition-all`} />
-                            <path d="M640 110 V 250 H 470" className={`${pathClass('JWT_VALIDATOR-REDIS', packet.color)} fill-none stroke-[4] transition-all`} />
-                            <path d="M470 250 H 600" className={`${pathClass('REDIS-CONTROLLER', packet.color)} fill-none stroke-[4] transition-all`} />
-                            <path d="M640 250 V 170 H 130" className={`${pathClass('CONTROLLER-USER', packet.color)} fill-none stroke-[4] transition-all`} />
-                            <path d="M130 300 H 390 V 90 H 410" className={`${pathClass('ATTACKER-AUTH_FILTER', packet.color)} fill-none stroke-[4] transition-all`} />
-                            <path d="M130 170 H 130 V 300" className={`${pathClass('USER-ATTACKER', packet.color)} fill-none stroke-[4] transition-all`} />
-
-                            {packet.visible && (
-                                <circle
-                                    cx={packet.x}
-                                    cy={packet.y}
-                                    r="6"
-                                    className={packet.color === 'green' ? 'fill-emerald-300' : packet.color === 'red' ? 'fill-rose-300' : 'fill-amber-300'}
-                                    style={{transition: 'all 360ms linear'}}
-                                />
-                            )}
-
-                            <g transform="translate(65,135)">
-                                <rect width="70" height="70" rx="12" className={`${componentClass(COMPONENTS.USER)} stroke`} />
-                                <text x="35" y="40" textAnchor="middle" className="fill-slate-100 text-[11px]">User</text>
+                        {packet.visible && (
+                            <g style={{transition: `all ${TRAVEL_MS}ms linear`}} transform={`translate(${packet.x} ${packet.y})`}>
+                                <circle r="10" className={packet.color === 'green' ? 'fill-emerald-300' : packet.color === 'red' ? 'fill-rose-300' : 'fill-amber-300'} />
+                                <text y="-16" textAnchor="middle" className="fill-slate-100 text-[10px]">{packet.label}</text>
                             </g>
-                            <g transform="translate(65,265)">
-                                <rect width="80" height="70" rx="12" className={`${componentClass(COMPONENTS.ATTACKER)} stroke`} />
-                                <text x="40" y="40" textAnchor="middle" className="fill-slate-100 text-[11px]">Attacker</text>
-                            </g>
-                            <g transform="translate(410,55)">
-                                <rect width="170" height="70" rx="12" className={`${componentClass(COMPONENTS.AUTH_FILTER)} stroke`} />
-                                <text x="85" y="40" textAnchor="middle" className="fill-slate-100 text-[11px]">Auth Filter</text>
-                            </g>
-                            <g transform="translate(600,55)">
-                                <rect width="170" height="70" rx="12" className={`${componentClass(COMPONENTS.JWT_VALIDATOR)} stroke`} />
-                                <text x="85" y="40" textAnchor="middle" className="fill-slate-100 text-[11px]">JWT Validator</text>
-                            </g>
-                            <g transform="translate(410,215)">
-                                <rect width="170" height="70" rx="12" className={`${componentClass(COMPONENTS.REDIS)} stroke`} />
-                                <text x="85" y="40" textAnchor="middle" className="fill-slate-100 text-[11px]">Redis Token Store</text>
-                            </g>
-                            <g transform="translate(600,215)">
-                                <rect width="170" height="70" rx="12" className={`${componentClass(COMPONENTS.CONTROLLER)} stroke`} />
-                                <text x="85" y="40" textAnchor="middle" className="fill-slate-100 text-[11px]">Controller</text>
-                            </g>
-                        </svg>
-                    </div>
-                </section>
-            </div>
+                        )}
 
-            <div className="mt-5 grid gap-5 xl:grid-cols-2">
-                <section className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                    <h3 className="text-lg font-semibold">Panel 3 — Interactive Controls</h3>
+                        <g transform="translate(150 280)"><circle r="40" className={`${nodeCls('USER')} stroke`} /><text textAnchor="middle" className="fill-slate-100 text-[12px]" dy="4">User</text></g>
+                        <g transform="translate(1010 280)"><circle r="40" className={`${nodeCls('ATTACKER')} stroke`} /><text textAnchor="middle" className="fill-slate-100 text-[12px]" dy="4">Attacker</text></g>
+                        <g transform="translate(500 260)"><rect x="-60" y="-30" width="120" height="60" rx="12" className={`${nodeCls('AUTH_FILTER')} stroke`} /><text textAnchor="middle" className="fill-slate-100 text-[11px]" dy="4">Auth Filter</text></g>
+                        <g transform="translate(590 210)"><rect x="-60" y="-30" width="120" height="60" rx="12" className={`${nodeCls('JWT_VALIDATOR')} stroke`} /><text textAnchor="middle" className="fill-slate-100 text-[11px]" dy="4">JWT Validator</text></g>
+                        <g transform="translate(700 260)"><rect x="-60" y="-30" width="120" height="60" rx="12" className={`${nodeCls('REDIS')} stroke`} /><text textAnchor="middle" className="fill-slate-100 text-[10px]" dy="4">Redis Token Store</text></g>
+                        <g transform="translate(590 355)"><rect x="-60" y="-30" width="120" height="60" rx="12" className={`${nodeCls('CONTROLLER')} stroke`} /><text textAnchor="middle" className="fill-slate-100 text-[11px]" dy="4">Controller</text></g>
+                    </svg>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                    <h4 className="mb-3 text-sm font-semibold">Simulation Controls (guided)</h4>
                     <div className="flex flex-wrap gap-3">
-                        <button type="button" onClick={sendApiRequest} disabled={running} className="rounded-lg border border-cyan-300/60 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-400/20 disabled:opacity-60">Send API Request</button>
-                        <button type="button" onClick={simulateTokenTheft} disabled={running} className="rounded-lg border border-amber-300/60 bg-amber-400/10 px-4 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-400/20 disabled:opacity-60">Simulate Token Theft</button>
-                        <button type="button" onClick={forceAccessExpiration} disabled={running} className="rounded-lg border border-orange-300/60 bg-orange-400/10 px-4 py-2 text-sm font-semibold text-orange-100 hover:bg-orange-400/20 disabled:opacity-60">Force Access Expiration</button>
-                        <button type="button" onClick={runRefreshFlow} disabled={running || sessionStatus !== 'active'} className="rounded-lg border border-emerald-300/60 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-100 hover:bg-emerald-400/20 disabled:opacity-60">Run Refresh Flow</button>
-                        <button type="button" onClick={resetSimulation} className="rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-white/10">Reset Simulation</button>
+                        <button type="button" disabled={running || unlocked !== 0} onClick={startSession} className="rounded-lg border border-cyan-300/60 bg-cyan-400/10 px-4 py-2 text-sm disabled:opacity-50">1. Start Session</button>
+                        <button type="button" disabled={running || unlocked < 1 || unlocked > 1} onClick={sendApiRequest} className="rounded-lg border border-cyan-300/60 bg-cyan-400/10 px-4 py-2 text-sm disabled:opacity-50">2. Send API Request</button>
+                        <button type="button" disabled={running || unlocked < 2 || unlocked > 2} onClick={expireAccess} className="rounded-lg border border-cyan-300/60 bg-cyan-400/10 px-4 py-2 text-sm disabled:opacity-50">3. Expire Access Token</button>
+                        <button type="button" disabled={running || unlocked < 3 || unlocked > 3} onClick={refreshFlow} className="rounded-lg border border-cyan-300/60 bg-cyan-400/10 px-4 py-2 text-sm disabled:opacity-50">4. Run Refresh Flow</button>
+                        <button type="button" disabled={running || unlocked < 4 || unlocked > 4} onClick={tokenTheft} className="rounded-lg border border-cyan-300/60 bg-cyan-400/10 px-4 py-2 text-sm disabled:opacity-50">5. Simulate Token Theft</button>
+                        <button type="button" onClick={reset} className="rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-sm">Reset Simulation</button>
                     </div>
-                    <div className="text-xs text-slate-300">
-                        <p>session: <span className={sessionStatus === 'active' ? 'text-emerald-300' : 'text-rose-300'}>{sessionStatus}</span></p>
-                        <p>simulation running: <span className="text-cyan-200">{String(running)}</span></p>
-                    </div>
-                </section>
+                    <p className="mt-2 text-xs text-slate-400">Next unlocked step: {Math.min(unlocked + 1, 5)} / 5</p>
+                </div>
 
-                <section className="space-y-3 rounded-2xl border border-white/10 bg-black/35 p-5">
-                    <h3 className="text-lg font-semibold">Panel 4 — Security Log Console</h3>
-                    <div className="h-56 overflow-auto rounded-xl border border-white/10 bg-black/55 p-3 font-mono text-xs text-green-300">
-                        {logs.length === 0 ? <p className="text-slate-500">No events yet.</p> : logs.map((line, idx) => <p key={`${idx}-${line}`}>{line}</p>)}
-                    </div>
-                </section>
-            </div>
+                <div className="grid gap-4 xl:grid-cols-2">
+                    <section className="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-sm text-slate-300">
+                        <h4 className="mb-2 font-semibold">Session State</h4>
+                        <p>Access token: <span className={accessStatus === 'valid' ? 'text-emerald-300' : 'text-rose-300'}>{accessStatus}</span></p>
+                        <p>TTL: <span className="font-mono text-cyan-200">{fmt(accessTtl)}</span></p>
+                        <p>Issued: {accessIssuedAt.toLocaleTimeString()}</p>
+                        <p>Refresh status: <span className={refreshToken.status === 'active' ? 'text-emerald-300' : 'text-rose-300'}>{refreshToken.status}</span></p>
+                        <p>Refresh version: v{refreshToken.version}</p>
+                        <p>Family: {refreshToken.familyId}</p>
+                        <p>Old token ref: {refreshToken.oldRef}</p>
+                        <p className="mt-2">Redis active_token: <span className="font-mono text-emerald-300">{redisState.activeToken}</span></p>
+                        <p>Redis revoked_token: <span className="font-mono text-rose-300">{revokedPreview.join(', ') || '-'}</span></p>
+                        <p>Redis family_blacklisted: <span className={redisState.familyBlacklisted ? 'text-rose-300' : 'text-emerald-300'}>{String(redisState.familyBlacklisted)}</span></p>
+                        <p>Session status: <span className={sessionStatus === 'active' ? 'text-emerald-300' : 'text-rose-300'}>{sessionStatus}</span></p>
+                    </section>
+
+                    <section className="rounded-xl border border-white/10 bg-black/45 p-4">
+                        <h4 className="mb-2 font-semibold">Security Log Console</h4>
+                        <div className="h-52 overflow-auto rounded-lg border border-white/10 bg-black/55 p-3 font-mono text-xs text-green-300">
+                            {logs.map((l, i) => <p key={`${i}-${l}`}>{l}</p>)}
+                        </div>
+                    </section>
+                </div>
+            </section>
         </DocsLayout>
     );
 };
