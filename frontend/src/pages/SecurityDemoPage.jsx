@@ -4,11 +4,13 @@ import DocsLayout from '../components/DocsLayout';
 const ACCESS_TTL_SECONDS = 15 * 60;
 const EVENT_GAP = 90;
 const ARROW_DRAW_MS = 1100;
+const CANVAS_WIDTH = 900;
+const MAX_X = CANVAS_WIDTH - 40;
 
 const ACTORS = [
-    {id: 'USER', label: 'User', x: 220},
-    {id: 'BACKEND', label: 'Backend', x: 680},
-    {id: 'ATTACKER', label: 'Attacker', x: 1120},
+    {id: 'USER', label: 'User', x: 200},
+    {id: 'BACKEND', label: 'Backend', x: 450},
+    {id: 'ATTACKER', label: 'Attacker', x: 700},
 ];
 
 const SIMULATION_STEPS = [
@@ -23,7 +25,8 @@ const SIMULATION_STEPS = [
 
 const initialRefresh = {id: 'rt_100a', version: 1, status: 'active', oldRef: '-'};
 
-const actorX = (id) => ACTORS.find((a) => a.id === id)?.x ?? 0;
+const clampX = (value) => Math.max(40, Math.min(value, MAX_X));
+const actorX = (id) => clampX(ACTORS.find((a) => a.id === id)?.x ?? 0);
 const fmt = (s) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(2, '0')}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
 const tokenId = () => `rt_${Math.random().toString(36).slice(2, 6)}`;
 
@@ -131,7 +134,6 @@ const SecurityDemoPage = () => {
                 setRefreshToken((prev) => ({...prev, status: 'revoked'}));
                 addLog('[Security] refresh token reuse detected');
                 addLog('[Session] session revoked');
-
                 await animateArrow({from: 'BACKEND', to: 'ATTACKER', label: 'Blocked', tone: 'attack', messageType: 'response'});
                 break;
             default:
@@ -207,12 +209,15 @@ const SecurityDemoPage = () => {
                     position: relative;
                 }
                 .simulation-canvas {
+                    width: 900px;
                     min-height: 800px;
-                    width: 100%;
+                    margin: 0 auto;
+                    position: relative;
+                    display: block;
                 }
                 .arrow-line {
-                    stroke-dasharray: 460;
-                    stroke-dashoffset: 460;
+                    stroke-dasharray: 260;
+                    stroke-dashoffset: 260;
                     animation: drawLine 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
                 }
                 .arrow-head {
@@ -253,10 +258,10 @@ const SecurityDemoPage = () => {
 
                 <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0d1326] to-[#101b35] p-4" style={{minHeight: 780}}>
                     <div ref={timelineRef} className="simulation-frame rounded-xl border border-white/10 bg-black/15 p-2">
-                        <svg width="100%" height={diagramHeight} className="simulation-canvas min-w-[980px]">
+                        <svg width={CANVAS_WIDTH} height={diagramHeight} className="simulation-canvas">
                             {ACTORS.map((actor) => (
                                 <g key={actor.id}>
-                                    <rect x={actor.x - 80} y={20} width="160" height="50" rx="12" className="fill-slate-900/90 stroke-slate-500" />
+                                    <rect x={actor.x - 75} y={20} width="150" height="50" rx="12" className="fill-slate-900/90 stroke-slate-500" />
                                     <text x={actor.x} y={52} textAnchor="middle" className="fill-slate-100 text-[17px] font-semibold">{actor.label}</text>
                                     <line x1={actor.x} y1={70} x2={actor.x} y2={diagramHeight - 30} className="stroke-slate-500" strokeDasharray="8 8" />
                                 </g>
@@ -279,9 +284,9 @@ const SecurityDemoPage = () => {
                                     return (
                                         <g key={event.id}>
                                             <rect
-                                                x={x - 120}
+                                                x={x - 110}
                                                 y={y - 22}
-                                                width="240"
+                                                width="220"
                                                 height="44"
                                                 rx="8"
                                                 className={isActive ? 'fill-cyan-400/20 stroke-cyan-300' : processClass}
@@ -292,12 +297,10 @@ const SecurityDemoPage = () => {
                                     );
                                 }
 
-                                const startX = actorX(event.from);
-                                const endX = actorX(event.to);
+                                const startX = clampX(actorX(event.from));
+                                const endX = clampX(actorX(event.to));
                                 const direction = startX < endX ? 'right' : 'left';
-                                const dx = direction === 'right' ? -12 : 12;
-                                const staticMarkerEnd = !isActive && direction === 'right' ? 'url(#arrowRight)' : undefined;
-                                const staticMarkerStart = !isActive && direction === 'left' ? 'url(#arrowLeft)' : undefined;
+                                const arrowColor = strokeColor(event);
                                 const headPoints = direction === 'right'
                                     ? `${endX},${y} ${endX - 12},${y - 6} ${endX - 12},${y + 6}`
                                     : `${endX},${y} ${endX + 12},${y - 6} ${endX + 12},${y + 6}`;
@@ -310,32 +313,19 @@ const SecurityDemoPage = () => {
                                             x2={endX}
                                             y2={y}
                                             className={isActive ? 'arrow-line' : undefined}
-                                            stroke={strokeColor(event)}
+                                            stroke={arrowColor}
                                             strokeWidth="3"
-                                            markerEnd={staticMarkerEnd}
-                                            markerStart={staticMarkerStart}
                                         />
+                                        <polygon points={headPoints} fill={arrowColor} className={isActive ? 'arrow-head' : undefined} />
                                         {isActive ? (
-                                            <>
-                                                <polygon points={headPoints} fill={strokeColor(event)} className="arrow-head" />
-                                                <circle r="4" fill="#22d3ee" className="packet">
-                                                    <animateMotion dur="1.1s" fill="freeze" path={`M ${startX + dx} ${y} L ${endX - dx} ${y}`} />
-                                                </circle>
-                                            </>
+                                            <circle r="4" fill="#22d3ee" className="packet">
+                                                <animateMotion dur="1.1s" fill="freeze" path={`M ${startX} ${y} L ${endX} ${y}`} />
+                                            </circle>
                                         ) : null}
                                         <text x={(startX + endX) / 2} y={y - 10} textAnchor="middle" className="fill-slate-200 text-[15px]">{event.label}</text>
                                     </g>
                                 );
                             })}
-
-                            <defs>
-                                <marker id="arrowRight" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-                                    <path d="M0,0 L12,6 L0,12 z" fill="#e2e8f0" />
-                                </marker>
-                                <marker id="arrowLeft" markerWidth="12" markerHeight="12" refX="2" refY="6" orient="auto-start-reverse">
-                                    <path d="M12,0 L0,6 L12,12 z" fill="#e2e8f0" />
-                                </marker>
-                            </defs>
                         </svg>
                     </div>
                 </div>
