@@ -5,6 +5,7 @@ const links = [
     {to: '/features', label: 'Features'},
     {to: '/architecture', label: 'Architecture'},
     {to: '/security-demo', label: 'Security Demo'},
+    {to: '/identifier-flow', label: 'Identifier Flow'},
     {to: '/deployment', label: 'Deployment'},
     {to: '/login', label: 'App Login'},
 ];

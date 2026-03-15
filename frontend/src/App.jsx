@@ -20,6 +20,7 @@ import ArchitectureDocsPage from './pages/ArchitectureDocsPage';
 import SecurityDemoPage from './pages/SecurityDemoPage';
 import DeploymentDocsPage from './pages/DeploymentDocsPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
+import IdentifierFlowPage from './pages/IdentifierFlowPage';
 
 const AppShell = () => {
     const navigate = useNavigate();
@@ -49,6 +50,7 @@ const AppShell = () => {
                 <Route path="/features" element={<FeaturesDocsPage/>}/>
                 <Route path="/architecture" element={<ArchitectureDocsPage/>}/>
                 <Route path="/security-demo" element={<SecurityDemoPage/>}/>
+                <Route path="/identifier-flow" element={<IdentifierFlowPage/>}/>
                 <Route path="/deployment" element={<DeploymentDocsPage/>}/>
                 <Route path="/signup" element={<SignupPage/>}/>
                 <Route path="/otp" element={<OtpPage/>}/>
