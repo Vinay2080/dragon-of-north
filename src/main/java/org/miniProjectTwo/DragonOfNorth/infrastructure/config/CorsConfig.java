@@ -47,8 +47,6 @@ public class CorsConfig {
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*",
-                "https://app.verloren.dev",
-                "https://*.verloren.dev",
                 "https://app.verloren.dev"
         ));
 

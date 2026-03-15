@@ -44,12 +44,22 @@ const fetchCsrfToken = async () => {
         throw new Error('Failed to bootstrap CSRF token')
     }
 
+    // In cross-subdomain deployments, document.cookie may not expose api-domain cookies.
+    // Read token from API JSON payload as a fallback when the cookie is not directly visible.
+    let tokenFromBody = null
+    try {
+        const data = await response.json()
+        tokenFromBody = data?.data?.token || data?.token || null
+    } catch {
+        tokenFromBody = null
+    }
+
     const tokenFromCookie = readCookie(CSRF_COOKIE_NAME)
-    if (!tokenFromCookie) {
+    if (!tokenFromCookie && !tokenFromBody) {
         throw new Error(`CSRF cookie ${CSRF_COOKIE_NAME} was not set by backend`)
     }
 
-    return tokenFromCookie
+    return tokenFromCookie || tokenFromBody
 }
 
 export const ensureCsrfToken = async ({forceRefresh = false} = {}) => {

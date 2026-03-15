@@ -2,7 +2,6 @@ package org.miniProjectTwo.DragonOfNorth.security.config;
 
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.security.filter.JwtFilter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -89,9 +88,6 @@ public class SecurityConfig {
     private final CorsConfigurationSource corsConfigurationSource;
     private final JwtFilter jwtFilter;
 
-    @Value("${app.security.cookie.same-site}")
-    private String sameSitePolicy;
-
     /**
      * Configures the HTTP security filter chain.
      *
@@ -146,7 +142,7 @@ public class SecurityConfig {
         repository.setHeaderName("X-XSRF-TOKEN");
         repository.setCookiePath("/");
         repository.setCookieCustomizer(cookie -> cookie
-                .sameSite(sameSitePolicy)
+                .sameSite("None")
                 .secure(true));
         return repository;
     }
