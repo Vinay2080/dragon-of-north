@@ -1,18 +1,19 @@
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {motion} from 'framer-motion';
 import DocsLayout from '../components/DocsLayout';
 import ReactFlow, {Background, Controls, ReactFlowProvider, useEdgesState, useNodesState} from 'reactflow';
 import 'reactflow/dist/style.css';
 
-const STEP_DELAY_MS = 320;
+const STEP_DELAY_MS = 580;
+const WORKFLOW_STEPS = ['user_input', 'identifier_api', 'user_exists', 'status_check', 'email_verified', 'final_branch'];
 
 const NODE_META = {
     input: {label: 'User Input', tooltip: 'Collects an email address or E.164 phone number.'},
     api: {label: 'Identifier Status API', tooltip: 'Submits identifier payload and receives account status.'},
     existsDecision: {label: 'User Exists Decision', tooltip: 'Determines whether an account already exists.'},
     signup: {label: 'Signup Path', tooltip: 'New user route for account creation.'},
-    status: {label: 'User Status Check', tooltip: 'Evaluates ACTIVE/LOCKED/CREATED style user state.'},
-    verifiedDecision: {label: 'Email Verified Decision', tooltip: 'Checks verification state for existing user.'},
+    status: {label: 'User Status Check', tooltip: 'Evaluates existing user status.'},
+    verifiedDecision: {label: 'Email Verified Decision', tooltip: 'Checks whether email is already verified.'},
     login: {label: 'Login Path', tooltip: 'Existing verified users continue to login.'},
     verify: {label: 'Email Verification Path', tooltip: 'Existing unverified users continue to verification.'},
 };
@@ -39,21 +40,9 @@ const baseEdges = [
 ];
 
 const scenarios = {
-    new: {
-        response: {exists: false, app_user_status: 'NOT_EXISTS', email_verified: false, next_action: 'SIGNUP'},
-        nodes: ['input', 'api', 'existsDecision', 'signup'],
-        edges: ['e-input-api', 'e-api-exists', 'e-exists-signup'],
-    },
-    verified: {
-        response: {exists: true, app_user_status: 'ACTIVE', email_verified: true, next_action: 'LOGIN'},
-        nodes: ['input', 'api', 'existsDecision', 'status', 'verifiedDecision', 'login'],
-        edges: ['e-input-api', 'e-api-exists', 'e-exists-status', 'e-status-verified', 'e-verified-login'],
-    },
-    unverified: {
-        response: {exists: true, app_user_status: 'ACTIVE', email_verified: false, next_action: 'EMAIL_VERIFICATION'},
-        nodes: ['input', 'api', 'existsDecision', 'status', 'verifiedDecision', 'verify'],
-        edges: ['e-input-api', 'e-api-exists', 'e-exists-status', 'e-status-verified', 'e-verified-email'],
-    },
+    new: {exists: false, app_user_status: 'NOT_EXISTS', email_verified: false, next_action: 'SIGNUP'},
+    verified: {exists: true, app_user_status: 'ACTIVE', email_verified: true, next_action: 'LOGIN'},
+    unverified: {exists: true, app_user_status: 'ACTIVE', email_verified: false, next_action: 'EMAIL_VERIFICATION'},
 };
 
 const identifyType = (value) => {
@@ -61,9 +50,7 @@ const identifyType = (value) => {
     if (!trimmed) return {type: 'UNKNOWN', normalized: '', valid: false};
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (emailRegex.test(trimmed)) {
-        return {type: 'EMAIL', normalized: trimmed.toLowerCase(), valid: true};
-    }
+    if (emailRegex.test(trimmed)) return {type: 'EMAIL', normalized: trimmed.toLowerCase(), valid: true};
 
     const phoneCandidate = trimmed.replace(/[\s()-]/g, '');
     const phoneRegex = /^\+?[1-9]\d{7,14}$/;
@@ -87,7 +74,7 @@ const MotionNode = motion.div;
 const WorkflowNode = ({data}) => (
     <MotionNode
         animate={{
-            boxShadow: data.active ? '0 0 0 1px rgba(56, 189, 248, 0.85), 0 0 28px rgba(56, 189, 248, 0.6)' : '0 0 0 1px rgba(100, 116, 139, 0.55)',
+            boxShadow: data.active ? '0 0 0 1px rgba(56, 189, 248, 0.85), 0 0 28px rgba(56, 189, 248, 0.65)' : '0 0 0 1px rgba(100, 116, 139, 0.55)',
             scale: data.active ? 1.025 : 1,
             borderColor: data.active ? 'rgba(56, 189, 248, 0.95)' : 'rgba(51, 65, 85, 0.8)',
         }}
@@ -107,13 +94,17 @@ const nodeTypes = {workflowNode: WorkflowNode};
 const IdentifierFlowVisualizerContent = () => {
     const [identifier, setIdentifier] = useState('');
     const [isAnimating, setAnimating] = useState(false);
+    const [currentStep, setCurrentStep] = useState('idle');
+    const [activeEdgeId, setActiveEdgeId] = useState('');
     const [scenarioName, setScenarioName] = useState('verified');
+    const [finalNodeId, setFinalNodeId] = useState('');
     const [eventLog, setEventLog] = useState(['Idle. Enter an email or phone and click "Check Identifier".']);
 
     const [nodes, setNodes, onNodesChange] = useNodesState(baseNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(baseEdges);
 
     const identifierMeta = useMemo(() => identifyType(identifier), [identifier]);
+    const simulatedResponse = useMemo(() => scenarios[scenarioName], [scenarioName]);
 
     const simulatedRequest = useMemo(
         () => ({
@@ -123,13 +114,25 @@ const IdentifierFlowVisualizerContent = () => {
         [identifierMeta],
     );
 
-    const simulatedResponse = useMemo(() => scenarios[scenarioName].response, [scenarioName]);
+    const stepToNodeId = useMemo(
+        () => ({
+            user_input: 'input',
+            identifier_api: 'api',
+            user_exists: 'existsDecision',
+            status_check: 'status',
+            email_verified: 'verifiedDecision',
+            final_branch: finalNodeId,
+        }),
+        [finalNodeId],
+    );
 
-    const repaintGraph = useCallback((nodeId, edgeId) => {
-        setNodes((prev) => prev.map((node) => ({...node, data: {...node.data, active: node.id === nodeId}})));
+    useEffect(() => {
+        const activeNode = stepToNodeId[currentStep] || '';
+
+        setNodes((prev) => prev.map((node) => ({...node, data: {...node.data, active: node.id === activeNode}})));
         setEdges((prev) =>
             prev.map((edge) => {
-                const active = edge.id === edgeId;
+                const active = edge.id === activeEdgeId;
                 return {
                     ...edge,
                     animated: active,
@@ -139,47 +142,64 @@ const IdentifierFlowVisualizerContent = () => {
                 };
             }),
         );
-    }, [setEdges, setNodes]);
-
-    const resetGraph = useCallback(() => {
-        repaintGraph('', '');
-    }, [repaintGraph]);
+    }, [activeEdgeId, currentStep, setEdges, setNodes, stepToNodeId]);
 
     const appendLog = useCallback((message) => {
-        setEventLog((prev) => [...prev.slice(-7), message]);
+        setEventLog((prev) => [...prev.slice(-9), message]);
+    }, []);
+
+    const resetFlowState = useCallback(() => {
+        setCurrentStep('idle');
+        setActiveEdgeId('');
+        setFinalNodeId('');
     }, []);
 
     const runAnimation = useCallback(async () => {
         if (!identifierMeta.valid || isAnimating) return;
 
-        setAnimating(true);
-        setEventLog([`Identifier detected as ${identifierMeta.type}.`]);
-        resetGraph();
-
         const pickedScenario = inferScenario(identifierMeta.normalized);
+        const response = scenarios[pickedScenario];
+
+        const finalNode = !response.exists ? 'signup' : (response.email_verified ? 'login' : 'verify');
+        const finalEdge = !response.exists ? 'e-exists-signup' : (response.email_verified ? 'e-verified-login' : 'e-verified-email');
+
+        setAnimating(true);
         setScenarioName(pickedScenario);
-        appendLog(`Calling Identifier Status API for ${identifierMeta.normalized}.`);
+        setEventLog([`Detected ${identifierMeta.type}: ${identifierMeta.normalized}`]);
+        setFinalNodeId(finalNode);
+        setActiveEdgeId('');
 
-        const {nodes: pathNodes, edges: pathEdges} = scenarios[pickedScenario];
+        for (const step of WORKFLOW_STEPS) {
+            setCurrentStep(step);
 
-        for (let i = 0; i < pathNodes.length; i += 1) {
-            const nodeId = pathNodes[i];
-            const edgeId = pathEdges[i - 1] ?? '';
-            repaintGraph(nodeId, edgeId);
-            appendLog(`Step ${i + 1}/${pathNodes.length}: ${NODE_META[nodeId].label}`);
+            if (step === 'identifier_api') setActiveEdgeId('e-input-api');
+            if (step === 'user_exists') setActiveEdgeId('e-api-exists');
+            if (step === 'status_check' && response.exists) setActiveEdgeId('e-exists-status');
+            if (step === 'status_check' && !response.exists) setActiveEdgeId('');
+            if (step === 'email_verified' && response.exists) setActiveEdgeId('e-status-verified');
+            if (step === 'email_verified' && !response.exists) setActiveEdgeId('');
+            if (step === 'final_branch') setActiveEdgeId(finalEdge);
+
+            if (step === 'user_input') appendLog('Step user_input: captured identifier.');
+            if (step === 'identifier_api') appendLog('Step identifier_api: sending Identifier Status API request.');
+            if (step === 'user_exists') appendLog(`Step user_exists: exists=${String(response.exists)}.`);
+            if (step === 'status_check') appendLog(`Step status_check: ${response.exists ? `status=${response.app_user_status}` : 'skipped for new user'}.`);
+            if (step === 'email_verified') appendLog(`Step email_verified: ${response.exists ? `email_verified=${String(response.email_verified)}` : 'skipped for new user'}.`);
+            if (step === 'final_branch') appendLog(`Step final_branch: routing to ${NODE_META[finalNode].label}.`);
+
             await wait(STEP_DELAY_MS);
         }
 
-        appendLog(`Completed path: ${scenarios[pickedScenario].response.next_action}`);
+        appendLog(`Completed flow: ${response.next_action}.`);
         setAnimating(false);
-    }, [appendLog, identifierMeta, isAnimating, repaintGraph, resetGraph]);
+    }, [appendLog, identifierMeta, isAnimating]);
 
     return (
         <div className="space-y-5">
             <style>{`
                 .react-flow__edge.edge-active path {
                     stroke-dasharray: 10;
-                    animation: flow-dash 0.36s linear infinite;
+                    animation: flow-dash 0.62s linear infinite;
                 }
                 .react-flow__edge.edge-default path {
                     stroke-dasharray: none;
@@ -195,7 +215,10 @@ const IdentifierFlowVisualizerContent = () => {
                     <div className="mb-2 flex flex-col gap-3 sm:flex-row">
                         <input
                             value={identifier}
-                            onChange={(event) => setIdentifier(event.target.value)}
+                            onChange={(event) => {
+                                setIdentifier(event.target.value);
+                                if (!isAnimating) resetFlowState();
+                            }}
                             placeholder="Enter email or phone (+1555...)"
                             className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-400"
                         />
@@ -248,14 +271,14 @@ const IdentifierFlowVisualizerContent = () => {
                     </div>
                     <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs text-slate-300">
                         <p className="mb-2 font-semibold">Execution Log</p>
-                        <div className="max-h-28 space-y-1 overflow-auto text-slate-400">
+                        <div className="max-h-36 space-y-1 overflow-auto text-slate-400">
                             {eventLog.map((entry) => (
                                 <p key={entry}>{entry}</p>
                             ))}
                         </div>
                     </div>
                     <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs text-slate-400">
-                        Use <code className="text-cyan-300">new@domain.com</code> for Signup, <code className="text-cyan-300">unverified@domain.com</code> for Email Verification, or any other valid identifier for Login.
+                        Current step: <span className="text-cyan-300">{currentStep}</span>
                     </div>
                 </aside>
             </div>
