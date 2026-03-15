@@ -1,42 +1,62 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {motion} from 'framer-motion';
 import DocsLayout from '../components/DocsLayout';
 import ReactFlow, {Background, Controls, ReactFlowProvider, useEdgesState, useNodesState} from 'reactflow';
 import 'reactflow/dist/style.css';
 
 const STEP_DELAY_MS = 580;
-const WORKFLOW_STEPS = ['user_input', 'identifier_api', 'user_exists', 'status_check', 'email_verified', 'final_branch'];
+const STEP_SEQUENCE = ['user_input', 'identifier_api', 'user_exists', 'status_check', 'email_verified'];
 
-const NODE_META = {
-    input: {label: 'User Input', tooltip: 'Collects an email address or E.164 phone number.'},
-    api: {label: 'Identifier Status API', tooltip: 'Submits identifier payload and receives account status.'},
-    existsDecision: {label: 'User Exists Decision', tooltip: 'Determines whether an account already exists.'},
-    signup: {label: 'Signup Path', tooltip: 'New user route for account creation.'},
-    status: {label: 'User Status Check', tooltip: 'Evaluates existing user status.'},
-    verifiedDecision: {label: 'Email Verified Decision', tooltip: 'Checks whether email is already verified.'},
-    login: {label: 'Login Path', tooltip: 'Existing verified users continue to login.'},
-    verify: {label: 'Email Verification Path', tooltip: 'Existing unverified users continue to verification.'},
+const NODE_DEFS = {
+    user_input: {label: 'User Input', tooltip: 'Collects an email or phone identifier from the user.'},
+    identifier_api: {label: 'Identifier Status API', tooltip: 'Sends identifier payload to the status endpoint.'},
+    user_exists: {label: 'User Exists Decision', tooltip: 'Checks if the account exists.'},
+    signup_path: {label: 'Signup Path', tooltip: 'Route for new users to create an account.'},
+    status_check: {label: 'User Status Check', tooltip: 'Evaluates account status for existing users.'},
+    email_verified: {label: 'Email Verified Decision', tooltip: 'Determines if existing user is verified.'},
+    login_path: {label: 'Login Path', tooltip: 'Route for existing verified users.'},
+    verification_path: {label: 'Email Verification Path', tooltip: 'Route for existing unverified users.'},
+};
+
+const BASE_NODE_STYLE = {
+    background: '#0f172a',
+    color: '#cbd5e1',
+    border: '1px solid rgba(71, 85, 105, 0.9)',
+    borderRadius: '12px',
+    boxShadow: '0 0 0 rgba(0, 234, 255, 0)',
+    transform: 'scale(1)',
+    transition: 'all 220ms ease',
+    width: 210,
+    padding: '12px',
+    fontSize: '12px',
+};
+
+const ACTIVE_NODE_STYLE = {
+    ...BASE_NODE_STYLE,
+    border: '1px solid #00eaff',
+    boxShadow: '0 0 20px rgba(0, 234, 255, 0.75)',
+    transform: 'scale(1.05)',
+    color: '#e2e8f0',
 };
 
 const baseNodes = [
-    {id: 'input', position: {x: 80, y: 120}, data: {...NODE_META.input, active: false}, type: 'workflowNode'},
-    {id: 'api', position: {x: 350, y: 120}, data: {...NODE_META.api, active: false}, type: 'workflowNode'},
-    {id: 'existsDecision', position: {x: 620, y: 120}, data: {...NODE_META.existsDecision, active: false}, type: 'workflowNode'},
-    {id: 'signup', position: {x: 880, y: 30}, data: {...NODE_META.signup, active: false}, type: 'workflowNode'},
-    {id: 'status', position: {x: 880, y: 210}, data: {...NODE_META.status, active: false}, type: 'workflowNode'},
-    {id: 'verifiedDecision', position: {x: 1140, y: 210}, data: {...NODE_META.verifiedDecision, active: false}, type: 'workflowNode'},
-    {id: 'login', position: {x: 1400, y: 130}, data: {...NODE_META.login, active: false}, type: 'workflowNode'},
-    {id: 'verify', position: {x: 1400, y: 290}, data: {...NODE_META.verify, active: false}, type: 'workflowNode'},
+    {id: 'user_input', position: {x: 60, y: 140}, data: NODE_DEFS.user_input, style: BASE_NODE_STYLE},
+    {id: 'identifier_api', position: {x: 330, y: 140}, data: NODE_DEFS.identifier_api, style: BASE_NODE_STYLE},
+    {id: 'user_exists', position: {x: 600, y: 140}, data: NODE_DEFS.user_exists, style: BASE_NODE_STYLE},
+    {id: 'signup_path', position: {x: 870, y: 40}, data: NODE_DEFS.signup_path, style: BASE_NODE_STYLE},
+    {id: 'status_check', position: {x: 870, y: 240}, data: NODE_DEFS.status_check, style: BASE_NODE_STYLE},
+    {id: 'email_verified', position: {x: 1140, y: 240}, data: NODE_DEFS.email_verified, style: BASE_NODE_STYLE},
+    {id: 'login_path', position: {x: 1410, y: 140}, data: NODE_DEFS.login_path, style: BASE_NODE_STYLE},
+    {id: 'verification_path', position: {x: 1410, y: 320}, data: NODE_DEFS.verification_path, style: BASE_NODE_STYLE},
 ];
 
 const baseEdges = [
-    {id: 'e-input-api', source: 'input', target: 'api', label: 'submit'},
-    {id: 'e-api-exists', source: 'api', target: 'existsDecision', label: 'status payload'},
-    {id: 'e-exists-signup', source: 'existsDecision', target: 'signup', label: 'No'},
-    {id: 'e-exists-status', source: 'existsDecision', target: 'status', label: 'Yes'},
-    {id: 'e-status-verified', source: 'status', target: 'verifiedDecision', label: 'ACTIVE'},
-    {id: 'e-verified-login', source: 'verifiedDecision', target: 'login', label: 'Yes'},
-    {id: 'e-verified-email', source: 'verifiedDecision', target: 'verify', label: 'No'},
+    {id: 'e-user_input-identifier_api', source: 'user_input', target: 'identifier_api', label: 'submit'},
+    {id: 'e-identifier_api-user_exists', source: 'identifier_api', target: 'user_exists', label: 'response'},
+    {id: 'e-user_exists-signup_path', source: 'user_exists', target: 'signup_path', label: 'No'},
+    {id: 'e-user_exists-status_check', source: 'user_exists', target: 'status_check', label: 'Yes'},
+    {id: 'e-status_check-email_verified', source: 'status_check', target: 'email_verified', label: 'ACTIVE'},
+    {id: 'e-email_verified-login_path', source: 'email_verified', target: 'login_path', label: 'Yes'},
+    {id: 'e-email_verified-verification_path', source: 'email_verified', target: 'verification_path', label: 'No'},
 ];
 
 const scenarios = {
@@ -69,35 +89,12 @@ const inferScenario = (normalizedIdentifier) => {
 };
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const MotionNode = motion.div;
-
-const WorkflowNode = ({data}) => (
-    <MotionNode
-        animate={{
-            boxShadow: data.active ? '0 0 0 1px rgba(56, 189, 248, 0.85), 0 0 28px rgba(56, 189, 248, 0.65)' : '0 0 0 1px rgba(100, 116, 139, 0.55)',
-            scale: data.active ? 1.025 : 1,
-            borderColor: data.active ? 'rgba(56, 189, 248, 0.95)' : 'rgba(51, 65, 85, 0.8)',
-        }}
-        transition={{duration: 0.26}}
-        className="group relative w-52 rounded-xl border bg-slate-900/95 px-4 py-3 text-left"
-    >
-        <p className="text-[11px] uppercase tracking-[0.16em] text-cyan-300/75">Node</p>
-        <p className="mt-1 text-sm font-semibold text-slate-100">{data.label}</p>
-        <div className="pointer-events-none absolute -top-12 left-1/2 z-20 hidden -translate-x-1/2 whitespace-nowrap rounded-md border border-slate-600 bg-slate-950 px-2 py-1 text-xs text-slate-200 shadow-xl group-hover:block">
-            {data.tooltip}
-        </div>
-    </MotionNode>
-);
-
-const nodeTypes = {workflowNode: WorkflowNode};
 
 const IdentifierFlowVisualizerContent = () => {
     const [identifier, setIdentifier] = useState('');
     const [isAnimating, setAnimating] = useState(false);
-    const [currentStep, setCurrentStep] = useState('idle');
-    const [activeEdgeId, setActiveEdgeId] = useState('');
+    const [currentStep, setCurrentStep] = useState('');
     const [scenarioName, setScenarioName] = useState('verified');
-    const [finalNodeId, setFinalNodeId] = useState('');
     const [eventLog, setEventLog] = useState(['Idle. Enter an email or phone and click "Check Identifier".']);
 
     const [nodes, setNodes, onNodesChange] = useNodesState(baseNodes);
@@ -114,44 +111,37 @@ const IdentifierFlowVisualizerContent = () => {
         [identifierMeta],
     );
 
-    const stepToNodeId = useMemo(
-        () => ({
-            user_input: 'input',
-            identifier_api: 'api',
-            user_exists: 'existsDecision',
-            status_check: 'status',
-            email_verified: 'verifiedDecision',
-            final_branch: finalNodeId,
-        }),
-        [finalNodeId],
-    );
-
     useEffect(() => {
-        const activeNode = stepToNodeId[currentStep] || '';
+        setNodes((prev) =>
+            prev.map((node) => ({
+                ...node,
+                style: node.id === currentStep ? ACTIVE_NODE_STYLE : BASE_NODE_STYLE,
+            })),
+        );
 
-        setNodes((prev) => prev.map((node) => ({...node, data: {...node.data, active: node.id === activeNode}})));
         setEdges((prev) =>
             prev.map((edge) => {
-                const active = edge.id === activeEdgeId;
+                const active = edge.source === currentStep || edge.target === currentStep;
                 return {
                     ...edge,
                     animated: active,
                     className: active ? 'edge-active' : 'edge-default',
-                    style: {stroke: active ? '#22d3ee' : '#475569', strokeWidth: active ? 2.8 : 1.3},
+                    style: {
+                        stroke: active ? '#00eaff' : '#475569',
+                        strokeWidth: active ? 2.6 : 1.2,
+                    },
                     labelStyle: {fill: active ? '#e2e8f0' : '#94a3b8', fontSize: 11},
                 };
             }),
         );
-    }, [activeEdgeId, currentStep, setEdges, setNodes, stepToNodeId]);
+    }, [currentStep, setEdges, setNodes]);
 
     const appendLog = useCallback((message) => {
-        setEventLog((prev) => [...prev.slice(-9), message]);
+        setEventLog((prev) => [...prev.slice(-10), message]);
     }, []);
 
     const resetFlowState = useCallback(() => {
-        setCurrentStep('idle');
-        setActiveEdgeId('');
-        setFinalNodeId('');
+        setCurrentStep('');
     }, []);
 
     const runAnimation = useCallback(async () => {
@@ -159,36 +149,27 @@ const IdentifierFlowVisualizerContent = () => {
 
         const pickedScenario = inferScenario(identifierMeta.normalized);
         const response = scenarios[pickedScenario];
-
-        const finalNode = !response.exists ? 'signup' : (response.email_verified ? 'login' : 'verify');
-        const finalEdge = !response.exists ? 'e-exists-signup' : (response.email_verified ? 'e-verified-login' : 'e-verified-email');
+        const finalStep = !response.exists ? 'signup_path' : (response.email_verified ? 'login_path' : 'verification_path');
 
         setAnimating(true);
         setScenarioName(pickedScenario);
         setEventLog([`Detected ${identifierMeta.type}: ${identifierMeta.normalized}`]);
-        setFinalNodeId(finalNode);
-        setActiveEdgeId('');
 
-        for (const step of WORKFLOW_STEPS) {
+        for (const step of STEP_SEQUENCE) {
             setCurrentStep(step);
 
-            if (step === 'identifier_api') setActiveEdgeId('e-input-api');
-            if (step === 'user_exists') setActiveEdgeId('e-api-exists');
-            if (step === 'status_check' && response.exists) setActiveEdgeId('e-exists-status');
-            if (step === 'status_check' && !response.exists) setActiveEdgeId('');
-            if (step === 'email_verified' && response.exists) setActiveEdgeId('e-status-verified');
-            if (step === 'email_verified' && !response.exists) setActiveEdgeId('');
-            if (step === 'final_branch') setActiveEdgeId(finalEdge);
-
-            if (step === 'user_input') appendLog('Step user_input: captured identifier.');
-            if (step === 'identifier_api') appendLog('Step identifier_api: sending Identifier Status API request.');
+            if (step === 'user_input') appendLog('Step user_input: identifier captured.');
+            if (step === 'identifier_api') appendLog('Step identifier_api: calling Identifier Status API.');
             if (step === 'user_exists') appendLog(`Step user_exists: exists=${String(response.exists)}.`);
-            if (step === 'status_check') appendLog(`Step status_check: ${response.exists ? `status=${response.app_user_status}` : 'skipped for new user'}.`);
-            if (step === 'email_verified') appendLog(`Step email_verified: ${response.exists ? `email_verified=${String(response.email_verified)}` : 'skipped for new user'}.`);
-            if (step === 'final_branch') appendLog(`Step final_branch: routing to ${NODE_META[finalNode].label}.`);
+            if (step === 'status_check') appendLog(`Step status_check: ${response.exists ? `status=${response.app_user_status}` : 'skipped'}.`);
+            if (step === 'email_verified') appendLog(`Step email_verified: ${response.exists ? `email_verified=${String(response.email_verified)}` : 'skipped'}.`);
 
             await wait(STEP_DELAY_MS);
         }
+
+        setCurrentStep(finalStep);
+        appendLog(`Step final_branch: routing to ${NODE_DEFS[finalStep].label}.`);
+        await wait(STEP_DELAY_MS);
 
         appendLog(`Completed flow: ${response.next_action}.`);
         setAnimating(false);
@@ -198,14 +179,14 @@ const IdentifierFlowVisualizerContent = () => {
         <div className="space-y-5">
             <style>{`
                 .react-flow__edge.edge-active path {
-                    stroke-dasharray: 10;
-                    animation: flow-dash 0.62s linear infinite;
+                    stroke-dasharray: 6;
+                    animation: flow 1s linear infinite;
                 }
                 .react-flow__edge.edge-default path {
                     stroke-dasharray: none;
                 }
-                @keyframes flow-dash {
-                    from { stroke-dashoffset: 22; }
+                @keyframes flow {
+                    from { stroke-dashoffset: 10; }
                     to { stroke-dashoffset: 0; }
                 }
             `}</style>
@@ -243,7 +224,6 @@ const IdentifierFlowVisualizerContent = () => {
                             edges={edges}
                             onNodesChange={onNodesChange}
                             onEdgesChange={onEdgesChange}
-                            nodeTypes={nodeTypes}
                             nodesDraggable={false}
                             nodesConnectable={false}
                             elementsSelectable={false}
@@ -278,7 +258,7 @@ const IdentifierFlowVisualizerContent = () => {
                         </div>
                     </div>
                     <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs text-slate-400">
-                        Current step: <span className="text-cyan-300">{currentStep}</span>
+                        Current step: <span className="text-cyan-300">{currentStep || 'idle'}</span>
                     </div>
                 </aside>
             </div>
