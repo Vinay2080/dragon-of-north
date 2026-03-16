@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {useAuth} from '../context/authUtils';
 import {apiService} from '../services/apiService';
 import {API_CONFIG} from '../config';
@@ -18,6 +18,7 @@ const animateTo = (target, duration = 450) => {
 
 const DashboardPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const {user, logout, isAuthenticated} = useAuth();
     const {toast} = useToast();
 
@@ -103,6 +104,18 @@ const DashboardPage = () => {
         }
     }, [isAuthenticated, loadSessions]);
 
+    useEffect(() => {
+        if (location.hash !== '#sessions') {
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            document.getElementById('sessions-section')?.scrollIntoView({behavior: 'smooth', block: 'start'});
+        }, 120);
+
+        return () => window.clearTimeout(timer);
+    }, [location.hash]);
+
     const handleLogout = async () => {
         setIsLoggingOut(true);
         try {
@@ -178,7 +191,7 @@ const DashboardPage = () => {
                     ))}
                 </div>
 
-                <div className="db-card">
+                <div id="sessions-section" className="db-card">
                     <div className="mb-5 flex flex-wrap gap-3">
                         <button onClick={() => loadSessions(true)} disabled={!isAuthenticated} className="db-btn db-btn-secondary">
                             <span className={`inline-flex items-center gap-2 ${refreshSpinning ? 'db-spin' : ''}`}>↻</span>

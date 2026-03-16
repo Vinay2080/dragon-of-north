@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import RateLimitInfo from '../components/RateLimitInfo';
@@ -169,7 +169,7 @@ const SignupPage = () => {
                                 onChange={(e) => setAcceptTerms(e.target.checked)}
                                 className="mt-1 h-4 w-4"
                             />
-                            <span>I agree to the Terms and Privacy Policy.</span>
+                            <span>I agree to the <Link to="/terms" className="text-cyan-300 underline">Terms of Service</Link> and <Link to="/privacy" className="text-cyan-300 underline">Privacy Policy</Link>.</span>
                         </label>
                         <ValidationError id="terms-errors" errors={fieldErrors.terms || []}/>
 
