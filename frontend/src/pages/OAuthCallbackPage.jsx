@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
@@ -11,10 +11,13 @@ const STATUS_MESSAGES = [
     'Redirecting to dashboard...',
 ];
 
+const IDENTIFIER_HINT_KEY = 'auth_identifier_hint';
+
 const OAuthCallbackPage = () => {
     const navigate = useNavigate();
     const {login} = useAuth();
     const [stepIndex, setStepIndex] = useState(0);
+    const handledRef = useRef(false);
 
     const activeMessage = useMemo(
         () => STATUS_MESSAGES[Math.min(stepIndex, STATUS_MESSAGES.length - 1)],
@@ -22,13 +25,38 @@ const OAuthCallbackPage = () => {
     );
 
     useEffect(() => {
+        if (handledRef.current) {
+            return undefined;
+        }
+
+        handledRef.current = true;
+
         const progressInterval = window.setInterval(() => {
             setStepIndex((prev) => Math.min(prev + 1, STATUS_MESSAGES.length - 1));
         }, 850);
 
         const redirectToLogin = () => {
             localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('user');
             navigate('/login', {replace: true});
+        };
+
+        const getHydratedUser = () => {
+            const storedUserRaw = localStorage.getItem('user');
+            if (storedUserRaw) {
+                try {
+                    return JSON.parse(storedUserRaw);
+                } catch {
+                    // Ignore malformed storage and continue with identifier hint.
+                }
+            }
+
+            const identifierHint = localStorage.getItem(IDENTIFIER_HINT_KEY);
+            if (identifierHint) {
+                return {identifier: identifierHint};
+            }
+
+            return null;
         };
 
         const verifySession = async () => {
@@ -40,7 +68,7 @@ const OAuthCallbackPage = () => {
             try {
                 const result = await Promise.race([verificationRequest, timeoutPromise]);
                 if (!apiService.isErrorResponse(result) && Array.isArray(result?.data)) {
-                    login();
+                    login(getHydratedUser());
                     navigate('/dashboard', {replace: true});
                     return;
                 }

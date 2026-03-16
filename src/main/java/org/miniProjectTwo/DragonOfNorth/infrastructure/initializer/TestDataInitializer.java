@@ -39,7 +39,7 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName.USER;
  */
 @NamedInterface
 @Component
-@Profile({"test"})
+@Profile({"test", "dev"})
 @RequiredArgsConstructor
 @Slf4j
 @Order(2) // Run after DataInitializer which has @Order(1)

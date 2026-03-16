@@ -156,15 +156,23 @@ const AuthPage = () => {
         const backendIdentifier =
             data?.identifier || data?.email;
 
-        if (!backendIdentifier) {
+        const resolvedIdentifier =
+            (backendIdentifier || normalizedEmail || '')
+                .trim()
+                .toLowerCase();
+
+        if (!resolvedIdentifier) {
             toast.error(
                 'Unable to determine authenticated user.'
             );
             return;
         }
 
+        // Keep an identifier hint so auth bootstrap can hydrate user info after browser reopen.
+        localStorage.setItem('auth_identifier_hint', resolvedIdentifier);
+
         login({
-            identifier: backendIdentifier.toLowerCase(),
+            identifier: resolvedIdentifier,
         });
 
         navigate('/auth/callback');

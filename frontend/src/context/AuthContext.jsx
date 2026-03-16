@@ -4,6 +4,8 @@ import {AuthContext} from './authContext';
 import {API_CONFIG} from '../config';
 import {getDeviceId} from '../utils/device.js';
 
+const IDENTIFIER_HINT_KEY = 'auth_identifier_hint';
+
 export const AuthProvider = ({children}) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -15,11 +17,20 @@ export const AuthProvider = ({children}) => {
 
     const checkAuthStatus = async () => {
         try {
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-                setUser(JSON.parse(storedUser));
+            const storedUserRaw = localStorage.getItem('user');
+            const identifierHint = localStorage.getItem(IDENTIFIER_HINT_KEY);
+            let hydratedUser = null;
+
+            if (storedUserRaw) {
+                hydratedUser = JSON.parse(storedUserRaw);
+            } else if (identifierHint) {
+                hydratedUser = {identifier: identifierHint};
+                localStorage.setItem('user', JSON.stringify(hydratedUser));
             }
 
+            if (hydratedUser) {
+                setUser(hydratedUser);
+            }
 
             const sessionResult = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS_ALL);
             if (!apiService.isErrorResponse(sessionResult) && Array.isArray(sessionResult?.data)) {
@@ -31,6 +42,7 @@ export const AuthProvider = ({children}) => {
             setIsAuthenticated(false);
             setUser(null);
             localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('user');
         } catch (error) {
             console.error('Auth check failed:', error);
             setIsAuthenticated(false);
@@ -50,6 +62,9 @@ export const AuthProvider = ({children}) => {
 
         if (resolvedUser) {
             localStorage.setItem('user', JSON.stringify(resolvedUser));
+            if (resolvedUser.identifier) {
+                localStorage.setItem(IDENTIFIER_HINT_KEY, resolvedUser.identifier);
+            }
         }
     };
 
@@ -65,6 +80,7 @@ export const AuthProvider = ({children}) => {
             setUser(null);
             localStorage.removeItem('isAuthenticated');
             localStorage.removeItem('user');
+            localStorage.removeItem(IDENTIFIER_HINT_KEY);
             apiService.resetRateLimitInfo();
         }
     };

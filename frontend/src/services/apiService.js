@@ -142,10 +142,9 @@ class ApiService {
                         await this.refreshToken();
                         return this.request(endpoint, options, false, attempt);
                     } catch (refreshError) {
-                        localStorage.removeItem('isAuthenticated');
-                        localStorage.removeItem('user');
-                        window.location.href = '/login';
-                        throw refreshError;
+                        console.error('Token refresh failed:', refreshError);
+                        // Refresh failure should degrade to a normal 401 flow.
+                        // Avoid mutating auth storage in the API layer; auth context owns that state.
                     }
                 }
                 // If it's not a token expiration, continue to normal error handling
