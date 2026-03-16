@@ -35,10 +35,12 @@ export const ThemeProvider = ({children}) => {
 
         if (resolveIsDark(theme)) {
             root.classList.add('dark');
+            root.setAttribute('data-theme', 'dark');
             return;
         }
 
         root.classList.remove('dark');
+        root.setAttribute('data-theme', 'light');
     }, [theme]);
 
     useEffect(() => {

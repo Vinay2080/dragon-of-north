@@ -7,36 +7,24 @@ import Footer from '../components/Footer';
 import AuthorSection from '../components/AuthorSection';
 
 const LandingPage = () => {
-    return (
-        <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#090c14] via-[#0d1322] to-[#090c14] text-slate-100">
-            <div className="dynamic-grid-overlay" aria-hidden />
-            <Navbar />
-
-            <main className="relative z-10 mx-auto w-full max-w-[1600px] px-4 pb-12 pt-20 sm:px-6 lg:px-8">
-                <section className="mb-12 sm:mb-16">
-                    <HeroSection />
-                </section>
-
-                <section id="session-game" className="mb-12 scroll-mt-24 sm:mb-16">
-                    <SessionSecurityGame />
-                </section>
-
-                <section className="mb-12 sm:mb-16">
-                    <FeaturesSection />
-                </section>
-
-                <section className="mb-12 sm:mb-16">
-                    <CallToAction />
-                </section>
-
-                <section className="mb-12 sm:mb-16">
-                    <AuthorSection />
-                </section>
-            </main>
-
-            <Footer />
-        </div>
-    );
+  return (
+    <div className="dashboard-shell">
+      <div className="banner">Security-first authentication demo • JWT, OAuth2, OTP • Live session control</div>
+      <Navbar />
+      <main>
+        <HeroSection />
+        <section id="session-game" style={{maxWidth: '1280px', margin: '0 auto', padding: '0 32px 32px'}}>
+          <SessionSecurityGame />
+        </section>
+        <section style={{maxWidth: '1280px', margin: '0 auto', padding: '0 32px 32px'}}>
+          <FeaturesSection />
+        </section>
+        <section style={{maxWidth: '1280px', margin: '0 auto', padding: '0 32px 32px'}}><CallToAction /></section>
+        <section style={{maxWidth: '1280px', margin: '0 auto', padding: '0 32px 32px'}}><AuthorSection /></section>
+      </main>
+      <Footer />
+    </div>
+  );
 };
 
 export default LandingPage;

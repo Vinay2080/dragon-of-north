@@ -161,43 +161,43 @@ const DashboardPage = () => {
     ];
 
     return (
-        <div className="dashboard-shell">
-            <header className="dashboard-header">
+        <div className="dashboard-shell app-shell">
+            <header className="dashboard-header" style={{gridColumn:'1 / -1', position:'fixed', top:0, left:0, right:0, zIndex:20, background:'var(--don-bg-base)'}}>
                 <div className="dashboard-header__inner">
                     <div>
                         <h1 className="dashboard-title">Dashboard</h1>
                         <p className="dashboard-subtitle">Session-aware authentication center</p>
                     </div>
-                    <button onClick={handleLogout} disabled={isLoggingOut} className="db-btn db-btn-secondary">
+                    <button onClick={handleLogout} disabled={isLoggingOut} className="btn btn-subtle">
                         {isLoggingOut ? <span className="inline-flex items-center gap-2"><Spinner size="sm"/> Logging out...</span> : 'Logout'}
                     </button>
                 </div>
             </header>
 
-            <main className="dashboard-main">
-                <div className="db-card db-card-hover">
-                    <h2 className="db-section-title">Account Information</h2>
-                    <p className="db-text-muted">Identifier: <span className="db-text-primary">{user?.identifier || 'Not available'}</span></p>
-                    <p className="db-text-muted">Current Device ID: <span className="db-mono">{currentDeviceId}</span></p>
-                    <p className="mt-3 text-sm text-[#A0A8B8]">Active sessions on other devices: <span className="db-accent-violet">{activeOtherDevices}</span></p>
+            <main className="dashboard-main main-content" style={{gridColumn:'2'}}>
+                <div className="card">
+                    <h2 className="card-title">Account Information</h2>
+                    <p >Identifier: <span >{user?.identifier || 'Not available'}</span></p>
+                    <p >Current Device ID: <span className="cell-mono">{currentDeviceId}</span></p>
+                    <p style={{marginTop:'12px',fontSize:'14px'}}>Active sessions on other devices: <span className="badge badge-accent">{activeOtherDevices}</span></p>
                 </div>
 
-                <div className="db-metric-grid">
+                <div className="stats-grid">
                     {metricCards.map((metric) => (
-                        <div key={metric.label} className="db-card db-card-hover">
-                            <h3 className="db-metric-label">{metric.label}</h3>
-                            <p className={`db-metric-value db-metric-${metric.variant}`}>{metric.value}</p>
+                        <div key={metric.label} className="card">
+                            <h3 className="stat-label">{metric.label}</h3>
+                            <p className="stat-value">{metric.value}</p>
                         </div>
                     ))}
                 </div>
 
-                <div id="sessions-section" className="db-card">
+                <div id="sessions-section" className="card">
                     <div className="mb-5 flex flex-wrap gap-3">
-                        <button onClick={() => loadSessions(true)} disabled={!isAuthenticated} className="db-btn db-btn-secondary">
-                            <span className={`inline-flex items-center gap-2 ${refreshSpinning ? 'db-spin' : ''}`}>↻</span>
+                        <button onClick={() => loadSessions(true)} disabled={!isAuthenticated} className="btn btn-subtle">
+                            <span className={`inline-flex items-center gap-2 ${refreshSpinning ? 'animate-spin' : ''}`}>↻</span>
                             Refresh Sessions
                         </button>
-                        <button onClick={revokeOthers} className="db-btn db-btn-primary">Graceful logout on all devices</button>
+                        <button onClick={revokeOthers} className="btn btn-primary">Graceful logout on all devices</button>
                     </div>
 
                     {loadingSessions ? (
@@ -207,8 +207,8 @@ const DashboardPage = () => {
                             <Skeleton className="h-10 w-full"/>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto rounded-xl border border-white/10">
-                            <table className="db-table">
+                        <div className="table-wrapper">
+                            <table className="table">
                                 <thead>
                                 <tr>
                                     <th>Device ID</th>
@@ -223,24 +223,24 @@ const DashboardPage = () => {
                                 {sessions.map((session) => {
                                     const isCurrentDevice = session.device_id === currentDeviceId;
                                     return (
-                                        <tr key={session.session_id} className="db-table-row">
-                                            <td className="db-mono">
+                                        <tr key={session.session_id} >
+                                            <td className="cell-mono">
                                                 {session.device_id}
-                                                {isCurrentDevice && <span className="db-chip db-chip-violet ml-2">current</span>}
+                                                {isCurrentDevice && <span className="badge badge-accent" style={{marginLeft:'8px'}}>current</span>}
                                             </td>
-                                            <td>{session.ip_address || '-'}</td>
-                                            <td>{session.last_used_at ? new Date(session.last_used_at).toLocaleString() : '-'}</td>
-                                            <td>{session.expiry_date ? new Date(session.expiry_date).toLocaleString() : '-'}</td>
+                                            <td className="cell-mono cell-ip"><span className="ip-addr">{session.ip_address || '-'}</span></td>
+                                            <td className="cell-mono cell-timestamp"><span className="timestamp">{session.last_used_at ? new Date(session.last_used_at).toLocaleString() : '-'}</span></td>
+                                            <td className="cell-mono cell-timestamp"><span className="timestamp">{session.expiry_date ? new Date(session.expiry_date).toLocaleString() : '-'}</span></td>
                                             <td>
                                                 {session.revoked
-                                                    ? <span className="db-chip db-chip-coral">Revoked</span>
-                                                    : <span className="db-chip db-chip-mint">Active</span>}
+                                                    ? <span className="badge badge-danger">Revoked</span>
+                                                    : <span className="badge badge-success">Active</span>}
                                             </td>
                                             <td>
                                                 <button
                                                     onClick={() => revokeSession(session.session_id)}
                                                     disabled={session.revoked || isCurrentDevice}
-                                                    className="db-btn db-btn-inline"
+                                                    className="btn btn-danger"
                                                 >
                                                     Revoke
                                                 </button>
