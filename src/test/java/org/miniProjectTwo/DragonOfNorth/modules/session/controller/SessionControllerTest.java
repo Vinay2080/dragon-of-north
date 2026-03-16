@@ -1,4 +1,4 @@
-package org.miniProjectTwo.DragonOfNorth.controller;
+package org.miniProjectTwo.DragonOfNorth.modules.session.controller;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

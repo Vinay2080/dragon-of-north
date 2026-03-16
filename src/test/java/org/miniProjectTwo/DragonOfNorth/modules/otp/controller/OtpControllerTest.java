@@ -1,4 +1,4 @@
-package org.miniProjectTwo.DragonOfNorth.controller;
+package org.miniProjectTwo.DragonOfNorth.modules.otp.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
