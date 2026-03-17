@@ -31,7 +31,7 @@ const SignupPage = () => {
 
     useEffect(() => {
         if (!isLoading && isAuthenticated) {
-            navigate('/dashboard', {replace: true});
+            navigate('/sessions', {replace: true});
         }
     }, [isAuthenticated, isLoading, navigate]);
 
@@ -61,7 +61,7 @@ const SignupPage = () => {
 
     const handleGoogleSignup = () => {
         login({identifier});
-        navigate('/dashboard');
+        navigate('/sessions');
     };
 
     const handleGetOtp = async (e) => {
@@ -86,7 +86,7 @@ const SignupPage = () => {
 
         setLoading(true);
 
-        // Step 1: persist account via POST /api/v1/auth/identifier/sign-up.
+        // Step 1: persist an account via POST /api/v1/auth/identifier/sign-up.
         const signupResult = await apiService.post(API_CONFIG.ENDPOINTS.SIGNUP, {
             identifier,
             identifier_type: identifierType,
@@ -163,7 +163,7 @@ const SignupPage = () => {
                                    className="pr-12" hasError={Boolean(fieldErrors.password?.length)}
                                    aria-describedby="password-hint password-errors" required/>
                         <button type="button" onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition duration-200 hover:text-white">{showPassword ? 'Hide' : 'Show'}</button>
+                                className="auth-toggle-visibility">{showPassword ? 'Hide' : 'Show'}</button>
                     </div>
                     <p id="password-hint" className="auth-helper">{passwordStrengthHint}</p>
                     <ValidationError id="password-errors" errors={fieldErrors.password || []}/>
@@ -175,7 +175,7 @@ const SignupPage = () => {
                                    hasError={Boolean(fieldErrors.confirmPassword?.length)}
                                    aria-describedby="confirm-password-errors" required/>
                         <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition duration-200 hover:text-white">{showConfirmPassword ? 'Hide' : 'Show'}</button>
+                                className="auth-toggle-visibility">{showConfirmPassword ? 'Hide' : 'Show'}</button>
                     </div>
                     <ValidationError id="confirm-password-errors" errors={fieldErrors.confirmPassword || []}/>
 

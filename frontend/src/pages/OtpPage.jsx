@@ -129,7 +129,7 @@ const OtpPage = () => {
         <AuthCardLayout
             title="Verify OTP"
             subtitle={<span>Enter the 6-digit code sent to <span
-                className="font-medium text-cyan-300">{identifier}</span></span>}
+                className="font-medium" style={{color: 'var(--don-accent-text)'}}>{identifier}</span></span>}
         >
             <AuthFlowProgress currentStep="otp"/>
             <form onSubmit={handleVerifyOtp} noValidate>
@@ -138,7 +138,7 @@ const OtpPage = () => {
                         <input key={index} type="text" maxLength="1" value={data}
                                onChange={(e) => handleChange(e.target, index)}
                                onKeyDown={(e) => handleKeyDown(e, index)}
-                               className="h-14 w-12 rounded-xl border border-slate-500/40 bg-slate-900/50 text-center text-xl font-bold text-white outline-none transition focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(56,189,248,0.22)]"
+                               className="auth-otp-input"
                                aria-label={`OTP digit ${index + 1}`}/>
                     ))}
                 </div>
@@ -147,8 +147,8 @@ const OtpPage = () => {
                 <RateLimitInfo/>
             </form>
             <div className="mt-8 text-center">
-                <p className="text-sm text-slate-300">Didn't receive the code? {timer > 0 ?
-                    <span className="text-slate-400">Resend in {timer}s</span> :
+                <p className="auth-helper text-sm">Didn't receive the code? {timer > 0 ?
+                    <span style={{color: 'var(--don-text-muted)'}}>Resend in {timer}s</span> :
                     <button onClick={handleResendOtp} disabled={resendLoading}
                             className="auth-link font-medium transition disabled:opacity-50">{resendLoading ? 'Sending...' : 'Resend OTP'}</button>}</p>
             </div>

@@ -5,14 +5,14 @@ const PrivacyPolicyPage = () => (
         title="Privacy Policy"
         subtitle="Effective date: March 16, 2026. This Privacy Policy explains how DragonOfNorth collects, uses, discloses, and protects personal information when you use our website and services."
     >
-        <section className="space-y-6 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm leading-7 text-slate-200">
+        <section className="docs-legal-card space-y-6 text-sm leading-7">
             <div>
-                <h3 className="text-xl font-semibold text-white">1. Scope</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">1. Scope</h3>
                 <p className="mt-2">This Privacy Policy applies to DragonOfNorth ("DragonOfNorth," "we," "our," or "us"), available at https://dragonofnorth.dev, and all related services, applications, and APIs (collectively, the "Service").</p>
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">2. Information We Collect</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">2. Information We Collect</h3>
                 <p className="mt-2">We collect information needed to create accounts, secure access, and operate the Service:</p>
                 <ul className="mt-2 list-disc space-y-1 pl-6">
                     <li><strong>Account information:</strong> email address and password hash for email/password registration.</li>
@@ -23,7 +23,7 @@ const PrivacyPolicyPage = () => (
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">3. How We Use Information</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">3. How We Use Information</h3>
                 <p className="mt-2">We use collected information to:</p>
                 <ul className="mt-2 list-disc space-y-1 pl-6">
                     <li>Create and manage user accounts.</li>
@@ -37,22 +37,22 @@ const PrivacyPolicyPage = () => (
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">4. Legal Bases for Processing</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">4. Legal Bases for Processing</h3>
                 <p className="mt-2">Depending on your location, our legal bases for processing include: performance of a contract (providing the Service), legitimate interests (security and fraud prevention), compliance with legal obligations, and consent where required.</p>
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">5. Cookies, Tokens, and Similar Technologies</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">5. Cookies, Tokens, and Similar Technologies</h3>
                 <p className="mt-2">DragonOfNorth uses authentication tokens and related browser storage mechanisms to keep users signed in, protect accounts, and prevent unauthorized access. We may also use technical cookies or equivalent storage required for core functionality and security. Disabling these features may prevent normal use of the Service.</p>
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">6. Third-Party Services (Google OAuth)</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">6. Third-Party Services (Google OAuth)</h3>
                 <p className="mt-2">If you log in with Google OAuth, we receive limited account data from Google (such as your name and email) for authentication and account provisioning. Your use of Google services is also governed by Google&apos;s policies and terms. We do not sell Google user data and we use it only to provide and secure your DragonOfNorth account.</p>
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">7. Data Sharing and Disclosure</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">7. Data Sharing and Disclosure</h3>
                 <p className="mt-2">We do not sell personal information. We may share information only as necessary:</p>
                 <ul className="mt-2 list-disc space-y-1 pl-6">
                     <li>With trusted infrastructure and service providers that process data on our behalf under confidentiality and security obligations.</li>
@@ -63,37 +63,37 @@ const PrivacyPolicyPage = () => (
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">8. Data Retention</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">8. Data Retention</h3>
                 <p className="mt-2">We retain personal information for as long as necessary to provide the Service, maintain account security, resolve disputes, enforce agreements, and comply with legal obligations. Retention periods vary by data type. Security and audit logs may be retained for a limited period required for fraud prevention and incident response.</p>
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">9. Security Measures</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">9. Security Measures</h3>
                 <p className="mt-2">We use administrative, technical, and organizational safeguards appropriate to the nature of the data, including secure authentication controls, token-based access controls, encryption in transit, access restrictions, audit logging, and monitoring. No system is 100% secure, but we continuously work to reduce risk.</p>
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">10. International Data Processing</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">10. International Data Processing</h3>
                 <p className="mt-2">Your information may be processed in countries where our infrastructure providers operate. When required, we implement reasonable safeguards for cross-border data handling.</p>
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">11. Your Rights and Choices</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">11. Your Rights and Choices</h3>
                 <p className="mt-2">Depending on your jurisdiction, you may have rights to access, correct, delete, or restrict processing of your personal information, and to object to certain uses. You may request account deletion by contacting admin@dragonofnorth.dev from your registered email address. We may request verification before fulfilling requests.</p>
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">12. Children&apos;s Privacy</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">12. Children&apos;s Privacy</h3>
                 <p className="mt-2">The Service is not directed to children under 13, and we do not knowingly collect personal information from children under 13.</p>
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">13. Changes to This Privacy Policy</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">13. Changes to This Privacy Policy</h3>
                 <p className="mt-2">We may update this Privacy Policy from time to time. Updated versions will be posted at /privacy with a revised effective date. Continued use of the Service after updates means you acknowledge the revised policy.</p>
             </div>
 
             <div>
-                <h3 className="text-xl font-semibold text-white">14. Contact Us</h3>
+                <h3 className="docs-legal-title text-xl font-semibold">14. Contact Us</h3>
                 <p className="mt-2">If you have questions or requests about this Privacy Policy or your personal information, contact us at admin@dragonofnorth.dev.</p>
             </div>
         </section>

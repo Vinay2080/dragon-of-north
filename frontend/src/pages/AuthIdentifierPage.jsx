@@ -27,7 +27,7 @@ const AuthIdentifierPage = () => {
     const [notExistChoice, setNotExistChoice] = useState(null);
 
     useEffect(() => {
-        if (!isLoading && isAuthenticated) navigate('/dashboard', {replace: true});
+        if (!isLoading && isAuthenticated) navigate('/sessions', {replace: true});
     }, [isAuthenticated, isLoading, navigate]);
 
     const handleQuickLogin = (user) => navigate('/login', {state: {identifier: user.identifier, password: user.password}});
@@ -124,11 +124,17 @@ const AuthIdentifierPage = () => {
         <div className="relative auth-shell">
             <div className="absolute right-4 top-4 sm:right-8 sm:top-8">
                 <details className="group relative">
-                    <summary className="cursor-pointer list-none rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-200 hover:border-blue-500">Login ▾</summary>
-                    <div className="absolute right-0 mt-2 min-w-72 rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl">
-                        <p className="mb-2 text-xs text-slate-400">Quick test users</p>
-                        {TEST_USERS.map((user) => <button key={user.identifier} type="button" onClick={() => handleQuickLogin(user)} className="mb-2 block w-full rounded-md border border-slate-700 px-3 py-2 text-left text-xs text-slate-200 hover:border-blue-500"><span className="block font-medium">{user.label}</span><span className="block text-slate-400">Password: {user.password}</span></button>)}
-                        <button type="button" onClick={() => navigate('/login')} className="mt-1 w-full rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500">Go to Login</button>
+                    <summary className="auth-quick-summary">Login ▾</summary>
+                    <div className="absolute right-0 auth-quick-panel">
+                        <p className="auth-quick-title">Quick test users</p>
+                        {TEST_USERS.map((user) => <button key={user.identifier} type="button"
+                                                          onClick={() => handleQuickLogin(user)}
+                                                          className="auth-quick-user"><span
+                            className="block font-medium">{user.label}</span><span
+                            className="auth-quick-user__meta block">Password: {user.password}</span></button>)}
+                        <button type="button" onClick={() => navigate('/login')}
+                                className="btn-primary w-full text-xs">Go to Login
+                        </button>
                     </div>
                 </details>
             </div>
@@ -137,11 +143,15 @@ const AuthIdentifierPage = () => {
                 <h2 className="auth-title">Sign In / Sign Up</h2>
                 <p className="auth-subtitle mb-6">Continue with email or phone number</p>
                 <AuthFlowProgress currentStep="identifier"/>
-                {blockedMessage && <div className="mb-4 rounded-lg border border-red-800 bg-red-950 px-4 py-3 text-sm text-red-300">{blockedMessage}</div>}
+                {blockedMessage && <div className="auth-alert">{blockedMessage}</div>}
                 <form onSubmit={handleSubmit} noValidate>
-                    <input type="text" value={identifier} onChange={(e) => handleIdentifierChange(e.target.value)} disabled={loading} placeholder="Email or phone number" className="auth-input text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none disabled:opacity-50" aria-invalid={!!fieldErrors.identifier?.length} aria-describedby="identifier-field-errors" required/>
+                    <input type="text" value={identifier} onChange={(e) => handleIdentifierChange(e.target.value)}
+                           disabled={loading} placeholder="Email or phone number"
+                           className="auth-input disabled:opacity-50" aria-invalid={!!fieldErrors.identifier?.length}
+                           aria-describedby="identifier-field-errors" required/>
                     <ValidationError id="identifier-field-errors" errors={fieldErrors.identifier || []}/>
-                    <button type="submit" disabled={loading || !identifier.trim()} className="mt-5 btn-primary text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Processing…' : 'Continue'}</button>
+                    <button type="submit" disabled={loading || !identifier.trim()}
+                            className="mt-5 btn-primary disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Processing…' : 'Continue'}</button>
                 </form>
 
                 {notExistChoice && (
@@ -159,7 +169,7 @@ const AuthIdentifierPage = () => {
                                 mode="signup"
                                 onSuccess={() => {
                                     login({identifier: notExistChoice.identifier});
-                                    navigate('/dashboard');
+                                    navigate('/sessions');
                                 }}
                                 onError={(message) => toast.error(message || 'Google signup failed.')}
                                 disabled={loading}
@@ -168,7 +178,7 @@ const AuthIdentifierPage = () => {
                         )}
                     </div>
                 )}
-                <p className="mt-6 text-center text-xs text-slate-500">We may send an OTP if required</p>
+                <p className="mt-6 text-center auth-helper">We may send an OTP if required</p>
             </div>
         </div>
     );

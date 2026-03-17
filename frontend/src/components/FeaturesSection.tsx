@@ -37,8 +37,7 @@ const FeaturesSection = () => {
                         whileInView={{opacity: 1, y: 0}}
                         viewport={{once: true, amount: 0.2}}
                         transition={{duration: 0.45, delay: index * 0.1, ease: 'easeOut'}}
-                        whileHover={{y: -6, scale: 1.01}}
-                        className="rounded-2xl border border-cyan-300/20 bg-white/[0.05] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.08)] backdrop-blur-xl"
+                        className="rounded-2xl border border-cyan-300/20 bg-white/[0.05] p-5 shadow-[0_0_0_1px_rgba(34,211,238,0.08)] backdrop-blur-xl transform transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5"
                     >
                         <div className="mb-4 h-1.5 w-14 rounded-full bg-gradient-to-r from-cyan-300/80 to-indigo-300/80" />
                         <h3 className="text-lg font-semibold text-slate-100">{feature.title}</h3>

@@ -1,8 +1,10 @@
 import {AnimatePresence, motion} from 'framer-motion';
-import {Menu, Monitor, Moon, Sun, X} from 'lucide-react';
+import {Menu, Monitor, Moon, Shield, Sun, X} from '../shims/lucide-react';
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useTheme} from '../context/ThemeContext';
+import {useAuth} from '../context/authUtils';
+import ProfileDropdown from './ProfileDropdown';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -21,19 +23,12 @@ const themeLabel = {
 } as const;
 
 const Navbar = () => {
-    const {theme, setTheme} = useTheme();
+    const {setTheme} = useTheme();
+    const {isAuthenticated, logout} = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [isThemeOpen, setIsThemeOpen] = useState(false);
     const navigate = useNavigate();
-
-    const ThemeIcon = themeIcon[theme];
-
-    const cycleTheme = () => {
-        const currentIndex = THEME_SEQUENCE.indexOf(theme);
-        const nextTheme = THEME_SEQUENCE[(currentIndex + 1) % THEME_SEQUENCE.length];
-        setTheme(nextTheme);
-    };
-
     useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 20);
@@ -53,30 +48,14 @@ const Navbar = () => {
                 <span>Dragon of North</span>
             </button>
 
-            <div className="navbar-actions hidden md:flex">
-                <button
-                    type="button"
-                    onClick={cycleTheme}
-                    className="btn-subtle inline-flex items-center gap-2"
-                    aria-label="Cycle theme"
-                >
-                    <ThemeIcon size={16}/>
-                    <span>{themeLabel[theme]}</span>
-                </button>
-
-                <button
-                    type="button"
-                    onClick={() => navigate('/login')}
-                    className="btn-primary"
-                >
-                    Login / Signup
-                </button>
+            <div className="hidden md:flex items-center gap-3">
+                <ProfileDropdown/>
             </div>
 
             <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-                className="btn-subtle md:hidden inline-flex h-10 w-10 items-center justify-center p-0"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200/80 bg-white/70 md:hidden"
                 aria-label="Toggle mobile menu"
             >
                 {isMobileMenuOpen ? <X size={18}/> : <Menu size={18}/>}
@@ -88,7 +67,7 @@ const Navbar = () => {
                         initial={{opacity: 0, height: 0}}
                         animate={{opacity: 1, height: 'auto'}}
                         exit={{opacity: 0, height: 0}}
-                        transition={{duration: 0.15, ease: 'easeInOut'}}
+                        transition={{duration: 0.2, ease: 'easeInOut'}}
                         className="absolute left-0 right-0 top-[60px] overflow-hidden px-4 pb-4 pt-2 md:hidden"
                         style={{
                             background: 'var(--don-bg-surface)',
@@ -96,37 +75,83 @@ const Navbar = () => {
                         }}
                     >
                         <div className="flex flex-col gap-2">
-                            <button
-                                type="button"
-                                onClick={cycleTheme}
-                                className="flex items-center gap-2 px-3 py-2 text-left text-sm transition-all duration-150"
-                                style={{
-                                    color: 'var(--don-text-secondary)',
-                                    borderRadius: 'var(--r-md)'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'var(--don-bg-hover)';
-                                    e.currentTarget.style.color = 'var(--don-text-primary)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'transparent';
-                                    e.currentTarget.style.color = 'var(--don-text-secondary)';
-                                }}
-                            >
-                                <ThemeIcon size={16} />
-                                Theme: {themeLabel[theme]}
-                            </button>
+                            <div className="p-2 flex flex-col gap-1">
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsThemeOpen((v) => !v)}
+                                        className="flex items-center justify-between w-full px-4 py-2 rounded-md hover:bg-muted"
+                                    >
+                                        <span>Theme</span>
+                                        <span>▸</span>
+                                    </button>
 
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsMobileMenuOpen(false);
-                                    navigate('/login');
-                                }}
-                                className="btn-primary text-left"
-                            >
-                                Login / Signup
-                            </button>
+                                    <div className={`mt-1 ${isThemeOpen ? '' : 'hidden'}`}>
+                                        {THEME_SEQUENCE.map((t) => {
+                                            const Icon = themeIcon[t];
+                                            return (
+                                                <button
+                                                    key={t}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setTheme(t);
+                                                        setIsThemeOpen(false);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm rounded-md hover:bg-muted"
+                                                >
+                                                    <Icon size={14}/>
+                                                    <span>{themeLabel[t]}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {!isAuthenticated ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsMobileMenuOpen(false);
+                                            navigate('/login');
+                                        }}
+                                        className="rounded-lg bg-cyan-500 px-3 py-2 text-left text-sm font-semibold text-white transition hover:bg-cyan-400"
+                                    >
+                                        Login / Signup
+                                    </button>
+                                ) : (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setIsMobileMenuOpen(false);
+                                                navigate('/sessions');
+                                            }}
+                                            className="w-full text-left px-4 py-2 rounded-md hover:bg-muted flex items-center gap-2"
+                                        >
+                                            <Shield size={14}/>
+                                            <span>Sessions</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                setIsMobileMenuOpen(false);
+                                                try {
+                                                    await logout();
+                                                    navigate('/');
+                                                } catch (e) {
+                                                    console.error(e);
+                                                }
+                                            }}
+                                            className="w-full text-left px-4 py-2 rounded-md hover:bg-muted flex items-center gap-2"
+                                        >
+                                            <X size={14}/>
+                                            <span>Logout</span>
+                                        </button>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </motion.div>
                 )}
@@ -135,4 +160,5 @@ const Navbar = () => {
     );
 };
 
+// noinspection JSUnusedGlobalSymbols
 export default Navbar;

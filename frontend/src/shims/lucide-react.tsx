@@ -26,6 +26,21 @@ export const LogIn = (props) => <IconBase {...props}><path d="M15 3h4a2 2 0 0 1 
 export const Menu = (props) => <IconBase {...props}><path d="M3 12h18M3 6h18M3 18h18"/></IconBase>;
 export const X = (props) => <IconBase {...props}><path d="M18 6L6 18M6 6l12 12"/></IconBase>;
 export const Home = (props) => <IconBase {...props}><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></IconBase>;
+export const RefreshCw = (props) => <IconBase {...props}>
+    <path d="M21 2v6h-6"/>
+    <path d="M3 22v-6h6"/>
+    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L3 8"/>
+    <path d="M3.51 15A9 9 0 0 0 18.36 18.36L21 16"/>
+</IconBase>;
+export const Loader2 = (props) => <IconBase {...props}>
+    <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
+</IconBase>;
+export const Trash2 = (props) => <IconBase {...props}>
+    <path d="M3 6h18"/>
+    <path d="M8 6V4h8v2"/>
+    <path d="M19 6l-1 14H6L5 6"/>
+    <path d="M10 11v6M14 11v6"/>
+</IconBase>;
 
 export const Github = (props) => <IconBase {...props}><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.18-3.37-1.18-.46-1.15-1.11-1.45-1.11-1.45-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.33 1.09 2.9.83.09-.65.35-1.09.64-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.02-2.67-.1-.25-.44-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.9-1.29 2.74-1.02 2.74-1.02.54 1.38.2 2.4.1 2.65.64.69 1.02 1.58 1.02 2.67 0 3.84-2.33 4.69-4.56 4.94.36.31.68.92.68 1.86v2.76c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></IconBase>;
 export const FileText = (props) => <IconBase {...props}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/></IconBase>;

@@ -9,7 +9,7 @@ const STATUS_MESSAGES = [
     'Authenticating with Google...',
     'Verifying your identity...',
     'Creating secure session...',
-    'Redirecting to dashboard...',
+    'Redirecting to sessions...',
 ];
 
 const IDENTIFIER_HINT_KEY = 'auth_identifier_hint';
@@ -39,7 +39,7 @@ const OAuthCallbackPage = () => {
         const redirectToLogin = () => {
             localStorage.removeItem('isAuthenticated');
             localStorage.removeItem('user');
-            navigate('/login', {replace: true});
+            navigate('/', {replace: true});
         };
 
         const getHydratedUser = () => {
@@ -70,7 +70,7 @@ const OAuthCallbackPage = () => {
                 const result = await Promise.race([verificationRequest, timeoutPromise]);
                 if (!apiService.isErrorResponse(result) && Array.isArray(result?.data)) {
                     login(getHydratedUser());
-                    navigate('/dashboard', {replace: true});
+                    navigate('/sessions', {replace: true});
                     return;
                 }
             } catch (error) {
@@ -93,8 +93,8 @@ const OAuthCallbackPage = () => {
             subtitle={activeMessage}
         >
             <div className="auth-section flex items-center gap-3">
-                <div className="db-spin h-5 w-5 rounded-full border-2 border-slate-500 border-t-[#4C7DFF]"/>
-                <p className="text-sm text-slate-200">Please wait while we securely finish your login.</p>
+                <div className="db-spin auth-callback-spinner h-5 w-5 rounded-full border-2"/>
+                <p className="auth-callback-note text-sm">Please wait while we securely finish your login.</p>
             </div>
         </AuthCardLayout>
     );

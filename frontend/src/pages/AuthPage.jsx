@@ -40,7 +40,7 @@ const AuthPage = () => {
 
     useEffect(() => {
         if (!isLoading && isAuthenticated) {
-            navigate('/dashboard', {replace: true});
+            navigate('/sessions', {replace: true});
         }
     }, [isAuthenticated, isLoading, navigate]);
 
@@ -152,7 +152,7 @@ const AuthPage = () => {
         }
 
         login({identifier: normalizedEmail});
-        navigate('/dashboard');
+        navigate('/sessions');
     };
 
     //  CLEAN GOOGLE SUCCESS HANDLER
@@ -172,7 +172,7 @@ const AuthPage = () => {
             return;
         }
 
-        // Keep an identifier hint so auth bootstrap can hydrate user info after browser reopen.
+        // Keep an identifier hint so the auth bootstrap can hydrate user info after browser reopened.
         localStorage.setItem('auth_identifier_hint', resolvedIdentifier);
 
         login({

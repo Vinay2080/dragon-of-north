@@ -216,10 +216,10 @@ const SecurityDemoPage = () => {
     const diagramHeight = Math.max(800, 180 + events.length * EVENT_GAP);
 
     const strokeColor = (event) => {
-        if (event.tone === 'response') return '#22c55e';
-        if (event.tone === 'security') return '#fb923c';
-        if (event.tone === 'attack') return '#ef4444';
-        return '#facc15';
+        if (event.tone === 'response') return 'var(--don-success)';
+        if (event.tone === 'security') return 'var(--don-warning)';
+        if (event.tone === 'attack') return 'var(--don-danger)';
+        return 'var(--don-accent)';
     };
 
     const refreshBadge = useMemo(() => (refreshToken.status === 'revoked' ? 'revoked' : 'active'), [refreshToken.status]);
@@ -281,33 +281,48 @@ const SecurityDemoPage = () => {
                 }
             `}</style>
 
-            <section className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <section className="space-y-4 dashboard-card p-5">
                 <div className="grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-center">
-                    <div className="rounded-xl border border-cyan-300/25 bg-cyan-300/5 p-4">
-                        <p className="text-sm font-semibold text-cyan-100">Current State</p>
-                        <p className="font-mono text-lg text-cyan-200">{simState}</p>
+                    <div className="rounded-xl p-4"
+                         style={{border: '1px solid var(--don-accent-border)', background: 'var(--don-accent-dim)'}}>
+                        <p className="text-sm font-semibold" style={{color: 'var(--don-accent-text)'}}>Current State</p>
+                        <p className="font-mono text-lg" style={{color: 'var(--don-accent-text)'}}>{simState}</p>
                     </div>
                     <button
                         type="button"
                         disabled={running}
                         onClick={startSimulation}
-                        className="rounded-lg border border-cyan-300/60 bg-cyan-400/10 px-5 py-3 text-sm font-semibold text-cyan-100 disabled:opacity-50"
+                        className="btn-primary px-5 py-3 text-sm font-semibold disabled:opacity-50"
                     >
                         {running ? 'Running Simulation...' : 'Start Simulation'}
                     </button>
-                    <button type="button" onClick={resetSimulation} className="rounded-lg border border-white/20 bg-white/5 px-5 py-3 text-sm">Reset</button>
+                    <button type="button" onClick={resetSimulation} className="btn-subtle px-5 py-3 text-sm">Reset
+                    </button>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0d1326] to-[#101b35] p-4" style={{minHeight: 780}}>
-                    <div ref={timelineRef} className="simulation-frame rounded-xl border border-white/10 bg-black/15 p-2">
+                <div className="rounded-2xl p-4" style={{
+                    minHeight: 780,
+                    border: '1px solid var(--don-border-default)',
+                    background: 'var(--don-bg-card)'
+                }}>
+                    <div ref={timelineRef} className="simulation-frame rounded-xl p-2" style={{
+                        border: '1px solid var(--don-border-subtle)',
+                        background: 'color-mix(in srgb, var(--don-bg-base) 22%, transparent)'
+                    }}>
                         <div className="actor-header-row">
                             {ACTORS.map((actor) => (
                                 <div
                                     key={actor.id}
-                                    className="actor-header-card rounded-xl border border-slate-500 bg-slate-900/90"
-                                    style={{left: actor.x, top: 0}}
+                                    className="actor-header-card rounded-xl"
+                                    style={{
+                                        left: actor.x,
+                                        top: 0,
+                                        border: '1px solid var(--don-border-default)',
+                                        background: 'var(--don-bg-surface)'
+                                    }}
                                 >
-                                    <p className="pt-3 text-center text-[17px] font-semibold text-slate-100">{actor.label}</p>
+                                    <p className="pt-3 text-center text-[17px] font-semibold"
+                                       style={{color: 'var(--don-text-primary)'}}>{actor.label}</p>
                                 </div>
                             ))}
                             <div style={{height: 66}} />
@@ -316,7 +331,8 @@ const SecurityDemoPage = () => {
                         <svg width={CANVAS_WIDTH} height={diagramHeight} className="simulation-canvas">
                             {ACTORS.map((actor) => (
                                 <g key={actor.id}>
-                                    <line x1={actor.x} y1={70} x2={actor.x} y2={diagramHeight - 30} className="stroke-slate-500" strokeDasharray="8 8" />
+                                    <line x1={actor.x} y1={70} x2={actor.x} y2={diagramHeight - 30}
+                                          stroke="var(--don-border-strong)" strokeDasharray="8 8"/>
                                 </g>
                             ))}
 
@@ -326,13 +342,25 @@ const SecurityDemoPage = () => {
 
                                 if (event.kind === 'process') {
                                     const x = actorX(event.actor);
-                                    const processClass = event.tone === 'attack'
-                                        ? 'fill-rose-400/15 stroke-rose-300'
+                                    const processStyle = event.tone === 'attack'
+                                        ? {
+                                            fill: 'color-mix(in srgb, var(--don-danger) 15%, transparent)',
+                                            stroke: 'color-mix(in srgb, var(--don-danger) 68%, transparent)'
+                                        }
                                         : event.tone === 'response'
-                                            ? 'fill-emerald-400/15 stroke-emerald-300'
+                                            ? {
+                                                fill: 'color-mix(in srgb, var(--don-success) 14%, transparent)',
+                                                stroke: 'color-mix(in srgb, var(--don-success) 65%, transparent)'
+                                            }
                                             : event.tone === 'security'
-                                                ? 'fill-orange-400/15 stroke-orange-300'
-                                                : 'fill-slate-800/80 stroke-slate-400';
+                                                ? {
+                                                    fill: 'color-mix(in srgb, var(--don-warning) 16%, transparent)',
+                                                    stroke: 'color-mix(in srgb, var(--don-warning) 70%, transparent)'
+                                                }
+                                                : {
+                                                    fill: 'color-mix(in srgb, var(--don-bg-surface) 85%, transparent)',
+                                                    stroke: 'var(--don-border-strong)'
+                                                };
 
                                     return (
                                         <g key={event.id}>
@@ -342,10 +370,17 @@ const SecurityDemoPage = () => {
                                                 width="220"
                                                 height="44"
                                                 rx="8"
-                                                className={isActive ? 'fill-cyan-400/20 stroke-cyan-300' : processClass}
-                                                style={{transition: 'all 220ms ease'}}
+                                                style={isActive
+                                                    ? {
+                                                        fill: 'var(--don-accent-dim)',
+                                                        stroke: 'var(--don-accent-border)',
+                                                        transition: 'all 220ms ease'
+                                                    }
+                                                    : {...processStyle, transition: 'all 220ms ease'}}
                                             />
-                                            <text x={x} y={y + 8} textAnchor="middle" className="fill-slate-100 text-[15px]">[{event.label}]</text>
+                                            <text x={x} y={y + 8} textAnchor="middle" fill="var(--don-text-primary)"
+                                                  className="text-[15px]">[{event.label}]
+                                            </text>
                                         </g>
                                     );
                                 }
@@ -371,11 +406,13 @@ const SecurityDemoPage = () => {
                                         />
                                         <polygon points={headPoints} fill={arrowColor} className={isActive ? 'arrow-head' : undefined} />
                                         {isActive ? (
-                                            <circle r="4" fill="#22d3ee" className="packet">
+                                            <circle r="4" fill="var(--don-info)" className="packet">
                                                 <animateMotion dur="1.1s" fill="freeze" path={`M ${startX} ${y} L ${endX} ${y}`} />
                                             </circle>
                                         ) : null}
-                                        <text x={(startX + endX) / 2} y={y - 10} textAnchor="middle" className="fill-slate-200 text-[15px]">{event.label}</text>
+                                        <text x={(startX + endX) / 2} y={y - 10} textAnchor="middle"
+                                              fill="var(--don-text-secondary)"
+                                              className="text-[15px]">{event.label}</text>
                                     </g>
                                 );
                             })}
@@ -384,21 +421,39 @@ const SecurityDemoPage = () => {
                 </div>
 
                 <div className="grid gap-4 xl:grid-cols-2">
-                    <section className="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-sm text-slate-300">
+                    <section className="rounded-xl border p-4 text-sm" style={{
+                        borderColor: 'var(--don-border-default)',
+                        background: 'color-mix(in srgb, var(--don-bg-surface) 90%, transparent)',
+                        color: 'var(--don-text-secondary)'
+                    }}>
                         <h4 className="mb-2 font-semibold">Session State</h4>
-                        <p>Session: <span className={sessionStatus === 'active' ? 'text-emerald-300' : sessionStatus === 'revoked' ? 'text-rose-300' : 'text-slate-300'}>{sessionStatus}</span></p>
-                        <p>Access token: <span className={accessStatus === 'valid' ? 'text-emerald-300' : 'text-rose-300'}>{accessStatus}</span></p>
-                        <p>TTL: <span className="font-mono text-cyan-200">{fmt(accessTtl)}</span></p>
+                        <p>Session: <span
+                            style={{color: sessionStatus === 'active' ? 'var(--don-success)' : sessionStatus === 'revoked' ? 'var(--don-danger)' : 'var(--don-text-secondary)'}}>{sessionStatus}</span>
+                        </p>
+                        <p>Access token: <span
+                            style={{color: accessStatus === 'valid' ? 'var(--don-success)' : 'var(--don-danger)'}}>{accessStatus}</span>
+                        </p>
+                        <p>TTL: <span className="font-mono"
+                                      style={{color: 'var(--don-accent-text)'}}>{fmt(accessTtl)}</span></p>
                         <p>Issued: {accessIssuedAt.toLocaleTimeString()}</p>
-                        <p>Refresh token: <span className={refreshBadge === 'active' ? 'text-emerald-300' : 'text-rose-300'}>{refreshBadge}</span></p>
+                        <p>Refresh token: <span
+                            style={{color: refreshBadge === 'active' ? 'var(--don-success)' : 'var(--don-danger)'}}>{refreshBadge}</span>
+                        </p>
                         <p>Refresh id: {refreshToken.id}</p>
                         <p>Refresh version: v{refreshToken.version}</p>
                         <p>Old token ref: {refreshToken.oldRef}</p>
                     </section>
 
-                    <section className="rounded-xl border border-white/10 bg-black/45 p-4">
+                    <section className="rounded-xl border p-4" style={{
+                        borderColor: 'var(--don-border-default)',
+                        background: 'color-mix(in srgb, var(--don-bg-base) 35%, transparent)'
+                    }}>
                         <h4 className="mb-2 font-semibold">Security Log Console</h4>
-                        <div className="h-52 overflow-auto rounded-lg border border-white/10 bg-black/55 p-3 font-mono text-xs text-green-300">
+                        <div className="h-52 overflow-auto rounded-lg border p-3 font-mono text-xs" style={{
+                            borderColor: 'var(--don-border-subtle)',
+                            background: 'color-mix(in srgb, var(--don-bg-base) 55%, transparent)',
+                            color: 'var(--don-success)'
+                        }}>
                             {logs.map((line, idx) => <p key={`${idx}-${line}`}>{line}</p>)}
                         </div>
                     </section>

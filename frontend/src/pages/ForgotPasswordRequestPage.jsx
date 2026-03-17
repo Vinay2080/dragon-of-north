@@ -17,7 +17,7 @@ const ForgotPasswordRequestPage = () => {
 
     useEffect(() => {
         if (!isLoading && isAuthenticated) {
-            navigate('/dashboard', {replace: true});
+            navigate('/sessions', {replace: true});
         }
     }, [isAuthenticated, isLoading, navigate]);
 

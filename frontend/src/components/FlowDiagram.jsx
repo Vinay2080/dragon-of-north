@@ -15,8 +15,13 @@ export const AnimatedFlow = ({steps}) => {
             <div className="flex flex-wrap items-center gap-2">
                 {steps.map((step, index) => (
                     <div key={step} className="flex items-center gap-2">
-                        <div className={`rounded-lg border px-3 py-2 text-xs transition-all duration-500 ${index === active ? 'border-cyan-300 bg-cyan-300/15 text-cyan-100 shadow-[0_0_16px_rgba(103,232,249,0.35)]' : 'border-white/15 text-slate-300'}`}>
-                            {step}
+                        {/* group so we can scale the pill but keep text readable */}
+                        <div
+                            className={`group rounded-lg border px-3 py-2 text-xs transition-all duration-200 ${index === active ? 'border-cyan-300 bg-cyan-300/15 text-cyan-100 shadow-[0_0_16px_rgba(103,232,249,0.35)]' : 'border-white/15 text-slate-300'}`}>
+                            <span
+                                className="inline-block transform-gpu transition-transform duration-200 group-hover:scale-105 group-hover:bg-transparent">
+                                {step}
+                            </span>
                         </div>
                         {index < steps.length - 1 && <span className="text-slate-500">→</span>}
                     </div>
@@ -89,7 +94,8 @@ export const DeploymentPipelineSimulator = ({steps}) => {
                     const done = completedSteps.includes(index);
                     const active = currentStep === index;
                     return (
-                        <div key={step} className={`rounded-lg border px-3 py-3 text-sm transition-all ${done ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-100' : active ? 'border-cyan-300/60 bg-cyan-300/15 text-cyan-100 shadow-[0_0_18px_rgba(103,232,249,0.3)]' : 'border-white/10 bg-white/[0.02] text-slate-300'}`}>
+                        <div key={step}
+                             className={`rounded-lg border px-3 py-3 text-sm transition-all duration-200 transform-gpu ${done ? 'border-emerald-400/40 bg-emerald-400/10 text-emerald-100' : active ? 'border-cyan-300/60 bg-cyan-300/15 text-cyan-100 shadow-[0_0_18px_rgba(103,232,249,0.3)]' : 'border-white/10 bg-white/[0.02] text-slate-300 hover:bg-muted hover:scale-105'}`}>
                             <div className="mb-2 flex items-center justify-between gap-2">
                                 <span>{step}</span>
                                 <span className={`h-2.5 w-2.5 rounded-full ${done ? 'bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.9)]' : active ? 'bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.9)]' : 'bg-slate-500'}`} />

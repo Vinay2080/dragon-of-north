@@ -1,11 +1,12 @@
-import {Route, Routes, useNavigate} from 'react-router-dom';
+import {Navigate, Route, Routes, useNavigate} from 'react-router-dom';
 import {useCallback} from 'react';
 import {AuthProvider} from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
+import AppLayout from './components/AppLayout';
 import SignupPage from './pages/SignupPage';
 import OtpPage from './pages/OtpPage';
 import AuthPage from './pages/AuthPage';
-import DashboardPage from './pages/DashboardPage';
+import SessionsPage from './pages/SessionsPage';
 import ForgotPasswordRequestPage from './pages/ForgotPasswordRequestPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import {ToastProvider} from './context/ToastContext.jsx';
@@ -32,7 +33,7 @@ const AppShell = () => {
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('user');
         toast.error('Your session timed out. Please log in again.');
-        navigate('/login');
+        navigate('/');
     }, [navigate, toast]);
 
     useSessionTimeout({
@@ -48,21 +49,24 @@ const AppShell = () => {
             <ToastContainer/>
             <NetworkStatus/>
             <Routes>
-                <Route path="/" element={<HomeDocsPage/>}/>
-                <Route path="/features" element={<FeaturesDocsPage/>}/>
-                <Route path="/architecture" element={<ArchitectureDocsPage/>}/>
-                <Route path="/security-demo" element={<SecurityDemoPage/>}/>
-                <Route path="/identifier-flow" element={<IdentifierFlowPage/>}/>
-                <Route path="/deployment" element={<DeploymentDocsPage/>}/>
-                <Route path="/privacy" element={<PrivacyPolicyPage/>}/>
-                <Route path="/terms" element={<TermsOfServicePage/>}/>
-                <Route path="/signup" element={<SignupPage/>}/>
-                <Route path="/otp" element={<OtpPage/>}/>
-                <Route path="/login" element={<AuthPage/>}/>
-                <Route path="/auth/callback" element={<OAuthCallbackPage/>}/>
-                <Route path="/forgot-password" element={<ForgotPasswordRequestPage/>}/>
-                <Route path="/reset-password" element={<ResetPasswordPage/>}/>
-                <Route path="/dashboard" element={<ProtectedRoute><DashboardPage/></ProtectedRoute>}/>
+                <Route element={<AppLayout/>}>
+                    <Route path="/" element={<HomeDocsPage/>}/>
+                    <Route path="/features" element={<FeaturesDocsPage/>}/>
+                    <Route path="/architecture" element={<ArchitectureDocsPage/>}/>
+                    <Route path="/security-demo" element={<SecurityDemoPage/>}/>
+                    <Route path="/identifier-flow" element={<IdentifierFlowPage/>}/>
+                    <Route path="/deployment" element={<DeploymentDocsPage/>}/>
+                    <Route path="/privacy" element={<PrivacyPolicyPage/>}/>
+                    <Route path="/terms" element={<TermsOfServicePage/>}/>
+                    <Route path="/signup" element={<SignupPage/>}/>
+                    <Route path="/otp" element={<OtpPage/>}/>
+                    <Route path="/login" element={<AuthPage/>}/>
+                    <Route path="/auth/callback" element={<OAuthCallbackPage/>}/>
+                    <Route path="/forgot-password" element={<ForgotPasswordRequestPage/>}/>
+                    <Route path="/reset-password" element={<ResetPasswordPage/>}/>
+                    <Route path="/sessions" element={<ProtectedRoute><SessionsPage/></ProtectedRoute>}/>
+                </Route>
+                <Route path="/dashboard" element={<Navigate to="/sessions" replace/>}/>
             </Routes>
         </>
     );

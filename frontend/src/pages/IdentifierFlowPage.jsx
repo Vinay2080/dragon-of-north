@@ -53,10 +53,10 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const actorX = (id) => ACTORS.find((actor) => actor.id === id)?.x ?? 0;
 
 const toneColor = (tone) => {
-    if (tone === 'response') return '#22c55e';
-    if (tone === 'decision') return '#fb923c';
-    if (tone === 'error') return '#ef4444';
-    return '#facc15';
+    if (tone === 'response') return 'var(--don-success)';
+    if (tone === 'decision') return 'var(--don-warning)';
+    if (tone === 'error') return 'var(--don-danger)';
+    return 'var(--don-accent)';
 };
 
 const IdentifierFlowPage = () => {
@@ -214,59 +214,99 @@ const IdentifierFlowPage = () => {
                 .actor-header-card { position: absolute; width: 150px; height: 50px; transform: translateX(-50%); }
                 .arrow-line { stroke-dasharray: 260; stroke-dashoffset: 260; animation: drawLine 1.1s cubic-bezier(0.22,1,0.36,1) forwards; }
                 .arrow-head { opacity: 0; animation: showHead 0.2s 1.05s forwards; }
-                .packet { filter: drop-shadow(0 0 5px cyan); }
+                .packet { filter: drop-shadow(0 0 5px var(--don-info)); }
                 @keyframes drawLine { to { stroke-dashoffset: 0; } }
                 @keyframes showHead { to { opacity: 1; } }
             `}</style>
 
-            <section className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <section className="space-y-4 dashboard-card p-5">
                 <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto] md:items-center">
-                    <div className="rounded-xl border border-cyan-300/25 bg-cyan-300/5 p-4">
-                        <p className="text-sm font-semibold text-cyan-100">Current Authentication State</p>
-                        <p className="font-mono text-lg text-cyan-200">{authState}</p>
+                    <div className="rounded-xl p-4"
+                         style={{border: '1px solid var(--don-accent-border)', background: 'var(--don-accent-dim)'}}>
+                        <p className="text-sm font-semibold" style={{color: 'var(--don-accent-text)'}}>Current
+                            Authentication State</p>
+                        <p className="font-mono text-lg" style={{color: 'var(--don-accent-text)'}}>{authState}</p>
                     </div>
-                    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-                        <label className="mb-2 block text-xs uppercase tracking-[0.15em] text-slate-400">Identifier Input</label>
+                    <div className="rounded-xl p-4" style={{
+                        border: '1px solid var(--don-border-default)',
+                        background: 'color-mix(in srgb, var(--don-bg-surface) 90%, transparent)'
+                    }}>
+                        <label className="mb-2 block text-xs uppercase tracking-[0.15em]"
+                               style={{color: 'var(--don-text-muted)'}}>Identifier Input</label>
                         <input
                             value={identifier}
                             onChange={(event) => setIdentifier(event.target.value)}
                             disabled={running}
-                            className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+                            className="w-full rounded-lg border px-3 py-2 text-sm"
+                            style={{
+                                borderColor: 'var(--don-border-default)',
+                                background: 'var(--don-bg-card)',
+                                color: 'var(--don-text-primary)'
+                            }}
                             placeholder="new@domain.com / unverified@domain.com / active@domain.com"
                         />
 
-                        <div className="mt-3 rounded-lg border border-white/10 bg-slate-900/60 p-3">
-                            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-200">Test Identifiers (Simulation Scenarios)</p>
+                        <div className="mt-3 rounded-lg border p-3" style={{
+                            borderColor: 'var(--don-border-subtle)',
+                            background: 'color-mix(in srgb, var(--don-bg-surface) 80%, transparent)'
+                        }}>
+                            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em]"
+                               style={{color: 'var(--don-accent-text)'}}>Test Identifiers (Simulation Scenarios)</p>
                             <div className="space-y-2">
                                 {SCENARIO_HELPERS.map((scenario) => (
-                                    <div key={scenario.identifier} className="rounded-md border border-white/10 bg-black/20 p-2">
+                                    <div key={scenario.identifier} className="rounded-md border p-2" style={{
+                                        borderColor: 'var(--don-border-subtle)',
+                                        background: 'color-mix(in srgb, var(--don-bg-base) 22%, transparent)'
+                                    }}>
                                         <button
                                             type="button"
                                             onClick={() => setIdentifier(scenario.identifier)}
                                             disabled={running}
-                                            className="rounded-full border border-cyan-400/40 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-100 transition hover:border-cyan-300 hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="rounded-full border px-3 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
+                                            style={{
+                                                borderColor: 'var(--don-accent-border)',
+                                                background: 'var(--don-accent-dim)',
+                                                color: 'var(--don-accent-text)'
+                                            }}
                                         >
                                             {scenario.identifier}
                                         </button>
-                                        <p className="mt-1 text-xs text-slate-300">→ {scenario.notes[0]}</p>
-                                        <p className="text-xs text-emerald-300">→ {scenario.notes[1]}</p>
+                                        <p className="mt-1 text-xs"
+                                           style={{color: 'var(--don-text-secondary)'}}>→ {scenario.notes[0]}</p>
+                                        <p className="text-xs"
+                                           style={{color: 'var(--don-success)'}}>→ {scenario.notes[1]}</p>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
-                    <button type="button" disabled={running} onClick={startSimulation} className="rounded-lg border border-cyan-300/60 bg-cyan-400/10 px-5 py-3 text-sm font-semibold text-cyan-100 disabled:opacity-50">
+                    <button type="button" disabled={running} onClick={startSimulation}
+                            className="btn-primary px-5 py-3 text-sm font-semibold disabled:opacity-50">
                         {running ? 'Running Simulation...' : 'Run Simulation'}
                     </button>
-                    <button type="button" onClick={resetSimulation} className="rounded-lg border border-white/20 bg-white/5 px-5 py-3 text-sm">Reset</button>
+                    <button type="button" onClick={resetSimulation} className="btn-subtle px-5 py-3 text-sm">Reset
+                    </button>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0d1326] to-[#101b35] p-4" style={{minHeight: 780}}>
-                    <div ref={timelineRef} className="simulation-frame rounded-xl border border-white/10 bg-black/15 p-2">
+                <div className="rounded-2xl p-4" style={{
+                    minHeight: 780,
+                    border: '1px solid var(--don-border-default)',
+                    background: 'var(--don-bg-card)'
+                }}>
+                    <div ref={timelineRef} className="simulation-frame rounded-xl p-2" style={{
+                        border: '1px solid var(--don-border-subtle)',
+                        background: 'color-mix(in srgb, var(--don-bg-base) 22%, transparent)'
+                    }}>
                         <div className="actor-header-row">
                             {ACTORS.map((actor) => (
-                                <div key={actor.id} className="actor-header-card rounded-xl border border-slate-500 bg-slate-900/90" style={{left: actor.x, top: 0}}>
-                                    <p className="pt-3 text-center text-[15px] font-semibold text-slate-100">{actor.label}</p>
+                                <div key={actor.id} className="actor-header-card rounded-xl" style={{
+                                    left: actor.x,
+                                    top: 0,
+                                    border: '1px solid var(--don-border-default)',
+                                    background: 'var(--don-bg-surface)'
+                                }}>
+                                    <p className="pt-3 text-center text-[15px] font-semibold"
+                                       style={{color: 'var(--don-text-primary)'}}>{actor.label}</p>
                                 </div>
                             ))}
                             <div style={{height: 66}} />
@@ -274,7 +314,8 @@ const IdentifierFlowPage = () => {
 
                         <svg width={CANVAS_WIDTH} height={diagramHeight} className="simulation-canvas">
                             {ACTORS.map((actor) => (
-                                <line key={actor.id} x1={actor.x} y1={70} x2={actor.x} y2={diagramHeight - 30} className="stroke-slate-500" strokeDasharray="8 8" />
+                                <line key={actor.id} x1={actor.x} y1={70} x2={actor.x} y2={diagramHeight - 30}
+                                      stroke="var(--don-border-strong)" strokeDasharray="8 8"/>
                             ))}
 
                             {events.map((event, index) => {
@@ -283,16 +324,32 @@ const IdentifierFlowPage = () => {
 
                                 if (event.kind === 'process') {
                                     const x = actorX(event.actor);
-                                    const processClass = event.tone === 'response'
-                                        ? 'fill-emerald-400/15 stroke-emerald-300'
+                                    const processStyle = event.tone === 'response'
+                                        ? {
+                                            fill: 'color-mix(in srgb, var(--don-success) 14%, transparent)',
+                                            stroke: 'color-mix(in srgb, var(--don-success) 65%, transparent)'
+                                        }
                                         : event.tone === 'error'
-                                            ? 'fill-rose-400/15 stroke-rose-300'
-                                            : 'fill-orange-400/15 stroke-orange-300';
+                                            ? {
+                                                fill: 'color-mix(in srgb, var(--don-danger) 15%, transparent)',
+                                                stroke: 'color-mix(in srgb, var(--don-danger) 68%, transparent)'
+                                            }
+                                            : {
+                                                fill: 'color-mix(in srgb, var(--don-warning) 16%, transparent)',
+                                                stroke: 'color-mix(in srgb, var(--don-warning) 70%, transparent)'
+                                            };
 
                                     return (
                                         <g key={event.id}>
-                                            <rect x={x - 112} y={y - 22} width="224" height="44" rx="8" className={isActive ? 'fill-cyan-400/20 stroke-cyan-300' : processClass} style={{transition: 'all 220ms ease'}} />
-                                            <text x={x} y={y + 8} textAnchor="middle" className="fill-slate-100 text-[14px]">[{event.label}]</text>
+                                            <rect x={x - 112} y={y - 22} width="224" height="44" rx="8"
+                                                  style={isActive ? {
+                                                      fill: 'var(--don-accent-dim)',
+                                                      stroke: 'var(--don-accent-border)',
+                                                      transition: 'all 220ms ease'
+                                                  } : {...processStyle, transition: 'all 220ms ease'}}/>
+                                            <text x={x} y={y + 8} textAnchor="middle" fill="var(--don-text-primary)"
+                                                  className="text-[14px]">[{event.label}]
+                                            </text>
                                         </g>
                                     );
                                 }
@@ -310,11 +367,13 @@ const IdentifierFlowPage = () => {
                                         <line x1={startX} y1={y} x2={endX} y2={y} className={isActive ? 'arrow-line' : undefined} stroke={arrowColor} strokeWidth="3" />
                                         <polygon points={headPoints} fill={arrowColor} className={isActive ? 'arrow-head' : undefined} />
                                         {isActive ? (
-                                            <circle r="4" fill="#22d3ee" className="packet">
+                                            <circle r="4" fill="var(--don-info)" className="packet">
                                                 <animateMotion dur="1.1s" fill="freeze" path={`M ${startX} ${y} L ${endX} ${y}`} />
                                             </circle>
                                         ) : null}
-                                        <text x={(startX + endX) / 2} y={y - 10} textAnchor="middle" className="fill-slate-200 text-[13px]">{event.label}</text>
+                                        <text x={(startX + endX) / 2} y={y - 10} textAnchor="middle"
+                                              fill="var(--don-text-secondary)"
+                                              className="text-[13px]">{event.label}</text>
                                     </g>
                                 );
                             })}
@@ -323,14 +382,29 @@ const IdentifierFlowPage = () => {
                 </div>
 
                 <div className="grid gap-4 xl:grid-cols-2">
-                    <section className="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-sm text-slate-300">
+                    <section className="rounded-xl border p-4 text-sm" style={{
+                        borderColor: 'var(--don-border-default)',
+                        background: 'color-mix(in srgb, var(--don-bg-surface) 90%, transparent)',
+                        color: 'var(--don-text-secondary)'
+                    }}>
                         <h4 className="mb-2 font-semibold">Identifier Status Response</h4>
-                        <pre className="rounded-lg border border-white/10 bg-black/45 p-3 text-xs text-cyan-200">{JSON.stringify(result, null, 2)}</pre>
+                        <pre className="rounded-lg border p-3 text-xs" style={{
+                            borderColor: 'var(--don-border-subtle)',
+                            background: 'color-mix(in srgb, var(--don-bg-base) 55%, transparent)',
+                            color: 'var(--don-accent-text)'
+                        }}>{JSON.stringify(result, null, 2)}</pre>
                     </section>
 
-                    <section className="rounded-xl border border-white/10 bg-black/45 p-4">
+                    <section className="rounded-xl border p-4" style={{
+                        borderColor: 'var(--don-border-default)',
+                        background: 'color-mix(in srgb, var(--don-bg-base) 35%, transparent)'
+                    }}>
                         <h4 className="mb-2 font-semibold">Security Log Console</h4>
-                        <div className="h-52 overflow-auto rounded-lg border border-white/10 bg-black/55 p-3 font-mono text-xs text-green-300">
+                        <div className="h-52 overflow-auto rounded-lg border p-3 font-mono text-xs" style={{
+                            borderColor: 'var(--don-border-subtle)',
+                            background: 'color-mix(in srgb, var(--don-bg-base) 55%, transparent)',
+                            color: 'var(--don-success)'
+                        }}>
                             {logs.map((line, idx) => <p key={`${idx}-${line}`}>{line}</p>)}
                         </div>
                     </section>
