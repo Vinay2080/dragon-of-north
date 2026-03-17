@@ -11,14 +11,20 @@ const AuthFlowProgress = ({currentStep}) => {
     const currentIndex = steps.findIndex(step => step.key === currentStep);
 
     return (
-        <div className="mb-6 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-            <p className="mb-3 text-xs text-slate-400">Authentication flow</p>
+        <div className="mb-6 rounded-2xl border border-slate-400/20 bg-slate-900/35 p-4 backdrop-blur-sm">
+            <p className="mb-3 text-xs uppercase tracking-[0.12em] text-slate-300/80">Authentication flow</p>
             <div className="grid grid-cols-2 gap-2">
                 {steps.map((step, index) => {
                     const active = index === currentIndex;
                     const done = index < currentIndex;
+                    const stepStateClass = done
+                        ? 'auth-step auth-step--done'
+                        : active
+                            ? 'auth-step auth-step--active'
+                            : 'auth-step auth-step--inactive';
+
                     return (
-                        <div key={step.key} className={`rounded-md border px-2 py-2 text-xs ${done ? 'border-green-600/40 bg-green-950/40 text-green-300' : active ? 'border-blue-600/50 bg-blue-950/40 text-blue-200' : 'border-slate-800 bg-slate-950 text-slate-500'}`}>
+                        <div key={step.key} className={stepStateClass}>
                             <p className="font-semibold">{index + 1}. {step.label}</p>
                             <p>{step.hint}</p>
                         </div>

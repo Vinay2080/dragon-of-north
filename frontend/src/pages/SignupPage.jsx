@@ -7,6 +7,10 @@ import {useToast} from '../hooks/useToast';
 import ValidationError from '../components/Validation/ValidationError';
 import AuthFlowProgress from '../components/AuthFlowProgress';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
+import AuthCardLayout from '../components/auth/AuthCardLayout';
+import AuthInput from '../components/auth/AuthInput';
+import AuthButton from '../components/auth/AuthButton';
+import AuthDivider from '../components/auth/AuthDivider';
 import {validatePassword} from '../utils/validation';
 import {useAuth} from '../context/authUtils';
 
@@ -128,13 +132,16 @@ const SignupPage = () => {
     }
 
     return (
-        <div className="auth-shell">
-            <div className="auth-card">
-                <h2 className="auth-title">Create Account</h2>
-                <p className="auth-subtitle mb-6">Setting up account for <span className="text-blue-400 font-medium">{identifier}</span></p>
-                <AuthFlowProgress currentStep="signup"/>
+        <AuthCardLayout
+            title="Create account"
+            subtitle={<span>Setting up account for <span
+                className="font-medium text-cyan-300">{identifier}</span></span>}
+        >
+            <AuthFlowProgress currentStep="signup"/>
 
-                {isEmailIdentifier && (
+            {isEmailIdentifier && (
+                <>
+                    <AuthDivider label="or sign up with"/>
                     <div className="auth-section mb-6">
                         <GoogleLoginButton
                             mode="signup"
@@ -145,40 +152,52 @@ const SignupPage = () => {
                         />
                         <p className="auth-helper text-center">or create a password account below</p>
                     </div>
-                )}
+                </>
+            )}
 
-                <form onSubmit={handleGetOtp} noValidate>
-                    <div className="space-y-4">
-                        <div className="relative">
-                            <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => handlePasswordChange(e.target.value)} placeholder="Enter password" className="auth-input pr-12 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" aria-describedby="password-hint password-errors" required/>
-                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition duration-200">{showPassword ? '🙈' : '👁️'}</button>
-                        </div>
-                        <p id="password-hint" className="auth-helper">{passwordStrengthHint}</p>
-                        <ValidationError id="password-errors" errors={fieldErrors.password || []}/>
-
-                        <div className="relative">
-                            <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => handleConfirmPasswordChange(e.target.value)} placeholder="Confirm password" className="auth-input pr-12 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" aria-describedby="confirm-password-errors" required/>
-                            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition duration-200">{showConfirmPassword ? '🙈' : '👁️'}</button>
-                        </div>
-                        <ValidationError id="confirm-password-errors" errors={fieldErrors.confirmPassword || []}/>
-
-                        <label className="flex items-start gap-2 auth-helper">
-                            <input
-                                type="checkbox"
-                                checked={acceptTerms}
-                                onChange={(e) => setAcceptTerms(e.target.checked)}
-                                className="mt-1 h-4 w-4"
-                            />
-                            <span>I agree to the <Link to="/terms" className="text-cyan-300 underline">Terms of Service</Link> and <Link to="/privacy" className="text-cyan-300 underline">Privacy Policy</Link>.</span>
-                        </label>
-                        <ValidationError id="terms-errors" errors={fieldErrors.terms || []}/>
-
-                        <button type="submit" disabled={loading || !password || !confirmPassword} className="btn-primary text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Processing...' : 'Get OTP'}</button>
+            <form onSubmit={handleGetOtp} noValidate>
+                <div className="space-y-4">
+                    <div className="relative">
+                        <AuthInput type={showPassword ? 'text' : 'password'} value={password}
+                                   onChange={(e) => handlePasswordChange(e.target.value)} placeholder="Enter password"
+                                   className="pr-12" hasError={Boolean(fieldErrors.password?.length)}
+                                   aria-describedby="password-hint password-errors" required/>
+                        <button type="button" onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition duration-200 hover:text-white">{showPassword ? 'Hide' : 'Show'}</button>
                     </div>
-                    <RateLimitInfo/>
-                </form>
-            </div>
-        </div>
+                    <p id="password-hint" className="auth-helper">{passwordStrengthHint}</p>
+                    <ValidationError id="password-errors" errors={fieldErrors.password || []}/>
+
+                    <div className="relative">
+                        <AuthInput type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword}
+                                   onChange={(e) => handleConfirmPasswordChange(e.target.value)}
+                                   placeholder="Confirm password" className="pr-12"
+                                   hasError={Boolean(fieldErrors.confirmPassword?.length)}
+                                   aria-describedby="confirm-password-errors" required/>
+                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition duration-200 hover:text-white">{showConfirmPassword ? 'Hide' : 'Show'}</button>
+                    </div>
+                    <ValidationError id="confirm-password-errors" errors={fieldErrors.confirmPassword || []}/>
+
+                    <label className="auth-helper flex items-start gap-2">
+                        <input
+                            type="checkbox"
+                            checked={acceptTerms}
+                            onChange={(e) => setAcceptTerms(e.target.checked)}
+                            className="mt-1 h-4 w-4"
+                        />
+                        <span>I agree to the <Link to="/terms"
+                                                   className="auth-link underline">Terms of Service</Link> and <Link
+                            to="/privacy" className="auth-link underline">Privacy Policy</Link>.</span>
+                    </label>
+                    <ValidationError id="terms-errors" errors={fieldErrors.terms || []}/>
+
+                    <AuthButton type="submit"
+                                disabled={loading || !password || !confirmPassword}>{loading ? 'Processing...' : 'Get OTP'}</AuthButton>
+                </div>
+                <RateLimitInfo/>
+            </form>
+        </AuthCardLayout>
     );
 };
 

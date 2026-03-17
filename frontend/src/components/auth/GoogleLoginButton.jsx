@@ -167,10 +167,12 @@ const GoogleLoginButton = ({onSuccess, onError, onStart, disabled = false, autoP
     }, [autoPrompt, isReady]);
 
     return (
-        <div className="flex flex-col items-center gap-2" aria-busy={isInitializing}>
-            <div ref={buttonRef} className={disabled ? 'pointer-events-none opacity-60' : ''}/>
-            {isInitializing && <p className="text-xs text-slate-400">Loading Google sign-in...</p>}
-            {isRedirecting && <p className="text-sm font-medium text-slate-200">Redirecting to Google...</p>}
+        <div className="auth-oauth-wrap" aria-busy={isInitializing}>
+            <div className={`auth-oauth-button-shell ${disabled ? 'pointer-events-none opacity-60' : ''}`.trim()}>
+                <div ref={buttonRef}/>
+            </div>
+            {isInitializing && <p className="auth-oauth-caption">Loading Google sign-in...</p>}
+            {isRedirecting && <p className="text-sm font-medium text-cyan-100">Redirecting to Google...</p>}
         </div>
     );
 };

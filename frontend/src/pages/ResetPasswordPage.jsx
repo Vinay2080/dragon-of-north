@@ -3,6 +3,9 @@ import {useLocation, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import {useToast} from '../hooks/useToast';
+import AuthCardLayout from '../components/auth/AuthCardLayout';
+import AuthInput from '../components/auth/AuthInput';
+import AuthButton from '../components/auth/AuthButton';
 
 const ResetPasswordPage = () => {
     const navigate = useNavigate();
@@ -50,17 +53,20 @@ const ResetPasswordPage = () => {
     }
 
     return (
-        <div className="auth-shell">
-            <div className="auth-card">
-                <h2 className="auth-title">Reset Password</h2>
-                <p className="auth-subtitle mb-6">Enter OTP and your new password</p>
-                <form onSubmit={handleSubmit} noValidate className="space-y-4">
-                    <input type="text" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="OTP code" className="auth-input text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" required/>
-                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New password" className="auth-input text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" required/>
-                    <button type="submit" disabled={loading || !otp || !newPassword} className="btn-primary text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Resetting...' : 'Reset Password'}</button>
-                </form>
-            </div>
-        </div>
+        <AuthCardLayout
+            title="Reset password"
+            subtitle="Enter OTP and your new password"
+        >
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+                <AuthInput type="text" value={otp}
+                           onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                           placeholder="OTP code" required/>
+                <AuthInput type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                           placeholder="New password" required/>
+                <AuthButton type="submit"
+                            disabled={loading || !otp || !newPassword}>{loading ? 'Resetting...' : 'Reset Password'}</AuthButton>
+            </form>
+        </AuthCardLayout>
     );
 };
 

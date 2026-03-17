@@ -1,10 +1,14 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import {useToast} from '../hooks/useToast';
 import ValidationError from '../components/Validation/ValidationError';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
+import AuthCardLayout from '../components/auth/AuthCardLayout';
+import AuthInput from '../components/auth/AuthInput';
+import AuthButton from '../components/auth/AuthButton';
+import AuthDivider from '../components/auth/AuthDivider';
 import {getDeviceId} from '../utils/device';
 import {useAuth} from '../context/authUtils';
 
@@ -232,84 +236,57 @@ const AuthPage = () => {
         isSignupStep;
 
     return (
-        <div className="auth-shell">
-            <div className="auth-card">
-                <h1 className="auth-title">Auth</h1>
-                <p className="auth-subtitle">
-                    Use your email to continue.
-                </p>
-
-                <form
-                    onSubmit={checkEmail}
-                    className="auth-section"
-                >
-                    <label className="auth-helper">
-                        Email
-                    </label>
-                    <input
-                        className="auth-input"
-                        type="email"
-                        value={email}
-                        onChange={(e) => {
-                            setEmail(e.target.value);
-                            if (
-                                step !== AUTH_STEP.EMAIL_ENTRY
-                            ) {
-                                resetFlow();
-                            }
-                        }}
-                        placeholder="you@example.com"
-                    />
-                    {step === AUTH_STEP.EMAIL_ENTRY && (
-                        <button
-                            className="btn-primary"
-                            type="submit"
-                            disabled={loading || isGoogleRedirecting}
-                        >
-                            {loading
-                                ? 'Checking...'
-                                : 'Continue with Email'}
-                        </button>
-                    )}
-                </form>
-
-                {isPasswordStep && (
-                    <form
-                        onSubmit={handleLocalLogin}
-                        className="auth-section"
+        <AuthCardLayout
+            title="Welcome back"
+            subtitle="Use your email to continue."
+        >
+            <form onSubmit={checkEmail} className="space-y-3">
+                <label className="auth-label">Email</label>
+                <AuthInput
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (step !== AUTH_STEP.EMAIL_ENTRY) {
+                            resetFlow();
+                        }
+                    }}
+                    placeholder="you@example.com"
+                />
+                {step === AUTH_STEP.EMAIL_ENTRY && (
+                    <AuthButton
+                        type="submit"
+                        disabled={loading || isGoogleRedirecting}
                     >
-                        <label className="auth-helper block">
-                            Password
-                        </label>
-                        <input
-                            className="auth-input"
-                            type="password"
-                            value={password}
-                            onChange={(e) =>
-                                setPassword(e.target.value)
-                            }
-                            placeholder="Enter your password"
-                            required
-                        />
-                        <ValidationError
-                            errors={
-                                passwordError
-                                    ? [passwordError]
-                                    : []
-                            }
-                        />
-                        <button
-                            className="btn-primary"
-                            disabled={loading || !password || isGoogleRedirecting}
-                        >
-                            {loading
-                                ? 'Logging in...'
-                                : 'Login with password'}
-                        </button>
-                    </form>
+                        {loading ? 'Checking...' : 'Continue with Email'}
+                    </AuthButton>
                 )}
+            </form>
 
-                {showGoogle && (
+            {isPasswordStep && (
+                <form onSubmit={handleLocalLogin} className="auth-section">
+                    <label className="auth-label block">Password</label>
+                    <AuthInput
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter your password"
+                        hasError={Boolean(passwordError)}
+                        required
+                    />
+                    <ValidationError errors={passwordError ? [passwordError] : []}/>
+                    <AuthButton disabled={loading || !password || isGoogleRedirecting}>
+                        {loading ? 'Logging in...' : 'Login with password'}
+                    </AuthButton>
+                    <p className="auth-helper text-right">
+                        <Link to="/forgot-password" className="auth-link">Forgot password?</Link>
+                    </p>
+                </form>
+            )}
+
+            {showGoogle && (
+                <>
+                    <AuthDivider label="or continue with"/>
                     <div className="auth-section">
                         {isSignupStep && (
                             <p className="auth-helper">
@@ -317,13 +294,12 @@ const AuthPage = () => {
                             </p>
                         )}
                         {step === AUTH_STEP.SIGNUP_CREATE_PASSWORD && (
-                            <button
+                            <AuthButton
                                 type="button"
-                                className="btn-primary"
                                 onClick={() => navigate('/signup', {state: {identifier: normalizedEmail, identifierType: 'EMAIL'}})}
                             >
                                 Sign up with password
-                            </button>
+                            </AuthButton>
                         )}
                         <GoogleLoginButton
                             onSuccess={handleGoogleSuccess}
@@ -331,19 +307,14 @@ const AuthPage = () => {
                             onStart={handleGoogleStart}
                             disabled={loading || isGoogleRedirecting}
                             isRedirecting={isGoogleRedirecting}
-                            autoPrompt={
-                                step ===
-                                AUTH_STEP.GOOGLE_ONLY
-                            }
+                            autoPrompt={step === AUTH_STEP.GOOGLE_ONLY}
                             mode={isSignupStep ? 'signup' : 'login'}
-                            expectedIdentifier={
-                                normalizedEmail
-                            }
+                            expectedIdentifier={normalizedEmail}
                         />
                     </div>
-                )}
-            </div>
-        </div>
+                </>
+            )}
+        </AuthCardLayout>
     );
 };
 

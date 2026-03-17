@@ -3,6 +3,7 @@ import {useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import {useAuth} from '../context/authUtils';
+import AuthCardLayout from '../components/auth/AuthCardLayout';
 
 const STATUS_MESSAGES = [
     'Authenticating with Google...',
@@ -87,16 +88,15 @@ const OAuthCallbackPage = () => {
     }, [login, navigate]);
 
     return (
-        <div className="auth-shell">
-            <div className="auth-card">
-                <h1 className="auth-title">Completing Sign-In</h1>
-                <p className="auth-subtitle">{activeMessage}</p>
-                <div className="auth-section flex items-center gap-3">
-                    <div className="db-spin h-5 w-5 rounded-full border-2 border-slate-500 border-t-[#4C7DFF]"/>
-                    <p className="text-sm text-slate-200">Please wait while we securely finish your login.</p>
-                </div>
+        <AuthCardLayout
+            title="Completing sign-in"
+            subtitle={activeMessage}
+        >
+            <div className="auth-section flex items-center gap-3">
+                <div className="db-spin h-5 w-5 rounded-full border-2 border-slate-500 border-t-[#4C7DFF]"/>
+                <p className="text-sm text-slate-200">Please wait while we securely finish your login.</p>
             </div>
-        </div>
+        </AuthCardLayout>
     );
 };
 

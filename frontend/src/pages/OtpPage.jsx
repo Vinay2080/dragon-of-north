@@ -5,6 +5,8 @@ import {apiService} from '../services/apiService';
 import RateLimitInfo from '../components/RateLimitInfo';
 import {useToast} from '../hooks/useToast';
 import AuthFlowProgress from '../components/AuthFlowProgress';
+import AuthCardLayout from '../components/auth/AuthCardLayout';
+import AuthButton from '../components/auth/AuthButton';
 
 const OtpPage = () => {
     const location = useLocation();
@@ -124,25 +126,33 @@ const OtpPage = () => {
     }
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900">
-            <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-950 p-8 shadow-2xl">
-                <h2 className="text-2xl font-bold text-white">Verify OTP</h2>
-                <p className="mt-1 mb-6 text-sm text-slate-400">Enter the 6-digit code sent to <span className="text-blue-400 font-medium">{identifier}</span></p>
-                <AuthFlowProgress currentStep="otp"/>
-                <form onSubmit={handleVerifyOtp} noValidate>
-                    <div className="flex justify-between gap-2 mb-6">
-                        {otp.map((data, index) => (
-                            <input key={index} type="text" maxLength="1" value={data} onChange={(e) => handleChange(e.target, index)} onKeyDown={(e) => handleKeyDown(e, index)} className="w-12 h-14 text-center text-xl font-bold rounded-lg border border-slate-700 bg-slate-900 text-white focus:border-blue-500 focus:outline-none" aria-label={`OTP digit ${index + 1}`}/>
-                        ))}
-                    </div>
-                    <button type="submit" disabled={loading || otp.join('').length !== 6} className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Verifying...' : 'Verify & Continue'}</button>
-                    <RateLimitInfo/>
-                </form>
-                <div className="mt-8 text-center">
-                    <p className="text-sm text-slate-500">Didn't receive the code? {timer > 0 ? <span className="text-slate-400">Resend in {timer}s</span> : <button onClick={handleResendOtp} disabled={resendLoading} className="text-blue-500 hover:text-blue-400 font-medium transition disabled:opacity-50">{resendLoading ? 'Sending...' : 'Resend OTP'}</button>}</p>
+        <AuthCardLayout
+            title="Verify OTP"
+            subtitle={<span>Enter the 6-digit code sent to <span
+                className="font-medium text-cyan-300">{identifier}</span></span>}
+        >
+            <AuthFlowProgress currentStep="otp"/>
+            <form onSubmit={handleVerifyOtp} noValidate>
+                <div className="mb-6 flex justify-between gap-2">
+                    {otp.map((data, index) => (
+                        <input key={index} type="text" maxLength="1" value={data}
+                               onChange={(e) => handleChange(e.target, index)}
+                               onKeyDown={(e) => handleKeyDown(e, index)}
+                               className="h-14 w-12 rounded-xl border border-slate-500/40 bg-slate-900/50 text-center text-xl font-bold text-white outline-none transition focus:border-cyan-400 focus:shadow-[0_0_0_3px_rgba(56,189,248,0.22)]"
+                               aria-label={`OTP digit ${index + 1}`}/>
+                    ))}
                 </div>
+                <AuthButton type="submit"
+                            disabled={loading || otp.join('').length !== 6}>{loading ? 'Verifying...' : 'Verify & Continue'}</AuthButton>
+                <RateLimitInfo/>
+            </form>
+            <div className="mt-8 text-center">
+                <p className="text-sm text-slate-300">Didn't receive the code? {timer > 0 ?
+                    <span className="text-slate-400">Resend in {timer}s</span> :
+                    <button onClick={handleResendOtp} disabled={resendLoading}
+                            className="auth-link font-medium transition disabled:opacity-50">{resendLoading ? 'Sending...' : 'Resend OTP'}</button>}</p>
             </div>
-        </div>
+        </AuthCardLayout>
     );
 };
 

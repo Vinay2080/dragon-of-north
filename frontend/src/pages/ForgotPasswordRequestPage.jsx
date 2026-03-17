@@ -4,6 +4,9 @@ import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import {useToast} from '../hooks/useToast';
 import {useAuth} from '../context/authUtils';
+import AuthCardLayout from '../components/auth/AuthCardLayout';
+import AuthInput from '../components/auth/AuthInput';
+import AuthButton from '../components/auth/AuthButton';
 
 const ForgotPasswordRequestPage = () => {
     const navigate = useNavigate();
@@ -44,16 +47,17 @@ const ForgotPasswordRequestPage = () => {
     };
 
     return (
-        <div className="auth-shell">
-            <div className="auth-card">
-                <h2 className="auth-title">Forgot Password</h2>
-                <p className="auth-subtitle mb-6">Enter your email or phone to receive reset OTP</p>
-                <form onSubmit={handleSubmit} noValidate>
-                    <input type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Email or phone number" className="auth-input text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none" required/>
-                    <button type="submit" disabled={loading || !identifier.trim()} className="mt-5 btn-primary text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">{loading ? 'Sending OTP...' : 'Send OTP'}</button>
-                </form>
-            </div>
-        </div>
+        <AuthCardLayout
+            title="Forgot password"
+            subtitle="Enter your email or phone to receive reset OTP"
+        >
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+                <AuthInput type="text" value={identifier} onChange={(e) => setIdentifier(e.target.value)}
+                           placeholder="Email or phone number" required/>
+                <AuthButton type="submit"
+                            disabled={loading || !identifier.trim()}>{loading ? 'Sending OTP...' : 'Send OTP'}</AuthButton>
+            </form>
+        </AuthCardLayout>
     );
 };
 

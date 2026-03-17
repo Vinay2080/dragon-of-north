@@ -62,7 +62,7 @@ const RateLimitInfo = () => {
     return (
         <div className="mt-4">
             {isBlocked ? (
-                <div className="rounded-lg border border-red-800 bg-red-950/50 p-3">
+                <div className="rounded-xl border border-red-400/40 bg-red-900/30 p-3 backdrop-blur-sm">
                     <div className="flex items-center gap-2 text-red-400">
                         <svg
                             className="h-5 w-5"
@@ -84,14 +84,14 @@ const RateLimitInfo = () => {
                     </p>
                 </div>
             ) : (
-                <div className="rounded-lg border border-slate-700 bg-slate-900/50 p-3">
+                <div className="rounded-xl border border-slate-400/20 bg-slate-900/35 p-3 backdrop-blur-sm">
                     <div className="mb-2 flex items-center justify-between">
                         <span className="text-xs font-medium text-slate-400">Requests remaining</span>
                         <span className={`text-xs font-bold ${isLow ? 'text-yellow-400' : 'text-slate-300'}`}>
                             {rateLimitInfo.remaining} / {rateLimitInfo.capacity}
                         </span>
                     </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800/80">
                         <div
                             className={`h-full transition-all duration-300 ${
                                 isLow ? 'bg-yellow-500' : 'bg-blue-500'
