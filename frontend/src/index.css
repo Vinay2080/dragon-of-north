@@ -422,9 +422,10 @@ a:hover {
     }
 
     .badge-danger {
-        background: linear-gradient(150deg, rgba(232, 64, 64, 0.2), rgba(232, 64, 64, 0.1));
-        color: var(--don-danger);
-        box-shadow: 0 0 0 1px rgba(232, 64, 64, 0.22);
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+        font-weight: 500;
+        box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2);
     }
 
     .dashboard-card {
@@ -1037,11 +1038,25 @@ a:hover {
     }
 
     .session-row--revoked td {
-        background: linear-gradient(90deg, rgba(232, 64, 64, 0.1), rgba(232, 64, 64, 0.01));
+        background: rgba(239, 68, 68, 0.08);
+        box-shadow: inset 2px 0 0 #ef4444;
     }
 
     .session-row--revoked:hover td {
-        background: linear-gradient(90deg, rgba(232, 64, 64, 0.13), rgba(232, 64, 64, 0.03));
+        background: rgba(239, 68, 68, 0.12);
+    }
+
+    [data-theme="light"] .session-row--revoked td {
+        background: rgba(239, 68, 68, 0.06);
+        box-shadow: inset 2px 0 0 #ef4444;
+    }
+
+    [data-theme="light"] .session-row--revoked:hover td {
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .session-row--revoked {
+        opacity: 0.85;
     }
 
     .session-row--current td {
