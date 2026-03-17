@@ -886,6 +886,11 @@ a:hover {
         opacity: 1;
     }
 
+    .theme-icon--system {
+        transform: rotate(0deg);
+        opacity: 0.96;
+    }
+
     .dashboard-avatar {
         width: 36px;
         height: 36px;

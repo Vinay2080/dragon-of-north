@@ -8,18 +8,16 @@
         (() => {
             const key = 'don-theme';
             const saved = localStorage.getItem(key);
-            const mode = saved === 'light' || saved === 'dark'
-                ? saved
-                : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            const media = window.matchMedia('(prefers-color-scheme: dark)');
+            const preference = (saved === 'light' || saved === 'dark' || saved === 'system') ? saved : 'system';
+            const mode = preference === 'system' ? (media.matches ? 'dark' : 'light') : preference;
 
             document.documentElement.setAttribute('data-theme', mode);
             document.documentElement.classList.toggle('dark', mode === 'dark');
-            document.body?.setAttribute('data-theme', mode);
-            document.body?.classList.toggle('dark', mode === 'dark');
         })();
     </script>
 </head>
-<body data-theme="dark" class="dark">
+<body>
 <div id="root"></div>
 <script src="src/main.jsx" type="module"></script>
 </body>

@@ -8,7 +8,15 @@ import Skeleton from '../components/Loading/Skeleton';
 import Spinner from '../components/Loading/Spinner';
 import {useToast} from '../hooks/useToast';
 import {useTheme} from '../context/ThemeContext';
-import {Home, Moon, Sun, User} from 'lucide-react';
+import {Home, Monitor, Moon, Sun} from 'lucide-react';
+
+const THEME_SEQUENCE = ['light', 'dark', 'system'];
+
+const themeMeta = {
+    light: {icon: Sun, label: 'Light', emoji: '🌞'},
+    dark: {icon: Moon, label: 'Dark', emoji: '🌙'},
+    system: {icon: Monitor, label: 'System', emoji: '💻'},
+};
 
 const animateTo = (target, duration = 450) => {
     const steps = 16;
@@ -157,7 +165,9 @@ const DashboardPage = () => {
         toast.success(result?.message || 'Other sessions revoked successfully.');
     };
 
-    const isLightMode = theme === 'light';
+    const currentThemeIndex = THEME_SEQUENCE.indexOf(theme);
+    const nextTheme = THEME_SEQUENCE[(currentThemeIndex + 1) % THEME_SEQUENCE.length];
+    const ThemeIcon = themeMeta[theme].icon;
     const avatarLabel = (user?.identifier || 'User').trim().charAt(0).toUpperCase();
 
     return (
@@ -183,16 +193,17 @@ const DashboardPage = () => {
                     <div className="dashboard-header__right">
                         <button
                             type="button"
-                            onClick={() => setTheme(isLightMode ? 'dark' : 'light')}
+                            onClick={() => setTheme(nextTheme)}
                             className="dashboard-theme-toggle"
-                            aria-label={`Switch to ${isLightMode ? 'dark' : 'light'} mode`}
+                            aria-label={`Theme: ${themeMeta[theme].label}. Switch to ${themeMeta[nextTheme].label}`}
+                            title={`${themeMeta[theme].emoji} ${themeMeta[theme].label} (click for ${themeMeta[nextTheme].label})`}
                         >
-                            <span className={`theme-icon ${isLightMode ? 'theme-icon--light' : 'theme-icon--dark'}`}>
-                                {isLightMode ? <Sun size={16}/> : <Moon size={16}/>} 
+                            <span className={`theme-icon theme-icon--${theme}`}>
+                                <ThemeIcon size={16}/>
                             </span>
                         </button>
                         <div className="dashboard-avatar" aria-label="Profile avatar">
-                            {avatarLabel || <User size={16}/>}
+                            {avatarLabel}
                         </div>
                         <button onClick={handleLogout} disabled={isLoggingOut} className="btn-subtle dashboard-action-btn">
                             {isLoggingOut ? <span className="inline-flex items-center gap-2"><Spinner size="sm"/> Logging out...</span> : 'Logout'}
