@@ -7,6 +7,8 @@ import {getDeviceId} from '../utils/device';
 import Skeleton from '../components/Loading/Skeleton';
 import Spinner from '../components/Loading/Spinner';
 import {useToast} from '../hooks/useToast';
+import {useTheme} from '../context/ThemeContext';
+import {Home, Moon, Sun, User} from 'lucide-react';
 
 const animateTo = (target, duration = 450) => {
     const steps = 16;
@@ -21,6 +23,7 @@ const DashboardPage = () => {
     const location = useLocation();
     const {user, logout, isAuthenticated} = useAuth();
     const {toast} = useToast();
+    const {theme, setTheme} = useTheme();
 
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [sessions, setSessions] = useState([]);
@@ -154,17 +157,47 @@ const DashboardPage = () => {
         toast.success(result?.message || 'Other sessions revoked successfully.');
     };
 
+    const isLightMode = theme === 'light';
+    const avatarLabel = (user?.identifier || 'User').trim().charAt(0).toUpperCase();
+
     return (
         <div className="dashboard-shell">
             <header className="dashboard-header">
                 <div className="dashboard-header__inner">
-                    <div className="page-header mb-0">
+                    <div className="dashboard-header__left">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/')}
+                            className="dashboard-home-btn"
+                            aria-label="Go to home"
+                        >
+                            <Home size={18}/>
+                        </button>
+                    </div>
+
+                    <div className="page-header mb-0 dashboard-header__center">
                         <h1 className="page-title mb-1">Dashboard</h1>
                         <p className="page-subtitle">Session-aware authentication center</p>
                     </div>
-                    <button onClick={handleLogout} disabled={isLoggingOut} className="btn-subtle dashboard-action-btn">
-                        {isLoggingOut ? <span className="inline-flex items-center gap-2"><Spinner size="sm"/> Logging out...</span> : 'Logout'}
-                    </button>
+
+                    <div className="dashboard-header__right">
+                        <button
+                            type="button"
+                            onClick={() => setTheme(isLightMode ? 'dark' : 'light')}
+                            className="dashboard-theme-toggle"
+                            aria-label={`Switch to ${isLightMode ? 'dark' : 'light'} mode`}
+                        >
+                            <span className={`theme-icon ${isLightMode ? 'theme-icon--light' : 'theme-icon--dark'}`}>
+                                {isLightMode ? <Sun size={16}/> : <Moon size={16}/>} 
+                            </span>
+                        </button>
+                        <div className="dashboard-avatar" aria-label="Profile avatar">
+                            {avatarLabel || <User size={16}/>}
+                        </div>
+                        <button onClick={handleLogout} disabled={isLoggingOut} className="btn-subtle dashboard-action-btn">
+                            {isLoggingOut ? <span className="inline-flex items-center gap-2"><Spinner size="sm"/> Logging out...</span> : 'Logout'}
+                        </button>
+                    </div>
                 </div>
             </header>
 

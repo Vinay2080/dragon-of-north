@@ -21,6 +21,17 @@ const resolveIsDark = (theme: ThemeMode) => {
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
 };
 
+const applyThemeToDocument = (isDark: boolean) => {
+    const mode = isDark ? 'dark' : 'light';
+    const root = document.documentElement;
+    const body = document.body;
+
+    root.classList.toggle('dark', isDark);
+    root.setAttribute('data-theme', mode);
+    body.classList.toggle('dark', isDark);
+    body.setAttribute('data-theme', mode);
+};
+
 export const ThemeProvider = ({children}) => {
     const [theme, setTheme] = useState<ThemeMode>(() => {
         const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
@@ -29,18 +40,7 @@ export const ThemeProvider = ({children}) => {
 
     useEffect(() => {
         localStorage.setItem(THEME_STORAGE_KEY, theme);
-
-        const root = document.documentElement;
-        root.style.transition = 'background-color 250ms ease, color 250ms ease';
-
-        if (resolveIsDark(theme)) {
-            root.classList.add('dark');
-            root.setAttribute('data-theme', 'dark');
-            return;
-        }
-
-        root.classList.remove('dark');
-        root.setAttribute('data-theme', 'light');
+        applyThemeToDocument(resolveIsDark(theme));
     }, [theme]);
 
     useEffect(() => {
@@ -48,14 +48,7 @@ export const ThemeProvider = ({children}) => {
 
         const syncSystemTheme = () => {
             if (theme !== 'system') return;
-
-            if (mediaQuery.matches) {
-                document.documentElement.classList.add('dark');
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-                document.documentElement.setAttribute('data-theme', 'light');
-            }
+            applyThemeToDocument(mediaQuery.matches);
         };
 
         syncSystemTheme();

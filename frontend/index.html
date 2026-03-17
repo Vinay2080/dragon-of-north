@@ -4,8 +4,22 @@
     <meta charset="UTF-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>frontend</title>
+    <script>
+        (() => {
+            const key = 'don-theme';
+            const saved = localStorage.getItem(key);
+            const mode = saved === 'light' || saved === 'dark'
+                ? saved
+                : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+            document.documentElement.setAttribute('data-theme', mode);
+            document.documentElement.classList.toggle('dark', mode === 'dark');
+            document.body?.setAttribute('data-theme', mode);
+            document.body?.classList.toggle('dark', mode === 'dark');
+        })();
+    </script>
 </head>
-<body>
+<body data-theme="dark" class="dark">
 <div id="root"></div>
 <script src="src/main.jsx" type="module"></script>
 </body>
