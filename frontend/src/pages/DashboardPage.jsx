@@ -162,7 +162,7 @@ const DashboardPage = () => {
                         <h1 className="page-title mb-1">Dashboard</h1>
                         <p className="page-subtitle">Session-aware authentication center</p>
                     </div>
-                    <button onClick={handleLogout} disabled={isLoggingOut} className="btn-subtle">
+                    <button onClick={handleLogout} disabled={isLoggingOut} className="btn-subtle dashboard-action-btn">
                         {isLoggingOut ? <span className="inline-flex items-center gap-2"><Spinner size="sm"/> Logging out...</span> : 'Logout'}
                     </button>
                 </div>
@@ -208,13 +208,13 @@ const DashboardPage = () => {
                 <div id="sessions-section" className="card dashboard-card dashboard-card--sessions">
                     <div className="card-header">
                         <h2 className="card-title">Session Management</h2>
-                        <div className="flex flex-wrap gap-3">
+                        <div className="dashboard-actions">
                             <button onClick={() => loadSessions(true)} disabled={!isAuthenticated}
-                                    className="btn-subtle">
+                                    className="btn-subtle dashboard-action-btn">
                                 <span className={refreshSpinning ? 'db-spin' : ''}>↻</span>
                                 Refresh
                             </button>
-                            <button onClick={revokeOthers} className="btn-danger">Revoke All Other Devices</button>
+                            <button onClick={revokeOthers} className="btn-danger dashboard-action-btn dashboard-action-btn--wide">Revoke All Other Devices</button>
                         </div>
                     </div>
 
