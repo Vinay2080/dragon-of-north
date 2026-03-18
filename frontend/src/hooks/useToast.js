@@ -12,7 +12,7 @@ export const useToast = () => {
         error: (message, title = 'Error') => context.addToast({variant: 'error', message, title}),
         warning: (message, title = 'Warning') => context.addToast({variant: 'warning', message, title}),
         info: (message, title = 'Info') => context.addToast({variant: 'info', message, title}),
-    }), [context.addToast]);
+    }), [context]);
 
     return {
         toasts: context.toasts,

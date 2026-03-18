@@ -1,11 +1,12 @@
 import {AlertCircle, CheckCircle, Loader} from 'react-feather';
 
-// Note: UI components have been moved to src/components/AuthStateComponents.jsx
-// This file is maintained for backward compatibility if needed
+/**
+ * AuthStateComponents - Reusable UI component library for auth state display
+ * These components are exported for use throughout the application
+ */
 
 /**
  * AuthLoadingOverlay - Full-screen loader with blur
- * @deprecated Use AuthStateComponents.jsx instead
  */
 export function AuthLoadingOverlay({isVisible, message = 'Authenticating...'}) {
     return (
@@ -32,7 +33,6 @@ export function AuthLoadingOverlay({isVisible, message = 'Authenticating...'}) {
 
 /**
  * AuthSuccessMessage - Success state with action button
- * @deprecated Use AuthStateComponents.jsx instead
  */
 export function AuthSuccessMessage({message, actionLabel, onAction, actionLink}) {
     return (
@@ -68,7 +68,6 @@ export function AuthSuccessMessage({message, actionLabel, onAction, actionLink})
 
 /**
  * AuthErrorMessage - Error state with retry option
- * @deprecated Use AuthStateComponents.jsx instead
  */
 export function AuthErrorMessage({message, onRetry, onDismiss}) {
     return (
@@ -106,7 +105,6 @@ export function AuthErrorMessage({message, onRetry, onDismiss}) {
 
 /**
  * AuthButtonState - Button with loading/disabled state
- * @deprecated Use AuthStateComponents.jsx instead
  */
 export function AuthButtonState({
                                     isLoading,
@@ -143,7 +141,6 @@ export function AuthButtonState({
 
 /**
  * AuthInputField - Input with disabled state
- * @deprecated Use AuthStateComponents.jsx instead
  */
 export function AuthInputField({
                                    disabled,

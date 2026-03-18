@@ -54,7 +54,7 @@ const Toast = ({title, message, variant = 'info', duration = 4000, onClose}) => 
     const [isPaused, setIsPaused] = useState(false);
     const [remaining, setRemaining] = useState(duration);
     const timerRef = useRef(null);
-    const startRef = useRef(Date.now());
+    const startRef = useRef(null);
 
     const styles = variantStyles[variant] || variantStyles.info;
     const progressPct = useMemo(() => {
@@ -63,6 +63,7 @@ const Toast = ({title, message, variant = 'info', duration = 4000, onClose}) => 
     }, [duration, remaining]);
 
     useEffect(() => {
+        startRef.current = Date.now();
         const visibleTimer = window.setTimeout(() => setIsVisible(true), 10);
         return () => window.clearTimeout(visibleTimer);
     }, []);
