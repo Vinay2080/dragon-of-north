@@ -11,8 +11,10 @@ const AuthFlowProgress = ({currentStep}) => {
     const currentIndex = steps.findIndex(step => step.key === currentStep);
 
     return (
-        <div className="mb-6 rounded-2xl border border-slate-400/20 bg-slate-900/35 p-4 backdrop-blur-sm">
-            <p className="mb-3 text-xs uppercase tracking-[0.12em] text-slate-300/80">Authentication flow</p>
+        <div
+            className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 dark:shadow-lg dark:shadow-purple-500/10">
+            <p className="mb-3 text-xs uppercase tracking-[0.12em] text-gray-500 dark:text-neutral-400">Authentication
+                flow</p>
             <div className="grid grid-cols-2 gap-2">
                 {steps.map((step, index) => {
                     const active = index === currentIndex;

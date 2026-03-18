@@ -131,7 +131,7 @@ export default function ProfileDropdown() {
                                 <span className="arrow">›</span>
                             </button>
 
-                            {/* Hover bridge keeps submenu open when cursor moves diagonally */}
+                            {/* Hover bridge keeps the submenu open when the cursor moves diagonally */}
                             <div
                                 className={`submenu-bridge submenu-bridge--left ${isThemeSubmenuOpen ? 'is-active' : ''}`}
                                 onMouseEnter={openThemeSubmenu}

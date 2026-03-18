@@ -15,7 +15,7 @@ import NetworkStatus from './components/NetworkStatus/NetworkStatus';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import {useSessionTimeout} from './hooks/useSessionTimeout';
 import {useToast} from './hooks/useToast';
-import HomeDocsPage from './pages/HomeDocsPage';
+import PremiumLandingPage from './pages/PremiumLandingPage';
 import FeaturesDocsPage from './pages/FeaturesDocsPage';
 import ArchitectureDocsPage from './pages/ArchitectureDocsPage';
 import SecurityDemoPage from './pages/SecurityDemoPage';
@@ -50,7 +50,7 @@ const AppShell = () => {
             <NetworkStatus/>
             <Routes>
                 <Route element={<AppLayout/>}>
-                    <Route path="/" element={<HomeDocsPage/>}/>
+                    <Route path="/" element={<PremiumLandingPage/>}/>
                     <Route path="/features" element={<FeaturesDocsPage/>}/>
                     <Route path="/architecture" element={<ArchitectureDocsPage/>}/>
                     <Route path="/security-demo" element={<SecurityDemoPage/>}/>

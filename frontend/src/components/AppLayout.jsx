@@ -4,7 +4,9 @@ import * as Icons from '../shims/lucide-react';
 import ProfileDropdown from './ProfileDropdown';
 
 const SIDEBAR_EXPANDED_KEY = 'don-dashboard-sidebar-expanded';
-const {Home, Menu, Shield} = Icons;
+const {Home, Menu, Shield, X} = Icons;
+
+const isDesktopViewport = () => window.matchMedia('(min-width: 768px)').matches;
 
 const navItems = [
     {id: 'home', label: 'Home', icon: Home, to: '/'},
@@ -63,6 +65,7 @@ const AppLayout = () => {
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isThemeOpen, setIsThemeOpen] = useState(false);
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => localStorage.getItem(SIDEBAR_EXPANDED_KEY) === 'true');
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
     const authMenuRef = useRef(null);
     const profileMenuRef = useRef(null);
@@ -70,6 +73,20 @@ const AppLayout = () => {
     useEffect(() => {
         localStorage.setItem(SIDEBAR_EXPANDED_KEY, String(isSidebarExpanded));
     }, [isSidebarExpanded]);
+
+    useEffect(() => {
+        if (!isMobileSidebarOpen) {
+            return;
+        }
+
+        const originalOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        return () => {
+            document.body.style.overflow = originalOverflow;
+        };
+    }, [isMobileSidebarOpen]);
+
 
     useEffect(() => {
         if (!isProfileMenuOpen && !isAuthMenuOpen && !isThemeOpen) {
@@ -92,6 +109,7 @@ const AppLayout = () => {
                 setIsAuthMenuOpen(false);
                 setIsProfileMenuOpen(false);
                 setIsThemeOpen(false);
+                setIsMobileSidebarOpen(false);
             }
         };
 
@@ -108,6 +126,7 @@ const AppLayout = () => {
         setIsAuthMenuOpen(false);
         setIsProfileMenuOpen(false);
         setIsThemeOpen(false);
+        setIsMobileSidebarOpen(false);
         navigate(item.to);
     };
 
@@ -116,6 +135,15 @@ const AppLayout = () => {
         setIsProfileMenuOpen(false);
         setIsThemeOpen(false);
         navigate(to);
+    };
+
+    const handleSidebarToggle = () => {
+        if (isDesktopViewport()) {
+            setIsSidebarExpanded((expanded) => !expanded);
+            return;
+        }
+
+        setIsMobileSidebarOpen(false);
     };
 
     const activeNavItem = useMemo(() => {
@@ -130,16 +158,28 @@ const AppLayout = () => {
         <div className="dashboard-shell">
             <div
                 className={`dashboard-layout ${isSidebarExpanded ? 'dashboard-layout--expanded' : 'dashboard-layout--collapsed'}`}>
-                <aside className="dashboard-sidebar" aria-label="Primary">
+                <button
+                    type="button"
+                    className={`dashboard-sidebar-backdrop ${isMobileSidebarOpen ? 'dashboard-sidebar-backdrop--visible' : ''}`}
+                    onClick={() => setIsMobileSidebarOpen(false)}
+                    aria-label="Close navigation menu"
+                    aria-hidden={!isMobileSidebarOpen}
+                    tabIndex={isMobileSidebarOpen ? 0 : -1}
+                />
+
+                <aside
+                    className={`dashboard-sidebar ${isMobileSidebarOpen ? 'dashboard-sidebar--mobile-open' : ''}`}
+                    aria-label="Primary"
+                >
                     <div className="dashboard-sidebar__top">
                         <button
                             type="button"
                             className="dashboard-sidebar__toggle"
-                            onClick={() => setIsSidebarExpanded((expanded) => !expanded)}
+                            onClick={handleSidebarToggle}
                             aria-label={isSidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
                             title={isSidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
                         >
-                            <Menu size={20}/>
+                            {isMobileSidebarOpen ? <X size={20}/> : <Menu size={20}/>} 
                         </button>
                     </div>
 
@@ -168,7 +208,18 @@ const AppLayout = () => {
 
                 <div className="dashboard-content">
                     <header className="dashboard-topbar">
-                        <h1 className="dashboard-topbar__title">{title}</h1>
+                        <div className="dashboard-topbar__left">
+                            <button
+                                type="button"
+                                className="dashboard-mobile-menu-btn"
+                                onClick={() => setIsMobileSidebarOpen(true)}
+                                aria-label="Open navigation menu"
+                                aria-expanded={isMobileSidebarOpen}
+                            >
+                                <Menu size={20}/>
+                            </button>
+                            <h1 className="dashboard-topbar__title">{title}</h1>
+                        </div>
                         <div className="dashboard-topbar__actions">
                             <div className="auth-system-menu" ref={authMenuRef}>
                                 <button

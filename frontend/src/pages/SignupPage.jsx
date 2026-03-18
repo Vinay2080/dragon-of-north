@@ -139,22 +139,6 @@ const SignupPage = () => {
         >
             <AuthFlowProgress currentStep="signup"/>
 
-            {isEmailIdentifier && (
-                <>
-                    <AuthDivider label="or sign up with"/>
-                    <div className="auth-section mb-6">
-                        <GoogleLoginButton
-                            mode="signup"
-                            onSuccess={handleGoogleSignup}
-                            onError={(message) => toast.error(message || 'Google signup failed.')}
-                            disabled={loading}
-                            expectedIdentifier={identifier}
-                        />
-                        <p className="auth-helper text-center">or create a password account below</p>
-                    </div>
-                </>
-            )}
-
             <form onSubmit={handleGetOtp} noValidate>
                 <div className="space-y-4">
                     <div className="relative">
@@ -197,6 +181,22 @@ const SignupPage = () => {
                 </div>
                 <RateLimitInfo/>
             </form>
+
+            {/* Google button moved below main CTA */}
+            {isEmailIdentifier && (
+                <div className="mt-6">
+                    <AuthDivider label="OR continue with"/>
+                    <div className="auth-section">
+                        <GoogleLoginButton
+                            mode="signup"
+                            onSuccess={handleGoogleSignup}
+                            onError={(message) => toast.error(message || 'Google signup failed.')}
+                            disabled={loading}
+                            expectedIdentifier={identifier}
+                        />
+                    </div>
+                </div>
+            )}
         </AuthCardLayout>
     );
 };

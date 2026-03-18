@@ -113,13 +113,15 @@ const GoogleLoginButton = ({onSuccess, onError, onStart, disabled = false, autoP
             });
 
             buttonRef.current.innerHTML = '';
+            const measuredWidth = buttonRef.current.clientWidth || 320;
+            const buttonWidth = Math.min(360, Math.max(220, Math.floor(measuredWidth)));
             window.google.accounts.id.renderButton(buttonRef.current, {
                 type: 'standard',
                 theme: 'outline',
                 text: 'continue_with',
                 shape: 'pill',
                 size: 'large',
-                width: 320,
+                width: buttonWidth,
             });
 
             initializedRef.current = true;
@@ -169,10 +171,10 @@ const GoogleLoginButton = ({onSuccess, onError, onStart, disabled = false, autoP
     return (
         <div className="auth-oauth-wrap" aria-busy={isInitializing}>
             <div className={`auth-oauth-button-shell ${disabled ? 'pointer-events-none opacity-60' : ''}`.trim()}>
-                <div ref={buttonRef}/>
+                <div ref={buttonRef} className="auth-oauth-button-target"/>
             </div>
             {isInitializing && <p className="auth-oauth-caption">Loading Google sign-in...</p>}
-            {isRedirecting && <p className="text-sm font-medium text-cyan-100">Redirecting to Google...</p>}
+            {isRedirecting && <p className="auth-oauth-caption font-medium">Redirecting to Google...</p>}
         </div>
     );
 };
