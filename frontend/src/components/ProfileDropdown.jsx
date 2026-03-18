@@ -128,7 +128,8 @@ export default function ProfileDropdown() {
                                 }}
                             >
                                 <span>Theme</span>
-                                <span className="arrow">›</span>
+                                <span
+                                    className={`arrow transition-transform duration-200 ${isThemeSubmenuOpen ? 'rotate-180' : ''}`}>›</span>
                             </button>
 
                             {/* Hover bridge keeps the submenu open when the cursor moves diagonally */}

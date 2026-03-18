@@ -3,6 +3,8 @@ import {Link, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import {useToast} from '../hooks/useToast';
+import {useAuthState} from '../hooks/authStateHook';
+import {AuthErrorMessage, AuthLoadingOverlay} from '../components/auth/AuthStateComponents';
 import ValidationError from '../components/Validation/ValidationError';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 import AuthCardLayout from '../components/auth/AuthCardLayout';
@@ -25,6 +27,7 @@ const AuthPage = () => {
     const navigate = useNavigate();
     const {toast} = useToast();
     const {login, isAuthenticated, isLoading} = useAuth();
+    const authState = useAuthState();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -32,6 +35,7 @@ const AuthPage = () => {
     const [step, setStep] = useState(AUTH_STEP.EMAIL_ENTRY);
     const [passwordError, setPasswordError] = useState('');
     const [isGoogleRedirecting, setIsGoogleRedirecting] = useState(false);
+    const [showAuthError, setShowAuthError] = useState(false);
 
     const normalizedEmail = useMemo(
         () => email.trim().toLowerCase(),
@@ -81,6 +85,7 @@ const AuthPage = () => {
         }
 
         setLoading(true);
+        authState.setLoading('Checking email...');
         setPasswordError('');
 
         const result = await apiService.post(
@@ -92,12 +97,16 @@ const AuthPage = () => {
         );
 
         setLoading(false);
+        authState.setIdle();
 
         if (
             apiService.isErrorResponse(result) ||
             result?.api_response_status !== 'success'
         ) {
-            toast.error(result?.message || 'Unable to check this email.');
+            const errorMsg = result?.message || 'Unable to check this email.';
+            toast.error(errorMsg);
+            authState.setError(errorMsg);
+            setShowAuthError(true);
             return;
         }
 
@@ -121,6 +130,7 @@ const AuthPage = () => {
 
         setPasswordError('');
         setLoading(true);
+        authState.setLoading('Signing in...');
 
         const result = await apiService.post(
             API_CONFIG.ENDPOINTS.LOGIN,
@@ -141,16 +151,18 @@ const AuthPage = () => {
 
             if (backendMessage.toLowerCase().includes('google')) {
                 resetFlow();
-                toast.error(
-                    'Please login with Google for this account.'
-                );
+                authState.setError('Please login with Google for this account.');
+                setShowAuthError(true);
                 return;
             }
 
+            authState.setError(backendMessage);
+            setShowAuthError(true);
             setPasswordError(backendMessage);
             return;
         }
 
+        authState.setSuccess('Welcome back!');
         login({identifier: normalizedEmail});
         navigate('/sessions');
     };
@@ -236,37 +248,57 @@ const AuthPage = () => {
         isSignupStep;
 
     return (
-        <AuthCardLayout
-            title="Welcome back"
-            subtitle="Use your email to continue."
-        >
-            <form onSubmit={checkEmail} className="space-y-3">
-                <label className="auth-label">Email</label>
-                <AuthInput
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                        setEmail(e.target.value);
-                        if (step !== AUTH_STEP.EMAIL_ENTRY) {
-                            resetFlow();
-                        }
-                    }}
-                    placeholder="you@example.com"
-                />
-                {step === AUTH_STEP.EMAIL_ENTRY && (
-                    <AuthButton
-                        type="submit"
-                        disabled={loading || isGoogleRedirecting}
-                    >
-                        {loading ? 'Checking...' : 'Continue with Email'}
-                    </AuthButton>
-                )}
-            </form>
+        <>
+            <AuthLoadingOverlay isVisible={authState.isLoading} message={authState.message}/>
 
-            {isPasswordStep && (
-                <form onSubmit={handleLocalLogin} className="auth-section">
-                    <label className="auth-label block">Password</label>
+            <AuthCardLayout
+                title="Welcome back"
+                subtitle="Use your email to continue."
+            >
+                {showAuthError && (
+                    <div className="mb-4">
+                        <AuthErrorMessage
+                            message={authState.message}
+                            onRetry={() => {
+                                authState.setIdle();
+                                setShowAuthError(false);
+                            }}
+                            onDismiss={() => {
+                                authState.setIdle();
+                                setShowAuthError(false);
+                            }}
+                        />
+                    </div>
+                )}
+
+                <form onSubmit={checkEmail} className="space-y-3">
+                    <label className="auth-label">Email</label>
                     <AuthInput
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                            setEmail(e.target.value);
+                            if (step !== AUTH_STEP.EMAIL_ENTRY) {
+                                resetFlow();
+                            }
+                        }}
+                        placeholder="you@example.com"
+                        disabled={loading || authState.isLoading}
+                    />
+                    {step === AUTH_STEP.EMAIL_ENTRY && (
+                        <AuthButton
+                            type="submit"
+                            disabled={loading || isGoogleRedirecting || authState.isLoading}
+                        >
+                            {loading ? 'Checking...' : 'Continue with Email'}
+                        </AuthButton>
+                    )}
+                </form>
+
+                {isPasswordStep && (
+                    <form onSubmit={handleLocalLogin} className="auth-section">
+                        <label className="auth-label block">Password</label>
+                        <AuthInput
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -315,6 +347,7 @@ const AuthPage = () => {
                 </>
             )}
         </AuthCardLayout>
+        </>
     );
 };
 

@@ -485,7 +485,7 @@ a:hover {
         position: absolute;
         top: -6px;
         bottom: -6px;
-        width: 10px;
+        width: 14px;
         pointer-events: none;
     }
 
@@ -503,7 +503,7 @@ a:hover {
 
     .submenu-panel {
         position: absolute;
-        top: 0;
+        top: -4px;
         min-width: 140px;
         background: var(--don-popover, var(--don-bg-surface));
         border: 1px solid var(--don-border-default);
@@ -519,12 +519,12 @@ a:hover {
     }
 
     .submenu-panel--right {
-        left: calc(100% + 6px);
+        left: calc(100% + 12px);
         transform: translateX(4px);
     }
 
     .submenu-panel--left {
-        right: calc(100% + 6px);
+        right: calc(100% + 12px);
         transform: translateX(-4px);
     }
 
@@ -541,20 +541,20 @@ a:hover {
         display: flex;
         align-items: center;
         gap: 8px;
-        border: 1px solid transparent;
+        border: none;
         padding: 8px 16px;
         border-radius: 6px;
         background: transparent;
         color: var(--don-text-primary);
         text-align: left;
         cursor: pointer;
-        transition: background-color 140ms ease, border-color 140ms ease;
+        transition: background-color 140ms ease, font-weight 140ms ease;
     }
 
     .submenu-item:hover,
     .submenu-item:focus-visible {
         background: var(--don-bg-hover);
-        border-color: var(--don-border-subtle);
+        font-weight: 600;
         outline: none;
     }
 
@@ -1379,14 +1379,20 @@ a:hover {
     .dashboard-topbar {
         position: sticky;
         top: 0;
-        z-index: 20;
+        z-index: 50;
         display: flex;
         align-items: center;
         justify-content: space-between;
         padding: var(--s2) var(--s4);
         border-bottom: 1px solid var(--don-border-subtle);
-        background: color-mix(in srgb, var(--don-bg-base) 92%, transparent);
-        backdrop-filter: blur(8px);
+        background: color-mix(in srgb, var(--don-bg-base) 80% / 80%, transparent);
+        backdrop-filter: blur(12px);
+        transition: all 200ms ease-out;
+    }
+
+    .dark .dashboard-topbar {
+        background: color-mix(in srgb, #1e293b 70%, transparent);
+        border-bottom-color: rgba(255, 255, 255, 0.1);
     }
 
     .dashboard-topbar__left {
@@ -1400,18 +1406,33 @@ a:hover {
         width: 36px;
         height: 36px;
         border-radius: var(--r-lg);
-        border: 1px solid var(--don-border-subtle);
-        background: color-mix(in srgb, var(--don-bg-surface) 92%, transparent);
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
         color: var(--don-text-primary);
         display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         flex-shrink: 0;
+        transition: all 200ms ease-out;
     }
 
     .dashboard-mobile-menu-btn:hover {
-        background: var(--don-bg-hover);
+        border-color: rgba(139, 92, 246, 0.3);
+        background: #f8f7ff;
+        transform: scale(1.03) rotate(1deg);
+        box-shadow: 0 0 12px rgba(139, 92, 246, 0.1);
+    }
+
+    .dark .dashboard-mobile-menu-btn {
+        border-color: rgba(255, 255, 255, 0.1);
+        background: transparent;
+    }
+
+    .dark .dashboard-mobile-menu-btn:hover {
+        border-color: rgba(139, 92, 246, 0.3);
+        background: rgba(139, 92, 246, 0.05);
+        box-shadow: 0 0 16px rgba(139, 92, 246, 0.15);
     }
 
     .dashboard-topbar__title {
@@ -1435,9 +1456,9 @@ a:hover {
 
     .auth-system-trigger {
         height: 36px;
-        border: none;
+        border: 1px solid #e5e7eb;
         border-radius: var(--r-lg);
-        background: transparent;
+        background: #ffffff;
         color: var(--don-text-primary);
         display: inline-flex;
         align-items: center;
@@ -1446,7 +1467,25 @@ a:hover {
         font-size: 13px;
         font-weight: 600;
         cursor: pointer;
-        transition: color var(--ease), background-color var(--ease), filter var(--ease), opacity var(--ease);
+        transition: all 200ms ease-out;
+    }
+
+    .auth-system-trigger:hover {
+        border-color: rgba(139, 92, 246, 0.3);
+        background: #f8f7ff;
+        transform: scale(1.03) rotate(1deg);
+        box-shadow: 0 0 12px rgba(139, 92, 246, 0.1);
+    }
+
+    .dark .auth-system-trigger {
+        border-color: rgba(255, 255, 255, 0.1);
+        background: transparent;
+    }
+
+    .dark .auth-system-trigger:hover {
+        border-color: rgba(139, 92, 246, 0.3);
+        background: rgba(139, 92, 246, 0.05);
+        box-shadow: 0 0 16px rgba(139, 92, 246, 0.15);
     }
 
     .auth-system-trigger:hover {
@@ -1531,8 +1570,8 @@ a:hover {
         width: 36px;
         height: 36px;
         border-radius: 9999px;
-        border: 1px solid var(--don-border-default);
-        background: var(--don-bg-card);
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
         color: var(--don-text-primary);
         font-size: 13px;
         font-weight: 600;
@@ -1544,13 +1583,23 @@ a:hover {
 
     .dashboard-avatar-btn {
         cursor: pointer;
-        transition: transform var(--ease), border-color var(--ease), box-shadow var(--ease);
+        transition: all 200ms ease-out;
     }
 
     .dashboard-avatar-btn:hover {
-        transform: translateY(-1px);
-        border-color: var(--don-border-strong);
-        box-shadow: 0 0 0 1px var(--don-accent-border);
+        transform: translateY(-1px) scale(1.03);
+        border-color: rgba(139, 92, 246, 0.3);
+        box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+    }
+
+    .dark .dashboard-avatar {
+        border-color: rgba(255, 255, 255, 0.1);
+        background: transparent;
+    }
+
+    .dark .dashboard-avatar-btn:hover {
+        border-color: rgba(139, 92, 246, 0.3);
+        box-shadow: 0 0 16px rgba(139, 92, 246, 0.15);
     }
 
     .profile-menu {

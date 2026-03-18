@@ -2,9 +2,11 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Outlet, useLocation, useNavigate} from 'react-router-dom';
 import * as Icons from '../shims/lucide-react';
 import ProfileDropdown from './ProfileDropdown';
+import CascadingMenu from './CascadingMenu';
+import ScrollToTopButton from './ScrollToTopButton';
 
 const SIDEBAR_EXPANDED_KEY = 'don-dashboard-sidebar-expanded';
-const {Home, Menu, Shield, X} = Icons;
+const {Home, Menu, Shield, X, BookOpen, Zap, Lock} = Icons;
 
 const isDesktopViewport = () => window.matchMedia('(min-width: 768px)').matches;
 
@@ -13,28 +15,42 @@ const navItems = [
     {id: 'sessions', label: 'Sessions', icon: Shield, to: '/sessions'},
 ];
 
-const authSystemSections = [
+const authSystemMenu = [
     {
-        title: 'Overview',
+        id: 'overview',
+        label: 'Overview',
+        icon: BookOpen,
         items: [
-            {label: 'Home', to: '/'},
-            {label: 'Architecture', to: '/architecture'},
+            {id: 'home', label: 'Home', onClick: null, to: '/'},
+            {id: 'architecture', label: 'Architecture', onClick: null, to: '/architecture'},
         ],
     },
     {
-        title: 'Core Concepts',
+        id: 'core-concepts',
+        label: 'Core Concepts',
+        icon: Zap,
         items: [
-            {label: 'Features', to: '/features'},
-            {label: 'Identifier Flow', to: '/identifier-flow'},
-            {label: 'Security Demo', to: '/security-demo'},
+            {id: 'features', label: 'Features', onClick: null, to: '/features'},
+            {
+                id: 'identifier-flow',
+                label: 'Identifier Flow',
+                icon: Lock,
+                items: [
+                    {id: 'jwt-flow', label: 'JWT Flow', to: '/identifier-flow'},
+                    {id: 'refresh-rotation', label: 'Refresh Rotation', to: '/identifier-flow'},
+                ],
+            },
+            {id: 'security-demo', label: 'Security Demo', onClick: null, to: '/security-demo'},
         ],
     },
     {
-        title: 'Platform Info',
+        id: 'platform-info',
+        label: 'Platform Info',
+        icon: Shield,
         items: [
-            {label: 'Deployment', to: '/deployment'},
-            {label: 'Privacy', to: '/privacy'},
-            {label: 'Terms', to: '/terms'},
+            {id: 'deployment', label: 'Deployment', onClick: null, to: '/deployment'},
+            {id: 'privacy', label: 'Privacy', onClick: null, to: '/privacy'},
+            {id: 'terms', label: 'Terms', onClick: null, to: '/terms'},
         ],
     },
 ];
@@ -61,13 +77,10 @@ const AppLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const [isAuthMenuOpen, setIsAuthMenuOpen] = useState(false);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-    const [isThemeOpen, setIsThemeOpen] = useState(false);
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => localStorage.getItem(SIDEBAR_EXPANDED_KEY) === 'true');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-    const authMenuRef = useRef(null);
     const profileMenuRef = useRef(null);
 
     useEffect(() => {
@@ -89,26 +102,21 @@ const AppLayout = () => {
 
 
     useEffect(() => {
-        if (!isProfileMenuOpen && !isAuthMenuOpen && !isThemeOpen) {
+        if (!isProfileMenuOpen) {
             return;
         }
 
         const handlePointerDown = (event) => {
-            const clickedOutsideAuthMenu = !authMenuRef.current?.contains(event.target);
             const clickedOutsideProfileMenu = !profileMenuRef.current?.contains(event.target);
 
-            if (clickedOutsideAuthMenu && clickedOutsideProfileMenu) {
-                setIsAuthMenuOpen(false);
+            if (clickedOutsideProfileMenu) {
                 setIsProfileMenuOpen(false);
-                setIsThemeOpen(false);
             }
         };
 
         const handleEscape = (event) => {
             if (event.key === 'Escape') {
-                setIsAuthMenuOpen(false);
                 setIsProfileMenuOpen(false);
-                setIsThemeOpen(false);
                 setIsMobileSidebarOpen(false);
             }
         };
@@ -120,22 +128,14 @@ const AppLayout = () => {
             document.removeEventListener('mousedown', handlePointerDown);
             document.removeEventListener('keydown', handleEscape);
         };
-    }, [isAuthMenuOpen, isProfileMenuOpen, isThemeOpen]);
+    }, [isProfileMenuOpen]);
 
     const handleNavSelect = (item) => {
-        setIsAuthMenuOpen(false);
         setIsProfileMenuOpen(false);
-        setIsThemeOpen(false);
         setIsMobileSidebarOpen(false);
         navigate(item.to);
     };
 
-    const handleAuthMenuNavigate = (to) => {
-        setIsAuthMenuOpen(false);
-        setIsProfileMenuOpen(false);
-        setIsThemeOpen(false);
-        navigate(to);
-    };
 
     const handleSidebarToggle = () => {
         if (isDesktopViewport()) {
@@ -221,46 +221,16 @@ const AppLayout = () => {
                             <h1 className="dashboard-topbar__title">{title}</h1>
                         </div>
                         <div className="dashboard-topbar__actions">
-                            <div className="auth-system-menu" ref={authMenuRef}>
-                                <button
-                                    type="button"
-                                    className="auth-system-trigger"
-                                    aria-label="Open authentication system menu"
-                                    aria-haspopup="menu"
-                                    aria-expanded={isAuthMenuOpen}
-                                    onClick={() => {
-                                        setIsProfileMenuOpen(false);
-                                        setIsAuthMenuOpen((open) => !open);
-                                    }}
-                                >
-                                    <span>Authentication System</span>
-                                </button>
-
-                                <div
-                                    className={`auth-system-dropdown ${isAuthMenuOpen ? 'auth-system-dropdown--open' : ''}`}
-                                    role="menu">
-                                    <div className="auth-system-dropdown__sections">
-                                        {authSystemSections.map((section) => (
-                                            <div key={section.title} className="auth-system-dropdown__section">
-                                                <p className="auth-system-dropdown__title">{section.title}</p>
-                                                <div className="auth-system-dropdown__items">
-                                                    {section.items.map((item) => (
-                                                        <button
-                                                            key={item.to}
-                                                            type="button"
-                                                            role="menuitem"
-                                                            onClick={() => handleAuthMenuNavigate(item.to)}
-                                                            className="auth-system-dropdown__item"
-                                                        >
-                                                            {item.label}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
+                            <CascadingMenu
+                                trigger="Authentication System"
+                                items={authSystemMenu}
+                                onItemClick={(item) => {
+                                    if (item.to) {
+                                        navigate(item.to);
+                                    }
+                                }}
+                                className="flex-shrink-0"
+                            />
 
                             <div className="dashboard-profile">
                                 <ProfileDropdown/>
@@ -273,6 +243,7 @@ const AppLayout = () => {
                     </main>
                 </div>
             </div>
+            <ScrollToTopButton/>
         </div>
     );
 };
