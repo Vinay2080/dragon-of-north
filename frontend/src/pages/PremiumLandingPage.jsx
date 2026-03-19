@@ -1,9 +1,10 @@
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
 // eslint-disable-next-line no-unused-vars
 import {motion} from 'framer-motion';
 import {AlertCircle, CheckCircle, ChevronRight, Eye, Lock, Shield, Smartphone, Zap} from 'react-feather';
 import ScrollToTopButton from '../components/ScrollToTopButton';
+import {useScrollReveal} from '../hooks/useScrollReveal';
 
 const containerVariants = {
     hidden: {opacity: 0},
@@ -126,13 +127,80 @@ const USE_CASES = [
     {icon: Zap, title: 'Developer Friendly', description: 'Simple APIs and SDKs for seamless integration.'},
 ];
 
+const HERO_TYPE_TARGET = 'Control Sessions.\nNot Just Logins.';
+const HERO_TYPE_INTERVAL_MS = 42;
+const HERO_EASE = [0.22, 1, 0.36, 1];
+
+const HERO_SEQUENCE = {
+    subtextDuration: 0.55,
+    buttonDuration: 0.5,
+    metaDuration: 0.45,
+    subtextGapAfterHeadline: 0.24,
+    secondButtonGap: 0.14,
+    metaGap: 0.08,
+    afterButtonsGap: 0.22,
+};
+
+const SECTION_REVEAL_OPTIONS = {
+    threshold: 0.15,
+    rootMargin: '0px 0px -25% 0px',
+    once: false,
+};
+
+/**
+ * @param {string} text
+ * @param {number} intervalMs
+ * @returns {string}
+ */
+function useTypewriter(text, intervalMs) {
+    const [typed, setTyped] = useState('');
+
+    useEffect(() => {
+        let frameId = null;
+        const startedAt = performance.now();
+
+        const tick = (now) => {
+            const nextLength = Math.min(text.length, Math.floor((now - startedAt) / intervalMs) + 1);
+
+            setTyped((prev) => (prev.length === nextLength ? prev : text.slice(0, nextLength)));
+
+            if (nextLength < text.length) {
+                frameId = window.requestAnimationFrame(tick);
+            }
+        };
+
+        frameId = window.requestAnimationFrame(tick);
+
+        return () => {
+            if (frameId !== null) {
+                window.cancelAnimationFrame(frameId);
+            }
+        };
+    }, [text, intervalMs]);
+
+    return typed;
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // HERO SECTION
 // ═════════════════════════════════════════════════════════════════════════════
 
 function HeroSection() {
+    const {ref: sectionRef, isVisible: isSectionVisible} = useScrollReveal(SECTION_REVEAL_OPTIONS);
+    const meta = ['JWT Tokens', 'Spring Boot', 'Real-time Tracking'];
+    const typedHeadline = useTypewriter(HERO_TYPE_TARGET, HERO_TYPE_INTERVAL_MS);
+
+    const headlineTailDelay = (HERO_TYPE_TARGET.length * HERO_TYPE_INTERVAL_MS) / 1000;
+    const subtextDelay = headlineTailDelay + HERO_SEQUENCE.subtextGapAfterHeadline;
+    const firstButtonDelay = subtextDelay + HERO_SEQUENCE.subtextDuration;
+    const secondButtonDelay = firstButtonDelay + HERO_SEQUENCE.secondButtonGap;
+    const metaStartDelay = secondButtonDelay + HERO_SEQUENCE.buttonDuration + HERO_SEQUENCE.afterButtonsGap;
+
     return (
-        <section className="relative overflow-hidden py-20 md:py-28 lg:py-32 bg-white dark:bg-[#020617]">
+        <section
+            ref={sectionRef}
+            className={`reveal reveal-section relative overflow-hidden py-20 md:py-28 lg:py-32 bg-white dark:bg-[#020617] ${isSectionVisible ? 'revealed' : ''}`}
+        >
             {/* Light mode background - subtle gradient */}
             <div
                 className="pointer-events-none absolute inset-0 dark:hidden"
@@ -162,76 +230,125 @@ function HeroSection() {
                 className="pointer-events-none absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-gradient-to-tr from-purple-500 to-transparent blur-3xl opacity-5 hidden dark:block"/>
 
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <motion.div variants={containerVariants} initial="hidden" animate="visible"
-                            className="text-center space-y-8">
+                <div className="text-center space-y-8">
                     <motion.span
-                        variants={itemVariants}
+                        initial={{opacity: 0, y: 16}}
+                        animate={{opacity: 1, y: 0}}
+                        transition={{duration: 0.5, ease: HERO_EASE}}
                         className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/15 dark:text-violet-300"
                     >
                         Authentication Platform
                     </motion.span>
 
                     <motion.h1
-                        variants={itemVariants}
-                        className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-tight"
+                        initial={{opacity: 0, y: 16}}
+                        animate={{opacity: 1, y: 0}}
+                        transition={{duration: 0.5, ease: HERO_EASE}}
+                        className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-tight whitespace-pre-line min-h-[2.6em]"
                     >
-                        Control Sessions.
-                        <br/>
-                        Not Just Logins.
+                        {typedHeadline}
                     </motion.h1>
 
                     <motion.p
-                        variants={itemVariants}
+                        initial={{opacity: 0, y: 16}}
+                        animate={{opacity: 1, y: 0}}
+                        transition={{
+                            delay: headlineTailDelay,
+                            duration: 0.45,
+                            ease: HERO_EASE,
+                        }}
+                        className="sr-only"
+                    >
+                        Control Sessions. Not Just Logins.
+                    </motion.p>
+
+                    <motion.p
+                        initial={{opacity: 0, y: 16}}
+                        animate={{opacity: 1, y: 0}}
+                        transition={{
+                            delay: subtextDelay,
+                            duration: HERO_SEQUENCE.subtextDuration,
+                            ease: HERO_EASE,
+                        }}
                         className="mx-auto max-w-3xl text-base md:text-lg text-slate-600 dark:text-slate-300"
                     >
                         Short-lived tokens, refresh rotation, and full session visibility for modern systems.
                     </motion.p>
 
-                    <motion.div variants={itemVariants}
-                                className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 pt-4">
-                        <Link
-                            to="/sessions"
-                            className="relative overflow-hidden rounded-lg bg-violet-600 px-6 sm:px-8 py-3 font-medium text-white transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl hover:shadow-violet-500/30 dark:hover:shadow-violet-500/20 active:scale-95"
+                    <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 pt-4">
+                        <motion.div
+                            initial={{opacity: 0, y: 16, scale: 0.97}}
+                            animate={{opacity: 1, y: 0, scale: 1}}
+                            transition={{
+                                delay: firstButtonDelay,
+                                duration: HERO_SEQUENCE.buttonDuration,
+                                ease: HERO_EASE,
+                            }}
                         >
-                            <span className="relative z-10">Explore Sessions</span>
-                            <div
-                                className="absolute inset-0 bg-gradient-to-r from-violet-500 to-purple-600 opacity-0 transition-opacity duration-300 hover:opacity-100"/>
-                        </Link>
-                        <Link
-                            to="/architecture"
-                            className="group relative overflow-hidden rounded-lg border border-slate-300 px-6 sm:px-8 py-3 font-medium text-slate-900 transition-all duration-300 ease-out hover:border-violet-400 hover:scale-102 dark:border-slate-700 dark:text-slate-100 dark:hover:border-violet-500/40"
+                            <Link
+                                to="/sessions"
+                                className="relative overflow-hidden rounded-lg bg-violet-600 px-6 sm:px-8 py-3 font-medium text-white transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl hover:shadow-violet-500/30 dark:hover:shadow-violet-500/20 active:scale-95"
+                            >
+                                <span className="relative z-10">Explore Sessions</span>
+                                <div
+                                    className="absolute inset-0 bg-gradient-to-r from-violet-500 to-purple-600 opacity-0 transition-opacity duration-300 hover:opacity-100"/>
+                            </Link>
+                        </motion.div>
+
+                        <motion.div
+                            initial={{opacity: 0, y: 16, scale: 0.97}}
+                            animate={{opacity: 1, y: 0, scale: 1}}
+                            transition={{
+                                delay: secondButtonDelay,
+                                duration: HERO_SEQUENCE.buttonDuration,
+                                ease: HERO_EASE,
+                            }}
                         >
-                            <span className="relative z-10 flex items-center gap-1">
-                                View Flow <ChevronRight
-                                className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"/>
-                            </span>
-                            <div
-                                className="absolute inset-0 bg-gradient-to-r from-violet-500/5 to-purple-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"/>
-                        </Link>
-                    </motion.div>
+                            <Link
+                                to="/identifier-flow"
+                                className="group relative inline-flex items-center overflow-hidden rounded-lg border border-slate-300 px-6 sm:px-8 py-3 font-medium text-slate-900 transition-all duration-300 ease-out hover:border-violet-400 hover:scale-[1.02] hover:shadow-md dark:border-slate-700 dark:text-slate-100 dark:hover:border-violet-500/40"
+                            >
+                                <span className="relative z-10 flex items-center gap-1">
+                                    View Flow <ChevronRight
+                                    className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"/>
+                                </span>
+                                <div
+                                    className="absolute inset-0 bg-gradient-to-r from-violet-500/5 to-purple-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"/>
+                            </Link>
+                        </motion.div>
+                    </div>
 
                     {/* Trust badges */}
-                    <motion.div
-                        variants={itemVariants}
-                        className="pt-6 flex flex-wrap items-center justify-center gap-6 border-t border-slate-200 dark:border-slate-800 mt-10"
-                    >
-                        <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-emerald-500"/>
-                            <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">JWT Tokens</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-emerald-500"/>
-                            <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Spring Boot</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-emerald-500"/>
-                            <span className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Real-time Tracking</span>
-                        </div>
-                    </motion.div>
+                    <div
+                        className="pt-6 flex flex-wrap items-center justify-center gap-6 border-t border-slate-200 dark:border-slate-800 mt-10">
+                        {meta.map((item, index) => (
+                            <motion.div
+                                key={item}
+                                initial={{opacity: 0, y: 16}}
+                                animate={{opacity: 1, y: 0}}
+                                transition={{
+                                    delay: metaStartDelay + (index * HERO_SEQUENCE.metaGap),
+                                    duration: HERO_SEQUENCE.metaDuration,
+                                    ease: HERO_EASE,
+                                }}
+                                className="flex items-center gap-2"
+                            >
+                                <div className="h-2 w-2 rounded-full bg-emerald-500"/>
+                                <span
+                                    className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">{item}</span>
+                            </motion.div>
+                        ))}
+                    </div>
 
                     {/* External links */}
                     <motion.div
-                        variants={itemVariants}
+                        initial={{opacity: 0, y: 16}}
+                        animate={{opacity: 1, y: 0}}
+                        transition={{
+                            delay: metaStartDelay + (meta.length * HERO_SEQUENCE.metaGap) + 0.16,
+                            duration: 0.45,
+                            ease: HERO_EASE,
+                        }}
                         className="mt-8 flex justify-center gap-6 text-sm"
                     >
                         <a
@@ -251,7 +368,7 @@ function HeroSection() {
                             API Docs →
                         </a>
                     </motion.div>
-                </motion.div>
+                </div>
             </div>
         </section>
     );
@@ -262,31 +379,21 @@ function HeroSection() {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function TrustSection() {
-    return (
-        <section className="bg-slate-50 py-20 md:py-28 lg:py-32 dark:bg-slate-900">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{once: true}}
-                    className="mb-14 text-center"
-                >
-                    <motion.h2
-                        variants={itemVariants}
-                        className="text-3xl md:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-slate-100"
-                    >
-                        Built for Real-World Security
-                    </motion.h2>
-                </motion.div>
+    const {ref: sectionRef, isVisible: isSectionVisible} = useScrollReveal(SECTION_REVEAL_OPTIONS);
 
-                <motion.div
-                    variants={containerVariants}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{once: true}}
-                    className="grid grid-cols-1 gap-6 md:grid-cols-3"
-                >
+    return (
+        <section
+            ref={sectionRef}
+            className={`reveal reveal-section bg-slate-50 py-20 md:py-28 lg:py-32 dark:bg-slate-900 ${isSectionVisible ? 'revealed' : ''}`}
+        >
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="mb-14 text-center">
+                    <h2 className={`reveal reveal-heading text-3xl md:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-slate-100 ${isSectionVisible ? 'revealed' : ''}`}>
+                        Built for Real-World Security
+                    </h2>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     {[
                         {
                             icon: Zap,
@@ -295,13 +402,13 @@ function TrustSection() {
                         },
                         {icon: Lock, title: 'Session Control', text: 'Track and revoke device sessions instantly.'},
                         {icon: AlertCircle, title: 'Instant Revocation', text: 'Respond to threats in milliseconds.'},
-                    ].map((card) => {
+                    ].map((card, index) => {
                         const Icon = card.icon;
                         return (
-                            <motion.div
+                            <div
                                 key={card.title}
-                                variants={itemVariants}
-                                className="group relative rounded-xl border border-slate-200 bg-white p-6 sm:p-8 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-xl dark:border-white/10 dark:bg-slate-800/60 dark:backdrop-blur-sm dark:hover:shadow-lg dark:hover:shadow-violet-500/15 overflow-hidden"
+                                className={`reveal reveal-card group relative rounded-xl border border-slate-200 bg-white p-6 sm:p-8 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-xl dark:border-white/10 dark:bg-slate-800/60 dark:backdrop-blur-sm dark:hover:shadow-lg dark:hover:shadow-violet-500/15 overflow-hidden ${isSectionVisible ? 'revealed' : ''}`}
+                                style={{'--reveal-delay': `${index * 120}ms`}}
                             >
                                 {/* Inner glow gradient */}
                                 <div
@@ -319,10 +426,10 @@ function TrustSection() {
                                     <h3 className="mb-3 text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100">{card.title}</h3>
                                     <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300">{card.text}</p>
                                 </div>
-                            </motion.div>
+                            </div>
                         );
                     })}
-                </motion.div>
+                </div>
             </div>
         </section>
     );
@@ -333,11 +440,15 @@ function TrustSection() {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function HowItWorksSection({activeStep, onStepChange}) {
+    const {ref: sectionRef, isVisible: isSectionVisible} = useScrollReveal(SECTION_REVEAL_OPTIONS);
     const activeStepData = useMemo(() => STEPS.find((step) => step.id === activeStep) ?? STEPS[0], [activeStep]);
 
     return (
-        <section id="how-it-works"
-                 className="py-20 md:py-28 lg:py-32 bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-800">
+        <section
+            ref={sectionRef}
+            id="how-it-works"
+            className={`reveal reveal-section py-20 md:py-28 lg:py-32 bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-800 ${isSectionVisible ? 'revealed' : ''}`}
+        >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <motion.div
                     variants={containerVariants}
@@ -433,8 +544,12 @@ function HowItWorksSection({activeStep, onStepChange}) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function FeatureSection() {
+    const {ref: sectionRef, isVisible: isSectionVisible} = useScrollReveal(SECTION_REVEAL_OPTIONS);
     return (
-        <section className="bg-slate-50 py-20 md:py-28 lg:py-32 dark:bg-slate-900">
+        <section
+            ref={sectionRef}
+            className={`reveal reveal-section bg-slate-50 py-20 md:py-28 lg:py-32 dark:bg-slate-900 ${isSectionVisible ? 'revealed' : ''}`}
+        >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <motion.div
                     variants={itemVariants}
@@ -501,8 +616,12 @@ function FeatureSection() {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function ComparisonSection() {
+    const {ref: sectionRef, isVisible: isSectionVisible} = useScrollReveal(SECTION_REVEAL_OPTIONS);
     return (
-        <section className="py-20 md:py-28 lg:py-32 bg-white dark:bg-[#020617]">
+        <section
+            ref={sectionRef}
+            className={`reveal reveal-section py-20 md:py-28 lg:py-32 bg-white dark:bg-[#020617] ${isSectionVisible ? 'revealed' : ''}`}
+        >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <h2 className="mb-14 text-center text-3xl md:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-slate-100">
                     Why Traditional Auth Fails
@@ -569,9 +688,12 @@ function ComparisonSection() {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function UseCasesSection() {
+    const {ref: sectionRef, isVisible: isSectionVisible} = useScrollReveal(SECTION_REVEAL_OPTIONS);
     return (
         <section
-            className="py-20 md:py-28 lg:py-32 bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-800">
+            ref={sectionRef}
+            className={`reveal reveal-section py-20 md:py-28 lg:py-32 bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-800 ${isSectionVisible ? 'revealed' : ''}`}
+        >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <motion.div
                     variants={itemVariants}
@@ -637,8 +759,12 @@ function UseCasesSection() {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function FinalCtaSection() {
+    const {ref: sectionRef, isVisible: isSectionVisible} = useScrollReveal(SECTION_REVEAL_OPTIONS);
     return (
-        <section className="relative overflow-hidden py-20 md:py-28 lg:py-32">
+        <section
+            ref={sectionRef}
+            className={`reveal reveal-section relative overflow-hidden py-20 md:py-28 lg:py-32 ${isSectionVisible ? 'revealed' : ''}`}
+        >
             {/* Light mode background */}
             <div className="absolute inset-0 bg-gradient-to-br from-violet-600 to-violet-700 dark:hidden"/>
 
@@ -687,6 +813,7 @@ function FinalCtaSection() {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function ProductDemoSection() {
+    const {ref: sectionRef, isVisible: isSectionVisible} = useScrollReveal(SECTION_REVEAL_OPTIONS);
     const mockSessions = [
         {device: 'MacBook Pro', location: 'San Francisco, CA', status: 'active'},
         {device: 'iPhone 15', location: 'Mumbai, India', status: 'active'},
@@ -695,7 +822,9 @@ function ProductDemoSection() {
 
     return (
         <section
-            className="py-20 md:py-28 lg:py-32 bg-gradient-to-b from-white to-slate-50 dark:from-[#020617] dark:to-slate-950/40">
+            ref={sectionRef}
+            className={`reveal reveal-section py-20 md:py-28 lg:py-32 bg-gradient-to-b from-white to-slate-50 dark:from-[#020617] dark:to-slate-950/40 ${isSectionVisible ? 'revealed' : ''}`}
+        >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16 items-center">
                     {/* Left side - Text */}
@@ -826,8 +955,12 @@ function ProductDemoSection() {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function FeatureSpotlightSection() {
+    const {ref: sectionRef, isVisible: isSectionVisible} = useScrollReveal(SECTION_REVEAL_OPTIONS);
     return (
-        <section className="py-20 md:py-28 lg:py-32 bg-white dark:bg-[#020617]">
+        <section
+            ref={sectionRef}
+            className={`reveal reveal-section py-20 md:py-28 lg:py-32 bg-white dark:bg-[#020617] ${isSectionVisible ? 'revealed' : ''}`}
+        >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <motion.div
                     initial={{opacity: 0, y: 20}}

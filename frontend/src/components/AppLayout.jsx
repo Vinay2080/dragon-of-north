@@ -6,6 +6,10 @@ import CascadingMenu from './CascadingMenu';
 import ScrollToTopButton from './ScrollToTopButton';
 
 const SIDEBAR_EXPANDED_KEY = 'don-dashboard-sidebar-expanded';
+const SCROLL_DIRECTION_THRESHOLD = 7;
+const TOPBAR_SHRINK_SCROLL_Y = 56;
+const TOPBAR_HIDE_ON_DOWN_SCROLL_Y = 72;
+const TOPBAR_STRETCH_SCALE = 1.06;
 const {Home, Menu, Shield, X, BookOpen, Zap, Lock} = Icons;
 
 const isDesktopViewport = () => window.matchMedia('(min-width: 768px)').matches;
@@ -80,19 +84,57 @@ const AppLayout = () => {
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => localStorage.getItem(SIDEBAR_EXPANDED_KEY) === 'true');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-    const [isTopbarVisible, setIsTopbarVisible] = useState(() => {
-        const getScrollY = () => (typeof window !== 'undefined' ? window.scrollY || window.pageYOffset || 0 : 0);
-        return getScrollY() <= 150;
-    });
+    const [isTopbarVisible, setIsTopbarVisible] = useState(true);
     const [isTopbarShrunk, setIsTopbarShrunk] = useState(() => {
         const getScrollY = () => (typeof window !== 'undefined' ? window.scrollY || window.pageYOffset || 0 : 0);
-        return getScrollY() > 80;
+        return getScrollY() > TOPBAR_SHRINK_SCROLL_Y;
     });
 
     const profileMenuRef = useRef(null);
     const lastScrollYRef = useRef(0);
     const scrollTickingRef = useRef(false);
     const scrollRafRef = useRef(null);
+    const isTopbarVisibleRef = useRef(isTopbarVisible);
+    const isTopbarShrunkRef = useRef(isTopbarShrunk);
+    const topbarScaleYRef = useRef(1);
+    const stretchResetTimeoutRef = useRef(null);
+    const stretchCooldownTimeoutRef = useRef(null);
+    const [topbarScaleY, setTopbarScaleY] = useState(1);
+
+    const applyTopbarVisibility = (nextVisible, nextShrunk) => {
+        if (nextVisible !== isTopbarVisibleRef.current) {
+            isTopbarVisibleRef.current = nextVisible;
+            setIsTopbarVisible(nextVisible);
+        }
+
+        if (nextShrunk !== isTopbarShrunkRef.current) {
+            isTopbarShrunkRef.current = nextShrunk;
+            setIsTopbarShrunk(nextShrunk);
+        }
+    };
+
+    const triggerTopStretch = () => {
+        if (stretchCooldownTimeoutRef.current !== null) {
+            return;
+        }
+
+        if (stretchResetTimeoutRef.current !== null) {
+            window.clearTimeout(stretchResetTimeoutRef.current);
+        }
+
+        topbarScaleYRef.current = TOPBAR_STRETCH_SCALE;
+        setTopbarScaleY(TOPBAR_STRETCH_SCALE);
+
+        stretchResetTimeoutRef.current = window.setTimeout(() => {
+            topbarScaleYRef.current = 1;
+            setTopbarScaleY(1);
+            stretchResetTimeoutRef.current = null;
+        }, 120);
+
+        stretchCooldownTimeoutRef.current = window.setTimeout(() => {
+            stretchCooldownTimeoutRef.current = null;
+        }, 260);
+    };
 
     useEffect(() => {
         localStorage.setItem(SIDEBAR_EXPANDED_KEY, String(isSidebarExpanded));
@@ -145,7 +187,7 @@ const AppLayout = () => {
         const getScrollY = () => window.scrollY || window.pageYOffset || 0;
 
         // Sync initial ref on mount
-        lastScrollYRef.current = getScrollY();
+        lastScrollYRef.current = Math.max(0, getScrollY());
 
         const handleScroll = () => {
             if (scrollTickingRef.current) {
@@ -154,30 +196,22 @@ const AppLayout = () => {
 
             scrollTickingRef.current = true;
             scrollRafRef.current = window.requestAnimationFrame(() => {
-                const currentScrollY = getScrollY();
+                const currentScrollY = Math.max(0, getScrollY());
                 const scrollDelta = currentScrollY - lastScrollYRef.current;
+                const scrollingDown = scrollDelta > SCROLL_DIRECTION_THRESHOLD;
+                const scrollingUp = scrollDelta < -SCROLL_DIRECTION_THRESHOLD;
 
-                if (currentScrollY < 50) {
-                    // Near top: Header resets to full size (no blur, no shadow)
-                    setIsTopbarVisible(true);
-                    setIsTopbarShrunk(false);
-                } else if (scrollDelta > 5) {
-                    // Intentional scroll down:
-                    // if scrollY > 80 → shrink
-                    if (currentScrollY > 80) {
-                        setIsTopbarShrunk(true);
+                if (currentScrollY <= 0) {
+                    applyTopbarVisibility(true, false);
+                    if (scrollingUp) {
+                        triggerTopStretch();
                     }
-                    // if scrollY > 150 → hide
-                    if (currentScrollY > 150) {
-                        setIsTopbarVisible(false);
-                    }
-                } else if (scrollDelta < -8) {
-                    // Intentional scroll up: Header reappears
-                    setIsTopbarVisible(true);
-                    // if scrollY > 80 → expand
-                    if (currentScrollY < 80) {
-                        setIsTopbarShrunk(false);
-                    }
+                } else if (scrollingDown) {
+                    applyTopbarVisibility(currentScrollY < TOPBAR_HIDE_ON_DOWN_SCROLL_Y, currentScrollY > TOPBAR_SHRINK_SCROLL_Y);
+                } else if (scrollingUp) {
+                    applyTopbarVisibility(true, currentScrollY > TOPBAR_SHRINK_SCROLL_Y);
+                } else {
+                    applyTopbarVisibility(isTopbarVisibleRef.current, currentScrollY > TOPBAR_SHRINK_SCROLL_Y);
                 }
 
                 lastScrollYRef.current = currentScrollY;
@@ -191,6 +225,12 @@ const AppLayout = () => {
             window.removeEventListener('scroll', handleScroll);
             if (scrollRafRef.current !== null) {
                 window.cancelAnimationFrame(scrollRafRef.current);
+            }
+            if (stretchResetTimeoutRef.current !== null) {
+                window.clearTimeout(stretchResetTimeoutRef.current);
+            }
+            if (stretchCooldownTimeoutRef.current !== null) {
+                window.clearTimeout(stretchCooldownTimeoutRef.current);
             }
             scrollTickingRef.current = false;
         };
@@ -274,7 +314,9 @@ const AppLayout = () => {
 
                 <div className="dashboard-content">
                     <header
-                        className={`dashboard-topbar header ${isTopbarVisible ? 'visible' : 'hidden'} ${isTopbarShrunk ? 'shrunk' : 'expanded'}`}>
+                        className={`dashboard-topbar header ${isTopbarVisible ? 'visible' : 'hidden'} ${isTopbarShrunk ? 'shrunk' : 'expanded'} ${topbarScaleY > 1 ? 'stretching' : ''}`}
+                        style={{'--topbar-scale-y': topbarScaleY}}
+                    >
                         <div className="dashboard-topbar__left">
                             <button
                                 type="button"

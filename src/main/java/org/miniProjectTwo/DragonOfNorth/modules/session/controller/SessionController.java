@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("api/v1/sessions")
+@RequestMapping("/api/v1/sessions")
 @RequiredArgsConstructor
 @Tag(name = "Sessions", description = "Manage active device sessions")
 @SecurityRequirement(name = "accessTokenCookie")

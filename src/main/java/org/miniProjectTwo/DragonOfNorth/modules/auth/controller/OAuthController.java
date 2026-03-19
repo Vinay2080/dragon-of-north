@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
-@RequestMapping("api/v1/auth/oauth")
+@RequestMapping("/api/v1/auth/oauth")
 @RequiredArgsConstructor
 @Tag(name = "OAuth Authentication", description = "Google OAuth authentication endpoints")
 public class OAuthController {
