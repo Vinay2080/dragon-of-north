@@ -51,6 +51,7 @@ const VariantIcon = ({variant}) => {
 
 const Toast = ({title, message, variant = 'info', duration = 4000, onClose}) => {
     const [isVisible, setIsVisible] = useState(false);
+    const [isExiting, setIsExiting] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [remaining, setRemaining] = useState(duration);
     const timerRef = useRef(null);
@@ -75,8 +76,8 @@ const Toast = ({title, message, variant = 'info', duration = 4000, onClose}) => 
 
         startRef.current = Date.now();
         timerRef.current = window.setTimeout(() => {
-            setIsVisible(false);
-            window.setTimeout(() => onClose(), 180);
+            setIsExiting(true);
+            window.setTimeout(() => onClose(), 250);
         }, remaining);
 
         return () => {
@@ -96,7 +97,7 @@ const Toast = ({title, message, variant = 'info', duration = 4000, onClose}) => 
             onMouseLeave={() => setIsPaused(false)}
             onFocusCapture={() => setIsPaused(true)}
             onBlurCapture={() => setIsPaused(false)}
-            className={`toast ${variant} ${isVisible ? 'translate-y-0 scale-100 opacity-100' : '-translate-y-2 scale-[0.98] opacity-0'} relative w-full overflow-hidden transition-all duration-200`}
+            className={`toast ${variant} ${isVisible && !isExiting ? 'toast-enter' : ''} ${isExiting ? 'toast-exit' : ''} relative w-full overflow-hidden`}
         >
             <div className="flex items-start gap-3">
                 <div className="mt-0.5" style={{color: styles.colorVar}}>
@@ -110,14 +111,11 @@ const Toast = ({title, message, variant = 'info', duration = 4000, onClose}) => 
 
                 <button
                     onClick={() => {
-                        setIsVisible(false);
-                        window.setTimeout(() => onClose(), 120);
+                        setIsExiting(true);
+                        window.setTimeout(() => onClose(), 250);
                     }}
                     aria-label="Dismiss notification"
-                    className="rounded p-1.5 transition focus:outline-none"
-                    style={{color: 'var(--don-text-muted)'}}
-                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--don-text-primary)'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--don-text-muted)'}
+                    className="toast-close-btn"
                 >
                     <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
                         <path fill="currentColor" d="m18.3 5.71-1.41-1.42L12 9.17 7.11 4.29 5.7 5.71 10.59 10.6 5.7 15.49l1.41 1.42L12 12l4.89 4.91 1.41-1.42-4.89-4.89z"/>
@@ -126,10 +124,14 @@ const Toast = ({title, message, variant = 'info', duration = 4000, onClose}) => 
             </div>
 
             {duration > 0 && (
-                <div className="h-0.5 w-full mt-3" style={{background: 'rgba(255, 255, 255, 0.05)'}}>
+                <div className="toast-progress-track">
                     <div
-                        className="h-full transition-[width] duration-100 ease-linear"
-                        style={{width: `${progressPct}%`, background: styles.colorVar}}
+                        className="toast-progress-bar"
+                        style={Object.assign({}, {
+                            '--progress-color': styles.colorVar,
+                            animation: isExiting ? 'none' : `toast-progress ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`,
+                            width: isExiting ? '0%' : `${progressPct}%`,
+                        })}
                     />
                 </div>
             )}

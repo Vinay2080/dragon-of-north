@@ -80,8 +80,19 @@ const AppLayout = () => {
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => localStorage.getItem(SIDEBAR_EXPANDED_KEY) === 'true');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const [isTopbarVisible, setIsTopbarVisible] = useState(() => {
+        const getScrollY = () => (typeof window !== 'undefined' ? window.scrollY || window.pageYOffset || 0 : 0);
+        return getScrollY() <= 150;
+    });
+    const [isTopbarShrunk, setIsTopbarShrunk] = useState(() => {
+        const getScrollY = () => (typeof window !== 'undefined' ? window.scrollY || window.pageYOffset || 0 : 0);
+        return getScrollY() > 80;
+    });
 
     const profileMenuRef = useRef(null);
+    const lastScrollYRef = useRef(0);
+    const scrollTickingRef = useRef(false);
+    const scrollRafRef = useRef(null);
 
     useEffect(() => {
         localStorage.setItem(SIDEBAR_EXPANDED_KEY, String(isSidebarExpanded));
@@ -129,6 +140,61 @@ const AppLayout = () => {
             document.removeEventListener('keydown', handleEscape);
         };
     }, [isProfileMenuOpen]);
+
+    useEffect(() => {
+        const getScrollY = () => window.scrollY || window.pageYOffset || 0;
+
+        // Sync initial ref on mount
+        lastScrollYRef.current = getScrollY();
+
+        const handleScroll = () => {
+            if (scrollTickingRef.current) {
+                return;
+            }
+
+            scrollTickingRef.current = true;
+            scrollRafRef.current = window.requestAnimationFrame(() => {
+                const currentScrollY = getScrollY();
+                const scrollDelta = currentScrollY - lastScrollYRef.current;
+
+                if (currentScrollY < 50) {
+                    // Near top: Header resets to full size (no blur, no shadow)
+                    setIsTopbarVisible(true);
+                    setIsTopbarShrunk(false);
+                } else if (scrollDelta > 5) {
+                    // Intentional scroll down:
+                    // if scrollY > 80 → shrink
+                    if (currentScrollY > 80) {
+                        setIsTopbarShrunk(true);
+                    }
+                    // if scrollY > 150 → hide
+                    if (currentScrollY > 150) {
+                        setIsTopbarVisible(false);
+                    }
+                } else if (scrollDelta < -8) {
+                    // Intentional scroll up: Header reappears
+                    setIsTopbarVisible(true);
+                    // if scrollY > 80 → expand
+                    if (currentScrollY < 80) {
+                        setIsTopbarShrunk(false);
+                    }
+                }
+
+                lastScrollYRef.current = currentScrollY;
+                scrollTickingRef.current = false;
+            });
+        };
+
+        window.addEventListener('scroll', handleScroll, {passive: true});
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (scrollRafRef.current !== null) {
+                window.cancelAnimationFrame(scrollRafRef.current);
+            }
+            scrollTickingRef.current = false;
+        };
+    }, []);
 
     const handleNavSelect = (item) => {
         setIsProfileMenuOpen(false);
@@ -207,7 +273,8 @@ const AppLayout = () => {
                 </aside>
 
                 <div className="dashboard-content">
-                    <header className="dashboard-topbar">
+                    <header
+                        className={`dashboard-topbar header ${isTopbarVisible ? 'visible' : 'hidden'} ${isTopbarShrunk ? 'shrunk' : 'expanded'}`}>
                         <div className="dashboard-topbar__left">
                             <button
                                 type="button"

@@ -10,7 +10,7 @@ import React from 'react';
  * - Centered auth container
  * - Premium SaaS aesthetic
  */
-const AuthLayoutModern = ({children, title, subtitle}) => {
+export const AuthLayoutModern = ({children, title, subtitle}) => {
     return (
         <div className="auth-shell">
             {/* Sidebar */}
@@ -49,5 +49,4 @@ const AuthLayoutModern = ({children, title, subtitle}) => {
     );
 };
 
-export default AuthLayoutModern;
 

@@ -29,7 +29,7 @@ const PasswordValidationChecklist = ({password = ''}) => {
         },
     ], []);
 
-    // Show checklist only if user has started typing
+    // Show checklist only if the user has started typing
     if (!password) return null;
 
     return (

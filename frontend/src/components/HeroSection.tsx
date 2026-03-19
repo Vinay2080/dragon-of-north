@@ -1,49 +1,55 @@
-import React from 'react';
+import { Reveal, RevealList, RevealItem } from './Reveal';
 
-const HeroSection: React.FC = () => {
+const HeroSection = () => {
     const steps = ['User Login', 'JWT', 'Expiry', 'Refresh', 'Session'];
 
     return (
         <section className="flex flex-col items-center justify-center text-center py-24 px-6">
             <div className="mx-auto max-w-5xl w-full">
                 {/* Headline */}
-                <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
-                    Control Sessions. Not Just Logins.
-                </h1>
+                <Reveal>
+                    <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
+                        Control Sessions. Not Just Logins.
+                    </h1>
+                </Reveal>
 
                 {/* Subtext */}
-                <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
-                    Short-lived tokens, rotation, and full session visibility — built for modern systems.
-                </p>
+                <Reveal delay={0.1}>
+                    <p className="mt-4 text-muted-foreground max-w-xl mx-auto">
+                        Short-lived tokens, rotation, and full session visibility — built for modern systems.
+                    </p>
+                </Reveal>
 
                 {/* CTA Buttons */}
-                <div className="flex gap-4 mt-8 justify-center">
-                    <button
-                        type="button"
-                        className="bg-primary text-primary-foreground px-6 py-3 rounded-md"
-                    >
-                        Explore Sessions
-                    </button>
+                <Reveal delay={0.2}>
+                    <div className="flex gap-4 mt-8 justify-center">
+                        <button
+                            type="button"
+                            className="bg-primary text-primary-foreground px-6 py-3 rounded-md btn interactive-card"
+                        >
+                            Explore Sessions
+                        </button>
 
-                    <button
-                        type="button"
-                        className="border border-border px-6 py-3 rounded-md"
-                    >
-                        View Architecture
-                    </button>
-                </div>
+                        <button
+                            type="button"
+                            className="border border-border px-6 py-3 rounded-md btn interactive-card"
+                        >
+                            View Architecture
+                        </button>
+                    </div>
+                </Reveal>
 
-                {/* Flow Visual */}
-                <div className="flex flex-wrap justify-center gap-3 mt-12">
+                {/* Flow Visual - Staggered List */}
+                <RevealList className="flex flex-wrap justify-center gap-3 mt-12">
                     {steps.map((s) => (
-                        <div
+                        <RevealItem
                             key={s}
                             className="px-4 py-2 rounded-full border border-border bg-card text-sm"
                         >
                             {s}
-                        </div>
+                        </RevealItem>
                     ))}
-                </div>
+                </RevealList>
             </div>
         </section>
     );

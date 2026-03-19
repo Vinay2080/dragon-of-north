@@ -1,16 +1,10 @@
-import {motion} from 'framer-motion';
-import {FileText, Github} from 'lucide-react';
+import { FileText, Github } from 'lucide-react';
+import { Reveal, RevealList, RevealItem } from './Reveal';
 
 const AuthorSection = () => {
     return (
         <section className="mx-auto mt-14 w-full max-w-7xl px-2 sm:px-0">
-            <motion.div
-                initial={{opacity: 0, y: 18}}
-                whileInView={{opacity: 1, y: 0}}
-                viewport={{once: true, amount: 0.2}}
-                transition={{duration: 0.5, ease: 'easeOut'}}
-                className="rounded-3xl border border-cyan-300/20 bg-white/[0.04] p-6 backdrop-blur-xl sm:p-8"
-            >
+            <Reveal className="rounded-3xl border border-cyan-300/20 bg-white/[0.04] p-6 backdrop-blur-xl sm:p-8">
                 <h3 className="text-2xl font-semibold text-white sm:text-3xl">About the Developer</h3>
 
                 <div className="mt-4 space-y-2">
@@ -20,8 +14,9 @@ const AuthorSection = () => {
                     </p>
                 </div>
 
-                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <a
+                <RevealList className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <RevealItem
+                        as="a"
                         href="https://github.com/Vinay2080/dragon-of-north"
                         target="_blank"
                         rel="noreferrer"
@@ -32,9 +27,10 @@ const AuthorSection = () => {
                             <span className="text-sm font-semibold">GitHub</span>
                         </div>
                         <p className="mt-2 text-xs text-slate-400 group-hover:text-slate-300">View Dragon of North repository</p>
-                    </a>
+                    </RevealItem>
 
-                    <a
+                    <RevealItem
+                        as="a"
                         href="https://drive.google.com/drive/folders/1_BbNhqGcIX6vSbhclkxCZ-m42Wh2Ayfl"
                         target="_blank"
                         rel="noreferrer"
@@ -45,9 +41,9 @@ const AuthorSection = () => {
                             <span className="text-sm font-semibold">Resume</span>
                         </div>
                         <p className="mt-2 text-xs text-slate-400 group-hover:text-slate-300">Open resume folder</p>
-                    </a>
-                </div>
-            </motion.div>
+                    </RevealItem>
+                </RevealList>
+            </Reveal>
         </section>
     );
 };

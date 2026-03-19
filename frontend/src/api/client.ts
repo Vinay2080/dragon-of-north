@@ -11,7 +11,7 @@ type RequestConfig = {
 
 type RequestInterceptor = (config: RequestConfig) => RequestConfig | Promise<RequestConfig>;
 
-type ResponseInterceptor =
+type ResponseInterceptor = 
     | ((response: {data: unknown; status: number; headers: Headers}) => unknown)
     | ((error: unknown) => Promise<never>);
 
@@ -31,7 +31,7 @@ const applyRequestInterceptors = async (config: RequestConfig) => {
     return currentConfig;
 };
 
-const parseResponseBody = async (response: Response) => {
+const parseResponseBody = async (response: Response): Promise<unknown> => {
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
         return response.json();
@@ -40,11 +40,11 @@ const parseResponseBody = async (response: Response) => {
     return response.text();
 };
 
-const runSuccessInterceptors = (payload: {data: unknown; status: number; headers: Headers}) => {
+const runSuccessInterceptors = (payload: {data: unknown; status: number; headers: Headers}): unknown => {
     return responseSuccessInterceptors.reduce((acc, interceptor) => interceptor(acc as never), payload);
 };
 
-const runErrorInterceptors = async (error: unknown) => {
+const runErrorInterceptors = async (error: unknown): Promise<never> => {
     if (responseErrorInterceptors.length === 0) {
         throw error;
     }
@@ -57,7 +57,7 @@ const runErrorInterceptors = async (error: unknown) => {
 };
 
 const create = (defaults: RequestConfig) => {
-    const request = async (config: RequestConfig) => {
+    const request = async (config: RequestConfig): Promise<unknown> => {
         const merged = await applyRequestInterceptors({
             ...defaults,
             ...config,
@@ -72,8 +72,7 @@ const create = (defaults: RequestConfig) => {
         const requestHeaders = {...(merged.headers || {})};
 
         if (isMutatingRequest) {
-            const csrfToken = await ensureCsrfToken();
-            requestHeaders[CSRF_HEADER_NAME] = csrfToken;
+            requestHeaders[CSRF_HEADER_NAME] = await ensureCsrfToken();
         }
 
         const response = await fetch(`${merged.baseURL || ''}${merged.url || ''}`, {
@@ -86,7 +85,7 @@ const create = (defaults: RequestConfig) => {
         const data = await parseResponseBody(response);
 
         if (!response.ok) {
-            const error = {response: {status: response.status, data}};
+            const error: unknown = {response: {status: response.status, data}};
             return runErrorInterceptors(error);
         }
 
@@ -96,12 +95,15 @@ const create = (defaults: RequestConfig) => {
     return {
         interceptors: {
             request: {
-                use: (interceptor: RequestInterceptor) => requestInterceptors.push(interceptor),
+                use: (interceptor: RequestInterceptor): void => requestInterceptors.push(interceptor),
             },
             response: {
-                use: (onSuccess?: ResponseInterceptor, onError?: ResponseInterceptor) => {
-                    if (onSuccess) responseSuccessInterceptors.push(onSuccess as (response: {data: unknown; status: number; headers: Headers}) => unknown);
-                    if (onError) responseErrorInterceptors.push(onError as (error: unknown) => Promise<never>);
+                use: (
+                    onSuccess?: (response: {data: unknown; status: number; headers: Headers}) => unknown,
+                    onError?: (error: unknown) => Promise<never>
+                ): void => {
+                    if (onSuccess) responseSuccessInterceptors.push(onSuccess);
+                    if (onError) responseErrorInterceptors.push(onError);
                 },
             },
         },
@@ -119,7 +121,7 @@ const apiClient = axios.create({
     },
 });
 
-apiClient.interceptors.request.use((config) => {
+apiClient.interceptors.request.use((config: RequestConfig): RequestConfig => {
     const token = getToken();
     if (!token) return config;
 
@@ -133,8 +135,8 @@ apiClient.interceptors.request.use((config) => {
 });
 
 apiClient.interceptors.response.use(
-    (response) => response,
-    async (error) => Promise.reject(error),
+    (response: {data: unknown; status: number; headers: Headers}): {data: unknown; status: number; headers: Headers} => response,
+    async (error: unknown): Promise<never> => Promise.reject(error),
 );
 
 export default apiClient;

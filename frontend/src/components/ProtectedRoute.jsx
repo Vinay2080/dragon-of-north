@@ -13,7 +13,7 @@ const ProtectedRoute = ({children}) => {
 
 
     useEffect(() => {
-        if (!isGateOpen) {
+        if (!isGateOpen || isAuthenticated) {
             return;
         }
 
@@ -23,7 +23,7 @@ const ProtectedRoute = ({children}) => {
         return () => {
             document.body.style.overflow = originalOverflow;
         };
-    }, [isGateOpen]);
+    }, [isGateOpen, isAuthenticated]);
 
     // Show loading state while checking auth
     if (isLoading) {

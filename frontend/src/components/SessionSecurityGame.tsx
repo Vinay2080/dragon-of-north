@@ -2,6 +2,7 @@ import {motion} from 'framer-motion';
 import {Monitor, Shield, User} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {getSessions, revokeSession} from '../services/sessionService';
+import { Reveal } from './Reveal';
 
 type RiskLevel = 'safe' | 'suspicious';
 
@@ -161,7 +162,7 @@ const SessionSecurityGame = () => {
     };
 
     return (
-        <section className="relative mt-14 overflow-hidden rounded-3xl border border-cyan-300/20 bg-slate-900/40 p-5 backdrop-blur-xl sm:p-8">
+        <Reveal className="relative mt-14 overflow-hidden rounded-3xl border border-cyan-300/20 bg-slate-900/40 p-5 backdrop-blur-xl sm:p-8">
             <div className="pointer-events-none absolute inset-0">
                 {[...Array(11)].map((_, index) => (
                     <motion.span
@@ -322,7 +323,7 @@ const SessionSecurityGame = () => {
                     </motion.div>
                 ) : null}
             </div>
-        </section>
+        </Reveal>
     );
 };
 

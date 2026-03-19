@@ -26,19 +26,61 @@ const Navbar = () => {
     const {setTheme} = useTheme();
     const {isAuthenticated, logout} = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [scrolled, setScrolled] = useState(false);
     const [isThemeOpen, setIsThemeOpen] = useState(false);
     const navigate = useNavigate();
+
+    // Scroll state management
+    const [isVisible, setIsVisible] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(() => window.scrollY < 50);
+    const [isShrunk, setIsShrunk] = useState(() => window.scrollY > 80);
+    const [lastScrollY, setLastScrollY] = useState(window.scrollY);
+
     useEffect(() => {
+        let ticking = false;
+
         const handleScroll = () => {
-            setScrolled(window.scrollY > 20);
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const currentScrollY = window.scrollY;
+                    const scrollDelta = currentScrollY - lastScrollY;
+
+                    // Update expanded state (top of page)
+                    setIsExpanded(currentScrollY < 50);
+
+                    // Update shrunk state
+                    setIsShrunk(currentScrollY > 80);
+
+                    // Show/hide based on scroll direction and position
+                    if (currentScrollY > 150 && scrollDelta > 0) {
+                        // Scrolling down past 150px - hide
+                        setIsVisible(false);
+                    } else if (scrollDelta < 0) {
+                        // Scrolling up - show
+                        setIsVisible(true);
+                    } else if (currentScrollY <= 150) {
+                        // Near top - always show
+                        setIsVisible(true);
+                    }
+
+                    setLastScrollY(currentScrollY);
+                    ticking = false;
+                });
+                ticking = true;
+            }
         };
-        window.addEventListener('scroll', handleScroll);
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, [lastScrollY]);
 
     return (
-        <header className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+        <header
+            className={`navbar ${isExpanded ? 'expanded' : ''} ${isShrunk ? 'shrunk' : ''}`}
+            style={{
+                transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
+                transition: 'transform 0.3s ease-in-out, height 0.3s ease-in-out, background 0.15s ease-in-out',
+            }}
+        >
             <button
                 type="button"
                 onClick={() => navigate('/')}
