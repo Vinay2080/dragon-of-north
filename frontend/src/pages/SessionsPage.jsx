@@ -122,6 +122,9 @@ const SessionsPage = () => {
         const previous = [...sessions];
         setSessions(prev => prev.map(s => s.session_id === sessionId ? {...s, revoked: true} : s));
 
+        // Simulate backend latency (300-500ms)
+        await new Promise((resolve) => setTimeout(resolve, 400));
+
         const result = await apiService.delete(API_CONFIG.ENDPOINTS.SESSION_REVOKE(sessionId));
         if (apiService.isErrorResponse(result)) {
             setSessions(previous);
@@ -149,6 +152,9 @@ const SessionsPage = () => {
         setRevokingOthers(true);
         const previous = [...sessions];
         setSessions(prev => prev.map(s => s.device_id !== currentDeviceId ? {...s, revoked: true} : s));
+
+        // Simulate backend latency (400-600ms)
+        await new Promise((resolve) => setTimeout(resolve, 450));
 
         const result = await apiService.post(API_CONFIG.ENDPOINTS.SESSION_REVOKE_OTHERS, {device_id: currentDeviceId});
         if (apiService.isErrorResponse(result)) {

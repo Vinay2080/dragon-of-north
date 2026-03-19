@@ -1,5 +1,6 @@
 import HeroSection from '../components/HeroSection';
 import SessionSecurityGame from '../components/SessionSecurityGame';
+import TrustSection from '../components/TrustSection';
 import FeaturesSection from '../components/FeaturesSection';
 import CallToAction from '../components/CallToAction';
 import Footer from '../components/Footer';
@@ -12,6 +13,10 @@ const LandingPage = () => {
             <main className="relative z-10 mx-auto w-full max-w-[1600px] px-4 pb-12 pt-20 sm:px-6 lg:px-8">
                 <section className="mb-12 sm:mb-16">
                     <HeroSection />
+                </section>
+
+                <section className="mb-12 sm:mb-16">
+                    <TrustSection/>
                 </section>
 
                 <section id="session-game" className="mb-12 scroll-mt-24 sm:mb-16">

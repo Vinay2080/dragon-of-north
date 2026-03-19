@@ -5,6 +5,7 @@ import {motion} from 'framer-motion';
 import {AlertCircle, CheckCircle, ChevronRight, Eye, Lock, Shield, Smartphone, Zap} from 'react-feather';
 import ScrollToTopButton from '../components/ScrollToTopButton';
 import {useScrollReveal} from '../hooks/useScrollReveal';
+import {LinkButton} from '../components/Button';
 
 const containerVariants = {
     hidden: {opacity: 0},
@@ -127,8 +128,8 @@ const USE_CASES = [
     {icon: Zap, title: 'Developer Friendly', description: 'Simple APIs and SDKs for seamless integration.'},
 ];
 
-const HERO_TYPE_TARGET = 'Control Sessions.\nNot Just Logins.';
-const HERO_TYPE_INTERVAL_MS = 42;
+const HERO_TYPE_TARGET = 'See Every Session.\nRevoke Instantly.';
+const HERO_TYPE_INTERVAL_MS = 40;
 const HERO_EASE = [0.22, 1, 0.36, 1];
 
 const HERO_SEQUENCE = {
@@ -143,8 +144,8 @@ const HERO_SEQUENCE = {
 
 const SECTION_REVEAL_OPTIONS = {
     threshold: 0.15,
-    rootMargin: '0px 0px -25% 0px',
-    once: false,
+    rootMargin: '0px 0px -20% 0px',
+    once: true,
 };
 
 /**
@@ -187,7 +188,7 @@ function useTypewriter(text, intervalMs) {
 
 function HeroSection() {
     const {ref: sectionRef, isVisible: isSectionVisible} = useScrollReveal(SECTION_REVEAL_OPTIONS);
-    const meta = ['JWT Tokens', 'Spring Boot', 'Real-time Tracking'];
+    const meta = ['Real-time Tracking', 'Device-Level Control', 'Instant Revocation'];
     const typedHeadline = useTypewriter(HERO_TYPE_TARGET, HERO_TYPE_INTERVAL_MS);
 
     const headlineTailDelay = (HERO_TYPE_TARGET.length * HERO_TYPE_INTERVAL_MS) / 1000;
@@ -201,7 +202,7 @@ function HeroSection() {
             ref={sectionRef}
             className={`reveal reveal-section relative overflow-hidden py-20 md:py-28 lg:py-32 bg-white dark:bg-[#020617] ${isSectionVisible ? 'revealed' : ''}`}
         >
-            {/* Light mode background - subtle gradient */}
+            {/* Light mode background */}
             <div
                 className="pointer-events-none absolute inset-0 dark:hidden"
                 style={{
@@ -209,7 +210,7 @@ function HeroSection() {
                 }}
             />
 
-            {/* Dark mode background - subtle layered gradients */}
+            {/* Dark mode background */}
             <div
                 className="pointer-events-none absolute inset-0 hidden dark:block"
                 style={{
@@ -219,15 +220,15 @@ function HeroSection() {
 
             {/* Floating gradient shapes - light mode */}
             <div
-                className="pointer-events-none absolute -top-40 -right-40 h-80 w-80 rounded-full bg-gradient-to-br from-violet-200 to-transparent blur-3xl opacity-20 dark:hidden"/>
+                className="pointer-events-none absolute -top-40 -right-40 h-80 w-80 rounded-full bg-gradient-to-br from-red-200 to-transparent blur-3xl opacity-15 dark:hidden"/>
             <div
-                className="pointer-events-none absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-gradient-to-tr from-indigo-200 to-transparent blur-3xl opacity-15 dark:hidden"/>
+                className="pointer-events-none absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-gradient-to-tr from-orange-200 to-transparent blur-3xl opacity-12 dark:hidden"/>
 
             {/* Floating gradient shapes - dark mode */}
             <div
-                className="pointer-events-none absolute -top-40 -right-40 h-80 w-80 rounded-full bg-gradient-to-br from-violet-500 to-transparent blur-3xl opacity-5 hidden dark:block"/>
+                className="pointer-events-none absolute -top-40 -right-40 h-80 w-80 rounded-full bg-gradient-to-br from-red-500 to-transparent blur-3xl opacity-5 hidden dark:block"/>
             <div
-                className="pointer-events-none absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-gradient-to-tr from-purple-500 to-transparent blur-3xl opacity-5 hidden dark:block"/>
+                className="pointer-events-none absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-gradient-to-tr from-orange-500 to-transparent blur-3xl opacity-4 hidden dark:block"/>
 
             <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="text-center space-y-8">
@@ -235,16 +236,16 @@ function HeroSection() {
                         initial={{opacity: 0, y: 16}}
                         animate={{opacity: 1, y: 0}}
                         transition={{duration: 0.5, ease: HERO_EASE}}
-                        className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/15 dark:text-violet-300"
+                        className="inline-flex rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300"
                     >
-                        Authentication Platform
+                        Session Management Platform
                     </motion.span>
 
                     <motion.h1
                         initial={{opacity: 0, y: 16}}
                         animate={{opacity: 1, y: 0}}
                         transition={{duration: 0.5, ease: HERO_EASE}}
-                        className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-tight whitespace-pre-line min-h-[2.6em]"
+                        className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-tight whitespace-pre-line min-h-[2.8em]"
                     >
                         {typedHeadline}
                     </motion.h1>
@@ -259,7 +260,7 @@ function HeroSection() {
                         }}
                         className="sr-only"
                     >
-                        Control Sessions. Not Just Logins.
+                        See Every Session. Revoke Instantly.
                     </motion.p>
 
                     <motion.p
@@ -272,7 +273,8 @@ function HeroSection() {
                         }}
                         className="mx-auto max-w-3xl text-base md:text-lg text-slate-600 dark:text-slate-300"
                     >
-                        Short-lived tokens, refresh rotation, and full session visibility for modern systems.
+                        Real-time device visibility with instant revocation to stop compromised access before it
+                        spreads.
                     </motion.p>
 
                     <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 pt-4">
@@ -285,14 +287,9 @@ function HeroSection() {
                                 ease: HERO_EASE,
                             }}
                         >
-                            <Link
-                                to="/sessions"
-                                className="relative overflow-hidden rounded-lg bg-violet-600 px-6 sm:px-8 py-3 font-medium text-white transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl hover:shadow-violet-500/30 dark:hover:shadow-violet-500/20 active:scale-95"
-                            >
-                                <span className="relative z-10">Explore Sessions</span>
-                                <div
-                                    className="absolute inset-0 bg-gradient-to-r from-violet-500 to-purple-600 opacity-0 transition-opacity duration-300 hover:opacity-100"/>
-                            </Link>
+                            <LinkButton variant="primary" to="/sessions">
+                                Explore Sessions
+                            </LinkButton>
                         </motion.div>
 
                         <motion.div
@@ -304,21 +301,13 @@ function HeroSection() {
                                 ease: HERO_EASE,
                             }}
                         >
-                            <Link
-                                to="/identifier-flow"
-                                className="group relative inline-flex items-center overflow-hidden rounded-lg border border-slate-300 px-6 sm:px-8 py-3 font-medium text-slate-900 transition-all duration-300 ease-out hover:border-violet-400 hover:scale-[1.02] hover:shadow-md dark:border-slate-700 dark:text-slate-100 dark:hover:border-violet-500/40"
-                            >
-                                <span className="relative z-10 flex items-center gap-1">
-                                    View Flow <ChevronRight
-                                    className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"/>
-                                </span>
-                                <div
-                                    className="absolute inset-0 bg-gradient-to-r from-violet-500/5 to-purple-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"/>
-                            </Link>
+                            <LinkButton variant="secondary" to="/architecture">
+                                View Architecture
+                            </LinkButton>
                         </motion.div>
                     </div>
 
-                    {/* Trust badges */}
+                    {/* Capability badges */}
                     <div
                         className="pt-6 flex flex-wrap items-center justify-center gap-6 border-t border-slate-200 dark:border-slate-800 mt-10">
                         {meta.map((item, index) => (
@@ -333,7 +322,7 @@ function HeroSection() {
                                 }}
                                 className="flex items-center gap-2"
                             >
-                                <div className="h-2 w-2 rounded-full bg-emerald-500"/>
+                                <div className="h-2 w-2 rounded-full bg-red-500"/>
                                 <span
                                     className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">{item}</span>
                             </motion.div>
@@ -783,25 +772,12 @@ function FinalCtaSection() {
                     Session control, token rotation, and real-time visibility in one comprehensive flow.
                 </p>
                 <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4">
-                    <Link
-                        to="/sessions"
-                        className="relative overflow-hidden rounded-lg bg-white px-6 sm:px-8 py-3 font-medium text-violet-700 transition-all duration-300 ease-out hover:scale-105 hover:shadow-lg text-center active:scale-95 dark:bg-slate-900 dark:text-violet-300 dark:hover:shadow-lg dark:hover:shadow-violet-500/20"
-                    >
-                        <span className="relative z-10">Get Started</span>
-                        <div
-                            className="absolute inset-0 bg-gradient-to-r from-white/5 to-violet-500/10 opacity-0 transition-opacity duration-300 hover:opacity-100"/>
-                    </Link>
-                    <Link
-                        to="/features"
-                        className="group relative overflow-hidden rounded-lg border border-white px-6 sm:px-8 py-3 font-medium text-white transition-all duration-300 ease-out hover:scale-105 hover:shadow-lg dark:border-slate-700 dark:text-slate-100 dark:hover:shadow-lg dark:hover:shadow-slate-900/50"
-                    >
-                        <span className="relative z-10 flex items-center gap-1">
-                            Explore Docs <ChevronRight
-                            className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"/>
-                        </span>
-                        <div
-                            className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"/>
-                    </Link>
+                    <LinkButton variant="primary" to="/sessions">
+                        Explore Sessions
+                    </LinkButton>
+                    <LinkButton variant="secondary" to="/architecture">
+                        View Architecture
+                    </LinkButton>
                 </div>
             </div>
         </section>
@@ -997,22 +973,12 @@ function FeatureSpotlightSection() {
                                 </div>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                                <Link
-                                    to="/identifier-flow"
-                                    className="relative overflow-hidden rounded-lg bg-violet-600 px-6 py-3 font-medium text-white transition-all duration-300 ease-out hover:scale-105 hover:shadow-lg hover:shadow-violet-500/30 text-center active:scale-95 dark:hover:shadow-violet-500/20"
-                                >
-                                    <span className="relative z-10">View Flow</span>
-                                    <div
-                                        className="absolute inset-0 bg-gradient-to-r from-violet-500 to-purple-600 opacity-0 transition-opacity duration-300 hover:opacity-100"/>
-                                </Link>
-                                <Link
-                                    to="/features"
-                                    className="group relative overflow-hidden rounded-lg border border-violet-300 px-6 py-3 font-medium text-violet-700 transition-all duration-300 ease-out hover:scale-105 dark:border-violet-500/30 dark:text-violet-300 dark:hover:border-violet-500/50"
-                                >
-                                    <span className="relative z-10">Learn More</span>
-                                    <div
-                                        className="absolute inset-0 bg-gradient-to-r from-violet-500/5 to-purple-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"/>
-                                </Link>
+                                <LinkButton variant="primary" to="/identifier-flow">
+                                    View Architecture
+                                </LinkButton>
+                                <LinkButton variant="secondary" to="/architecture">
+                                    Learn More
+                                </LinkButton>
                             </div>
                         </div>
 
@@ -1104,7 +1070,7 @@ function FooterSection() {
                                 </a>
                             </li>
                             <li>
-                                <a href="http://localhost:8080/swagger-ui/index.html" target="_blank"
+                                <a href="https://api.verloren.dev/swagger-ui/index.html#/" target="_blank"
                                    rel="noopener noreferrer" className={LINK_CLASS}>
                                     API Docs
                                 </a>

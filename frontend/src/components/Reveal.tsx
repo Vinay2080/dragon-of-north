@@ -1,51 +1,16 @@
-import { ReactNode } from 'react';
-import { motion, MotionProps, Easing } from 'framer-motion';
+import {CSSProperties, HTMLAttributes, ReactNode, RefObject} from 'react';
+import {useInView} from '../hooks/useInView';
 
-/**
- * Unified animation configuration for scroll reveals
- * Strict constraints: opacity and transform only, GPU-friendly
- */
-export const REVEAL_CONFIG = {
-    initial: {
-        opacity: 0,
-        y: 40,
-    },
-    animate: {
-        opacity: 1,
-        y: 0,
-    },
-    transition: {
-        duration: 0.6,
-        ease: 'easeOut' as Easing,
-    },
-};
+const buildRevealDelayStyle = (delay: number, style?: CSSProperties): CSSProperties => ({
+    ...(style ?? {}),
+    '--reveal-delay': `${Math.max(delay, 0)}s`,
+} as CSSProperties);
 
-/**
- * Stagger configuration for lists/cards
- * Each child gets delay: index * 100ms
- */
-export const STAGGER_CONFIG = {
-    container: {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1, // 100ms between each child
-                delayChildren: 0,
-            },
-        },
-    },
-    item: {
-        hidden: REVEAL_CONFIG.initial,
-        show: REVEAL_CONFIG.animate,
-    },
-};
+const cx = (...parts: Array<string | undefined | false>) => parts.filter(Boolean).join(' ');
 
-interface RevealProps extends Omit<MotionProps, 'children'> {
+interface RevealProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
     children: ReactNode;
     delay?: number;
-    width?: string | number;
-    className?: string;
 }
 
 /**
@@ -64,25 +29,21 @@ interface RevealProps extends Omit<MotionProps, 'children'> {
 export const Reveal = ({
     children,
     delay = 0,
-    width = '100%',
     className = '',
-    ...motionProps
+                           style,
+                           ...rest
 }: RevealProps) => {
+    const [ref, visible] = useInView() as [RefObject<HTMLDivElement | null>, boolean];
+
     return (
-        <motion.div
-            initial={REVEAL_CONFIG.initial}
-            whileInView={REVEAL_CONFIG.animate}
-            viewport={{ once: true, amount: 0.25 }}
-            transition={{
-                ...REVEAL_CONFIG.transition,
-                delay,
-            }}
-            style={{ width }}
-            className={className}
-            {...motionProps}
+        <div
+            ref={ref}
+            style={buildRevealDelayStyle(delay, style)}
+            className={cx('reveal', visible && 'revealed', className)}
+            {...rest}
         >
             {children}
-        </motion.div>
+        </div>
     );
 };
 
@@ -102,20 +63,19 @@ interface RevealListProps {
  * </RevealList>
  */
 export const RevealList = ({ children, className = '' }: RevealListProps) => {
+    const [ref, visible] = useInView() as [RefObject<HTMLDivElement | null>, boolean];
+
     return (
-        <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.25 }}
-            variants={STAGGER_CONFIG.container}
-            className={className}
+        <div
+            ref={ref}
+            className={cx('reveal reveal-stagger', visible && 'revealed', className)}
         >
             {children}
-        </motion.div>
+        </div>
     );
 };
 
-interface RevealItemProps extends Omit<MotionProps, 'children'> {
+interface RevealItemProps extends Omit<HTMLAttributes<HTMLElement>, 'children'> {
     children: ReactNode;
     className?: string;
     as?: 'div' | 'a' | 'article';
@@ -141,21 +101,11 @@ export const RevealItem = ({
     href,
     target,
     rel,
-    ...motionProps 
+                               ...rest
 }: RevealItemProps) => {
-    // Map element types to their motion counterparts
-    const motionComponentMap: Record<string, any> = {
-        div: motion.div,
-        a: motion.a,
-        article: motion.article,
-    };
-    
-    const MotionComponent = motionComponentMap[as] || motion.div;
-    
-    const elementProps: any = {
-        variants: STAGGER_CONFIG.item,
-        className,
-        ...motionProps,
+    const elementProps: Record<string, unknown> = {
+        className: cx('reveal-stagger-item', className),
+        ...rest,
     };
     
     // Add link-specific props if it's an anchor
@@ -164,12 +114,16 @@ export const RevealItem = ({
         if (target) elementProps.target = target;
         if (rel) elementProps.rel = rel;
     }
-    
-    return (
-        <MotionComponent {...elementProps}>
-            {children}
-        </MotionComponent>
-    );
+
+    if (as === 'a') {
+        return <a {...elementProps}>{children}</a>;
+    }
+
+    if (as === 'article') {
+        return <article {...elementProps}>{children}</article>;
+    }
+
+    return <div {...elementProps}>{children}</div>;
 };
 
 

@@ -89,6 +89,9 @@ const AuthPage = () => {
         authState.setLoading('Checking email...');
         setPasswordError('');
 
+        // Simulate backend latency (300-500ms)
+        await new Promise((resolve) => setTimeout(resolve, 400));
+
         const result = await apiService.post(
             API_CONFIG.ENDPOINTS.IDENTIFIER_STATUS,
             {
@@ -112,12 +115,16 @@ const AuthPage = () => {
         }
 
         const data = result.data || {};
-        moveToStepFromProviders({
-            exists: Boolean(data.exists),
-            providers: Array.isArray(data.providers)
-                ? data.providers
-                : [],
-        });
+
+        // Smooth transition to password step
+        setTimeout(() => {
+            moveToStepFromProviders({
+                exists: Boolean(data.exists),
+                providers: Array.isArray(data.providers)
+                    ? data.providers
+                    : [],
+            });
+        }, 150);
     };
 
     const handleLocalLogin = async (event) => {
@@ -132,6 +139,9 @@ const AuthPage = () => {
         setPasswordError('');
         setLoading(true);
         authState.setLoading('Signing in...');
+
+        // Simulate backend latency (300-800ms)
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         const result = await apiService.post(
             API_CONFIG.ENDPOINTS.LOGIN,
@@ -290,8 +300,9 @@ const AuthPage = () => {
                         <AuthButton
                             type="submit"
                             disabled={loading || isGoogleRedirecting || authState.isLoading}
+                            loading={loading}
                         >
-                            {loading ? 'Checking...' : 'Continue with Email'}
+                            Continue with Email
                         </AuthButton>
                     )}
                 </form>
@@ -308,8 +319,11 @@ const AuthPage = () => {
                             disabled={loading || isGoogleRedirecting || authState.isLoading}
                         />
                         <ValidationError errors={passwordError ? [passwordError] : []}/>
-                        <AuthButton disabled={loading || !password || isGoogleRedirecting}>
-                            {loading ? 'Logging in...' : 'Login with password'}
+                        <AuthButton
+                            disabled={loading || !password || isGoogleRedirecting}
+                            loading={loading}
+                        >
+                            Login with password
                         </AuthButton>
                         <p className="auth-helper text-right">
                             <Link to="/forgot-password" className="auth-link">Forgot password?</Link>

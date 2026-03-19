@@ -1,0 +1,81 @@
+.architecture-hero-bg {
+    background: radial-gradient(circle at 14% 20%, rgba(59, 130, 246, 0.05), transparent 45%),
+    color-mix(in srgb, var(--don-bg-card) 88%, transparent);
+}
+
+@keyframes donFlowTravelHorizontal {
+    0% {
+        transform: translateX(-48%);
+    }
+    100% {
+        transform: translateX(48%);
+    }
+}
+
+.architecture-connector-horizontal {
+    --don-travel-duration: 1.1s;
+    animation: donFlowTravelHorizontal var(--don-travel-duration, 1.1s) linear infinite alternate;
+}
+
+@keyframes donDashFlow {
+    0% {
+        stroke-dashoffset: 12;
+    }
+    100% {
+        stroke-dashoffset: -12;
+    }
+}
+
+.architecture-dash-line {
+    stroke-dasharray: 3 6;
+    animation: donDashFlow 1.5s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.group:hover .architecture-dash-line {
+    opacity: 1;
+}
+
+@keyframes donCardPending {
+    0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.16);
+    }
+    100% {
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+}
+
+.architecture-card-pending {
+    animation: donCardPending 1.2s ease-in-out infinite;
+}
+
+/* Subtle pulse for active nodes in pipeline */
+@keyframes donNodePulseActive {
+    0%, 100% {
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(59, 130, 246, 0.15);
+    }
+    50% {
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px_16px rgba(59, 130, 246, 0.25);
+    }
+}
+
+@keyframes donNodePulseSuccess {
+    0%, 100% {
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(34, 197, 94, 0.12);
+    }
+    50% {
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(34, 197, 94, 0.20);
+    }
+}
+
+@keyframes donNodePulseError {
+    0%, 100% {
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(239, 68, 68, 0.15);
+    }
+    50% {
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(239, 68, 68, 0.25);
+    }
+}
+
+
