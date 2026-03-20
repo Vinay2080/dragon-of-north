@@ -14,6 +14,7 @@ import AuthButton from '../components/auth/AuthButton';
 import AuthDivider from '../components/auth/AuthDivider';
 import {getDeviceId} from '../utils/device';
 import {useAuth} from '../context/authUtils';
+import {useDocumentTitle} from '../hooks/useDocumentTitle';
 
 const AUTH_STEP = {
     EMAIL_ENTRY: 'EMAIL_ENTRY',
@@ -30,6 +31,7 @@ const OTP_FLOW = {
 };
 
 const AuthPage = () => {
+    useDocumentTitle('Login');
     const navigate = useNavigate();
     const {toast} = useToast();
     const {login, isAuthenticated, isLoading} = useAuth();

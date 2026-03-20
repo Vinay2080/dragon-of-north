@@ -7,6 +7,8 @@ import {useToast} from '../hooks/useToast';
 import AuthFlowProgress from '../components/AuthFlowProgress';
 import AuthCardLayout from '../components/auth/AuthCardLayout';
 import AuthButton from '../components/auth/AuthButton';
+import OtpInput from '../components/auth/OtpInput';
+import {useDocumentTitle} from '../hooks/useDocumentTitle';
 
 const OTP_FLOW = {
     SIGNUP: 'SIGNUP',
@@ -14,6 +16,7 @@ const OTP_FLOW = {
 };
 
 const OtpPage = () => {
+    useDocumentTitle('Verify OTP');
     const location = useLocation();
     const navigate = useNavigate();
     const {toast} = useToast();
@@ -22,6 +25,7 @@ const OtpPage = () => {
     const isLoginUnverifiedFlow = resolvedFlow === OTP_FLOW.LOGIN_UNVERIFIED;
 
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    const [otpError, setOtpError] = useState('');
     const [loading, setLoading] = useState(false);
     const [resendLoading, setResendLoading] = useState(false);
     const [timer, setTimer] = useState(() => {
@@ -45,16 +49,6 @@ const OtpPage = () => {
         if (timer > 0) interval = setInterval(() => setTimer((prev) => (prev > 0 ? prev - 1 : 0)), 1000);
         return () => clearInterval(interval);
     }, [timer]);
-
-    const handleChange = (element, index) => {
-        if (Number.isNaN(Number(element.value)) && element.value !== '') return;
-        setOtp([...otp.map((d, idx) => (idx === index ? element.value : d))]);
-        if (element.nextSibling && element.value) element.nextSibling.focus();
-    };
-
-    const handleKeyDown = (e, index) => {
-        if (e.key === 'Backspace' && !otp[index] && e.target.previousSibling) e.target.previousSibling.focus();
-    };
 
     const completeSignup = async () => {
         // Finalization API after OTP success: POST /api/v1/auth/identifier/sign-up/complete
@@ -80,14 +74,18 @@ const OtpPage = () => {
         return false;
     };
 
-    const handleVerifyOtp = async (e) => {
-        e.preventDefault();
-        const otpCode = otp.join('');
+    const handleVerifyOtpCode = async (otpCode) => {
+        if (loading) {
+            return;
+        }
+
         if (otpCode.length !== 6) {
+            setOtpError('Please enter all 6 digits.');
             toast.warning('Please enter all 6 digits.');
             return;
         }
 
+        setOtpError('');
         setLoading(true);
         // Verification API: /api/v1/otp/email/verify or /api/v1/otp/phone/verify (otp_purpose=SIGNUP)
         const endpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_VERIFY : API_CONFIG.ENDPOINTS.PHONE_OTP_VERIFY;
@@ -95,6 +93,7 @@ const OtpPage = () => {
         const verifyResult = await apiService.post(endpoint, payload);
 
         if (apiService.isErrorResponse(verifyResult)) {
+            setOtpError(verifyResult.message || 'OTP verification failed.');
             toast.error(verifyResult.message || 'OTP verification failed.');
             setLoading(false);
             return;
@@ -104,10 +103,16 @@ const OtpPage = () => {
             // Backend contract: OTP verify success gates sign-up completion call.
             await completeSignup();
         } else {
+            setOtpError(verifyResult?.message || 'Invalid OTP. Please try again.');
             toast.error(verifyResult?.message || 'Invalid OTP. Please try again.');
         }
 
         setLoading(false);
+    };
+
+    const handleVerifyOtp = async (e) => {
+        e.preventDefault();
+        await handleVerifyOtpCode(otp.join(''));
     };
 
     const handleResendOtp = async () => {
@@ -127,6 +132,7 @@ const OtpPage = () => {
 
         setTimer(60);
         setOtp(['', '', '', '', '', '']);
+        setOtpError('');
         toast.success('A new OTP has been sent.');
         setResendLoading(false);
     };
@@ -145,15 +151,21 @@ const OtpPage = () => {
         >
             <AuthFlowProgress currentStep="otp"/>
             <form onSubmit={handleVerifyOtp} noValidate>
-                <div className="mb-6 flex justify-between gap-2">
-                    {otp.map((data, index) => (
-                        <input key={index} type="text" maxLength="1" value={data}
-                               onChange={(e) => handleChange(e.target, index)}
-                               onKeyDown={(e) => handleKeyDown(e, index)}
-                               className="auth-otp-input"
-                               aria-label={`OTP digit ${index + 1}`}/>
-                    ))}
-                </div>
+                <OtpInput
+                    value={otp}
+                    onChange={(nextOtp) => {
+                        setOtp(nextOtp);
+                        if (otpError) {
+                            setOtpError('');
+                        }
+                    }}
+                    onComplete={handleVerifyOtpCode}
+                    autoSubmit
+                    error={Boolean(otpError)}
+                    disabled={loading}
+                    className="mb-3"
+                />
+                {otpError ? <p className="mb-3 text-center text-sm text-red-500">{otpError}</p> : null}
                 <AuthButton type="submit"
                             disabled={loading || otp.join('').length !== 6}>{loading ? 'Verifying...' : (isLoginUnverifiedFlow ? 'Verify Email' : 'Verify & Continue')}</AuthButton>
                 <RateLimitInfo/>

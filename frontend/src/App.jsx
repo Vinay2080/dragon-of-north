@@ -24,10 +24,12 @@ import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import IdentifierFlowPage from './pages/IdentifierFlowPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
+import {useRouteDocumentTitle} from './hooks/useDocumentTitle';
 
 const AppShell = () => {
     const navigate = useNavigate();
     const {toast} = useToast();
+    useRouteDocumentTitle();
 
     const onTimeout = useCallback(() => {
         localStorage.removeItem('isAuthenticated');
