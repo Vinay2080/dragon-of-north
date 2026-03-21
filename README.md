@@ -2,7 +2,11 @@
 <!--                   DRAGON OF NORTH — README                      -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
-<img src="https://capsule-render.vercel.app/api?type=waving&amp;color=0:0a0a12,50:1a1040,100:6B57FF&amp;height=220&amp;section=header&amp;text=Dragon%20of%20North&amp;fontSize=58&amp;fontColor=ffffff&amp;animation=fadeIn&amp;fontAlignY=42&amp;desc=Identity%20%26%20Authentication%20Platform%20%E2%80%94%20built%20for%20production%2C%20not%20tutorials&amp;descSize=15&amp;descAlignY=62" width="100%"/>
+<img src="./readme-header.svg" width="100%" alt="Dragon of North banner"/>
+
+<p align="center">
+  <img src="./dragon-logo.svg" width="120" alt="Dragon of North logo"/>
+</p>
 
 <br>
 

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+    <title id="title">Dragon of North logo</title>
+    <desc id="desc">A minimal dragon crest logo in dark and purple tones.</desc>
+
+    <defs>
+        <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#8a7cff"/>
+            <stop offset="100%" stop-color="#6B57FF"/>
+        </linearGradient>
+        <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#c9c3ff"/>
+            <stop offset="100%" stop-color="#7b67ff"/>
+        </linearGradient>
+        <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="b"/>
+            <feMerge>
+                <feMergeNode in="b"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+    </defs>
+
+    <circle cx="256" cy="256" r="224" fill="#0a0a12"/>
+    <circle cx="256" cy="256" r="216" fill="none" stroke="url(#ring)" stroke-width="14"/>
+
+    <path d="M148 334 C188 270, 208 238, 252 210 C287 188, 330 183, 365 196
+           C341 200, 314 214, 295 236 C281 252, 274 270, 275 290
+           C250 305, 218 313, 190 332 Z"
+          fill="#1f1748"/>
+
+    <path d="M188 344 C214 292, 240 262, 272 238 C304 213, 348 206, 386 222
+           C358 224, 329 238, 309 260 C293 277, 284 299, 286 322
+           C256 337, 224 344, 188 344 Z"
+          fill="url(#flame)" filter="url(#softGlow)"/>
+
+    <path d="M208 297 C230 266, 246 252, 272 236 C267 253, 271 271, 286 286
+           C273 305, 246 316, 218 318 Z"
+          fill="#0a0a12" opacity="0.95"/>
+
+    <circle cx="289" cy="258" r="8" fill="#ffffff"/>
+    <circle cx="291" cy="258" r="4" fill="#6B57FF"/>
+
+    <path d="M300 216 L336 152 L352 214 Z" fill="#6B57FF"/>
+    <path d="M266 196 L289 140 L304 196 Z" fill="#8a7cff"/>
+</svg>
+
