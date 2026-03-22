@@ -2,11 +2,7 @@
 <!--                   DRAGON OF NORTH — README                      -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
-<img src="./readme-header.svg" width="100%" alt="Dragon of North banner"/>
-
-<p align="center">
-  <img src="./dragon-logo.svg" width="120" alt="Dragon of North logo"/>
-</p>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0D0D12,50:1a1040,100:6B57FF&height=200&section=header&text=Dragon%20of%20North&fontSize=48&fontColor=ffffff&fontAlignY=52&desc=Production%20authentication%20infrastructure.%20Not%20a%20tutorial%20project.&descAlignY=70&descSize=14&descColor=9d8fff" width="100%"/>
 
 <br>
 
@@ -144,7 +140,8 @@ GitHub Actions → EC2 · zero-downtime · every push
 **🧠 &nbsp; What makes this different?**
 
 Most junior backend projects are CRUD apps with JWT bolted on at the end.
-This system was designed around failure modes — the attacks, races, and abuse patterns that real auth infrastructure has to survive.
+This system was designed around failure modes — the attacks, races, and abuse patterns that real auth infrastructure has
+to survive.
 
 <br>
 </td>
@@ -368,65 +365,288 @@ Structured audit logs + Micrometer counters + Prometheus export.
 <br>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!--                      ARCHITECTURE                               -->
+<!--               ARCHITECTURE OVERVIEW                             -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
-<h2 align="center">🏗️ &nbsp; Architecture</h2>
+<h2 align="center">🏗️ &nbsp; Architecture Overview</h2>
 
-<p align="center"><i>How requests actually flow through the system.</i></p>
-
-<br>
-
-```mermaid
-flowchart TD
-    A["🖥️ React SPA\napp.verloren.dev"] -->|HTTPS| B
-
-    subgraph B["☁️ Spring Boot API — AWS EC2"]
-        direction TB
-        F["🔒 Security Filter Chain\nJWT Filter · Rate Limit · Audit"]
-        M1["🔐 Auth Module\nLocal + OAuth2 · RSA JWT"]
-        M2["📧 OTP Module\nGenerate · Hash · SES/SNS"]
-        M3["📱 Session Module\nDevice-aware · Rotation · Revoke"]
-        F --> M1
-        F --> M2
-        F --> M3
-    end
-
-    M1 --> DB["🗄️ PostgreSQL 16\nFlyway V1–V7 · UUID PKs"]
-    M2 --> DB
-    M3 --> DB
-    M1 --> R["⚡ Redis 7\nBucket4j Rate Limits"]
-    M2 --> AWS["✉️ AWS SES + SNS\nEmail + SMS OTP"]
-```
+<p align="center"><i>Five layers. One clean vertical slice per request.</i></p>
 
 <br>
 
-<!-- ─── CALLOUT: CORE PHILOSOPHY ──────────────────────────────────── -->
+<!-- ── LAYER DIAGRAM ─────────────────────────────────────────────── -->
 
 <div align="center">
-<table>
+
+<!-- ROW 0 — Client -->
+<table width="76%">
 <tr>
-<td align="center" width="50%">
-<br>
-
-**⚡ Access Token**
-JWT validation only — stateless, no DB hit, fast path
-
-<br>
+<td align="center" style="background-color:#E3F2FD;border:1px solid #ccc;border-radius:10px;padding:12px 0;">
+<b style="color:#1a1a1a;">🌐 &nbsp; Client Layer</b><br>
+<sub style="color:#333;">React SPA &nbsp;·&nbsp; app.verloren.dev &nbsp;·&nbsp; HTTPS only</sub>
 </td>
-<td align="center" width="50%">
-<br>
-
-**🔄 Refresh Token**
-Session-table lookup — DB, full revocation control
+</tr>
+</table>
 
 <br>
+<b>↓ &nbsp; HTTPS request</b>
+<br><br>
+
+<!-- ROW 1 — Security Filter Chain -->
+<table width="76%">
+<tr>
+<td align="center" style="background-color:#F3E5F5;border:1px solid #ccc;border-radius:10px;padding:12px 0;">
+<b style="color:#1a1a1a;">🔒 &nbsp; Security Filter Chain</b><br>
+<sub style="color:#333;">JWT Auth Filter &nbsp;·&nbsp; Redis Rate-Limit Filter &nbsp;·&nbsp; Audit Emitter</sub>
+</td>
+</tr>
+</table>
+
+<br>
+<b>↓ &nbsp; authenticated request</b>
+<br><br>
+
+<!-- ROW 2 — Controllers -->
+<table width="76%">
+<tr>
+<td align="center" width="33%" style="background-color:#E3F2FD;border:1px solid #ccc;border-radius:10px;padding:10px 4px;">
+<b style="color:#1a1a1a;">🎮 &nbsp; AuthController</b><br>
+<sub style="color:#333;">signup · login · logout<br>OAuth2 · JWT refresh</sub>
+</td>
+<td width="2%"></td>
+<td align="center" width="33%" style="background-color:#E3F2FD;border:1px solid #ccc;border-radius:10px;padding:10px 4px;">
+<b style="color:#1a1a1a;">🎮 &nbsp; OtpController</b><br>
+<sub style="color:#333;">email OTP · phone OTP<br>request · verify</sub>
+</td>
+<td width="2%"></td>
+<td align="center" width="33%" style="background-color:#E3F2FD;border:1px solid #ccc;border-radius:10px;padding:10px 4px;">
+<b style="color:#1a1a1a;">🎮 &nbsp; SessionController</b><br>
+<sub style="color:#333;">list sessions · revoke<br>revoke-others</sub>
+</td>
+</tr>
+</table>
+
+<br>
+<b>↓ &nbsp; resolved via ServiceResolver / direct injection</b>
+<br><br>
+
+<!-- ROW 3 — Services -->
+<table width="76%">
+<tr>
+<td align="center" width="33%" style="background-color:#F3E5F5;border:1px solid #ccc;border-radius:10px;padding:10px 4px;">
+<b style="color:#1a1a1a;">⚙️ &nbsp; AuthService</b><br>
+<sub style="color:#333;">EmailAuthServiceImpl<br>PhoneAuthServiceImpl<br><i>Factory · Resolver pattern</i></sub>
+</td>
+<td width="2%"></td>
+<td align="center" width="33%" style="background-color:#F3E5F5;border:1px solid #ccc;border-radius:10px;padding:10px 4px;">
+<b style="color:#1a1a1a;">⚙️ &nbsp; OtpService</b><br>
+<sub style="color:#333;">BCrypt hash · purpose-scoped<br>EmailOtpSender<br>PhoneOtpSender</sub>
+</td>
+<td width="2%"></td>
+<td align="center" width="33%" style="background-color:#F3E5F5;border:1px solid #ccc;border-radius:10px;padding:10px 4px;">
+<b style="color:#1a1a1a;">⚙️ &nbsp; TokenService</b><br>
+<sub style="color:#333;">RSA-2048 JWT sign<br>SHA-256 refresh hash<br>rotation · revocation</sub>
+</td>
+</tr>
+</table>
+
+<br>
+<b>↓ &nbsp; JPA / Spring Data</b>
+<br><br>
+
+<!-- ROW 4 — Repositories -->
+<table width="76%">
+<tr>
+<td align="center" width="33%" style="background-color:#E8F5E9;border:1px solid #ccc;border-radius:10px;padding:10px 4px;">
+<b style="color:#1a1a1a;">🗂️ &nbsp; UserRepository</b><br>
+<sub style="color:#333;">AppUser · ProviderLink<br>UUID PKs · soft delete</sub>
+</td>
+<td width="2%"></td>
+<td align="center" width="33%" style="background-color:#E8F5E9;border:1px solid #ccc;border-radius:10px;padding:10px 4px;">
+<b style="color:#1a1a1a;">🗂️ &nbsp; OtpRepository</b><br>
+<sub style="color:#333;">OtpRecord · purpose scope<br>TTL · attempt tracking</sub>
+</td>
+<td width="2%"></td>
+<td align="center" width="33%" style="background-color:#E8F5E9;border:1px solid #ccc;border-radius:10px;padding:10px 4px;">
+<b style="color:#1a1a1a;">🗂️ &nbsp; SessionRepository</b><br>
+<sub style="color:#333;">DeviceSession · hash store<br>@Version optimistic lock</sub>
+</td>
+</tr>
+</table>
+
+<br>
+<b>↓ &nbsp; JDBC / Flyway V1–V7</b>
+<br><br>
+
+<!-- ROW 5 — Databases -->
+<table width="76%">
+<tr>
+<td align="center" width="48%" style="background-color:#FBE9E7;border:1px solid #ccc;border-radius:10px;padding:12px 0;">
+<b style="color:#1a1a1a;">🗄️ &nbsp; PostgreSQL 16</b><br>
+<sub style="color:#333;">users · otp_records · device_sessions<br>provider_links · roles · audit_log<br>UUID PKs · Flyway migrations</sub>
+</td>
+<td width="4%"></td>
+<td align="center" width="48%" style="background-color:#FBE9E7;border:1px solid #ccc;border-radius:10px;padding:12px 0;">
+<b style="color:#1a1a1a;">⚡ &nbsp; Redis 7</b><br>
+<sub style="color:#333;">Bucket4j token buckets<br>per-user / per-IP keys<br>Lettuce connection pool</sub>
+</td>
+</tr>
+</table>
+
+<br>
+<b>↑ &nbsp; async delivery (OTP only)</b>
+<br><br>
+
+<!-- ROW 6 — External services -->
+<table width="76%">
+<tr>
+<td align="center" width="48%" style="background-color:#FFF3E0;border:1px solid #ccc;border-radius:10px;padding:12px 0;">
+<b style="color:#1a1a1a;">✉️ &nbsp; AWS SES</b><br>
+<sub style="color:#333;">Email OTP delivery<br>us-east-1 &nbsp;·&nbsp; verified sender</sub>
+</td>
+<td width="4%"></td>
+<td align="center" width="48%" style="background-color:#FFF3E0;border:1px solid #ccc;border-radius:10px;padding:12px 0;">
+<b style="color:#1a1a1a;">📱 &nbsp; AWS SNS</b><br>
+<sub style="color:#333;">SMS OTP delivery<br>us-east-1 &nbsp;·&nbsp; phone channel</sub>
+</td>
+</tr>
+</table>
+
+</div>
+
+<br>
+
+<!-- ── LAYER LEGEND ──────────────────────────────────────────────── -->
+
+<div align="center">
+<table width="76%">
+<tr>
+<td align="center" width="20%" style="background-color:#E3F2FD;border:1px solid #ccc;border-radius:8px;padding:6px 8px;">
+<sub><b style="color:#1a1a1a;">🔵 Controller</b></sub>
+</td>
+<td width="1%"></td>
+<td align="center" width="20%" style="background-color:#F3E5F5;border:1px solid #ccc;border-radius:8px;padding:6px 8px;">
+<sub><b style="color:#1a1a1a;">🟣 Service</b></sub>
+</td>
+<td width="1%"></td>
+<td align="center" width="20%" style="background-color:#E8F5E9;border:1px solid #ccc;border-radius:8px;padding:6px 8px;">
+<sub><b style="color:#1a1a1a;">🟢 Repository</b></sub>
+</td>
+<td width="1%"></td>
+<td align="center" width="20%" style="background-color:#FBE9E7;border:1px solid #ccc;border-radius:8px;padding:6px 8px;">
+<sub><b style="color:#1a1a1a;">🟠 Database</b></sub>
+</td>
+<td width="1%"></td>
+<td align="center" width="20%" style="background-color:#FFF3E0;border:1px solid #ccc;border-radius:8px;padding:6px 8px;">
+<sub><b style="color:#1a1a1a;">🟡 External</b></sub>
 </td>
 </tr>
 </table>
 </div>
 
-<p align="center"><i>Fast where it needs to be. Controllable where it has to be.</i></p>
+<br>
+
+<!-- ── FLOW EXPLANATION ──────────────────────────────────────────── -->
+
+<div align="center">
+<table width="76%">
+<tr>
+<td style="padding:16px 20px;">
+
+**How a request flows through the system:**
+
+- **Filter Chain first** — every inbound request passes through JWT validation, rate limiting, and audit emission before
+  touching any controller. Bad tokens and throttled IPs are rejected here, before any business logic runs.
+- **Controllers route, services decide** — controllers are thin. They validate input, resolve the correct service
+  implementation via `AuthenticationServiceResolver` (Factory + Resolver pattern), and delegate immediately. No business
+  logic lives in a controller.
+- **Services own the rules** — `AuthService`, `OtpService`, and `TokenService` contain all state transitions, security
+  logic, and external calls. OTP senders (`EmailOtpSender`, `PhoneOtpSender`) are directly injected, keeping
+  channel-specific code isolated.
+- **Repositories enforce constraints** — `@Version` on `DeviceSession` provides optimistic locking so concurrent refresh
+  storms can't race to commit a double-rotation. All sensitive values (passwords, tokens) are hashed before the
+  repository layer ever sees them.
+- **Dual persistence** — PostgreSQL holds all durable state (users, sessions, OTPs, audit). Redis holds only rate-limit
+  buckets — volatile, fast, and fail-open: if Redis goes down, requests pass through rather than taking the service
+  offline.
+
+</td>
+</tr>
+</table>
+</div>
+
+<br>
+
+<!-- ── DESIGN DECISIONS ──────────────────────────────────────────── -->
+
+<h3 align="center">🧠 &nbsp; Design Decisions</h3>
+
+<br>
+
+<div align="center">
+<table width="76%">
+<tr>
+<td valign="top" width="50%" style="padding:12px 16px;">
+
+**Factory + Resolver over switch/if chains**
+
+`AuthenticationServiceResolver` builds a `Map<IdentifierType, AuthenticationService>` at startup. Adding email, phone,
+or any future channel (passkey, SSO) means adding a new `@Service` — not editing existing logic. The controller stays at
+one line: `resolver.resolve(identifier, type)`.
+
+</td>
+<td valign="top" width="50%" style="padding:12px 16px;">
+
+**Two-tier token model**
+
+Access tokens are validated as JWTs — stateless, no DB hit, fast path. Refresh tokens require a session-table lookup for
+full revocation control. Pure JWT has zero revocation; pure sessions have per-request DB cost. This model takes the fast
+path where it's safe and the controlled path where it matters.
+
+</td>
+</tr>
+<tr>
+<td valign="top" style="padding:12px 16px;">
+
+**SHA-256 for refresh tokens, BCrypt for passwords**
+
+BCrypt is deliberately slow — right for user-chosen passwords. Refresh tokens are high-entropy random values, so
+BCrypt's cost factor adds latency without a meaningful security gain. SHA-256 is fast, collision-resistant, and
+sufficient. Raw values never touch the DB either way.
+
+</td>
+<td valign="top" style="padding:12px 16px;">
+
+**Optimistic locking over pessimistic**
+
+`@Version` on `DeviceSession` means concurrent refresh attempts check for conflict at commit time rather than holding a
+row lock. First writer wins; concurrent replays fail fast with a 409. Under mobile-style background refresh patterns,
+this scales far better than serialized pessimistic locks.
+
+</td>
+</tr>
+<tr>
+<td valign="top" style="padding:12px 16px;">
+
+**OTP purpose-scoping**
+
+An OTP issued for `SIGNUP` cannot be verified at `/login` or `/password-reset`. The `OtpPurpose` enum makes this a
+compile-time constraint rather than a runtime check that someone could forget. This closes an entire class of OTP reuse
+attacks by design, not by discipline.
+
+</td>
+<td valign="top" style="padding:12px 16px;">
+
+**Fail-open rate limiting**
+
+If Redis is unreachable, requests pass through rather than returning 503. For an auth service, a full outage is a worse
+outcome than a brief window without rate limiting. The Redis failure is surfaced via Prometheus metrics — the on-call
+alarm fires, not the user.
+
+</td>
+</tr>
+</table>
+</div>
 
 <br>
 
@@ -444,15 +664,84 @@ Session-table lookup — DB, full revocation control
 
 <br>
 
-```mermaid
-flowchart LR
-    A["📲 Client"] --> B["🔀 API Gateway"]
-    B --> C["🚦 Rate Limiter\nRedis Bucket4j"]
-    C --> D["🔐 Auth Service"]
-    D --> E["🗄️ PostgreSQL\nPersist Session"]
-    D --> F["✉️ AWS SES/SNS\nDeliver OTP"]
-    D --> G["🔑 RSA Signing\nIssue JWT"]
-```
+<!-- ── MAIN HORIZONTAL FLOW ──────────────────────────────────────── -->
+
+<div align="center">
+<table>
+<tr>
+
+<td align="center" style="background-color:#E3F2FD;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:90px;">
+<b style="color:#1a1a1a;">📲 Client</b>
+</td>
+
+<td align="center" style="padding:0 6px;"><b>→</b></td>
+
+<td align="center" style="background-color:#E1F5FE;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:90px;">
+<b style="color:#1a1a1a;">🔀 API Gateway</b>
+</td>
+
+<td align="center" style="padding:0 6px;"><b>→</b></td>
+
+<td align="center" style="background-color:#F3E5F5;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:110px;">
+<b style="color:#1a1a1a;">🚦 Rate Limiter</b><br>
+<sub style="color:#333;">Redis · Bucket4j</sub>
+</td>
+
+<td align="center" style="padding:0 6px;"><b>→</b></td>
+
+<td align="center" style="background-color:#E8F5E9;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:110px;">
+<b style="color:#1a1a1a;">🔐 Auth Service</b><br>
+<sub style="color:#333;">Spring Boot</sub>
+</td>
+
+</tr>
+</table>
+</div>
+
+<br>
+
+<!-- ── BRANCHING OUTPUTS ─────────────────────────────────────────── -->
+
+<div align="center">
+<table>
+<tr>
+<td align="center" style="padding:0 12px;"><b>↙</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>↓</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>↘</b></td>
+</tr>
+</table>
+</div>
+
+<div align="center">
+<table>
+<tr>
+
+<td align="center" style="background-color:#FBE9E7;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:130px;">
+<b style="color:#1a1a1a;">🗄️ PostgreSQL 16</b><br>
+<sub style="color:#333;">Persist session<br>Store hashed token<br>Flyway V1–V7</sub>
+</td>
+
+<td width="24px"></td>
+
+<td align="center" style="background-color:#FFF3E0;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:130px;">
+<b style="color:#1a1a1a;">✉️ AWS SES / SNS</b><br>
+<sub style="color:#333;">Deliver OTP<br>Email · SMS<br>us-east-1</sub>
+</td>
+
+<td width="24px"></td>
+
+<td align="center" style="background-color:#E8F5E9;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:130px;">
+<b style="color:#1a1a1a;">🔑 RSA-2048 Signing</b><br>
+<sub style="color:#333;">Issue JWT<br>15 min access token<br>SHA-256 refresh hash</sub>
+</td>
+
+</tr>
+</table>
+</div>
+
+<br>
+
+<p align="center">
+<sub>Client request passes through rate limiting and authentication before interacting with persistence and external services.</sub>
+</p>
 
 <br>
 
@@ -608,48 +897,32 @@ Every session captures: **device ID · IP address · user-agent** at creation.
 </details>
 
 <details>
-<summary><b>🧠 &nbsp; Engineering Decisions</b></summary>
+<summary><b>🏭 &nbsp; Factory + Resolver Pattern</b></summary>
 <br>
 
-<div align="center">
-<table>
-<tr>
-<td align="center" width="50%">
-<br>
+`AuthenticationServiceResolver` maps `IdentifierType → AuthenticationService` at startup. Controllers resolve the right
+implementation in one line.
 
-**Pure JWT**
-Fast — but zero revocation control.
-If a token is stolen, it works until expiry.
+```java
+// Resolver (acts as factory)
+public class AuthenticationServiceResolver {
+    private final Map<IdentifierType, AuthenticationService> serviceMap;
 
-<br>
-</td>
-<td align="center" width="50%">
-<br>
+    public AuthenticationServiceResolver(List<AuthenticationService> services) {
+        this.serviceMap = services.stream()
+                .collect(Collectors.toMap(AuthenticationService::supports, Function.identity()));
+    }
 
-**Pure Sessions**
-Controllable — but DB hit on every request.
-Doesn't scale cleanly.
+    public AuthenticationService resolve(IdentifierType type) {
+        return serviceMap.get(type);
+    }
+}
+```
 
-<br>
-</td>
-</tr>
-</table>
-</div>
+Adding a new identifier type (passkey, SSO) = add one `@Service`. No controller changes. No switch statements.
 
-<br>
-
-> **Chosen model:** Access tokens validated as JWT (stateless, no DB). Refresh tokens require session-table lookup (DB, full revocation). Best of both.
-
-**Refresh Token Rotation + Hash-at-Rest**
-
-- RSA signing — no shared secret to steal
-- Rotation on use — stolen tokens stale after next legitimate refresh
-- SHA-256 hash only — raw value never written to storage
-- Single-use — parallel refreshes rejected once rotation commits
-
-**Federated + Local Identity Coexistence**
-
-Google identities stored in `provider_link` table → mapped to internal `AppUser`. Both paths converge into the **same session, revocation, and audit pipeline** post-handshake.
+OTP senders (`EmailOtpSender`, `PhoneOtpSender`) use direct injection instead — operations differ enough between
+channels that the abstraction overhead isn't worth it, and explicit injection makes the API surface clearer.
 
 </details>
 
@@ -682,7 +955,8 @@ Google identities stored in `provider_link` table → mapped to internal `AppUse
 }
 ```
 
-Events: `auth.signup` · `auth.login` · `auth.logout` · `auth.refresh` · `otp.request` · `otp.verify` · `session.revoke` · `oauth.login`
+Events: `auth.signup` · `auth.login` · `auth.logout` · `auth.refresh` · `otp.request` · `otp.verify` ·
+`session.revoke` · `oauth.login`
 
 </details>
 
@@ -742,24 +1016,126 @@ k6 run load_tests/auth-load-test.js  # load testing
 <br>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!--                     CI/CD PIPELINE                              -->
+<!--                     CI/CD PIPELINE  (new section)               -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
 <h2 align="center">🚀 &nbsp; CI/CD Pipeline</h2>
 
-<p align="center"><i>219+ zero-downtime deployments. Health-verified on every push.</i></p>
+<p align="center"><i>219+ zero-downtime deployments. Health-verified on every push to <code>master</code>.</i></p>
 
 <br>
 
-```mermaid
-flowchart LR
-    A["📦 git push\norigin main"] --> B["⚙️ GitHub Actions"]
-    B --> C["🧪 mvn test"]
-    B --> D["🐳 Docker Build\nJDK-21 → JRE"]
-    D --> E["📦 Push to GHCR"]
-    E --> F["🌐 SSH Deploy\nAWS EC2"]
-    F --> G["✅ Health Check\nVerification"]
-```
+<!-- ── PIPELINE VISUAL ───────────────────────────────────────────── -->
+
+<div align="center">
+<table width="86%">
+
+<!-- Stage labels row -->
+<tr>
+<td align="center" width="16%" style="background-color:#E3F2FD;border:1px solid #1976D2;border-radius:8px;padding:8px 4px;">
+<b style="color:#1a1a1a;">1 · Trigger</b><br>
+<sub style="color:#333;">push to<br><code>master</code></sub>
+</td>
+<td align="center" width="4%"><b>→</b></td>
+<td align="center" width="16%" style="background-color:#E3F2FD;border:1px solid #1976D2;border-radius:8px;padding:8px 4px;">
+<b style="color:#1a1a1a;">2 · Test</b><br>
+<sub style="color:#333;"><code>mvn test</code><br>JUnit 5 + Mockito</sub>
+</td>
+<td align="center" width="4%"><b>→</b></td>
+<td align="center" width="16%" style="background-color:#FBE9E7;border:1px solid #D84315;border-radius:8px;padding:8px 4px;">
+<b style="color:#1a1a1a;">3 · Build</b><br>
+<sub style="color:#333;">Docker image<br>JDK 21 → JRE</sub>
+</td>
+<td align="center" width="4%"><b>→</b></td>
+<td align="center" width="16%" style="background-color:#FFF3E0;border:1px solid #F57C00;border-radius:8px;padding:8px 4px;">
+<b style="color:#1a1a1a;">4 · Push</b><br>
+<sub style="color:#333;">GHCR<br>versioned tag</sub>
+</td>
+<td align="center" width="4%"><b>→</b></td>
+<td align="center" width="16%" style="background-color:#F3E5F5;border:1px solid #7B1FA2;border-radius:8px;padding:8px 4px;">
+<b style="color:#1a1a1a;">5 · Deploy</b><br>
+<sub style="color:#333;">SSH → EC2<br>docker pull + restart</sub>
+</td>
+<td align="center" width="4%"><b>→</b></td>
+<td align="center" width="16%" style="background-color:#E8F5E9;border:1px solid #388E3C;border-radius:8px;padding:8px 4px;">
+<b style="color:#1a1a1a;">6 · Verify</b><br>
+<sub style="color:#333;"><code>/actuator/health</code><br>gate before live</sub>
+</td>
+</tr>
+
+</table>
+</div>
+
+<br>
+
+<!-- ── PIPELINE DETAILS ──────────────────────────────────────────── -->
+
+<div align="center">
+<table width="86%">
+<tr>
+<td valign="top" width="50%" style="padding:12px 16px;">
+
+**Workflow: `ci-cd.yml`**
+
+- **Trigger** — `push` to `master` branch only
+- **Runner** — `ubuntu-latest` (GitHub-hosted)
+- **Java setup** — `actions/setup-java@v4` · Temurin distribution · Java 21
+- **Cache** — Maven `.m2` repository cached between runs for faster builds
+- **Test gate** — `mvn test` must pass before any Docker step starts; a failing test cancels the entire pipeline
+
+</td>
+<td valign="top" width="50%" style="padding:12px 16px;">
+
+**Docker + Deploy**
+
+- **Multi-stage build** — compile on JDK 21, ship on a minimal JRE image; final image is significantly smaller
+- **Registry** — GitHub Container Registry (`ghcr.io`) with repository-scoped token auth
+- **Deploy** — `appleboy/ssh-action` SSHs into the EC2 instance, pulls the new image, stops the old container, starts
+  the new one
+- **Health gate** — `curl` hits `/actuator/health` with retries; pipeline fails if the new container doesn't come up
+  healthy
+
+</td>
+</tr>
+</table>
+</div>
+
+<br>
+
+<!-- ── SECRETS USED ───────────────────────────────────────────────── -->
+
+<div align="center">
+<table width="86%">
+<tr>
+<th align="left" style="padding:8px 16px;">Secret</th>
+<th align="left" style="padding:8px 16px;">Used for</th>
+</tr>
+<tr>
+<td style="padding:6px 16px;"><code>GITHUB_TOKEN</code></td>
+<td style="padding:6px 16px;">Auto-provided · GHCR push authentication</td>
+</tr>
+<tr>
+<td style="padding:6px 16px;"><code>EC2_HOST</code></td>
+<td style="padding:6px 16px;">AWS EC2 public IP / hostname</td>
+</tr>
+<tr>
+<td style="padding:6px 16px;"><code>EC2_USER</code></td>
+<td style="padding:6px 16px;">SSH username on the EC2 instance</td>
+</tr>
+<tr>
+<td style="padding:6px 16px;"><code>EC2_SSH_KEY</code></td>
+<td style="padding:6px 16px;">PEM key for SSH authentication</td>
+</tr>
+<tr>
+<td style="padding:6px 16px;"><code>DB_USERNAME / DB_PASSWORD</code></td>
+<td style="padding:6px 16px;">Passed as env vars to the running container</td>
+</tr>
+<tr>
+<td style="padding:6px 16px;"><code>AWS_ACCESS_KEY / AWS_SECRET_KEY</code></td>
+<td style="padding:6px 16px;">SES + SNS credentials for OTP delivery</td>
+</tr>
+</table>
+</div>
 
 <br>
 

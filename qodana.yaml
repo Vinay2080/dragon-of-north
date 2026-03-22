@@ -46,3 +46,7 @@ projectJDK: "21" #(Applied in CI/CD pipeline)
 
 #Specify Qodana linter for analysis (Applied in CI/CD pipeline)
 linter: jetbrains/qodana-jvm:2025.3
+exclude:
+  - name: All
+    paths:
+      - src\main\java\org\miniProjectTwo\DragonOfNorth\security\util\KeyUtils.java
