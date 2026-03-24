@@ -4663,49 +4663,104 @@ a:hover {
         flex-shrink: 0;
     }
 
+    /* ──────────────────────────────────────────────────
+       REFRESH BUTTON - Production Ready Component
+       Circular/Rounded modern button with inline SVG icon,
+       smooth rotation animation, and full accessibility
+       ────────────────────────────────────────────────── */
+
     .scc-refresh-btn {
-        width: 36px;
-        height: 36px;
-        display: grid;
-        place-items: center;
+        /* Layout & Sizing */
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        /* Styling */
         background: var(--don-bg-card);
-        border: 1px solid var(--don-border-default);
-        border-radius: 8px;
+        border: 1.5px solid var(--don-border-default);
+        border-radius: 10px;
         color: var(--don-text-primary);
+
+        /* Interaction */
         cursor: pointer;
-        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        font-size: 16px;
+        font-weight: 500;
+
+        /* Transitions for smooth state changes */
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+        /* Accessibility */
+        outline: none;
+        position: relative;
+
+        /* Remove default button styles */
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
     }
 
-    .scc-refresh-btn svg {
+    /* Icon Container */
+    .scc-refresh-btn__icon {
+        width: 20px;
+        height: 20px;
+        display: block;
+        flex-shrink: 0;
+
+        /* Smooth rotation on animation */
         transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+        /* Ensure crisp rendering */
+        will-change: transform;
     }
 
-    .scc-refresh-btn.loading svg {
-        animation: spinSmooth 1s linear infinite;
-    }
-
-    @keyframes spinSmooth {
-        from {
+    /* Spinning Animation - Smooth 360° rotation */
+    @keyframes sccRefreshSpinSmooth {
+        0% {
             transform: rotate(0deg);
         }
-        to {
+        100% {
             transform: rotate(360deg);
         }
     }
 
+    /* Apply spinning animation to the icon */
+    .scc-refresh-btn.spinning .scc-refresh-btn__icon {
+        animation: sccRefreshSpinSmooth 1s linear infinite;
+    }
+
+    /* Hover State - Light Mode */
     .scc-refresh-btn:hover:not(:disabled) {
         background: color-mix(in srgb, var(--don-bg-card) 75%, var(--don-accent) 25%);
         border-color: var(--don-accent);
-        transform: scale(1.08);
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
     }
 
+    /* Focus State - Keyboard Navigation Support */
+    .scc-refresh-btn:focus-visible {
+        outline: 2px solid var(--don-accent);
+        outline-offset: 2px;
+    }
+
+    /* Active State - Click Feedback */
     .scc-refresh-btn:active:not(:disabled) {
-        transform: scale(0.92);
+        transform: scale(0.95);
     }
 
+    /* Disabled State */
     .scc-refresh-btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    /* Disabled spinning state - smooth slowdown */
+    .scc-refresh-btn:disabled.spinning .scc-refresh-btn__icon {
+        animation: none;
+        transform: rotate(0deg);
     }
 
     .scc-danger-btn {
@@ -4806,9 +4861,27 @@ a:hover {
         backdrop-filter: blur(6px);
     }
 
+    .light .scc-refresh-btn {
+        background: #ffffff;
+        border-color: rgba(0, 0, 0, 0.08);
+        color: #1f2937;
+    }
+
     .light .scc-refresh-btn:hover:not(:disabled) {
-        background: rgba(139, 92, 246, 0.15);
-        backdrop-filter: blur(4px);
+        background: rgba(139, 92, 246, 0.1);
+        border-color: #8b5cf6;
+        color: #6d28d9;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+        transform: scale(1.1);
+    }
+
+    .light .scc-refresh-btn:focus-visible {
+        outline: 2px solid #8b5cf6;
+        outline-offset: 2px;
+    }
+
+    .light .scc-refresh-btn:active:not(:disabled) {
+        transform: scale(0.95);
     }
 
     .light .scc-revoked-toggle:hover {
@@ -4875,17 +4948,26 @@ a:hover {
     }
 
     .dark .scc-refresh-btn {
-        background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        color: #e5e7eb;
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.85);
     }
 
     .dark .scc-refresh-btn:hover:not(:disabled) {
-        background: transparent;
-        border-color: #8b5cf6;
+        background: rgba(139, 92, 246, 0.15);
+        border-color: rgba(139, 92, 246, 0.5);
         color: #d8b4fe;
-        box-shadow: 0 0 16px rgba(139, 92, 246, 0.35);
-        transform: scale(1.08);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+        transform: scale(1.1);
+    }
+
+    .dark .scc-refresh-btn:focus-visible {
+        outline: 2px solid #8b5cf6;
+        outline-offset: 2px;
+    }
+
+    .dark .scc-refresh-btn:active:not(:disabled) {
+        transform: scale(0.95);
     }
 
     .dark .scc-collapse {

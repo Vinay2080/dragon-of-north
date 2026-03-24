@@ -1,0 +1,579 @@
+ th<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refresh Button Component - Demo</title>
+    <style>
+        /* ───────────────────────────────────────────────────
+           Reset & Base Styles
+           ─────────────────────────────────────────────────── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+                         Cantarell, 'Helvetica Neue', sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #1f2937;
+            background: #ffffff;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.dark-mode {
+            background: #0f172a;
+            color: #e5e7eb;
+        }
+
+        /* ───────────────────────────────────────────────────
+           Layout & Containers
+           ─────────────────────────────────────────────────── */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.7;
+        }
+
+        /* ───────────────────────────────────────────────────
+           Demo Sections
+           ─────────────────────────────────────────────────── */
+        .demo-section {
+            background: var(--bg-section);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 40px;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode .demo-section {
+            --bg-section: #1e293b;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body:not(.dark-mode) .demo-section {
+            --bg-section: #f8fafc;
+            --border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        .demo-section h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .demo-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            align-items: center;
+        }
+
+        /* ───────────────────────────────────────────────────
+           REFRESH BUTTON - Production Ready Component
+           Circular/Rounded modern button with inline SVG icon,
+           smooth rotation animation, and full accessibility
+           ─────────────────────────────────────────────────── */
+
+        .scc-refresh-btn {
+            /* Layout & Sizing */
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            /* Styling */
+            background: #ffffff;
+            border: 1.5px solid rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            color: #1f2937;
+
+            /* Interaction */
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+
+            /* Transitions for smooth state changes */
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+            /* Accessibility */
+            outline: none;
+            position: relative;
+
+            /* Remove default button styles */
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+
+        /* Icon Container */
+        .scc-refresh-btn__icon {
+            width: 20px;
+            height: 20px;
+            display: block;
+            flex-shrink: 0;
+
+            /* Smooth rotation on animation */
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+            /* Ensure crisp rendering */
+            will-change: transform;
+        }
+
+        /* Spinning Animation - Smooth 360° rotation */
+        @keyframes sccRefreshSpinSmooth {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Apply spinning animation to the icon */
+        .scc-refresh-btn.spinning .scc-refresh-btn__icon {
+            animation: sccRefreshSpinSmooth 1s linear infinite;
+        }
+
+        /* Hover State */
+        .scc-refresh-btn:hover:not(:disabled) {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: #8b5cf6;
+            color: #6d28d9;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+            transform: scale(1.1);
+        }
+
+        /* Focus State - Keyboard Navigation Support */
+        .scc-refresh-btn:focus-visible {
+            outline: 2px solid #8b5cf6;
+            outline-offset: 2px;
+        }
+
+        /* Active State - Click Feedback */
+        .scc-refresh-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        /* Disabled State */
+        .scc-refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Disabled spinning state - smooth stoppage */
+        .scc-refresh-btn:disabled.spinning .scc-refresh-btn__icon {
+            animation: none;
+            transform: rotate(0deg);
+        }
+
+        /* DARK MODE STYLES */
+        body.dark-mode .scc-refresh-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        body.dark-mode .scc-refresh-btn:hover:not(:disabled) {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.5);
+            color: #d8b4fe;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+            transform: scale(1.1);
+        }
+
+        body.dark-mode .scc-refresh-btn:focus-visible {
+            outline: 2px solid #8b5cf6;
+            outline-offset: 2px;
+        }
+
+        body.dark-mode .scc-refresh-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        /* ───────────────────────────────────────────────────
+           Status Messages & Info
+           ─────────────────────────────────────────────────── */
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            margin-top: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .status-message.hidden {
+            display: none;
+        }
+
+        .status-message.success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #15803d;
+        }
+
+        body.dark-mode .status-message.success {
+            background: rgba(34, 197, 94, 0.15);
+            color: #86efac;
+        }
+
+        /* ───────────────────────────────────────────────────
+           Code Block
+           ─────────────────────────────────────────────────── */
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-top: 20px;
+        }
+
+        .code-block code {
+            display: block;
+        }
+
+        /* ───────────────────────────────────────────────────
+           Mode Toggle
+           ─────────────────────────────────────────────────── */
+        .mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .mode-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+        }
+
+        .mode-toggle:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
+
+        /* ───────────────────────────────────────────────────
+           Responsive Design
+           ─────────────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .demo-section {
+                padding: 24px;
+            }
+
+            .demo-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Dark Mode Toggle Button -->
+    <button class="mode-toggle" id="modeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+        🌙
+    </button>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Refresh Button Component</h1>
+            <p>Production-ready button with inline SVG, smooth animation, and full accessibility</p>
+        </div>
+
+        <!-- Demo 1: Basic Button -->
+        <div class="demo-section">
+            <h2>✨ Basic Refresh Button</h2>
+            <div class="demo-content">
+                <button
+                    type="button"
+                    class="scc-refresh-btn"
+                    id="basicRefreshBtn"
+                    aria-label="Refresh data"
+                    title="Refresh data"
+                >
+                    <svg
+                        class="scc-refresh-btn__icon"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+                    </svg>
+                </button>
+                <p>Click the button to see the smooth 360° rotation animation</p>
+                <div id="basicStatus" class="status-message hidden success">✓ Data refreshed successfully!</div>
+            </div>
+        </div>
+
+        <!-- Demo 2: Multiple Buttons -->
+        <div class="demo-section">
+            <h2>🎯 States Demonstration</h2>
+            <div class="demo-content">
+                <div>
+                    <p style="margin-bottom: 12px; font-weight: 500;">Normal</p>
+                    <button class="scc-refresh-btn" aria-label="Refresh">
+                        <svg class="scc-refresh-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div>
+                    <p style="margin-bottom: 12px; font-weight: 500;">Spinning</p>
+                    <button class="scc-refresh-btn spinning" aria-label="Refreshing" disabled>
+                        <svg class="scc-refresh-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div>
+                    <p style="margin-bottom: 12px; font-weight: 500;">Disabled</p>
+                    <button class="scc-refresh-btn" aria-label="Refresh" disabled>
+                        <svg class="scc-refresh-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo 3: Code Example -->
+        <div class="demo-section">
+            <h2>💻 Implementation</h2>
+            <p style="margin-bottom: 16px;">Here's the complete HTML structure for the refresh button:</p>
+            <div class="code-block">
+                <code>&lt;button
+    type="button"
+    class="scc-refresh-btn"
+    aria-label="Refresh sessions"
+    title="Refresh sessions"
+&gt;
+    &lt;svg
+        class="scc-refresh-btn__icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+    &gt;
+        &lt;polyline points="23 4 23 10 17 10"&gt;&lt;/polyline&gt;
+        &lt;polyline points="1 20 1 14 7 14"&gt;&lt;/polyline&gt;
+        &lt;path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"&gt;&lt;/path&gt;
+    &lt;/svg&gt;
+&lt;/button&gt;</code>
+            </div>
+        </div>
+
+        <!-- Demo 4: JavaScript Implementation -->
+        <div class="demo-section">
+            <h2>⚙️ JavaScript Handler</h2>
+            <p style="margin-bottom: 16px;">The button uses a simple click handler to add the spinning animation:</p>
+            <div class="code-block">
+                <code>button.addEventListener('click', async () =&gt; {
+    // Add spinning class to trigger animation
+    button.classList.add('spinning');
+    button.disabled = true;
+
+    try {
+        // Perform your async operation
+        await fetchData();
+    } finally {
+        // Remove spinning animation
+        button.classList.remove('spinning');
+        button.disabled = false;
+    }
+});</code>
+            </div>
+        </div>
+
+        <!-- Demo 5: Features -->
+        <div class="demo-section">
+            <h2>✅ Features</h2>
+            <ul style="list-style: none; padding: 0;">
+                <li style="padding: 12px 0; display: flex; gap: 12px;">
+                    <span>🎨</span>
+                    <span><strong>Modern Design:</strong> Circular button with smooth rounded corners</span>
+                </li>
+                <li style="padding: 12px 0; display: flex; gap: 12px;">
+                    <span>🎬</span>
+                    <span><strong>Smooth Animation:</strong> 360° rotation with cubic-bezier easing</span>
+                </li>
+                <li style="padding: 12px 0; display: flex; gap: 12px;">
+                    <span>🌙</span>
+                    <span><strong>Dark Mode:</strong> Automatic theme detection with proper contrast</span>
+                </li>
+                <li style="padding: 12px 0; display: flex; gap: 12px;">
+                    <span>♿</span>
+                    <span><strong>Accessibility:</strong> Full keyboard navigation and ARIA labels</span>
+                </li>
+                <li style="padding: 12px 0; display: flex; gap: 12px;">
+                    <span>📱</span>
+                    <span><strong>Responsive:</strong> Works perfectly on all screen sizes</span>
+                </li>
+                <li style="padding: 12px 0; display: flex; gap: 12px;">
+                    <span>⚡</span>
+                    <span><strong>Inline SVG:</strong> No external icon library dependencies</span>
+                </li>
+                <li style="padding: 12px 0; display: flex; gap: 12px;">
+                    <span>🎯</span>
+                    <span><strong>States:</strong> Hover, focus, active, and disabled states included</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // ═══════════════════════════════════════════════════════════
+        // DARK MODE TOGGLE
+        // ═══════════════════════════════════════════════════════════
+
+        const modeToggle = document.getElementById('modeToggle');
+        const htmlElement = document.documentElement;
+
+        // Check for saved theme preference or default to light mode
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        if (currentTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            modeToggle.textContent = '☀️';
+        }
+
+        // Toggle dark mode on button click
+        modeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            modeToggle.textContent = isDark ? '☀️' : '🌙';
+        });
+
+        // ═══════════════════════════════════════════════════════════
+        // REFRESH BUTTON HANDLER
+        // ═══════════════════════════════════════════════════════════
+
+        const basicRefreshBtn = document.getElementById('basicRefreshBtn');
+        const basicStatus = document.getElementById('basicStatus');
+
+        basicRefreshBtn.addEventListener('click', async () => {
+            // Prevent multiple rapid clicks
+            if (basicRefreshBtn.classList.contains('spinning')) {
+                return;
+            }
+
+            // Add spinning class to trigger animation
+            basicRefreshBtn.classList.add('spinning');
+            basicRefreshBtn.disabled = true;
+
+            try {
+                // Simulate an async operation (API call, data fetch, etc.)
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Show success message
+                basicStatus.classList.remove('hidden');
+                setTimeout(() => {
+                    basicStatus.classList.add('hidden');
+                }, 3000);
+            } catch (error) {
+                console.error('Refresh failed:', error);
+            } finally {
+                // Remove spinning class - animation will complete before removal
+                basicRefreshBtn.classList.remove('spinning');
+                basicRefreshBtn.disabled = false;
+            }
+        });
+
+        // ═══════════════════════════════════════════════════════════
+        // KEYBOARD ACCESSIBILITY - OPTIONAL ENHANCEMENT
+        // ═══════════════════════════════════════════════════════════
+
+        basicRefreshBtn.addEventListener('keydown', (event) => {
+            // Allow Space and Enter keys to trigger the button
+            if (event.key === ' ' || event.key === 'Enter') {
+                event.preventDefault();
+                basicRefreshBtn.click();
+            }
+        });
+
+        // ═══════════════════════════════════════════════════════════
+        // INITIALIZE
+        // ═══════════════════════════════════════════════════════════
+
+        console.log('✓ Refresh Button Component Ready');
+        console.log('Features:');
+        console.log('- Inline SVG icon (no external dependencies)');
+        console.log('- Smooth 360° rotation animation');
+        console.log('- Dark mode support');
+        console.log('- Full keyboard accessibility');
+        console.log('- Responsive design');
+    </script>
+</body>
+</html>
+

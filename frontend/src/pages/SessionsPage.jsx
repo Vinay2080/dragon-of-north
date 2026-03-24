@@ -245,11 +245,25 @@ const SessionsPage = () => {
                                 type="button"
                                 onClick={() => loadSessions(true)}
                                 disabled={!isAuthenticated || refreshSpinning || loadingSessions}
-                                className={`scc-refresh-btn ${refreshSpinning ? 'loading' : ''}`}
+                                className={`scc-refresh-btn ${refreshSpinning ? 'spinning' : ''}`}
                                 aria-label="Refresh sessions"
                                 title="Refresh sessions"
                             >
-                                {/* Refresh Icon */}
+                                {/* Refresh Icon - Inline SVG */}
+                                <svg
+                                    className="scc-refresh-btn__icon"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+                                </svg>
                             </button>
                             <button
                                 type="button"
