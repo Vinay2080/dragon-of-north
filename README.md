@@ -6,10 +6,18 @@
 
 <br>
 
+<p align="center">
+  <sub>
+    Dragon of North is a production-style backend that handles secure login, OTP verification, and device-aware sessions.
+    It is designed to stop common auth failures like abuse spikes, token misuse, and refresh races before they become incidents.
+    The system has been load tested with 10,000+ requests to prove stability under real traffic patterns.
+  </sub>
+</p>
+
 <!-- ─── IMPACT STRIP ─────────────────────────────────────────────── -->
 
 <div align="center">
-  <b>JWT + RSA-2048 &nbsp;·&nbsp; Redis Rate Limiting &nbsp;·&nbsp; Device-Aware Sessions &nbsp;·&nbsp; OTP via AWS &nbsp;·&nbsp; 219+ Production Deployments</b>
+  <b>JWT + RSA-2048 &nbsp;·&nbsp; Redis Rate Limiting &nbsp;·&nbsp; Device-Aware Sessions &nbsp;·&nbsp; OTP via AWS &nbsp;·&nbsp; Continuous Deployment via GitHub Actions</b>
 </div>
 
 <br>
@@ -103,8 +111,8 @@ BCrypt-hashed · purpose-scoped · AWS SES + SNS
 <tr>
 <td align="left">
 
-🔄 &nbsp; **219+ production deploys**
-GitHub Actions → EC2 · zero-downtime · every push
+🔄 &nbsp; **Continuous deployment**
+GitHub Actions auto-deploy pipeline on every push
 
 </td>
 <td align="left">
@@ -119,7 +127,140 @@ GitHub Actions → EC2 · zero-downtime · every push
 
 <br>
 
+<p align="center"><b>⚡ Proven under load: 10,000+ requests · 40 users · 0 crashes · p95 ~630ms</b></p>
+
+<br>
+
 <p align="center"><sub>↓ &nbsp; keep scrolling — it gets better &nbsp; ↓</sub></p>
+
+<br>
+
+<img src="https://capsule-render.vercel.app/api?type=rect&amp;color=0:6B57FF,100:0D0D12&amp;height=3" width="100%"/>
+
+<br>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--                    WHY THIS PROJECT EXISTS                      -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<div align="center">
+<table>
+<tr>
+<td align="center">
+<br>
+
+**🧠 &nbsp; Why This Project Exists**
+
+Most auth demos prove a happy-path login once.
+Real systems must withstand abuse attempts, token misuse, and concurrent refresh races without failing users.
+This project focuses on those failure paths first.
+
+<br>
+</td>
+</tr>
+</table>
+</div>
+
+<br>
+
+<!-- ─── FEATURE CARDS (4-column) ─────────────────────────────────── -->
+
+<div align="center">
+<table>
+<tr>
+<td align="center" width="25%">
+<br>
+
+**🚫 Abuse Resistance**
+
+Built to absorb OTP spam,
+credential stuffing, and
+request bursts safely.
+
+<br>
+</td>
+<td align="center" width="25%">
+<br>
+
+**🔐 Account Safety**
+
+Prevents token replay and
+contains compromise at
+device/session level.
+
+<br>
+</td>
+<td align="center" width="25%">
+<br>
+
+**⚙️ Operational Reliability**
+
+Designed for deployable,
+observable behavior under
+real traffic conditions.
+
+<br>
+</td>
+<td align="center" width="25%">
+<br>
+
+**📊 Recruiter-Relevant Proof**
+
+Load-tested, CI/CD-backed,
+and repeatedly deployed in
+production.
+
+<br>
+</td>
+</tr>
+</table>
+</div>
+
+<br>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--                      FEATURES BY PURPOSE                        -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 align="center">🚀 &nbsp; What's Inside</h2>
+
+<p align="center"><i>Grouped by outcomes, so impact is easy to scan.</i></p>
+
+<br>
+
+<div align="center">
+<table>
+<tr>
+<th align="left" width="24%">Category</th>
+<th align="left" width="34%">Purpose</th>
+<th align="left" width="42%">What delivers it</th>
+</tr>
+
+<tr>
+<td><b>🔐 Security &amp; Authentication</b></td>
+<td>Protect account access and prevent token misuse.</td>
+<td>RSA-2048 JWT signing, rotating refresh tokens, SHA-256 hash-at-rest, BCrypt password hashing, and Google OAuth2 provider-link validation.</td>
+</tr>
+
+<tr>
+<td><b>🚦 Abuse Prevention</b></td>
+<td>Absorb spam, brute-force, and burst traffic without taking the service down.</td>
+<td>Redis + Bucket4j endpoint limits, dynamic user/IP keying, OTP cooldowns, attempt caps, and fail-open rate limiting for availability.</td>
+</tr>
+
+<tr>
+<td><b>📱 Session Management</b></td>
+<td>Contain compromise to the right scope and support real multi-device behavior.</td>
+<td>Device-bound sessions (device ID + IP + user-agent), selective/global revocation, strict refresh rotation, and `@Version` optimistic locking.</td>
+</tr>
+
+<tr>
+<td><b>📧 OTP System</b></td>
+<td>Verify users safely across channels with anti-reuse controls.</td>
+<td>Purpose-scoped OTPs, BCrypt-stored OTP values, request throttling, verification state tracking, and delivery through AWS SES/SNS.</td>
+</tr>
+</table>
+</div>
 
 <br>
 
@@ -151,58 +292,28 @@ to survive.
 
 <br>
 
-<!-- ─── FEATURE CARDS (4-column) ─────────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--                     ENGINEERING FOCUS                           -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
 
 <div align="center">
 <table>
 <tr>
-<td align="center" width="25%">
+<td align="left">
 <br>
 
-**🔁 Token Rotation**
+**🛠️ &nbsp; Engineering Focus**
 
-Single-use refresh tokens.
-Replay = instant 401.
-
-<br>
-</td>
-<td align="center" width="25%">
-<br>
-
-**🔒 Hash-at-Rest**
-
-Raw tokens never touch the DB.
-SHA-256 only.
-
-<br>
-</td>
-<td align="center" width="25%">
-<br>
-
-**📱 Device Context**
-
-Every session knows its device.
-Revoke one, keep others.
-
-<br>
-</td>
-<td align="center" width="25%">
-<br>
-
-**📊 Observable**
-
-Structured audit log on
-every security event.
+- Security behavior under real-world attack conditions
+- Scalability through stateless access-token validation
+- Strong session control with strict token lifecycle rules
+- Extensible design via resolver-based service architecture
 
 <br>
 </td>
 </tr>
 </table>
 </div>
-
-<br>
-
-<img src="https://capsule-render.vercel.app/api?type=rect&amp;color=0:6B57FF,100:0D0D12&amp;height=3" width="100%"/>
 
 <br>
 
@@ -213,6 +324,8 @@ every security event.
 <h2 align="center">🚨 &nbsp; Real Problems. Real Solutions.</h2>
 
 <p align="center"><i>The threats most auth guides don't mention.</i></p>
+
+<p align="center"><sub>These are real attack scenarios this system is designed to handle.</sub></p>
 
 <br>
 
@@ -270,85 +383,68 @@ every security event.
 <br>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!--                      FEATURE GRID                               -->
+<!--                   PERFORMANCE & TESTING                         -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
-<h2 align="center">🚀 &nbsp; What's Inside</h2>
+<h2 align="center">🧪 &nbsp; Performance &amp; Testing</h2>
+
+<p align="center"><i>Proof that the system holds under realistic load and failure paths.</i></p>
 
 <br>
 
 <div align="center">
 <table>
 <tr>
-<td width="50%" valign="top">
-<br>
-
-**🔐 JWT / RSA-2048**
-Asymmetric signing — private key signs, public key verifies. No shared secrets.
-
-<br>
-</td>
-<td width="50%" valign="top">
-<br>
-
-**🔄 Token Rotation**
-Every refresh issues a new pair and invalidates the old. Replay = 401.
-
-<br>
-</td>
+<th align="left">Evidence</th>
+<th align="left">Result</th>
 </tr>
 <tr>
-<td valign="top">
-<br>
-
-**📱 Device Sessions**
-Sessions bind to device ID + IP + user-agent. Revoke one or all.
-
-<br>
-</td>
-<td valign="top">
-<br>
-
-**🚦 Redis Rate Limiting**
-Bucket4j per endpoint. Signup · Login · OTP each have independent limits.
-
-<br>
-</td>
+<td>k6 load traffic</td>
+<td>10,000+ total requests across auth, health, and protected endpoint scenarios</td>
 </tr>
 <tr>
-<td valign="top">
-<br>
-
-**📧 OTP Engine**
-BCrypt-hashed, purpose-scoped, multi-channel — SES email + SNS SMS.
-
-<br>
-</td>
-<td valign="top">
-<br>
-
-**🔗 Google OAuth2**
-Server-side token validation. Converges into the same session pipeline.
-
-<br>
-</td>
+<td>Peak concurrency</td>
+<td>Up to 40 virtual users with staged, production-safe ramp profiles</td>
 </tr>
 <tr>
-<td valign="top">
+<td>p95 latency range</td>
+<td>~608 ms to ~720 ms on core auth/health/protected tests</td>
+</tr>
+<tr>
+<td>Crash resilience</td>
+<td>0 server crashes observed during documented load runs</td>
+</tr>
+<tr>
+<td>Test depth</td>
+<td>55+ test classes + 12 k6 scenarios + integration tests with Testcontainers</td>
+</tr>
+</table>
+</div>
+
 <br>
 
-**📊 Observability**
-Structured audit logs + Micrometer counters + Prometheus export.
+<div align="center">
+<table>
+<tr>
+<td valign="top" width="50%" style="padding:12px 16px;">
 
-<br>
+**Automated Test Layers**
+
+- Unit tests cover controllers, services, repositories, JWT logic, and security filters.
+- Integration tests run with real PostgreSQL 16 and Redis 7 via Testcontainers.
+- Security tests validate rate limiting, token hashing, and filter-chain behavior.
+- Load tests model auth storms, refresh races, and multi-device session traffic.
+
 </td>
-<td valign="top">
-<br>
+<td valign="top" width="50%" style="padding:12px 16px;">
 
-**🧪 Load Testing**
-12 k6 scenarios — concurrent auth, refresh storms, session chaos.
+**Tooling That Makes Results Credible**
 
-<br>
+- JUnit 5 + Mockito for deterministic service and component tests.
+- Testcontainers for environment-faithful backend validation.
+- k6 for sustained concurrency and latency tracking.
+- Prometheus/Micrometer metrics for runtime visibility during stress scenarios.
+
 </td>
 </tr>
 </table>
@@ -356,7 +452,172 @@ Structured audit logs + Micrometer counters + Prometheus export.
 
 <br>
 
-<p align="center"><sub>↓ &nbsp; architecture below — worth the scroll &nbsp; ↓</sub></p>
+```bash
+mvn test
+mvn verify -P integration-tests
+k6 run load_tests/auth-load-test.js
+```
+
+<br>
+
+<img src="https://capsule-render.vercel.app/api?type=rect&amp;color=0:6B57FF,100:0D0D12&amp;height=3" width="100%"/>
+
+<br>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--                       EXAMPLE FLOW                              -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 align="center">🔄 &nbsp; Example User Flow</h2>
+
+<p align="center"><i>Signup → OTP → login → refresh → session control.</i></p>
+
+<br>
+
+<!-- ── MAIN HORIZONTAL FLOW ──────────────────────────────────────── -->
+
+<div align="center">
+<table>
+<tr>
+
+<td align="center" style="background-color:#E3F2FD;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:90px;">
+<b style="color:#1a1a1a;">📲 Client</b>
+</td>
+
+<td align="center" style="padding:0 6px;"><b>→</b></td>
+
+<td align="center" style="background-color:#E1F5FE;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:90px;">
+<b style="color:#1a1a1a;">🔀 API Gateway</b>
+</td>
+
+<td align="center" style="padding:0 6px;"><b>→</b></td>
+
+<td align="center" style="background-color:#F3E5F5;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:110px;">
+<b style="color:#1a1a1a;">🚦 Rate Limiter</b><br>
+<sub style="color:#333;">Redis · Bucket4j</sub>
+</td>
+
+<td align="center" style="padding:0 6px;"><b>→</b></td>
+
+<td align="center" style="background-color:#E8F5E9;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:110px;">
+<b style="color:#1a1a1a;">🔐 Auth Service</b><br>
+<sub style="color:#333;">Spring Boot</sub>
+</td>
+
+</tr>
+</table>
+</div>
+
+<br>
+
+<!-- ── BRANCHING OUTPUTS ─────────────────────────────────────────── -->
+
+<div align="center">
+<table>
+<tr>
+<td align="center" style="padding:0 12px;"><b>↙</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>↓</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>↘</b></td>
+</tr>
+</table>
+</div>
+
+<div align="center">
+<table>
+<tr>
+
+<td align="center" style="background-color:#FBE9E7;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:130px;">
+<b style="color:#1a1a1a;">🗄️ PostgreSQL 16</b><br>
+<sub style="color:#333;">Persist session<br>Store hashed token<br>Flyway V1–V7</sub>
+</td>
+
+<td width="24px"></td>
+
+<td align="center" style="background-color:#FFF3E0;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:130px;">
+<b style="color:#1a1a1a;">✉️ AWS SES / SNS</b><br>
+<sub style="color:#333;">Deliver OTP<br>Email · SMS<br>us-east-1</sub>
+</td>
+
+<td width="24px"></td>
+
+<td align="center" style="background-color:#E8F5E9;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:130px;">
+<b style="color:#1a1a1a;">🔑 RSA-2048 Signing</b><br>
+<sub style="color:#333;">Issue JWT<br>15 min access token<br>SHA-256 refresh hash</sub>
+</td>
+
+</tr>
+</table>
+</div>
+
+<br>
+
+<p align="center">
+<sub>Client request passes through rate limiting and authentication before interacting with persistence and external services.</sub>
+</p>
+
+<br>
+
+<details>
+<summary><b>📋 &nbsp; Step-by-step — Signup → JWT issuance</b></summary>
+<br>
+
+```
+1.  POST /sign-up          →  rate limit check → persist PENDING user
+2.  OTP generated          →  BCrypt hash → store → deliver via SES/SNS
+3.  POST /sign-up/complete →  hash + compare → check purpose + expiry
+4.  Account activated      →  status: PENDING → ACTIVE
+5.  JWT issued             →  RSA-signed access token (15min TTL)
+6.  Session persisted      →  refresh token hashed (SHA-256) → device session stored
+7.  Response               →  access token + refresh token returned to client
+```
+
+</details>
+
+<details>
+<summary><b>🔁 &nbsp; Token refresh + replay rejection</b></summary>
+<br>
+
+```
+LEGITIMATE REFRESH:
+  POST /jwt/refresh  →  validate JWT sig  →  lookup device session
+  →  compare SHA-256 hash  →  rotate: new pair issued  →  old hash invalidated
+  →  200 OK: new access + refresh token
+
+REPLAY ATTEMPT:
+  POST /jwt/refresh (old token)  →  hash lookup → NOT FOUND
+  →  401 Unauthorized. Full stop.
+```
+
+</details>
+
+<details>
+<summary><b>🔗 &nbsp; Google OAuth2 flow</b></summary>
+<br>
+
+```
+POST /oauth/google (ID token from frontend)
+  →  validate: signature + issuer + audience
+  →  check provider_link table
+  →  existing user?  → login + issue JWT
+  →  new user?       → create AppUser + link + issue JWT
+  →  converge into same session / revocation / audit pipeline
+```
+
+</details>
+
+<details>
+<summary><b>⚙️ &nbsp; Account lifecycle state machine</b></summary>
+<br>
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: register
+    PENDING --> ACTIVE: OTP verified
+    ACTIVE --> LOCKED: 5 failed logins
+    LOCKED --> ACTIVE: successful login
+    ACTIVE --> DELETED: admin / soft delete
+    LOCKED --> DELETED: admin / soft delete
+```
+
+</details>
 
 <br>
 
@@ -370,9 +631,7 @@ Structured audit logs + Micrometer counters + Prometheus export.
 
 <h2 align="center">🏗️ &nbsp; Architecture Overview</h2>
 
-<p align="center"><i>Five layers. One clean vertical slice per request.</i></p>
-
-<br>
+<p align="center"><i>After seeing the proof and flow, here is the system shape that powers it.</i></p>
 
 <!-- ── LAYER DIAGRAM ─────────────────────────────────────────────── -->
 
@@ -655,167 +914,6 @@ alarm fires, not the user.
 <br>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!--                       AUTH FLOW                                 -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
-
-<h2 align="center">🔄 &nbsp; Auth Flow</h2>
-
-<p align="center"><i>Client → Rate Limiter → Auth Service → DB → AWS.</i></p>
-
-<br>
-
-<!-- ── MAIN HORIZONTAL FLOW ──────────────────────────────────────── -->
-
-<div align="center">
-<table>
-<tr>
-
-<td align="center" style="background-color:#E3F2FD;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:90px;">
-<b style="color:#1a1a1a;">📲 Client</b>
-</td>
-
-<td align="center" style="padding:0 6px;"><b>→</b></td>
-
-<td align="center" style="background-color:#E1F5FE;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:90px;">
-<b style="color:#1a1a1a;">🔀 API Gateway</b>
-</td>
-
-<td align="center" style="padding:0 6px;"><b>→</b></td>
-
-<td align="center" style="background-color:#F3E5F5;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:110px;">
-<b style="color:#1a1a1a;">🚦 Rate Limiter</b><br>
-<sub style="color:#333;">Redis · Bucket4j</sub>
-</td>
-
-<td align="center" style="padding:0 6px;"><b>→</b></td>
-
-<td align="center" style="background-color:#E8F5E9;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:110px;">
-<b style="color:#1a1a1a;">🔐 Auth Service</b><br>
-<sub style="color:#333;">Spring Boot</sub>
-</td>
-
-</tr>
-</table>
-</div>
-
-<br>
-
-<!-- ── BRANCHING OUTPUTS ─────────────────────────────────────────── -->
-
-<div align="center">
-<table>
-<tr>
-<td align="center" style="padding:0 12px;"><b>↙</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>↓</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>↘</b></td>
-</tr>
-</table>
-</div>
-
-<div align="center">
-<table>
-<tr>
-
-<td align="center" style="background-color:#FBE9E7;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:130px;">
-<b style="color:#1a1a1a;">🗄️ PostgreSQL 16</b><br>
-<sub style="color:#333;">Persist session<br>Store hashed token<br>Flyway V1–V7</sub>
-</td>
-
-<td width="24px"></td>
-
-<td align="center" style="background-color:#FFF3E0;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:130px;">
-<b style="color:#1a1a1a;">✉️ AWS SES / SNS</b><br>
-<sub style="color:#333;">Deliver OTP<br>Email · SMS<br>us-east-1</sub>
-</td>
-
-<td width="24px"></td>
-
-<td align="center" style="background-color:#E8F5E9;border:1px solid #ccc;border-radius:10px;padding:10px 14px;min-width:130px;">
-<b style="color:#1a1a1a;">🔑 RSA-2048 Signing</b><br>
-<sub style="color:#333;">Issue JWT<br>15 min access token<br>SHA-256 refresh hash</sub>
-</td>
-
-</tr>
-</table>
-</div>
-
-<br>
-
-<p align="center">
-<sub>Client request passes through rate limiting and authentication before interacting with persistence and external services.</sub>
-</p>
-
-<br>
-
-<details>
-<summary><b>📋 &nbsp; Step-by-step — Signup → JWT issuance</b></summary>
-<br>
-
-```
-1.  POST /sign-up          →  rate limit check → persist PENDING user
-2.  OTP generated          →  BCrypt hash → store → deliver via SES/SNS
-3.  POST /sign-up/complete →  hash + compare → check purpose + expiry
-4.  Account activated      →  status: PENDING → ACTIVE
-5.  JWT issued             →  RSA-signed access token (15min TTL)
-6.  Session persisted      →  refresh token hashed (SHA-256) → device session stored
-7.  Response               →  access token + refresh token returned to client
-```
-
-</details>
-
-<details>
-<summary><b>🔁 &nbsp; Token refresh + replay rejection</b></summary>
-<br>
-
-```
-LEGITIMATE REFRESH:
-  POST /jwt/refresh  →  validate JWT sig  →  lookup device session
-  →  compare SHA-256 hash  →  rotate: new pair issued  →  old hash invalidated
-  →  200 OK: new access + refresh token
-
-REPLAY ATTEMPT:
-  POST /jwt/refresh (old token)  →  hash lookup → NOT FOUND
-  →  401 Unauthorized. Full stop.
-```
-
-</details>
-
-<details>
-<summary><b>🔗 &nbsp; Google OAuth2 flow</b></summary>
-<br>
-
-```
-POST /oauth/google (ID token from frontend)
-  →  validate: signature + issuer + audience
-  →  check provider_link table
-  →  existing user?  → login + issue JWT
-  →  new user?       → create AppUser + link + issue JWT
-  →  converge into same session / revocation / audit pipeline
-```
-
-</details>
-
-<details>
-<summary><b>⚙️ &nbsp; Account lifecycle state machine</b></summary>
-<br>
-
-```mermaid
-stateDiagram-v2
-    [*] --> PENDING : register
-    PENDING --> ACTIVE : OTP verified
-    ACTIVE --> LOCKED : 5 failed logins
-    LOCKED --> ACTIVE : successful login
-    ACTIVE --> DELETED : admin / soft delete
-    LOCKED --> DELETED : admin / soft delete
-```
-
-</details>
-
-<br>
-
-<img src="https://capsule-render.vercel.app/api?type=rect&amp;color=0:6B57FF,100:0D0D12&amp;height=3" width="100%"/>
-
-<br>
-
-<!-- ═══════════════════════════════════════════════════════════════ -->
 <!--                    SYSTEM DEEP DIVES                            -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
@@ -967,63 +1065,12 @@ Events: `auth.signup` · `auth.login` · `auth.logout` · `auth.refresh` · `otp
 <br>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!--                        TESTING                                  -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
-
-<h2 align="center">🧪 &nbsp; Testing</h2>
-
-<p align="center"><i>Not shipped without proof.</i></p>
-
-<br>
-
-<div align="center">
-<table>
-<tr>
-<th align="left">Layer</th>
-<th align="left">Coverage</th>
-</tr>
-<tr>
-<td>Unit tests</td>
-<td>Controllers · Services · Repos · JWT · Security Filters</td>
-</tr>
-<tr>
-<td>Integration tests</td>
-<td>Testcontainers — real PostgreSQL 16 + Redis 7</td>
-</tr>
-<tr>
-<td>Security tests</td>
-<td>Token hashing · Rate limit behavior · JWT filter chain</td>
-</tr>
-<tr>
-<td>Load tests</td>
-<td>12 k6 scenarios — auth flow · session chaos · refresh storms</td>
-</tr>
-</table>
-</div>
-
-<br>
-
-```bash
-mvn test                             # unit tests
-mvn verify -P integration-tests      # full suite with Testcontainers
-k6 run load_tests/auth-load-test.js  # load testing
-```
-
-<br>
-
-<img src="https://capsule-render.vercel.app/api?type=rect&amp;color=0:6B57FF,100:0D0D12&amp;height=3" width="100%"/>
-
-<br>
-
-<!-- ═══════════════════════════════════════════════════════════════ -->
 <!--                     CI/CD PIPELINE  (new section)               -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
 <h2 align="center">🚀 &nbsp; CI/CD Pipeline</h2>
 
-<p align="center"><i>219+ zero-downtime deployments. Health-verified on every push to <code>master</code>.</i></p>
-
-<br>
+<p align="center"><i>Production-oriented delivery: test-gated, containerized, health-verified deployment to AWS EC2.</i></p>
 
 <!-- ── PIPELINE VISUAL ───────────────────────────────────────────── -->
 
@@ -1077,23 +1124,20 @@ k6 run load_tests/auth-load-test.js  # load testing
 
 **Workflow: `ci-cd.yml`**
 
-- **Trigger** — `push` to `master` branch only
-- **Runner** — `ubuntu-latest` (GitHub-hosted)
-- **Java setup** — `actions/setup-java@v4` · Temurin distribution · Java 21
-- **Cache** — Maven `.m2` repository cached between runs for faster builds
-- **Test gate** — `mvn test` must pass before any Docker step starts; a failing test cancels the entire pipeline
+- **Trigger** — automatically runs on every `push` to `master`
+- **Runner** — GitHub-hosted `ubuntu-latest`
+- **Build validation** — Java 21 + Maven cache + mandatory `mvn test` gate
+- **Release confidence** — failed tests stop deployment before image build/publish
 
 </td>
 <td valign="top" width="50%" style="padding:12px 16px;">
 
-**Docker + Deploy**
+**Docker + AWS Deployment Reliability**
 
-- **Multi-stage build** — compile on JDK 21, ship on a minimal JRE image; final image is significantly smaller
-- **Registry** — GitHub Container Registry (`ghcr.io`) with repository-scoped token auth
-- **Deploy** — `appleboy/ssh-action` SSHs into the EC2 instance, pulls the new image, stops the old container, starts
-  the new one
-- **Health gate** — `curl` hits `/actuator/health` with retries; pipeline fails if the new container doesn't come up
-  healthy
+- **Containerization** — multi-stage Docker build (JDK 21 build stage, slim JRE runtime)
+- **Registry** — versioned image push to GitHub Container Registry (`ghcr.io`)
+- **Delivery** — automated SSH deploy to EC2 using `appleboy/ssh-action`
+- **Runtime safety** — post-deploy `/actuator/health` checks gate rollout success
 
 </td>
 </tr>
@@ -1304,3 +1348,6 @@ They're the baseline. This project treats them that way.
 <br>
 
 <img src="https://capsule-render.vercel.app/api?type=waving&amp;color=0:6B57FF,50:1a1040,100:0a0a12&amp;height=150&amp;section=footer" width="100%"/>
+
+
+
