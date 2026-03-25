@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.successMessage;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/auth/oauth")
@@ -48,7 +50,7 @@ public class OAuthController {
     ) {
         logOAuthRequestDiagnostics("/google", request);
         oAuthService.authenticatedWithGoogle(request.idToken(), request.deviceId(), request.expectedIdentifier(), httpRequest, httpResponse);
-        return ResponseEntity.ok(org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.successMessage("OAuth authentication successful"));
+        return ResponseEntity.ok(successMessage("OAuth authentication successful"));
     }
 
     private void logOAuthRequestDiagnostics(String endpoint, OAuthLoginRequest request) {
@@ -78,6 +80,6 @@ public class OAuthController {
     ) {
         logOAuthRequestDiagnostics("/google/signup", request);
         oAuthService.signupWithGoogle(request.idToken(), request.deviceId(), request.expectedIdentifier(), httpRequest, httpResponse);
-        return ResponseEntity.ok(org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.successMessage("OAuth signup successful"));
+        return ResponseEntity.ok(successMessage("OAuth signup successful"));
     }
 }

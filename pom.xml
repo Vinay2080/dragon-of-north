@@ -30,7 +30,7 @@
         <java.version>21</java.version>
         <jjwt.version>0.13.0</jjwt.version>
         <mockito.version>5.11.0</mockito.version>
-        <spring.framework.version>7.0.5</spring.framework.version>
+        <spring.framework.version>7.0.6</spring.framework.version>
         <spring.security.version>7.0.4</spring.security.version>
         <jackson.core.version>2.21.1</jackson.core.version>
         <jackson3.core.version>3.1.0</jackson3.core.version>
@@ -238,7 +238,7 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-actuator-autoconfigure</artifactId>
-                <version>4.0.2</version>
+                <version>4.0.3</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>

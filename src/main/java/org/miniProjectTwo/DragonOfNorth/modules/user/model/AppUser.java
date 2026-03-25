@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
+import org.miniProjectTwo.DragonOfNorth.modules.profile.model.Profile;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.model.BaseEntity;
@@ -16,6 +17,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import static jakarta.persistence.CascadeType.ALL;
+import static jakarta.persistence.FetchType.EAGER;
+import static jakarta.persistence.FetchType.LAZY;
+import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.ACTIVE;
 
 /**
  * User entity with authentication and profile management.
@@ -73,7 +79,7 @@ public class AppUser extends BaseEntity {
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private AppUserStatus appUserStatus = AppUserStatus.ACTIVE;
+    private AppUserStatus appUserStatus = ACTIVE;
 
     /**
      * Indicates whether the user's email address has been verified.
@@ -122,7 +128,7 @@ public class AppUser extends BaseEntity {
         return roles != null && !roles.isEmpty();
     }
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = EAGER)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id",
@@ -133,10 +139,13 @@ public class AppUser extends BaseEntity {
     )
     private Set<Role> roles = new HashSet<>();
 
-    @OneToMany(mappedBy = "appUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "appUser", cascade = ALL, fetch = LAZY)
     private List<Session> sessions = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "user", cascade = ALL, orphanRemoval = true, fetch = LAZY)
     private Set<UserAuthProvider> authProviders = new HashSet<>();
+
+    @OneToOne(mappedBy = "appUser", cascade = ALL, orphanRemoval = true)
+    private Profile profile;
 
 }
