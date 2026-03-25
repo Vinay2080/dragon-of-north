@@ -9,7 +9,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusF
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl.EmailAuthenticationServiceImpl;
+import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
@@ -53,6 +53,9 @@ class EmailAuthenticationServiceImplTest {
 
     @Mock
     private AuditEventLogger auditEventLogger;
+
+    @Mock
+    private ProfileService profileService;
 
     private final String email = "test@mockito.com";
 
@@ -154,6 +157,7 @@ class EmailAuthenticationServiceImplTest {
         assertEquals(ACTIVE, capturedUser.getAppUserStatus(), "user status should be ACTIVE once the user is saved");
 
         verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
+        verify(profileService, never()).createProfile(any(AppUser.class), any());
         verify(auditEventLogger).log("auth.signup", null, null, null, "success", "identifier_type=EMAIL", null);
         verify(auditEventLogger, never()).log(eq("auth.signup"), isNull(), isNull(), isNull(), eq("failure"), anyString(), isNull());
     }
@@ -183,6 +187,7 @@ class EmailAuthenticationServiceImplTest {
         //verify
         verify(authCommonServices).assignDefaultRole(appUser);
         verify(appUserRepository).save(appUser);
+        verify(profileService).createProfile(appUser, null);
         verify(auditEventLogger).log("auth.signup.complete", appUser.getId(), null, null, "success", "identifier_type=EMAIL", null);
 
     }
@@ -200,6 +205,7 @@ class EmailAuthenticationServiceImplTest {
 
         //verify
         verify(appUserRepository, never()).save(any());
+        verify(profileService, never()).createProfile(any(AppUser.class), any());
         verify(auditEventLogger).log(eq("auth.signup.complete"), isNull(), isNull(), isNull(), eq("failure"), anyString(), isNull());
     }
 

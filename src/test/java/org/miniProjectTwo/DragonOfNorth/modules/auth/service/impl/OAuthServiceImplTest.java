@@ -7,8 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.GoogleTokenVerifierService;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl.AuthCommonServiceImpl;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl.OAuthServiceImpl;
+import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -50,6 +49,8 @@ class OAuthServiceImplTest {
     private RoleRepository roleRepository;
     @Mock
     private AuthCommonServiceImpl authCommonServiceImpl;
+    @Mock
+    private ProfileService profileService;
 
     @InjectMocks
     private OAuthServiceImpl oAuthService;
@@ -88,6 +89,7 @@ class OAuthServiceImplTest {
 
         verify(appUserRepository).save(any(AppUser.class));
         verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
+        verify(profileService).createProfile(newUser, userInfo);
         verify(sessionService).createSession(eq(newUser), eq("refresh"), any(), eq("device-1"), any());
         verify(authCommonServiceImpl).setAccessToken(response, "access");
         verify(authCommonServiceImpl).setRefreshToken(response, "refresh");
@@ -122,6 +124,7 @@ class OAuthServiceImplTest {
 
         ArgumentCaptor<UserAuthProvider> authProviderCaptor = ArgumentCaptor.forClass(UserAuthProvider.class);
         verify(userAuthProviderRepository).save(authProviderCaptor.capture());
+        verify(profileService, never()).createProfile(any(AppUser.class), any());
         verify(authCommonServiceImpl).setAccessToken(response, "access");
         verify(authCommonServiceImpl).setRefreshToken(response, "refresh");
 
