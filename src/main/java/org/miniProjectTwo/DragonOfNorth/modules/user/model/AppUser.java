@@ -24,14 +24,9 @@ import static jakarta.persistence.FetchType.LAZY;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.ACTIVE;
 
 /**
- * User entity with authentication and profile management.
- * <p>
- * Supports email/phone authentication with role-based access control.
- * Tracks login attempts, verification status, and account locking.
- * Critical for user lifecycle and security enforcement.
+ * Primary user aggregate for authentication, authorization, and profile ownership.
  *
- * @see Role for permission management
- * @see AppUserStatus for account states
+ * <p>Supports email or phone identifiers, role assignments, verification flags, and lock state.</p>
  */
 @Entity
 @Getter
@@ -49,59 +44,44 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.ACTIVE
 public class AppUser extends BaseEntity {
 
     /**
-     * The unique phone number of the user.
-     * This field is stored in the 'phone_number' column and must be unique across all users.
-     * Can be used as an alternative to email for authentication.
+     * Optional phone identifier used for authentication.
      */
     @Column(name = "phone_number", unique = true)
     private String phone;
 
     /**
-     * The unique email address of the user.
-     * This field is used for authentication and communication.
-     * Must be unique across all users in the system.
+     * Optional email identifier used for authentication and communication.
      */
     @Column(name = "email", unique = true)
     private String email;
 
     /**
-     * The hashed password of the user.
-     * This field is required and should always be stored in a hashed format.
-     * Never store plain text passwords in the database.
+     * Password hash for local authentication.
      */
     @Column(name = "password")
     private String password;
 
     /**
-     * The current status of the user account.
-     * Defaults to ACTIVE when a new user is created.
-     * Can be used to block or delete user accounts while preserving their data.
+     * Current lifecycle status of the account.
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private AppUserStatus appUserStatus = ACTIVE;
 
     /**
-     * Indicates whether the user's email address has been verified.
-     * Defaults to false when a new user is created.
-     * This flag is set to true after the user verifies their email address.
+     * Whether the email identifier has been verified.
      */
     @Column(nullable = false)
     private boolean isEmailVerified = false;
 
     /**
-     * Indicates whether the user's phone number has been verified.
-     * Defaults to false when a new user is created.
-     * This flag is set to true after the user verifies their phone number.
+     * Whether the phone identifier has been verified.
      */
     @Column(nullable = false)
     private boolean isPhoneNumberVerified = false;
 
     /**
-     * The number of consecutive failed login attempts.
-     * This counter is incremented on each failed login attempt and reset to zero
-     * after a successful login. Can be used to implement account lockout after
-     * a certain number of failed attempts.
+     * Consecutive failed login attempts used by lockout logic.
      */
     @Column(nullable = false)
     private int failedLoginAttempts = 0;
@@ -109,20 +89,21 @@ public class AppUser extends BaseEntity {
     @Column(nullable = false)
     private boolean accountLocked = false;
 
+    /**
+     * Timestamp when the account was locked.
+     */
     private LocalDateTime lockedAt;
 
 
     /**
-     * The timestamp of the user's last successful login.
-     * This field is automatically updated when the user successfully authenticates.
-     * Can be used for security monitoring and session management.
+     * Timestamp of the most recent successful login.
      */
     private LocalDateTime lastLoginAt;
 
     /**
-     * Checks if a user has any assigned roles.
+     * Checks whether at least one role is assigned.
      *
-     * @return true if the roles collection is not null and not empty
+     * @return {@code true} when roles are non-empty
      */
     public boolean hasAnyRoles() {
         return roles != null && !roles.isEmpty();

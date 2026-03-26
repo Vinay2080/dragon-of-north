@@ -13,10 +13,7 @@ import org.springframework.core.annotation.Order;
 import java.time.Instant;
 
 /**
- * Configuration component that initializes system roles on application startup.
- * Ensures all required roles defined in {@link RoleName} enum exist in the database
- * before the application starts serving requests. Runs with the highest precedence (@Order(1))
- * to guarantee roles are available for user registration and authentication.
+ * Ensures system roles exist when the application starts.
  */
 @Slf4j
 @Configuration
@@ -26,20 +23,17 @@ public class RolesInitializer {
     private final RoleRepository roleRepository;
 
     /**
-     * CommandLineRunner bean that executes on application startup.
-     * Creates any missing system roles in the database with audit information.
-     * Uses "system@Startup" as the creator and marks roles as system-managed.
+     * Creates missing roles defined in {@link RoleName}.
      *
-     * @return CommandLineRunner that initializes roles
+     * @return startup runner that seeds role records
      */
     @Bean
     @Order(1)
     public CommandLineRunner initializeROles() {
         return strings -> {
-            log.info("Checking and initializing roles in the database");
-
             String systemUser = "system@Startup";
             Instant now = Instant.now();
+            int createdRoles = 0;
 
             for (RoleName roleName : RoleName.values()) {
                 if (!roleRepository.existsByRoleName(roleName)) {
@@ -54,10 +48,11 @@ public class RolesInitializer {
                     role.setDeleted(false);
 
                     roleRepository.save(role);
-                    log.info("Created role: {}", roleName);
+                    createdRoles++;
+                    log.debug("Created missing system role: {}", roleName);
                 }
             }
-            log.info("Role initialization completed");
+            log.info("Role initialization completed. createdRoles={}, totalRoleTypes={}", createdRoles, RoleName.values().length);
         };
     }
 }

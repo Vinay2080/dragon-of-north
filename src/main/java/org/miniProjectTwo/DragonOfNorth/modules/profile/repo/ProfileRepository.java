@@ -5,6 +5,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ProfileRepository extends JpaRepository<Profile, UUID> {
@@ -15,6 +16,14 @@ public interface ProfileRepository extends JpaRepository<Profile, UUID> {
             from Profile p
             where p.appUser = :appUser
             """)
-    boolean findProfileByAppUser(AppUser appUser);
+    boolean existsProfileByAppUser(AppUser appUser);
 
+    @Query("""
+            select p
+            from Profile p
+            where p.appUser = :appUser
+            """)
+    Profile findProfileByAppUser(AppUser appUser);
+
+    Optional<Profile> findByAppUser(AppUser appUser);
 }

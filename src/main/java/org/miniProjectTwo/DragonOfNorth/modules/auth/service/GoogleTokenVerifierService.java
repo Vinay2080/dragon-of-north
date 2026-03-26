@@ -18,6 +18,9 @@ import java.util.Map;
 import java.util.Set;
 
 
+/**
+ * Verifies Google ID tokens and maps verified claims into {@link OAuthUserInfo}.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -31,34 +34,37 @@ public class GoogleTokenVerifierService {
     private final GoogleOAuthConfig config;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Validates a Google ID token and returns normalized user claims.
+     */
     public OAuthUserInfo verifyToken(String idToken) {
         try {
             GoogleIdToken token = verifier.verify(idToken);
             if (token == null) {
                 Map<String, Object> payload = decodeUnverifiedPayload(idToken);
-                log.warn("Google ID token verification failed: null token. diagnostics: expectedClientId={}, aud={}, azp={}, iss={}, tokenLength={}",
-                        maskedClientId(), payload.get("aud"), payload.get("azp"), payload.get("iss"), idToken == null ? 0 : idToken.length());
+                log.warn("Google ID token verification failed: null token. diagnostics: expectedClientId={}, tokenLength={}, hasAudienceClaim={}, hasIssuerClaim={}",
+                        maskedClientId(), idToken == null ? 0 : idToken.length(), payload.containsKey("aud"), payload.containsKey("iss"));
                 throw new InvalidOAuthTokenException();
             }
             GoogleIdToken.Payload payload = token.getPayload();
 
             String issuer = payload.getIssuer();
             if (!ALLOWED_ISSUER.contains(issuer)) {
-                log.warn("Invalid issuer: {}", issuer);
+                log.warn("Google ID token rejected due to issuer validation");
                 throw new InvalidOAuthTokenException("invalid token");
             }
             // Explicit audience validation (Google may return either a single string or a list)
             String audience = resolveAudience(payload.get("aud"));
             String expectedClientId = config.normalizedClientId();
             if (expectedClientId == null || !expectedClientId.equals(audience)) {
-                log.warn("Invalid audience: expected={}, actual={}", maskedClientId(), payload.get("aud"));
+                log.warn("Google ID token rejected due to audience validation. expectedClientId={}", maskedClientId());
                 throw new InvalidOAuthTokenException("Invalid token");
             }
 
             // Enforce email verification
             Boolean emailVerified = payload.getEmailVerified();
             if (emailVerified == null || !emailVerified) {
-                log.warn("Email not verified for user: {}", payload.getEmail());
+                log.warn("Google ID token rejected because email is not verified");
                 throw new InvalidOAuthTokenException("Email not verified");
             }
 

@@ -2,10 +2,11 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordChangeRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordResetConfirmRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
@@ -26,6 +27,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,12 +76,14 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * @param identifier user email or phone number
      * @param password   user password for authentication
      * @param response   HTTP response for setting secure cookies
+     * @param context    request metadata (device, IP, request id, user-agent)
      * @throws BusinessException if authentication fails or principal is invalid
      */
     @Override
-    public void login(String identifier, String password, HttpServletResponse response, HttpServletRequest request, String deviceId) {
-        String ipAddress = request.getHeader("X-Forwarded-For");
-        String requestId = request.getHeader("X-Request-Id");
+    public void login(String identifier, String password, HttpServletResponse response, AuthRequestContext context) {
+        String ipAddress = context.ipAddress();
+        String requestId = context.requestId();
+        String deviceId = context.deviceId();
         UUID auditUserId = null;
         try {
             AppUser user = identifier.contains("@")
@@ -107,7 +111,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
             AppUser appUser = appUserDetails.getAppUser();
             final String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
             final String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
-            String userAgent = request.getHeader("User-Agent");
+            String userAgent = context.userAgent();
 
             sessionService.createSession(appUser, refreshToken, ipAddress, deviceId, userAgent);
             setAccessToken(response, accessToken);
@@ -129,15 +133,16 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * generates a new access token, and updates cookie. Clears refresh token on failure.
      * Critical for maintaining user sessions without re-authentication.
      *
-     * @param request  HTTP request containing refresh token cookie
+     * @param oldRefreshToken refresh token extracted from request cookies
      * @param response HTTP response for setting a new access token cookie
+     * @param context request metadata (device, IP, request id)
      * @throws BusinessException if the refresh token is missing, invalid, or expired
      */
     @Override
-    public void refreshToken(HttpServletRequest request, HttpServletResponse response, String deviceId) {
-        String oldRefreshToken = extractRefreshToken(request);
-        String ipAddress = request.getHeader("X-Forwarded-For");
-        String requestId = request.getHeader("X-Request-Id");
+    public void refreshToken(String oldRefreshToken, HttpServletResponse response, AuthRequestContext context) {
+        String ipAddress = context.ipAddress();
+        String requestId = context.requestId();
+        String deviceId = context.deviceId();
         if (oldRefreshToken == null) {
             meterRegistry.counter("auth.refresh.failure").increment();
             auditEventLogger.log("auth.refresh", null, deviceId, ipAddress, "failure", "Refresh token missing", requestId);
@@ -177,7 +182,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * Only assigns a role if the user has no existing roles to preserve role hierarchy.
      * Critical for user onboarding and permission management.
      *
-     * @param appUser user to receive default role
+     * @param appUser user to receive a default role
      * @throws BusinessException if a USER role is not found in a database
      */
     @Override
@@ -204,10 +209,10 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     }
 
     @Override
-    public void logoutUser(HttpServletRequest request, HttpServletResponse response, String deviceId) {
-        String refreshToken = extractRefreshToken(request);
-        String ipAddress = request.getHeader("X-Forwarded-For");
-        String requestId = request.getHeader("X-Request-Id");
+    public void logoutUser(String refreshToken, HttpServletResponse response, AuthRequestContext context) {
+        String ipAddress = context.ipAddress();
+        String requestId = context.requestId();
+        String deviceId = context.deviceId();
         if (refreshToken == null || refreshToken.isEmpty()) {
             meterRegistry.counter("auth.logout.failure").increment();
             auditEventLogger.log("auth.logout", null, deviceId, ipAddress, "failure", "refresh token missing", requestId);
@@ -293,31 +298,26 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         auditEventLogger.log("auth.password_reset.confirm", appUser.getId(), null, null, "success", "identifier_type=" + request.identifierType(), null);
     }
 
-
-
-
-    /**
-     * Extracts refresh token from HTTP-only cookies.
-     * Searches a cookie array for 'refresh_token' cookie name.
-     * Returns null if no cookies exist or a refresh token is not found.
-     * Critical for token refresh flow security.
-     *
-     * @param request HTTP request containing cookies
-     * @return refresh token value or null if not found
-     */
-    private String extractRefreshToken(HttpServletRequest request) {
-        if (request.getCookies() == null) {
-            return null;
+    @Override
+    public void changePassword(PasswordChangeRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof AppUserDetails appUserDetails)) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "User not authenticated");
         }
 
-        for (Cookie cookie : request.getCookies()) {
-            if ("refresh_token".equals(cookie.getName())) {
-                return cookie.getValue();
-            }
+        AppUser appUser = appUserDetails.getAppUser();
+
+        if (!passwordEncoder.matches(request.oldPassword(), appUser.getPassword())) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Old password is incorrect");
         }
 
-        return null;
+        appUser.setPassword(passwordEncoder.encode(request.newPassword()));
+        sessionService.revokeAllSessionsByUserId(appUser.getId());
+
+        meterRegistry.counter("auth.password_change.success").increment();
+        auditEventLogger.log("auth.password_change", appUser.getId(), null, null, "success", null, null);
     }
+
 
     /**
      * Sets secure HTTP-only access token cookie.

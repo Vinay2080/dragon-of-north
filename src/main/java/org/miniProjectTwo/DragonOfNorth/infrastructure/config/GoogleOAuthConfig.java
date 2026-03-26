@@ -12,6 +12,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
 
 
+/**
+ * Binds Google OAuth settings and exposes Google token verification beans.
+ */
 @Getter
 @Setter
 @Configuration
@@ -22,6 +25,11 @@ public class GoogleOAuthConfig {
     @NotBlank(message = "Google client Id is required")
     private String clientId;
 
+    /**
+     * Creates a verifier used to validate Google ID tokens.
+     *
+     * @return Google ID token verifier
+     */
     @Bean
     public GoogleIdTokenVerifier googleIdTokenVerifier() {
         return new GoogleIdTokenVerifier.Builder(
@@ -30,6 +38,11 @@ public class GoogleOAuthConfig {
         ).build();
     }
 
+    /**
+     * Returns the configured client id with surrounding whitespace removed.
+     *
+     * @return trimmed client id, or {@code null} when not configured
+     */
     public String normalizedClientId() {
         return clientId == null ? null : clientId.trim();
     }

@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Exposes authenticated endpoints for viewing and revoking device sessions.
+ */
 @RestController
 @RequestMapping("/api/v1/sessions")
 @RequiredArgsConstructor

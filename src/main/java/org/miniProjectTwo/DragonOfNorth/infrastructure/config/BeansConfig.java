@@ -7,48 +7,36 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.miniProjectTwo.DragonOfNorth.infrastructure.audit.AuditorAwareImpl;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
 
 /**
- * Central configuration class responsible for providing shared application-level beans.
+ * Registers shared infrastructure beans.
  *
- * <p>In particular, this class registers the {@link AuditorAware} implementation used by
- * Spring Data JPA to automatically populate audit-related fields such as
- * {@code createdBy} and {@code lastModifiedBy}.</p>
- *
- * <p>The provided {@link AuditorAwareImpl} currently resolves the auditor from the
- * security context and falls back to {@code SYSTEM}. This ensures consistent auditing
- * even in background tasks or unauthenticated operations.</p>
+ * <p>Includes JPA auditing support and common JSON serialization settings.</p>
  */
 @Configuration
 @RequiredArgsConstructor
 public class BeansConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(BeansConfig.class);
     private final AppUserRepository appUserRepository;
 
     /**
-     * Registers the application's {@link AuditorAware} bean.
+     * Provides the auditor resolver used by Spring Data JPA.
      *
-     * @return implementation responsible for determining the current auditor
+     * @return auditor provider for {@code createdBy}/{@code updatedBy} fields
      */
     @Bean
     @NullMarked
     public AuditorAware<String> auditorAware() {
-        log.info("AuditorAware bean initialized using AuditorAwareImpl");
         return new AuditorAwareImpl(appUserRepository);
     }
 
     /**
-     * Registers a configured {@link ObjectMapper} bean for JSON serialization/deserialization.
-     * Provides a shared ObjectMapper instance for the application to use for
-     * JSON processing operations, ensuring consistent configuration across all components.
+     * Provides a shared {@link ObjectMapper} for API payloads.
      *
-     * @return a configured ObjectMapper instance
+     * @return mapper configured with snake_case names and Java time support
      */
     @Bean
     public ObjectMapper objectMapper() {

@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -47,7 +48,7 @@ import static org.springframework.http.HttpStatus.CREATED;
  *       - POST <code>/api/v1/auth/jwt/refresh</code></li>
  *   <li>{@link #logoutUser(jakarta.servlet.http.HttpServletResponse, jakarta.servlet.http.HttpServletRequest, org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.DeviceIdRequest)}
  *       - POST <code>/api/v1/auth/identifier/logout</code></li>
- *   <li>{@link #requestPasswordResetOtp(org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordResetRequestOtpRequest)}
+ *   <li>
  *       - POST <code>/api/v1/auth/password/forgot/request</code></li>
  *   <li>{@link #resetPassword(org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordResetConfirmRequest)}
  *       - POST <code>/api/v1/auth/password/forgot/reset</code></li>
@@ -171,7 +172,8 @@ public class AuthenticationController {
             @Parameter(hidden = true) HttpServletResponse httpServletResponse,
             @Parameter(hidden = true) HttpServletRequest httpServletRequest
     ) {
-        authCommonServices.login(request.identifier(), request.password(), httpServletResponse, httpServletRequest, request.deviceId());
+        AuthRequestContext context = AuthRequestContext.fromHttpRequest(httpServletRequest, request.deviceId());
+        authCommonServices.login(request.identifier(), request.password(), httpServletResponse, context);
         return ResponseEntity.status(HttpStatus.OK).body(successMessage("log in successful"));
     }
 
@@ -197,34 +199,23 @@ public class AuthenticationController {
             @Valid
             DeviceIdRequest deviceIdRequest
     ) {
-        authCommonServices.refreshToken(request, response, deviceIdRequest.deviceId());
+        AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, deviceIdRequest.deviceId());
+        authCommonServices.refreshToken(extractRefreshToken(request), response, context);
         return ResponseEntity.ok(successMessage("refresh token sent"));
     }
 
-    @PostMapping("/identifier/logout")
-    @Operation(summary = "Logout current device",
-            description = "Revokes current device session and clears authentication cookies.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Logout successful"),
-            @ApiResponse(responseCode = "401", description = "Not authenticated")
-    })
-    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> logoutUser(
-            @Parameter(hidden = true) HttpServletResponse response,
-            @Parameter(hidden = true) HttpServletRequest request,
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    required = true,
-                    description = "Device id to revoke",
-                    content = @Content(examples = @ExampleObject(value = """
-                            {
-                              "device_id": "web-chrome-macos"
-                            }
-                            """)))
-            @RequestBody
-            @Valid
-            DeviceIdRequest deviceIdRequest
-    ) {
-        authCommonServices.logoutUser(request, response, deviceIdRequest.deviceId());
-        return ResponseEntity.ok(successMessage("user logged out successfully"));
+    private String extractRefreshToken(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return null;
+        }
+
+        for (Cookie cookie : cookies) {
+            if ("refresh_token".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 
     @PostMapping("/password/forgot/request")
@@ -251,5 +242,44 @@ public class AuthenticationController {
     ) {
         authCommonServices.resetPassword(request);
         return ResponseEntity.ok(successMessage("password reset successful"));
+    }
+
+    @PostMapping("/identifier/logout")
+    @Operation(summary = "Logout current device",
+            description = "Revokes current device session and clears authentication cookies.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logout successful"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated")
+    })
+    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> logoutUser(
+            @Parameter(hidden = true) HttpServletResponse response,
+            @Parameter(hidden = true) HttpServletRequest request,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Device id to revoke",
+                    content = @Content(examples = @ExampleObject(value = """
+                            {
+                              "device_id": "web-chrome-macos"
+                            }
+                            """)))
+            @RequestBody
+            @Valid
+            DeviceIdRequest deviceIdRequest
+    ) {
+        AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, deviceIdRequest.deviceId());
+        authCommonServices.logoutUser(extractRefreshToken(request), response, context);
+        return ResponseEntity.ok(successMessage("user logged out successfully"));
+    }
+
+    @PostMapping("/password/change")
+    @Operation(
+            summary = "Change password",
+            description = "Validates old password and updates it for the authenticated user. Revokes all active sessions."
+    )
+    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> changePassword(
+            @Valid @org.springframework.web.bind.annotation.RequestBody PasswordChangeRequest request
+    ) {
+        authCommonServices.changePassword(request);
+        return ResponseEntity.ok(successMessage("password change successful"));
     }
 }

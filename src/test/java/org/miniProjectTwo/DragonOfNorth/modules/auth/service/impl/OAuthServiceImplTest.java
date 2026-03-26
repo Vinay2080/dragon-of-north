@@ -18,6 +18,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.Provider;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
+import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -51,6 +52,8 @@ class OAuthServiceImplTest {
     private AuthCommonServiceImpl authCommonServiceImpl;
     @Mock
     private ProfileService profileService;
+    @Mock
+    private AuditEventLogger auditEventLogger;
 
     @InjectMocks
     private OAuthServiceImpl oAuthService;

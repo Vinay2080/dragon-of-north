@@ -2,10 +2,10 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
@@ -151,12 +151,10 @@ class AuthCommonServiceImplTest {
         user.setEmail("user@example.com");
 
         Authentication authentication = mock(Authentication.class);
-        HttpServletRequest request = mock(HttpServletRequest.class);
         HttpServletResponse response = mock(HttpServletResponse.class);
         Counter failureCounter = mock(Counter.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
 
-        when(request.getHeader("X-Forwarded-For")).thenReturn("127.0.0.1");
-        when(request.getHeader("X-Request-Id")).thenReturn("req-1");
         when(appUserRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
         when(userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), Provider.LOCAL)).thenReturn(true);
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
@@ -165,7 +163,7 @@ class AuthCommonServiceImplTest {
         when(meterRegistry.counter(anyString())).thenReturn(failureCounter);
 
         BusinessException exception = assertThrows(BusinessException.class, () ->
-                authCommonService.login("user@example.com", "Secret@123", response, request, "device-1"));
+                authCommonService.login("user@example.com", "Secret@123", response, context));
 
         assertEquals(ErrorCode.EMAIL_NOT_VERIFIED, exception.getErrorCode());
         verify(sessionService, never()).createSession(any(), anyString(), anyString(), anyString(), anyString());

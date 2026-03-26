@@ -3,7 +3,6 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.GoogleTokenVerifierService;
@@ -21,6 +20,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
+import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +28,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
-@Slf4j
+/**
+ * Handles Google OAuth login/signup and account linking flows.
+ */
 @Service
 @RequiredArgsConstructor
 public class OAuthServiceImpl implements OAuthService {
@@ -42,23 +45,50 @@ public class OAuthServiceImpl implements OAuthService {
     private final RoleRepository roleRepository;
     private final AuthCommonServiceImpl authCommonServiceImpl;
     private final ProfileService profileService;
+    private final AuditEventLogger auditEventLogger;
 
+    /**
+     * Authenticates a user with Google and establishes an application session.
+     */
     @Override
     @Transactional
     public void authenticatedWithGoogle(String idToken, String deviceId, String expectedIdentifier, HttpServletRequest httpRequest, HttpServletResponse response) {
-        OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
-        validateExpectedIdentifier(userInfo, expectedIdentifier);
-        AppUser appUser = findOrCreateUserForGoogleAuth(userInfo);
-        finalizeAuthentication(appUser, deviceId, httpRequest, response);
+        String ipAddress = httpRequest.getHeader("X-Forwarded-For");
+        String requestId = httpRequest.getHeader("X-Request-Id");
+        UUID auditUserId = null;
+        try {
+            OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
+            validateExpectedIdentifier(userInfo, expectedIdentifier);
+            AppUser appUser = findOrCreateUserForGoogleAuth(userInfo);
+            auditUserId = appUser.getId();
+            finalizeAuthentication(appUser, deviceId, httpRequest, response);
+            auditEventLogger.log("auth.oauth.google.login", auditUserId, deviceId, ipAddress, "success", null, requestId);
+        } catch (BusinessException exception) {
+            auditEventLogger.log("auth.oauth.google.login", auditUserId, deviceId, ipAddress, "failure", exception.getMessage(), requestId);
+            throw exception;
+        }
     }
 
+    /**
+     * Creates or links an account with Google signup flow and establishes a session.
+     */
     @Override
     @Transactional
     public void signupWithGoogle(String idToken, String deviceId, String expectedIdentifier, HttpServletRequest httpRequest, HttpServletResponse response) {
-        OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
-        validateExpectedIdentifier(userInfo, expectedIdentifier);
-        AppUser appUser = findOrCreateUserForSignup(userInfo);
-        finalizeAuthentication(appUser, deviceId, httpRequest, response);
+        String ipAddress = httpRequest.getHeader("X-Forwarded-For");
+        String requestId = httpRequest.getHeader("X-Request-Id");
+        UUID auditUserId = null;
+        try {
+            OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
+            validateExpectedIdentifier(userInfo, expectedIdentifier);
+            AppUser appUser = findOrCreateUserForSignup(userInfo);
+            auditUserId = appUser.getId();
+            finalizeAuthentication(appUser, deviceId, httpRequest, response);
+            auditEventLogger.log("auth.oauth.google.signup", auditUserId, deviceId, ipAddress, "success", null, requestId);
+        } catch (BusinessException exception) {
+            auditEventLogger.log("auth.oauth.google.signup", auditUserId, deviceId, ipAddress, "failure", exception.getMessage(), requestId);
+            throw exception;
+        }
     }
 
 
@@ -153,7 +183,7 @@ public class OAuthServiceImpl implements OAuthService {
             return savedUser;
 
         } catch (DataIntegrityViolationException e) {
-            log.warn("Race condition during OAuth signup, refetching: {}", userInfo.sub());
+            auditEventLogger.log("auth.oauth.google.signup", null, null, null, "retry", "concurrent user creation detected", null);
 
             Optional<UserAuthProvider> byProviderId = userAuthProviderRepository.findByProviderAndProviderId(Provider.GOOGLE, userInfo.sub());
             if (byProviderId.isPresent()) {

@@ -26,14 +26,7 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.PHONE
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.OtpVerificationStatus.*;
 
 /**
- * Core OTP service managing generation, validation, and delivery.
- * <p>
- * Handles OTP lifecycle with rate limiting, expiration, and secure storage.
- * Supports email and phone delivery with BCrypt hashing and attempt tracking.
- * Critical for authentication security and spam prevention.
- *
- * @see EmailOtpSender for email delivery
- * @see PhoneOtpSender for SMS delivery
+ * Coordinates OTP generation, verification, and rate limiting.
  */
 
 @Service
@@ -69,12 +62,7 @@ public class OtpServiceImpl implements OtpService {
     private final SecureRandom secureRandom = new SecureRandom();
 
     /**
-     * Generates and sends an OTP to the specified email address.
-     * The OTP will be valid for the configured TTL period.
-     *
-     * @param email The email address to send the OTP to
-     * @throws IllegalStateException    if rate limits are exceeded
-     * @throws IllegalArgumentException if the email is invalid
+     * Generates and sends an OTP to an email identifier.
      */
 
     @Transactional
@@ -84,12 +72,7 @@ public class OtpServiceImpl implements OtpService {
     }
 
     /**
-     * Generates and sends an OTP to the specified phone number.
-     * The OTP will be valid for the configured TTL period.
-     *
-     * @param phone The phone number to send the OTP to
-     * @throws IllegalStateException    if rate limits are exceeded
-     * @throws IllegalArgumentException if the phone number is invalid
+     * Generates and sends an OTP to a phone identifier.
      */
     @Transactional
     @Override
@@ -98,12 +81,7 @@ public class OtpServiceImpl implements OtpService {
     }
 
     /**
-     * Internal method to handle OTP creation and sending.
-     *
-     * @param identifier The identifier (email/phone) to send OTP to
-     * @param otpType    The type of OTP (EMAIL/PHONE)
-     * @param normalizer Function to normalize the identifier
-     * @param sender     The appropriate sender service
+     * Shared pipeline for normalized OTP creation and channel dispatch.
      */
     @Override
     public void createOtp(OtpSender sender, OtpPurpose otpPurpose,
@@ -124,18 +102,13 @@ public class OtpServiceImpl implements OtpService {
                     "identifier_type=" + otpType + ",purpose=" + otpPurpose, null);
         } catch (RuntimeException ex) {
             meterRegistry.counter("auth.otp.request.failure").increment();
-            auditEventLogger.log("auth.otp.request", null, null, null, "failure", ex.getMessage(), null);
+            auditEventLogger.log("auth.otp.request", null, null, null, "failure", resolveFailureReason(ex), null);
             throw ex;
         }
     }
 
     /**
-     * Verifies an email OTP.
-     *
-     * @param email       The email address the OTP was sent to
-     * @param providedOtp The OTP to verify
-     * @throws IllegalStateException    if the OTP is expired or max attempts exceeded
-     * @throws IllegalArgumentException if the OTP is invalid
+     * Verifies an OTP for an email identifier.
      */
 
     @Transactional
@@ -145,12 +118,7 @@ public class OtpServiceImpl implements OtpService {
     }
 
     /**
-     * Verifies a phone OTP.
-     *
-     * @param phone       The phone number the OTP was sent to
-     * @param providedOtp The OTP to verify
-     * @throws IllegalStateException    if the OTP is expired or max attempts exceeded
-     * @throws IllegalArgumentException if the OTP is invalid
+     * Verifies an OTP for a phone identifier.
      */
 
     @Transactional
@@ -160,28 +128,21 @@ public class OtpServiceImpl implements OtpService {
     }
 
     /**
-     * Fetches the most recent OTP token for the given identifier and type.
-     *
-     * @param identifier The email or phone number
-     * @param otpType    The type of OTP (EMAIL or PHONE)
-     * @return The most recent OTP token
-     * @throws IllegalArgumentException if no OTP is found
+     * Fetches the latest token for identifier/type/purpose.
      */
 
     @Override
     public OtpToken fetchLatest(String identifier, IdentifierType otpType, OtpPurpose otpPurpose) {
         return otpTokenRepository
                 .findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(identifier, otpType, otpPurpose)
-                .orElseThrow(() -> new IllegalArgumentException("OTP not found"));
+                .orElseThrow(() -> {
+                    auditEventLogger.log("auth.otp.verify", null, null, null, "failure", "otp_not_found", null);
+                    return new IllegalArgumentException("OTP not found");
+                });
     }
 
     /**
-     * Verifies an OTP token.
-     *
-     * @param otpToken    The OTP token to verify
-     * @param providedOtp The OTP to verify against
-     * @throws IllegalStateException    if the OTP is expired or max attempts exceeded
-     * @throws IllegalArgumentException if the OTP is invalid
+     * Applies OTP verification rules for expiration, attempts, purpose, and hash match.
      */
 
     @Override
@@ -229,9 +190,7 @@ public class OtpServiceImpl implements OtpService {
     }
 
     /**
-     * Generates a random numeric OTP of the configured length.
-     *
-     * @return The generated OTP as a string
+     * Generates a random numeric OTP of configured length.
      */
 
     @Override
@@ -242,11 +201,7 @@ public class OtpServiceImpl implements OtpService {
     }
 
     /**
-     * Enforces rate limiting for OTP requests.
-     *
-     * @param identifier The email or phone number
-     * @param otpType    The type of OTP (EMAIL or PHONE)
-     * @throws IllegalStateException if rate limits are exceeded
+     * Enforces cooldown and request-window limits before issuing OTP.
      */
 
     @Override
@@ -257,6 +212,8 @@ public class OtpServiceImpl implements OtpService {
                 .ifPresent(last -> {
                     long delta = now.getEpochSecond() - last.getLastSentAt().getEpochSecond();
                     if (delta < resendCooldownSeconds) {
+                        meterRegistry.counter("auth.otp.request.failure").increment();
+                        auditEventLogger.log("auth.otp.request", null, null, null, "failure", "cooldown_active", null);
                         throw new BusinessException(ErrorCode.OTP_RATE_LIMIT,
                                 (resendCooldownSeconds - delta),
                                 otpPurpose.toString().toLowerCase().replace("_", " "));
@@ -267,8 +224,17 @@ public class OtpServiceImpl implements OtpService {
         int requestCount = otpTokenRepository.countByIdentifierAndTypeAndOtpPurposeCreatedAtAfter(identifier, otpType, otpPurpose, windowStart);
 
         if (requestCount >= maxRequestsPerWindow) {
+            meterRegistry.counter("auth.otp.request.failure").increment();
+            auditEventLogger.log("auth.otp.request", null, null, null, "failure", "request_window_exceeded", null);
             throw new IllegalStateException("Too many otp requests. Blocked for " + blockDurationMinutes + " minutes.");
         }
 
+    }
+
+    private String resolveFailureReason(RuntimeException exception) {
+        if (exception instanceof BusinessException businessException) {
+            return "business_" + businessException.getErrorCode().name().toLowerCase();
+        }
+        return "internal_error";
     }
 }

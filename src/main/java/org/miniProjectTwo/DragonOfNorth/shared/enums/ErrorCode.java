@@ -46,7 +46,8 @@ public enum ErrorCode {
     OAUTH_LINK_CONFIRMATION_REQUIRED("OAUTH_004", "Account exists. Login with password before linking Google", HttpStatus.CONFLICT),
     USER_CREATION_FAILED("OAUTH_003", "User creation failed", HttpStatus.INTERNAL_SERVER_ERROR),
 
-    PROFILE_ALREADY_EXISTS("PROFILE_001", "Profile already exists", HttpStatus.CONFLICT);
+    PROFILE_ALREADY_EXISTS("PROFILE_001", "Profile already exists", HttpStatus.CONFLICT),
+    USERNAME_ALREADY_TAKEN("PROFILE_002", "Profile name already in use", HttpStatus.CONFLICT);
 
     private final String code;
     private final String defaultMessage;

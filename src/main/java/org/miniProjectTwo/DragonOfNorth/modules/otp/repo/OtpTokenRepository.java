@@ -11,21 +11,13 @@ import java.time.Instant;
 import java.util.Optional;
 
 /**
- * Repository interface for managing OTP (One-Time Password) tokens.
- * Provides methods to interact with the underlying database for OTP operations.
- *
- * @see OtpToken
- * @see IdentifierType
+ * Repository for OTP token lookup, rate-limit counting, and cleanup.
  */
 @Repository
 public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
 
     /**
-     * Retrieves the most recent OTP token for the given identifier and type.
-     *
-     * @param identifier The unique identifier (e.g., email or phone number)
-     * @param type       The type of OTP (e.g., EMAIL, SMS)
-     * @return An {@link Optional} containing the most recent OTP token if found, or empty if none exists
+     * Returns the latest OTP token for identifier/type/purpose.
      */
     Optional<OtpToken> findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(
             String identifier,
@@ -34,13 +26,7 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
     );
 
     /**
-     * Counts the number of OTP requests for a specific identifier and type
-     * that were created after the specified timestamp.
-     *
-     * @param identifier The unique identifier to search for
-     * @param type       The type of OTP to filter by
-     * @param after      The cutoff timestamp (inclusive)
-     * @return The count of matching OTP tokens
+     * Counts OTP requests created after the given time within the same purpose.
      */
     @Query("""
             SELECT COUNT(o)
@@ -58,10 +44,7 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
     );
 
     /**
-     * Deletes all OTP tokens that have expired before the specified cutoff time.
-     * This is typically used for cleaning up expired tokens.
-     *
-     * @param cutoff The timestamp before which tokens are considered expired
+     * Deletes OTP tokens expired before the cutoff timestamp.
      */
     void deleteAllByExpiresAtBefore(Instant cutoff);
 

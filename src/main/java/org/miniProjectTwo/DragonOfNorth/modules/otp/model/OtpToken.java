@@ -2,20 +2,13 @@ package org.miniProjectTwo.DragonOfNorth.modules.otp.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl.OtpServiceImpl;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 
 import java.time.Instant;
 
 /**
- * OTP token entity for secure one-time password management.
- * <p>
- * Stores hashed OTPs with expiration, attempt tracking, and rate limiting.
- * Supports email and phone identifiers with purpose-based validation.
- * Critical for authentication security and spam prevention.
- *
- * @see OtpServiceImpl for token lifecycle management
+ * Persisted OTP token state used for verification and request throttling.
  */
 @Getter
 @Setter
@@ -80,16 +73,7 @@ public class OtpToken {
     private Long version;
 
     /**
-     * Creates OTP token with expiration and timestamps.
-     * <p>
-     * Sets creation time, last sent time, and calculates expiration.
-     * Initializes attempts to zero and consumed flag to false.
-     *
-     * @param identifier recipient email or phone
-     * @param type       EMAIL or PHONE identifier type
-     * @param otpHash    BCrypt hash of OTP code
-     * @param ttlMinutes time-to-live in minutes
-     * @param otpPurpose OTP usage context
+     * Creates a new OTP token with current timestamps and computed expiry.
      */
     public OtpToken(String identifier, IdentifierType type, String otpHash, int ttlMinutes, OtpPurpose otpPurpose) {
         this.identifier = identifier;
@@ -102,28 +86,21 @@ public class OtpToken {
     }
 
     /**
-     * Checks if the OTP token has expired.
-     *
-     * @return true if the current time is after expiration time
+     * Returns whether the token is expired.
      */
     public boolean isExpired() {
         return Instant.now().isAfter(expiresAt);
     }
 
     /**
-     * Increments failed verification attempts counter.
-     * <p>
-     * Called on each failed OTP verification attempt.
+     * Increments failed verification attempts.
      */
     public void incrementAttempts() {
         this.attempts += 1;
     }
 
     /**
-     * Marks OTP token as verified and consumed.
-     * <p>
-     * Sets a consumed flag to true and records verification timestamp.
-     * Called on successful OTP verification.
+     * Marks token as consumed and stores verification timestamp.
      */
     public void markVerified() {
         this.consumed = true;

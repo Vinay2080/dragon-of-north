@@ -1,20 +1,16 @@
 package org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.miniProjectTwo.DragonOfNorth.infrastructure.otpconfig.SnsConfig;
+import org.miniProjectTwo.DragonOfNorth.infrastructure.otpconfig.SesConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.*;
 
 /**
- * AWS SES email service for OTP delivery.
- * <p>
- * Formats and sends OTP emails via Amazon SES. Configures sender,
- * subject, and message body with OTP code and expiration.
- * Critical for reliable email delivery in authentication flows.
+ * Composes and sends OTP emails using AWS SES.
  *
- * @see SnsConfig for AWS region configuration
+ * @see SesConfig for SES client configuration
  */
 @Service
 @RequiredArgsConstructor
@@ -29,15 +25,7 @@ public class SesEmailService {
     private String sender;
 
     /**
-     * Sends OTP email via AWS SES.
-     * <p>
-     * Formats email with OTP code, expiration time, and fixed subject.
-     * Uses configured sender address from application properties.
-     * Critical for email-based authentication delivery.
-     *
-     * @param to         recipient email address
-     * @param otp        generated OTP code
-     * @param ttlMinutes OTP validity period
+     * Sends an OTP email to the recipient.
      */
     public void sendOtpEmail(String to, String otp, int ttlMinutes) {
         String htmlBody = buildHtmlBody(otp, ttlMinutes);

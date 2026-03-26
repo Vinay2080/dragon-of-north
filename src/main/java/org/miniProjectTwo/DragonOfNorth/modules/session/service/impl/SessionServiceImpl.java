@@ -2,7 +2,6 @@ package org.miniProjectTwo.DragonOfNorth.modules.session.service.impl;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.session.dto.response.SessionSummaryResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
 import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
@@ -22,9 +21,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Default implementation of session lifecycle operations.
+ */
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class SessionServiceImpl implements SessionService {
 
     private final TokenHasher tokenHasher;
@@ -37,12 +38,20 @@ public class SessionServiceImpl implements SessionService {
     @Value("${app.security.jwt.expiration.refresh-token}")
     private long refreshTokenDurationMs;
 
+    /**
+     * Creates a new session for a device and replaces any existing device session.
+     */
     @Override
     @Transactional
     public void createSession(AppUser appUser, String rawRefreshToken, String ipAddress, String deviceId, String userAgent) {
         String tokenHash = tokenHasher.hashToken(rawRefreshToken);
 
-        sessionRepository.findByAppUserAndDeviceId(appUser, deviceId).ifPresent(sessionRepository::delete);
+        boolean replacedExisting = sessionRepository.findByAppUserAndDeviceId(appUser, deviceId)
+                .map(existing -> {
+                    sessionRepository.delete(existing);
+                    return true;
+                })
+                .orElse(false);
         sessionRepository.flush();
 
         Session session = new Session();
@@ -54,10 +63,14 @@ public class SessionServiceImpl implements SessionService {
         session.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
         session.setLastUsedAt(Instant.now());
         sessionRepository.save(session);
-        log.info("Created session for user {} on device {}", appUser.getId(), deviceId);
+        auditEventLogger.log("session.create", appUser.getId(), deviceId, ipAddress, "success",
+                "replaced_existing=" + replacedExisting, null);
     }
 
 
+    /**
+     * Revokes the current-device session if found.
+     */
     @Override
     @Transactional
     public void revokeSession(String refreshToken, String deviceId) {
@@ -80,6 +93,9 @@ public class SessionServiceImpl implements SessionService {
 
     }
 
+    /**
+     * Retrieves sessions for a user ordered by last usage time.
+     */
     @Override
     @Transactional(readOnly = true)
     public List<SessionSummaryResponse> getSessionsForUser(UUID userId) {
@@ -96,6 +112,9 @@ public class SessionServiceImpl implements SessionService {
                 )).toList();
     }
 
+    /**
+     * Revokes a single user-owned session by id.
+     */
     @Override
     @Transactional
     public void revokeSessionById(UUID userId, UUID sessionId) {
@@ -114,6 +133,9 @@ public class SessionServiceImpl implements SessionService {
         auditEventLogger.log("session.revoke.by_id", userId, session.getDeviceId(), null, "success", null, null);
     }
 
+    /**
+     * Revokes all sessions except the provided current device id.
+     */
     @Override
     @Transactional
     public int revokeAllOtherSessions(UUID userId, String currentDeviceId) {
@@ -128,33 +150,48 @@ public class SessionServiceImpl implements SessionService {
         return revokedCount;
     }
 
+    /**
+     * Validates and rotates the refresh-token hash for an existing session.
+     */
     @Override
     @Transactional
     public UUID validateAndRotateSession(String oldRefreshToken, String newRefreshToken, String deviceId) {
         UUID userId = jwtServices.extractUserId(oldRefreshToken);
         AppUser appUser = appUserRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "user not found"));
+                .orElseThrow(() -> {
+                    auditEventLogger.log("session.rotate", userId, deviceId, null, "failure", "user not found", null);
+                    return new BusinessException(ErrorCode.USER_NOT_FOUND, "user not found");
+                });
         String oldTokenHash = tokenHasher.hashToken(oldRefreshToken);
         Session session = sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser(oldTokenHash, deviceId, appUser)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN, "Invalid session: token not found"));
+                .orElseThrow(() -> {
+                    auditEventLogger.log("session.rotate", userId, deviceId, null, "failure", "session not found", null);
+                    return new BusinessException(ErrorCode.INVALID_TOKEN, "Invalid session: token not found");
+                });
 
         if (session.isExpired()) {
             sessionRepository.delete(session);
+            auditEventLogger.log("session.rotate", userId, deviceId, null, "failure", "session expired", null);
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "Session expired");
         }
 
         if (session.isRevoked()) {
+            auditEventLogger.log("session.rotate", userId, deviceId, null, "failure", "session revoked", null);
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "Session revoked");
         }
 
         String newTokenHash = tokenHasher.hashToken(newRefreshToken);
         session.setRefreshTokenHash(newTokenHash);
         session.setLastUsedAt(Instant.now());
+        auditEventLogger.log("session.rotate", userId, deviceId, null, "success", null, null);
 
         return appUser.getId();
 
     }
 
+    /**
+     * Revokes every active session for the given user id.
+     */
     @Override
     @Transactional
     public void revokeAllSessionsByUserId(UUID userId) {

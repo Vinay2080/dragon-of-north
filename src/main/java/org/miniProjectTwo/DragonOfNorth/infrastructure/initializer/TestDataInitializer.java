@@ -5,10 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.profile.repo.ProfileRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
 import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -27,15 +30,9 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName.ADMIN;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName.USER;
 
 /**
- * Initializes test data for development and testing environments.
- * Creates users with different authentication methods (email/phone), statuses,
- * and roles for testing purposes. Runs only in "test" profile with @Order(2)
- * after {@link RolesInitializer} ensures required roles exist.
- * Test users created with the default password "password123":
- * - 5 email users (user1-2@example.com, admin1-2@example.com, superadmin@example.com)
- * - 5 phone users (9912345601-9912345605)
- * - Various statuses: CREATED, VERIFIED
- * - Roles: USER, ADMIN, or both
+ * Seeds deterministic users and sessions for local/test environments.
+ *
+ * <p>Runs after {@link RolesInitializer} so role records are already available.</p>
  */
 @NamedInterface
 @Component
@@ -50,17 +47,26 @@ public class TestDataInitializer implements CommandLineRunner {
     private final SessionRepository sessionRepository;
     private final UserAuthProviderRepository userAuthProviderRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ProfileService profileService;
+    private final ProfileRepository profileRepository;
+    private int createdEmailUsers;
+    private int createdPhoneUsers;
+    private int createdSessions;
+    private int createdProfiles;
 
     /**
-     * Entry point for test data initialization.
-     * Retrieves USER and ADMIN roles from a database, then creates email and phone
-     * users with different combinations of status and role assignments.
+     * Loads seed users and seed sessions.
      *
-     * @param args command line arguments (unused)
-     * @throws IllegalStateException if required roles are not found
+     * @param args command-line arguments (unused)
+     * @throws IllegalStateException when required roles are missing
      */
     @Override
     public void run(String @NonNull ... args) {
+        createdEmailUsers = 0;
+        createdPhoneUsers = 0;
+        createdSessions = 0;
+        createdProfiles = 0;
+
         // Get existing roles (they should be created by DataInitializer)
         Role userRole = roleRepository.findByRoleName(USER)
                 .orElseThrow(() -> new IllegalStateException("USER role not found. Make sure DataInitializer has run first."));
@@ -76,8 +82,9 @@ public class TestDataInitializer implements CommandLineRunner {
 
         // Initialize deterministic sessions for testing session endpoints
         initializeTestSessions();
-        
-        log.info("Test users initialized successfully");
+
+        log.info("Test data initialization completed. emailUsersCreated={}, phoneUsersCreated={}, sessionsCreated={}, profilesCreated={}",
+                createdEmailUsers, createdPhoneUsers, createdSessions, createdProfiles);
     }
 
     private void initializeTestSessions() {
@@ -91,8 +98,122 @@ public class TestDataInitializer implements CommandLineRunner {
                 .ifPresent(user -> createSessionIfAbsent(user, "test-device-admin", "127.0.0.12", "Firefox/Test"));
     }
 
+    /**
+     * Creates seed users that authenticate with email.
+     *
+     * @param userRole USER role
+     * @param adminRole ADMIN role
+     */
+    private void initializeEmailUsers(Role userRole, Role adminRole) {
+        // Create 5 email-only users with different statuses and roles
+        createEmailUser("user1@example.com", false, Set.of(userRole));
+        createEmailUser("user2@example.com", true, Set.of(userRole));
+        createEmailUser("admin1@example.com", false, Set.of(adminRole));
+        createEmailUser("admin2@example.com", true, Set.of(adminRole));
+        createEmailUser("superadmin@example.com", true, Set.of(userRole, adminRole));
+    }
+
+    /**
+     * Creates seed users that authenticate with phone numbers.
+     *
+     * @param userRole USER role
+     * @param adminRole ADMIN role
+     */
+    private void initializePhoneUsers(Role userRole, Role adminRole) {
+        // Create 5 phone-only users with different statuses and roles
+        createPhoneUser("9912345601", false, Set.of(userRole));
+        createPhoneUser("9912345602", true, Set.of(userRole));
+        createPhoneUser("9912345603", false, Set.of(adminRole));
+        createPhoneUser("9912345604", true, Set.of(adminRole));
+        createPhoneUser("9912345605", true, Set.of(userRole, adminRole));
+    }
+
+    /**
+     * Creates an email user when the identifier is not already present.
+     *
+     * @param email email identifier
+     * @param roles roles to assign
+     */
+    private void createEmailUser(String email, boolean emailVerified, Set<Role> roles) {
+        OAuthUserInfo userInfo = buildSeedUserInfo(email, email);
+        AppUser existingUser = appUserRepository.findByEmail(email).orElse(null);
+        if (existingUser != null) {
+            ensureProfileIfAbsent(existingUser, userInfo);
+            log.debug("Skipped seed email user creation because identifier already exists");
+            return;
+        }
+
+        AppUser user = new AppUser();
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode("password123"));
+        user.setAppUserStatus(ACTIVE);
+        user.setRoles(roles);
+
+        user.setEmailVerified(emailVerified);
+
+        AppUser savedUser = appUserRepository.save(user);
+        createLocalProvider(savedUser);
+        ensureProfileIfAbsent(savedUser, userInfo);
+        createdEmailUsers++;
+        log.debug("Created seed email user with verified={}", emailVerified);
+    }
+
+    /**
+     * Creates a phone user when the identifier is not already present.
+     *
+     * @param phoneNumber phone identifier
+     * @param roles roles to assign
+     */
+    private void createPhoneUser(String phoneNumber, boolean phoneVerified, Set<Role> roles) {
+        OAuthUserInfo userInfo = buildSeedUserInfo(phoneNumber, null);
+        AppUser existingUser = appUserRepository.findByPhone(phoneNumber).orElse(null);
+        if (existingUser != null) {
+            ensureProfileIfAbsent(existingUser, userInfo);
+            log.debug("Skipped seed phone user creation because identifier already exists");
+            return;
+        }
+
+        AppUser user = new AppUser();
+        user.setPhone(phoneNumber);
+        user.setPassword(passwordEncoder.encode("password123"));
+        user.setAppUserStatus(ACTIVE);
+        user.setRoles(roles);
+        user.setPhoneNumberVerified(phoneVerified);
+
+        AppUser savedUser = appUserRepository.save(user);
+        createLocalProvider(savedUser);
+        ensureProfileIfAbsent(savedUser, userInfo);
+        createdPhoneUsers++;
+        log.debug("Created seed phone user with verified={}", phoneVerified);
+    }
+
+    private OAuthUserInfo buildSeedUserInfo(String displayName, String email) {
+        return OAuthUserInfo.builder()
+                .sub(null)
+                .email(email)
+                .emailVerified(email != null)
+                .name(displayName)
+                .picture(null)
+                .issuer("seed-data")
+                .audience("seed-data")
+                .expirationTime(null)
+                .issuedAtTime(null)
+                .build();
+    }
+
+    private void ensureProfileIfAbsent(AppUser appUser, OAuthUserInfo userInfo) {
+        if (profileRepository.existsProfileByAppUser(appUser)) {
+            log.debug("Skipped profile creation because profile already exists for userId={}", appUser.getId());
+            return;
+        }
+        profileService.createProfile(appUser, userInfo);
+        createdProfiles++;
+        log.debug("Created seed profile for userId={}", appUser.getId());
+    }
+
     private void createSessionIfAbsent(AppUser user, String deviceId, String ipAddress, String userAgent) {
         if (sessionRepository.findByAppUserAndDeviceId(user, deviceId).isPresent()) {
+            log.debug("Skipped seed session creation for existing deviceId={}", deviceId);
             return;
         }
 
@@ -107,84 +228,8 @@ public class TestDataInitializer implements CommandLineRunner {
         session.setRevoked(false);
 
         sessionRepository.save(session);
-        log.info("Created test session for user {} and device {}", user.getId(), deviceId);
-    }
-
-    /**
-     * Creates email-based test users with various statuses and roles.
-     *
-     * @param userRole  the USER role instance
-     * @param adminRole the ADMIN role instance
-     */
-    private void initializeEmailUsers(Role userRole, Role adminRole) {
-        // Create 5 email-only users with different statuses and roles
-        createEmailUser("user1@example.com", false, Set.of(userRole));
-        createEmailUser("user2@example.com", true, Set.of(userRole));
-        createEmailUser("admin1@example.com", false, Set.of(adminRole));
-        createEmailUser("admin2@example.com", true, Set.of(adminRole));
-        createEmailUser("superadmin@example.com", true, Set.of(userRole, adminRole));
-    }
-
-    /**
-     * Creates phone-based test users with various statuses and roles.
-     *
-     * @param userRole the USER role instance
-     * @param adminRole the ADMIN role instance
-     */
-    private void initializePhoneUsers(Role userRole, Role adminRole) {
-        // Create 5 phone-only users with different statuses and roles
-        createPhoneUser("9912345601", false, Set.of(userRole));
-        createPhoneUser("9912345602", true, Set.of(userRole));
-        createPhoneUser("9912345603", false, Set.of(adminRole));
-        createPhoneUser("9912345604", true, Set.of(adminRole));
-        createPhoneUser("9912345605", true, Set.of(userRole, adminRole));
-    }
-
-    /**
-     * Creates a new user with email authentication only.
-     *
-     * @param email the email address for the user
-     * @param roles set of roles to assign to the user
-     */
-    private void createEmailUser(String email, boolean emailVerified, Set<Role> roles) {
-        if (appUserRepository.findByEmail(email).isPresent()) {
-            return;
-        }
-        
-        AppUser user = new AppUser();
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode("password123"));
-        user.setAppUserStatus(ACTIVE);
-        user.setRoles(roles);
-
-        user.setEmailVerified(emailVerified);
-
-        AppUser savedUser = appUserRepository.save(user);
-        createLocalProvider(savedUser);
-        log.info("Created ACTIVE email user: {}", email);
-    }
-
-    /**
-     * Creates a new user with phone authentication only.
-     *
-     * @param phoneNumber the phone number for the user
-     * @param roles set of roles to assign to the user
-     */
-    private void createPhoneUser(String phoneNumber, boolean phoneVerified, Set<Role> roles) {
-        if (appUserRepository.findByPhone(phoneNumber).isPresent()) {
-            return;
-        }
-        
-        AppUser user = new AppUser();
-        user.setPhone(phoneNumber);
-        user.setPassword(passwordEncoder.encode("password123"));
-        user.setAppUserStatus(ACTIVE);
-        user.setRoles(roles);
-        user.setPhoneNumberVerified(phoneVerified);
-
-        AppUser savedUser = appUserRepository.save(user);
-        createLocalProvider(savedUser);
-        log.info("Created ACTIVE phone user: {}", phoneNumber);
+        createdSessions++;
+        log.debug("Created seed session for deviceId={}", deviceId);
     }
 
     private void createLocalProvider(AppUser appUser) {

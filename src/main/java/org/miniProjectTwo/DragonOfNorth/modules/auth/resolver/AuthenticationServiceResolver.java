@@ -14,6 +14,9 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode.IDENTIFIER
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.EMAIL;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.PHONE;
 
+/**
+ * Resolves identifier-specific authentication service implementations.
+ */
 @Service
 public class AuthenticationServiceResolver {
 
@@ -28,6 +31,9 @@ public class AuthenticationServiceResolver {
                 ));
     }
 
+    /**
+     * Validates identifier/type consistency and returns the matching service.
+     */
     public AuthenticationService resolve(String identifier, IdentifierType type) {
         if (type == EMAIL && !isMail(identifier)) {
             throw new BusinessException(IDENTIFIER_MISMATCH, EMAIL);
@@ -38,6 +44,9 @@ public class AuthenticationServiceResolver {
         return serviceMap.get(type);
     }
 
+    /**
+     * Returns whether the identifier matches email format.
+     */
     public boolean isMail(String identifier) {
         return identifier.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     }

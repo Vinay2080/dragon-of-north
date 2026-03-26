@@ -15,14 +15,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Provides the current authenticated user for JPA auditing.
+ * Resolves the current auditor for JPA auditing fields.
  *
- * <p>This class determines which username should be recorded inside auditing fields
- * such as {@code createdBy} and {@code modifiedBy}. If a request has an authenticated
- * user (via Spring Security), that username is returned. Otherwise, the fallback
- * auditor {@code SYSTEM} is used for internal or background operations.</p>
- *
- * <p>Designed to integrate seamlessly with JWT-based authentication.</p>
+ * <p>Uses the Spring Security principal when available, otherwise falls back to {@code SYSTEM}.</p>
  */
 @NullMarked
 @RequiredArgsConstructor
@@ -33,12 +28,9 @@ public class AuditorAwareImpl implements AuditorAware<String> {
 
 
     /**
-     * Retrieves the current auditor for JPA auditing operations.
-     * Checks the Spring Security context for an authenticated user and returns
-     * their username. If no authenticated user is found or the user is anonymous, it
-     * returns "SYSTEM" as the fallback auditor for background operations.
+     * Returns the identity to store in audit columns.
      *
-     * @return Optional containing the username of the authenticated user, or "SYSTEM" if no user is authenticated
+     * @return authenticated identifier, or {@code SYSTEM} when no user is authenticated
      */
     @Override
     public Optional<String> getCurrentAuditor() {
@@ -58,12 +50,12 @@ public class AuditorAwareImpl implements AuditorAware<String> {
         if (principal instanceof AppUserDetails appUserDetails) {
             String email = appUserDetails.getAppUser().getEmail();
             if (StringUtils.hasText(email)) {
-                log.debug("Auditor resolved as email from AppUserDetails: {}", email);
+                log.debug("Auditor resolved from AppUserDetails email");
                 return Optional.of(email);
             }
             String phone = appUserDetails.getAppUser().getPhone();
             if (StringUtils.hasText(phone)) {
-                log.debug("Auditor resolved as phone from AppUserDetails: {}", phone);
+                log.debug("Auditor resolved from AppUserDetails phone");
                 return Optional.of(phone);
             }
         }
@@ -73,13 +65,13 @@ public class AuditorAwareImpl implements AuditorAware<String> {
                     .filter(StringUtils::hasText);
 
             if (emailOrPhone.isPresent()) {
-                log.debug("Auditor resolved via UUID principal lookup: {}", emailOrPhone.get());
+                log.debug("Auditor resolved via UUID principal lookup");
                 return emailOrPhone;
             }
         }
 
         String fallbackPrincipal = authentication.getName();
-        log.debug("Auditor resolved from authentication name: {}", fallbackPrincipal);
+        log.debug("Auditor resolved from authentication name");
         return Optional.of(fallbackPrincipal);
 
     }

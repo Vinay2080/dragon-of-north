@@ -14,14 +14,16 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 /**
- * Central OpenAPI configuration for Dragon of North.
- *
- * <p>Defines API metadata, server entries, and security schemes that are reused
- * by all endpoints in Swagger UI.</p>
+ * Defines OpenAPI metadata and security schemes for Swagger UI.
  */
 @Configuration
 public class OpenApiConfig {
 
+    /**
+     * Builds the OpenAPI document exposed by springdoc.
+     *
+     * @return configured OpenAPI model
+     */
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()

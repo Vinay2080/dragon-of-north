@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.OAuthService;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthLoginRequest;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.successMessage;
 
-@Slf4j
+/**
+ * OAuth endpoints for Google login and signup.
+ */
 @RestController
 @RequestMapping("/api/v1/auth/oauth")
 @RequiredArgsConstructor
@@ -48,23 +49,8 @@ public class OAuthController {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse
     ) {
-        logOAuthRequestDiagnostics("/google", request);
         oAuthService.authenticatedWithGoogle(request.idToken(), request.deviceId(), request.expectedIdentifier(), httpRequest, httpResponse);
         return ResponseEntity.ok(successMessage("OAuth authentication successful"));
-    }
-
-    private void logOAuthRequestDiagnostics(String endpoint, OAuthLoginRequest request) {
-        String token = request.idToken();
-        int tokenLength = token == null ? 0 : token.length();
-        String tokenPrefix = token == null ? "null" : token.substring(0, Math.min(12, tokenLength));
-
-        log.info("OAuth request diagnostics: endpoint={}, idTokenPresent={}, idTokenLength={}, idTokenPrefix={}, deviceIdPresent={}, expectedIdentifierPresent={}",
-                endpoint,
-                token != null,
-                tokenLength,
-                tokenPrefix,
-                request.deviceId() != null && !request.deviceId().isBlank(),
-                request.expectedIdentifier() != null && !request.expectedIdentifier().isBlank());
     }
 
     @PostMapping("/google/signup")
@@ -78,7 +64,6 @@ public class OAuthController {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse
     ) {
-        logOAuthRequestDiagnostics("/google/signup", request);
         oAuthService.signupWithGoogle(request.idToken(), request.deviceId(), request.expectedIdentifier(), httpRequest, httpResponse);
         return ResponseEntity.ok(successMessage("OAuth signup successful"));
     }

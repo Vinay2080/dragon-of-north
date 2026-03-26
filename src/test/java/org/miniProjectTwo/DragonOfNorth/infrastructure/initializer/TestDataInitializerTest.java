@@ -2,8 +2,9 @@ package org.miniProjectTwo.DragonOfNorth.infrastructure.initializer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.infrastructure.initializer.TestDataInitializer;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.profile.repo.ProfileRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -44,6 +45,12 @@ class TestDataInitializerTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private ProfileService profileService;
+
+    @Mock
+    private ProfileRepository profileRepository;
+
     @Test
     void run_shouldSeedUsersAndSessions_whenRolesExist() {
         Role userRole = new Role();
@@ -55,6 +62,7 @@ class TestDataInitializerTest {
         when(roleRepository.findByRoleName(RoleName.USER)).thenReturn(Optional.of(userRole));
         when(roleRepository.findByRoleName(RoleName.ADMIN)).thenReturn(Optional.of(adminRole));
         when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+        when(profileRepository.existsProfileByAppUser(any(AppUser.class))).thenReturn(false);
 
         when(appUserRepository.save(any(AppUser.class))).thenAnswer((Answer<AppUser>) invocation -> {
             AppUser user = invocation.getArgument(0);
@@ -65,5 +73,6 @@ class TestDataInitializerTest {
         testDataInitializer.run();
 
         verify(appUserRepository, atLeast(10)).save(any(AppUser.class));
+        verify(profileService, atLeast(10)).createProfile(any(AppUser.class), any());
     }
 }

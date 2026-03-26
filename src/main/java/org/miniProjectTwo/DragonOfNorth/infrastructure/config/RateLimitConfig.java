@@ -19,23 +19,17 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * Configuration class for rate limiting using Bucket4j with Redis backend.
- * Configures distributed rate limiting with Redis for storing bucket state,
- * metrics for monitoring rate limit behavior, and Redis client connections.
- * This setup enables rate limiting across multiple application instances
- * for authentication endpoints and other sensitive operations.
+ * Wires Redis-backed Bucket4j rate limiting and related metrics.
  */
 @Configuration
 public class RateLimitConfig {
 
 
     /**
-     * Creates a distributed proxy manager for Bucket4j using Redis.
-     * Provides distributed bucket storage that works across multiple application
-     * instances, ensuring rate limits are enforced consistently in a clustered environment.
+     * Creates the distributed Bucket4j proxy manager.
      *
-     * @param connection the Redis connection for distributed storage
-     * @return a ProxyManager for distributed bucket operations
+     * @param connection Redis connection used to store bucket state
+     * @return distributed proxy manager
      */
     @Bean
     public ProxyManager<String> bucket4jProxyManager(StatefulRedisConnection<String, byte[]> connection) {
@@ -43,12 +37,10 @@ public class RateLimitConfig {
     }
 
     /**
-     * Creates counters for monitoring blocked requests due to rate limiting.
-     * Provides metrics for each rate limit type to track how many requests
-     * are being blocked, useful for monitoring and tuning rate limit thresholds.
+     * Creates per-type counters for blocked requests.
      *
-     * @param registry the Micrometer meter registry for metrics registration
-     * @return a map of counters indexed by rate limit type
+     * @param registry Micrometer registry
+     * @return counters keyed by rate-limit type
      */
     @Bean
     public Map<RateLimitType, Counter> rateLimitBlockedCounters(MeterRegistry registry) {
@@ -63,12 +55,10 @@ public class RateLimitConfig {
     }
 
     /**
-     * Creates counters for monitoring successful requests that pass rate limiting.
-     * Provides metrics for each rate limit type to track successful request rates,
-     * useful for understanding traffic patterns and rate limit effectiveness.
+     * Creates per-type counters for requests that pass rate limiting.
      *
-     * @param registry the Micrometer meter registry for metrics registration
-     * @return a map of counters indexed by rate limit type
+     * @param registry Micrometer registry
+     * @return counters keyed by rate-limit type
      */
     @Bean
     public Map<RateLimitType, Counter> rateLimitSuccessCounters(MeterRegistry registry) {
@@ -83,15 +73,12 @@ public class RateLimitConfig {
     }
 
     /**
-     * Creates and configures the Redis client for rate limiting storage.
-     * Establishes connection to Redis server using a configured host, port,
-     * and optional password. The client is configured for proper shutdown
-     * when the application context closes.
+     * Creates the Redis client used by rate limiting components.
      *
-     * @param host     Redis server host from application properties
-     * @param port     Redis server port (defaults to 6379)
-     * @param password optional Redis password (can be empty)
-     * @return a configured RedisClient instance
+     * @param host Redis host
+     * @param port Redis port
+     * @param password optional Redis password
+     * @return configured Redis client
      */
     @Bean(destroyMethod = "shutdown")
     public RedisClient redisClient(@Value("${spring.data.redis.host}") String host,
@@ -109,13 +96,10 @@ public class RateLimitConfig {
     }
 
     /**
-     * Creates a Redis connection with the appropriate codec for rate limiting.
-     * Establishes a connection using String codec for keys and ByteArray codec
-     * for values, which is optimal for storing Bucket4j bucket state in Redis.
-     * The connection is properly closed when the application context shuts down.
+     * Opens a Redis connection with codecs expected by Bucket4j.
      *
-     * @param redisClient the configured Redis client
-     * @return a StatefulRedisConnection with appropriate codecs for rate limiting
+     * @param redisClient Redis client bean
+     * @return connection that stores keys as strings and values as byte arrays
      */
     @Bean(destroyMethod = "close")
     public StatefulRedisConnection<String, byte[]> redisConnection(RedisClient redisClient) {

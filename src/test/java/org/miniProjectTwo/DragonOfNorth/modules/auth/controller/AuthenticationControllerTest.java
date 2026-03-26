@@ -136,7 +136,7 @@ class AuthenticationControllerTest {
         AppUserLoginRequest request = new AppUserLoginRequest("test@example.com", "Secret@123", "device-1");
         doThrow(new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED, "Email not verified. Please verify your email before logging in."))
                 .when(authCommonServices)
-                .login(eq(request.identifier()), eq(request.password()), any(), any(), eq(request.deviceId()));
+                .login(eq(request.identifier()), eq(request.password()), any(), any(AuthRequestContext.class));
 
         mockMvc.perform(post("/api/v1/auth/identifier/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -145,7 +145,7 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.apiResponseStatus").value("failed"))
                 .andExpect(jsonPath("$.data.code").value("VAL_002"));
 
-        verify(authCommonServices).login(eq(request.identifier()), eq(request.password()), any(), any(), eq(request.deviceId()));
+        verify(authCommonServices).login(eq(request.identifier()), eq(request.password()), any(), any(AuthRequestContext.class));
     }
 
 
