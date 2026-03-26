@@ -45,7 +45,9 @@ class ProfileServiceImplTest {
 
     @Test
     void createProfile_shouldUseOauthInfo_whenOauthUserProvided() {
+        UUID userId = UUID.randomUUID();
         AppUser appUser = new AppUser();
+        appUser.setId(userId);
         appUser.setEmail("user@example.com");
 
         OAuthUserInfo userInfo = OAuthUserInfo.builder()
@@ -54,10 +56,11 @@ class ProfileServiceImplTest {
                 .picture("https://cdn.example/avatar.png")
                 .build();
 
-        when(profileRepository.existsProfileByAppUser(appUser)).thenReturn(false);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(appUser));
+        when(profileRepository.existsByAppUserId(userId)).thenReturn(false);
         when(profileRepository.existsByUsernameIgnoreCase(anyString())).thenReturn(false);
 
-        profileService.createProfile(appUser, userInfo);
+        profileService.createProfile(userId, userInfo);
 
         ArgumentCaptor<Profile> captor = ArgumentCaptor.forClass(Profile.class);
         verify(profileRepository).save(captor.capture());
@@ -72,13 +75,16 @@ class ProfileServiceImplTest {
 
     @Test
     void createProfile_shouldUseEmailFallback_whenOauthInfoIsNull() {
+        UUID userId = UUID.randomUUID();
         AppUser appUser = new AppUser();
+        appUser.setId(userId);
         appUser.setEmail("mail.user@example.com");
 
-        when(profileRepository.existsProfileByAppUser(appUser)).thenReturn(false);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(appUser));
+        when(profileRepository.existsByAppUserId(userId)).thenReturn(false);
         when(profileRepository.existsByUsernameIgnoreCase(anyString())).thenReturn(false);
 
-        profileService.createProfile(appUser, null);
+        profileService.createProfile(userId, null);
 
         ArgumentCaptor<Profile> captor = ArgumentCaptor.forClass(Profile.class);
         verify(profileRepository).save(captor.capture());
@@ -91,12 +97,15 @@ class ProfileServiceImplTest {
 
     @Test
     void createProfile_shouldThrow_whenProfileAlreadyExistsForUser() {
+        UUID userId = UUID.randomUUID();
         AppUser appUser = new AppUser();
+        appUser.setId(userId);
         appUser.setEmail("already@exists.com");
 
-        when(profileRepository.existsProfileByAppUser(appUser)).thenReturn(true);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(appUser));
+        when(profileRepository.existsByAppUserId(userId)).thenReturn(true);
 
-        assertThrows(BusinessException.class, () -> profileService.createProfile(appUser, null));
+        assertThrows(BusinessException.class, () -> profileService.createProfile(userId, null));
 
         verify(profileRepository, never()).save(any(Profile.class));
     }
@@ -104,8 +113,6 @@ class ProfileServiceImplTest {
     @Test
     void updateProfile_shouldUpdateFields_whenPrincipalIsUuid() {
         UUID userId = UUID.randomUUID();
-        AppUser appUser = new AppUser();
-        appUser.setId(userId);
 
         Profile profile = new Profile();
         profile.setUsername("old_name");
@@ -117,8 +124,7 @@ class ProfileServiceImplTest {
         context.setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, List.of()));
         SecurityContextHolder.setContext(context);
 
-        when(appUserRepository.findById(userId)).thenReturn(Optional.of(appUser));
-        when(profileRepository.findProfileByAppUser(appUser)).thenReturn(profile);
+        when(profileRepository.findByAppUserId(userId)).thenReturn(Optional.of(profile));
         when(profileRepository.existsByUsernameIgnoreCase("new_name")).thenReturn(false);
 
         profileService.updateProfile("new_bio", "new_avatar", "new_display", "new_name");
@@ -153,5 +159,4 @@ class ProfileServiceImplTest {
         verifyNoInteractions(appUserRepository);
     }
 }
-
 

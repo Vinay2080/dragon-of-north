@@ -17,6 +17,10 @@ export const API_CONFIG = {
         OAUTH_GOOGLE_SIGNUP: '/api/v1/auth/oauth/google/signup',
         PASSWORD_RESET_REQUEST: '/api/v1/auth/password/forgot/request',
         PASSWORD_RESET_CONFIRM: '/api/v1/auth/password/forgot/reset',
+        PASSWORD_CHANGE: '/api/v1/auth/password/change',
+
+        // Profile
+        PROFILE: '/api/v1/profile',
 
         // OTP
         EMAIL_OTP_REQUEST: '/api/v1/otp/email/request',

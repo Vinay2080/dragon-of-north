@@ -7,16 +7,18 @@ export const useToast = () => {
         throw new Error('useToast must be used within a ToastProvider');
     }
 
+    const {addToast, toasts, removeToast} = context;
+
     const toast = useMemo(() => ({
-        success: (message, title = 'Success') => context.addToast({variant: 'success', message, title}),
-        error: (message, title = 'Error') => context.addToast({variant: 'error', message, title}),
-        warning: (message, title = 'Warning') => context.addToast({variant: 'warning', message, title}),
-        info: (message, title = 'Info') => context.addToast({variant: 'info', message, title}),
-    }), [context]);
+        success: (message, title = 'Success') => addToast({variant: 'success', message, title}),
+        error: (message, title = 'Error') => addToast({variant: 'error', message, title}),
+        warning: (message, title = 'Warning') => addToast({variant: 'warning', message, title}),
+        info: (message, title = 'Info') => addToast({variant: 'info', message, title}),
+    }), [addToast]);
 
     return {
-        toasts: context.toasts,
-        removeToast: context.removeToast,
+        toasts,
+        removeToast,
         toast,
     };
 };

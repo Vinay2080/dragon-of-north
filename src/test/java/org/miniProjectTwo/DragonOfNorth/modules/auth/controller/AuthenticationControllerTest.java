@@ -132,6 +132,42 @@ class AuthenticationControllerTest {
     }
 
     @Test
+    void changePassword_shouldReturnOk_whenCamelCasePayloadIsProvided() throws Exception {
+        String payload = """
+                {
+                  "oldPassword": "OldPass@123",
+                  "newPassword": "NewPass@123"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/auth/password/change")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"));
+
+        verify(authCommonServices).changePassword(new PasswordChangeRequest("OldPass@123", "NewPass@123"));
+    }
+
+    @Test
+    void changePassword_shouldReturnOk_whenSnakeCasePayloadIsProvided() throws Exception {
+        String payload = """
+                {
+                  "old_password": "OldPass@123",
+                  "new_password": "NewPass@123"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/auth/password/change")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"));
+
+        verify(authCommonServices).changePassword(new PasswordChangeRequest("OldPass@123", "NewPass@123"));
+    }
+
+    @Test
     void loginUser_shouldReturnUnauthorized_whenEmailNotVerified() throws Exception {
         AppUserLoginRequest request = new AppUserLoginRequest("test@example.com", "Secret@123", "device-1");
         doThrow(new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED, "Email not verified. Please verify your email before logging in."))

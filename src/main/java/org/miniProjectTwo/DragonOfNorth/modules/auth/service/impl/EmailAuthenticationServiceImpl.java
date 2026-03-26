@@ -151,7 +151,7 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
             authCommonServices.assignDefaultRole(appUser);
             appUser.setEmailVerified(true);
             appUserRepository.save(appUser);
-            profileService.createProfile(appUser, null);
+            profileService.createProfile(appUser.getId(), null);
             meterRegistry.counter("auth.signup.complete.success").increment();
             auditEventLogger.log("auth.signup.complete", appUser.getId(), null, null, "success", "identifier_type=EMAIL", null);
             return getUserStatus(identifier);

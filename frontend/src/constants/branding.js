@@ -23,6 +23,7 @@ export const ROUTE_PAGE_TITLES = {
     '/forgot-password': 'Forgot Password',
     '/reset-password': 'Reset Password',
     '/sessions': 'Sessions',
+    '/profile': 'Profile',
     '/dashboard': 'Dashboard',
 };
 

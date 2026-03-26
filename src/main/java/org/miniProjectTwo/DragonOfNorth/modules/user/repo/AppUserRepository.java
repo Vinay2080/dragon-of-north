@@ -101,4 +101,7 @@ public interface AppUserRepository extends JpaRepository<@NonNull AppUser, @NonN
      */
     @Query("select u.isEmailVerified from AppUser u where u.id = :id")
     boolean isEmailVerified(@Param("id") UUID id);
+
+    @Query("select coalesce(u.email, u.phone) from AppUser u where u.id = :id")
+    Optional<String> findPreferredIdentifierById(@Param("id") UUID id);
 }

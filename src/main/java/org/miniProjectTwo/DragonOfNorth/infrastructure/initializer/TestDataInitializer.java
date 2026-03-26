@@ -206,7 +206,7 @@ public class TestDataInitializer implements CommandLineRunner {
             log.debug("Skipped profile creation because profile already exists for userId={}", appUser.getId());
             return;
         }
-        profileService.createProfile(appUser, userInfo);
+        profileService.createProfile(appUser.getId(), userInfo);
         createdProfiles++;
         log.debug("Created seed profile for userId={}", appUser.getId());
     }

@@ -4,6 +4,16 @@ import {mapErrorCodeToMessage} from '../utils/errorMapper';
 import {exponentialBackoffDelay, shouldRetryRequest, wait} from '../utils/networkUtils';
 import {CSRF_HEADER_NAME, ensureCsrfToken, isStateChangingMethod} from '../utils/csrf';
 
+const AUTO_REFRESH_EXCLUDED_ENDPOINTS = new Set([
+    API_CONFIG.ENDPOINTS.LOGIN,
+    API_CONFIG.ENDPOINTS.REFRESH_TOKEN,
+    API_CONFIG.ENDPOINTS.LOGOUT,
+    API_CONFIG.ENDPOINTS.CSRF,
+    API_CONFIG.ENDPOINTS.PASSWORD_CHANGE,
+    API_CONFIG.ENDPOINTS.PASSWORD_RESET_REQUEST,
+    API_CONFIG.ENDPOINTS.PASSWORD_RESET_CONFIRM,
+]);
+
 class ApiService {
     constructor() {
         this.rateLimitInfo = {remaining: null, capacity: null, retryAfter: null};
@@ -116,11 +126,12 @@ class ApiService {
             };
         }
 
+        const {skipAuthRefresh = false, ...requestOptions} = options;
         const url = `${API_CONFIG.BASE_URL}${endpoint}`;
         const defaultOptions = {
-            headers: {'Content-Type': 'application/json', ...options.headers},
+            headers: {'Content-Type': 'application/json', ...requestOptions.headers},
             credentials: 'include',
-            ...options,
+            ...requestOptions,
         };
 
         const method = (defaultOptions.method || 'GET').toUpperCase();
@@ -141,12 +152,7 @@ class ApiService {
 
             if (response.status === 401 && retry) {
                 data = await this.parseBody(response);
-                const shouldAttemptRefresh = ![
-                    API_CONFIG.ENDPOINTS.LOGIN,
-                    API_CONFIG.ENDPOINTS.REFRESH_TOKEN,
-                    API_CONFIG.ENDPOINTS.LOGOUT,
-                    API_CONFIG.ENDPOINTS.CSRF,
-                ].includes(endpoint);
+                const shouldAttemptRefresh = !skipAuthRefresh && !AUTO_REFRESH_EXCLUDED_ENDPOINTS.has(endpoint);
 
                 if (shouldAttemptRefresh) {
                     try {
@@ -197,7 +203,7 @@ class ApiService {
                         type: 'API_ERROR',
                         status: response.status,
                         ...normalizedError,
-                        message: data?.message || 'Too many failed attempts. Please wait a few minutes before trying again.',
+                        message: normalizedError.message || normalizedError.backendMessage || 'Access denied. Please log in again.',
                         data,
                     };
                 }
@@ -238,6 +244,11 @@ class ApiService {
 
     put(endpoint, body, options = {}) {
         return this.request(endpoint, {...options, method: 'PUT', body: JSON.stringify(body)});
+    }
+
+    patch(endpoint, body, options = {}) {
+
+        return this.request(endpoint, {...options, method: 'PATCH', body: JSON.stringify(body)});
     }
 
     delete(endpoint, options = {}) { return this.request(endpoint, {...options, method: 'DELETE'}); }

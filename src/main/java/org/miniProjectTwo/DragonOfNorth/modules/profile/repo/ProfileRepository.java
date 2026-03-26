@@ -23,7 +23,7 @@ public interface ProfileRepository extends JpaRepository<Profile, UUID> {
             from Profile p
             where p.appUser = :appUser
             """)
-    Profile findProfileByAppUser(AppUser appUser);
+    Optional<Profile> findByAppUserId(UUID userId);
 
-    Optional<Profile> findByAppUser(AppUser appUser);
+    boolean existsByAppUserId(UUID userId);
 }

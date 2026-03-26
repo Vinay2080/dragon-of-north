@@ -65,7 +65,16 @@ public class JwtFilter extends OncePerRequestFilter {
 
 
     private static final List<String> PUBLIC_PATH = List.of(
-            "/api/v1/auth",
+            "/api/v1/auth/identifier/status",
+            "/api/v1/auth/identifier/sign-up",
+            "/api/v1/auth/identifier/sign-up/complete",
+            "/api/v1/auth/identifier/login",
+            "/api/v1/auth/identifier/logout",
+            "/api/v1/auth/jwt/refresh",
+            "/api/v1/auth/oauth/google",
+            "/api/v1/auth/oauth/google/signup",
+            "/api/v1/auth/password/forgot/request",
+            "/api/v1/auth/password/forgot/reset",
             "/api/v1/otp"
     );
 

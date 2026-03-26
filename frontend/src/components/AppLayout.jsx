@@ -75,6 +75,7 @@ const pageTitleByPath = {
     '/forgot-password': 'Forgot Password',
     '/reset-password': 'Reset Password',
     '/sessions': 'Session Management',
+    '/profile': 'Profile',
 };
 
 const AppLayout = () => {

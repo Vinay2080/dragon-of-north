@@ -23,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.ACTIVE;
@@ -157,7 +158,7 @@ class EmailAuthenticationServiceImplTest {
         assertEquals(ACTIVE, capturedUser.getAppUserStatus(), "user status should be ACTIVE once the user is saved");
 
         verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
-        verify(profileService, never()).createProfile(any(AppUser.class), any());
+        verify(profileService, never()).createProfile(any(UUID.class), any());
         verify(auditEventLogger).log("auth.signup", null, null, null, "success", "identifier_type=EMAIL", null);
         verify(auditEventLogger, never()).log(eq("auth.signup"), isNull(), isNull(), isNull(), eq("failure"), anyString(), isNull());
     }
@@ -187,7 +188,7 @@ class EmailAuthenticationServiceImplTest {
         //verify
         verify(authCommonServices).assignDefaultRole(appUser);
         verify(appUserRepository).save(appUser);
-        verify(profileService).createProfile(appUser, null);
+        verify(profileService).createProfile(appUser.getId(), null);
         verify(auditEventLogger).log("auth.signup.complete", appUser.getId(), null, null, "success", "identifier_type=EMAIL", null);
 
     }
@@ -205,7 +206,7 @@ class EmailAuthenticationServiceImplTest {
 
         //verify
         verify(appUserRepository, never()).save(any());
-        verify(profileService, never()).createProfile(any(AppUser.class), any());
+        verify(profileService, never()).createProfile(any(UUID.class), any());
         verify(auditEventLogger).log(eq("auth.signup.complete"), isNull(), isNull(), isNull(), eq("failure"), anyString(), isNull());
     }
 

@@ -9,6 +9,7 @@ const ERROR_MESSAGES = {
     AUTH_003: 'Too many requests. Please wait and try again.',
     AUTH_004: "Account status doesn't allow this action.",
     AUTH_005: 'Invalid username or password. Please check your credentials.',
+    AUTH_006: 'Access denied. Please log in again to continue.',
     USER_001: 'User account not found. Please check your credentials.',
     USER_002: 'Your account is already verified.',
     VAL_001: 'Please check your input and try again.',

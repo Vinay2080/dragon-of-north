@@ -25,6 +25,7 @@ import IdentifierFlowPage from './pages/IdentifierFlowPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import {useRouteDocumentTitle} from './hooks/useDocumentTitle';
+import ProfilePage from './pages/ProfilePage.jsx';
 
 const AppShell = () => {
     const navigate = useNavigate();
@@ -67,6 +68,7 @@ const AppShell = () => {
                     <Route path="/forgot-password" element={<ForgotPasswordRequestPage/>}/>
                     <Route path="/reset-password" element={<ResetPasswordPage/>}/>
                     <Route path="/sessions" element={<ProtectedRoute><SessionsPage/></ProtectedRoute>}/>
+                    <Route path="/profile" element={<ProtectedRoute><ProfilePage/></ProtectedRoute>}/>
                 </Route>
                 <Route path="/dashboard" element={<Navigate to="/sessions" replace/>}/>
             </Routes>

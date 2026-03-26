@@ -7,6 +7,7 @@ import org.miniProjectTwo.DragonOfNorth.security.handler.RestAuthenticationEntry
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -51,7 +52,16 @@ public class SecurityConfig {
      * - "/health", "/actuator/**" for health checks/actuator
      */
     public static final String[] public_urls = {
-            "/api/v1/auth/**",
+            "/api/v1/auth/identifier/status",
+            "/api/v1/auth/identifier/sign-up",
+            "/api/v1/auth/identifier/sign-up/complete",
+            "/api/v1/auth/identifier/login",
+            "/api/v1/auth/identifier/logout",
+            "/api/v1/auth/jwt/refresh",
+            "/api/v1/auth/oauth/google",
+            "/api/v1/auth/oauth/google/signup",
+            "/api/v1/auth/password/forgot/request",
+            "/api/v1/auth/password/forgot/reset",
             "/api/v1/otp/**",
 
             //swagger ui and OpenAPI documentation
@@ -130,6 +140,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests
                         (auth -> auth
+                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 .requestMatchers(public_urls).permitAll()
                                 .anyRequest()
                                 .authenticated())

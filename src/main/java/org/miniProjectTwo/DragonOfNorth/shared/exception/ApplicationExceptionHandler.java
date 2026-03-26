@@ -16,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -135,6 +136,20 @@ public class ApplicationExceptionHandler {
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ApiResponse<ErrorResponse>> handleNoHandlerFound(NoHandlerFoundException ex) {
         log.error("No handler found: {} {}", ex.getHttpMethod(), ex.getRequestURL());
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .code("RESOURCE_NOT_FOUND")
+                .defaultMessage("The requested resource was not found")
+                .build();
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.failed(errorResponse));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleNoResourceFound(NoResourceFoundException ex) {
+        log.warn("No resource found for request path: {}", ex.getResourcePath());
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .code("RESOURCE_NOT_FOUND")

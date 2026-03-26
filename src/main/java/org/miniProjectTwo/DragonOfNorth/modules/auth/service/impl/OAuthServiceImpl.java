@@ -179,7 +179,7 @@ public class OAuthServiceImpl implements OAuthService {
 
             AppUser savedUser = appUserRepository.save(newUser);
             linkGoogleProvider(savedUser, userInfo.sub());
-            profileService.createProfile(savedUser, userInfo);
+            profileService.createProfile(savedUser.getId(), userInfo);
             return savedUser;
 
         } catch (DataIntegrityViolationException e) {

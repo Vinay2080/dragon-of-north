@@ -25,8 +25,11 @@ public class ProfileServiceImpl implements org.miniProjectTwo.DragonOfNorth.modu
     private final AppUserRepository appUserRepository;
 
     @Override
-    public void createProfile(AppUser appUser, OAuthUserInfo userInfo) {
-        if (profileRepository.existsProfileByAppUser(appUser)) {
+    public void createProfile(UUID userId, OAuthUserInfo userInfo) {
+        AppUser appUser = appUserRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (profileRepository.existsByAppUserId(userId)) {
             throw new BusinessException(ErrorCode.PROFILE_ALREADY_EXISTS, "Profile already exists for user: " + appUser.getEmail());
         }
         Profile profile = new Profile();
@@ -42,8 +45,57 @@ public class ProfileServiceImpl implements org.miniProjectTwo.DragonOfNorth.modu
         profileRepository.save(profile);
     }
 
+    @Override
+    @Transactional
+    public void updateProfile(String bio, String avatarUrl, String displayName, String username) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "User must be authenticated to update profile");
+        }
+
+        UUID userId = resolveUserId(authentication);
+        Profile profile = getOrCreateProfile(userId);
+
+        if (username != null && !username.equalsIgnoreCase(profile.getUsername())) {
+            if (profileRepository.existsByUsernameIgnoreCase(username)) {
+                throw new BusinessException(ErrorCode.USERNAME_ALREADY_TAKEN, "Username is already taken: " + username);
+            }
+            profile.setUsername(username);
+        }
+
+        updateIfNotNull(bio, profile::setBio);
+        updateIfNotNull(avatarUrl, profile::setAvatarUrl);
+        updateIfNotNull(displayName, profile::setDisplayName);
+
+    }
+
+    @Override
+    public Profile getProfile() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "User must be authenticated to view profile");
+        }
+
+        UUID userId = resolveUserId(authentication);
+        return getOrCreateProfile(userId);
+    }
+
+    private Profile getOrCreateProfile(UUID userId) {
+        return profileRepository.findByAppUserId(userId).orElseGet(() -> {
+            String identifier = appUserRepository.findPreferredIdentifierById(userId)
+                    .orElse("user_" + userId.toString().substring(0, 8));
+
+            Profile newProfile = new Profile();
+            newProfile.setAppUser(appUserRepository.getReferenceById(userId));
+            newProfile.setUsername(generateUniqueUsername(identifier));
+            newProfile.setDisplayName(identifier);
+            return profileRepository.save(newProfile);
+        });
+    }
+
     private String generateUniqueUsername(String name) {
-        String base = name.toLowerCase()
+        String sanitizedName = name == null ? "" : name;
+        String base = sanitizedName.toLowerCase()
                 .replaceAll("[^a-z0-9]", "")
                 .trim();
 
@@ -63,36 +115,6 @@ public class ProfileServiceImpl implements org.miniProjectTwo.DragonOfNorth.modu
         }
 
         return username;
-    }
-
-    private boolean usernameExists(String uniqueUsername) {
-        return profileRepository.existsByUsernameIgnoreCase(uniqueUsername);
-    }
-
-    @Override
-    @Transactional
-    public void updateProfile(String bio, String avatarUrl, String displayName, String username) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "User must be authenticated to update profile");
-        }
-
-        UUID userId = resolveUserId(authentication);
-        AppUser appUser = appUserRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "Authenticated user not found"));
-        Profile profile = getOrCreateProfile(appUser);
-
-        if (username != null && !username.equalsIgnoreCase(profile.getUsername())) {
-            if (profileRepository.existsByUsernameIgnoreCase(username)) {
-                throw new BusinessException(ErrorCode.USERNAME_ALREADY_TAKEN, "Username is already taken: " + username);
-            }
-            profile.setUsername(username);
-        }
-
-        updateIfNotNull(bio, profile::setBio);
-        updateIfNotNull(avatarUrl, profile::setAvatarUrl);
-        updateIfNotNull(displayName, profile::setDisplayName);
-
     }
 
     private UUID resolveUserId(Authentication authentication) {
@@ -121,14 +143,8 @@ public class ProfileServiceImpl implements org.miniProjectTwo.DragonOfNorth.modu
         throw new BusinessException(ErrorCode.UNAUTHORIZED, "Unsupported authentication principal");
     }
 
-    private Profile getOrCreateProfile(AppUser appUser) {
-        return profileRepository.findByAppUser(appUser).orElseGet(() -> {
-            Profile newProfile = new Profile();
-            newProfile.setAppUser(appUser);
-            newProfile.setUsername(generateUniqueUsername(appUser.getEmail()));
-            newProfile.setDisplayName(appUser.getEmail());
-            return profileRepository.save(newProfile);
-        });
+    private boolean usernameExists(String uniqueUsername) {
+        return profileRepository.existsByUsernameIgnoreCase(uniqueUsername);
     }
 
     private void updateIfNotNull(String value, Consumer<String> setter) {

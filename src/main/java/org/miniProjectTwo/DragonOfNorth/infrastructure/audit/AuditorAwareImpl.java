@@ -24,6 +24,7 @@ import java.util.UUID;
 public class AuditorAwareImpl implements AuditorAware<String> {
 
     private static final Logger log = LoggerFactory.getLogger(AuditorAwareImpl.class);
+    @SuppressWarnings("unused")
     private final AppUserRepository appUserRepository;
 
 
@@ -60,13 +61,17 @@ public class AuditorAwareImpl implements AuditorAware<String> {
             }
         }
         if (principal instanceof UUID userId) {
-            Optional<String> emailOrPhone = appUserRepository.findById(userId)
-                    .map(user -> StringUtils.hasText(user.getEmail()) ? user.getEmail() : user.getPhone())
-                    .filter(StringUtils::hasText);
+            log.debug("Auditor resolved directly from UUID principal");
+            return Optional.of(userId.toString());
+        }
 
-            if (emailOrPhone.isPresent()) {
-                log.debug("Auditor resolved via UUID principal lookup");
-                return emailOrPhone;
+        if (principal instanceof String rawPrincipal && StringUtils.hasText(rawPrincipal) && !"anonymousUser".equals(rawPrincipal)) {
+            try {
+                UUID parsed = UUID.fromString(rawPrincipal);
+                log.debug("Auditor resolved from UUID authentication name");
+                return Optional.of(parsed.toString());
+            } catch (IllegalArgumentException ignored) {
+                // Keep fallback for non-UUID principals.
             }
         }
 

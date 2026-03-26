@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {apiService} from '../services/apiService';
 import {AuthContext} from './authContext';
 import {API_CONFIG} from '../config';
@@ -11,14 +11,19 @@ export const AuthProvider = ({children}) => {
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState(null);
 
-    useEffect(() => {
-        checkAuthStatus();
-    }, []);
-
-    const checkAuthStatus = async () => {
+    const checkAuthStatus = useCallback(async () => {
         try {
+            const hasAuthSessionFlag = localStorage.getItem('isAuthenticated') === 'true';
             const storedUserRaw = localStorage.getItem('user');
             const identifierHint = localStorage.getItem(IDENTIFIER_HINT_KEY);
+            const hasBootstrapAuthSignal = hasAuthSessionFlag || Boolean(storedUserRaw) || Boolean(identifierHint);
+
+            if (!hasBootstrapAuthSignal) {
+                setIsAuthenticated(false);
+                setUser(null);
+                return;
+            }
+
             let hydratedUser = null;
 
             if (storedUserRaw) {
@@ -32,7 +37,7 @@ export const AuthProvider = ({children}) => {
                 setUser(hydratedUser);
             }
 
-            const sessionResult = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS_ALL);
+            const sessionResult = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS_ALL, {skipAuthRefresh: true});
             if (!apiService.isErrorResponse(sessionResult) && Array.isArray(sessionResult?.data)) {
                 setIsAuthenticated(true);
                 localStorage.setItem('isAuthenticated', 'true');
@@ -49,9 +54,13 @@ export const AuthProvider = ({children}) => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const login = (userData = null) => {
+    useEffect(() => {
+        void checkAuthStatus();
+    }, [checkAuthStatus]);
+
+    const login = useCallback((userData = null) => {
         const storedUserRaw = localStorage.getItem('user');
         const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
         const resolvedUser = userData || storedUser;
@@ -66,9 +75,9 @@ export const AuthProvider = ({children}) => {
                 localStorage.setItem(IDENTIFIER_HINT_KEY, resolvedUser.identifier);
             }
         }
-    };
+    }, []);
 
-    const logout = async () => {
+    const logout = useCallback(async () => {
         try {
             await apiService.post(API_CONFIG.ENDPOINTS.LOGOUT, {
                 device_id: getDeviceId(),
@@ -83,16 +92,33 @@ export const AuthProvider = ({children}) => {
             localStorage.removeItem(IDENTIFIER_HINT_KEY);
             apiService.resetRateLimitInfo();
         }
-    };
+    }, []);
 
-    const value = {
+    const patchUser = useCallback((nextFields = {}) => {
+        setUser((previousUser) => {
+            const mergedUser = {
+                ...(previousUser || {}),
+                ...nextFields,
+            };
+
+            localStorage.setItem('user', JSON.stringify(mergedUser));
+            if (mergedUser.identifier) {
+                localStorage.setItem(IDENTIFIER_HINT_KEY, mergedUser.identifier);
+            }
+
+            return mergedUser;
+        });
+    }, []);
+
+    const value = useMemo(() => ({
         isAuthenticated,
         isLoading,
         user,
         login,
         logout,
         checkAuthStatus,
-    };
+        patchUser,
+    }), [isAuthenticated, isLoading, user, login, logout, checkAuthStatus, patchUser]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

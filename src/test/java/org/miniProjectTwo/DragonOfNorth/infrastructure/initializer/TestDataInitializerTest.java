@@ -73,6 +73,6 @@ class TestDataInitializerTest {
         testDataInitializer.run();
 
         verify(appUserRepository, atLeast(10)).save(any(AppUser.class));
-        verify(profileService, atLeast(10)).createProfile(any(AppUser.class), any());
+        verify(profileService, atLeast(10)).createProfile(any(UUID.class), any());
     }
 }

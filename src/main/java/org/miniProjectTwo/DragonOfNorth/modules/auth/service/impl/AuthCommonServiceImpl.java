@@ -299,19 +299,38 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     }
 
     @Override
+    @Transactional
     public void changePassword(PasswordChangeRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof AppUserDetails appUserDetails)) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "User not authenticated");
+        if (authentication == null || authentication.getPrincipal() == null) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED, "User not authenticated");
         }
 
-        AppUser appUser = appUserDetails.getAppUser();
+        UUID userId;
+        Object principal = authentication.getPrincipal();
+
+        switch (principal) {
+            case AppUserDetails appUserDetails -> userId = appUserDetails.getAppUser().getId();
+            case UUID id -> userId = id;
+            case String raw when !raw.isBlank() -> {
+                try {
+                    userId = UUID.fromString(raw);
+                } catch (IllegalArgumentException ex) {
+                    throw new BusinessException(ErrorCode.ACCESS_DENIED, "Invalid authentication principal");
+                }
+            }
+            case null, default -> throw new BusinessException(ErrorCode.ACCESS_DENIED, "User not authenticated");
+        }
+
+        AppUser appUser = appUserRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.oldPassword(), appUser.getPassword())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Old password is incorrect");
         }
 
         appUser.setPassword(passwordEncoder.encode(request.newPassword()));
+        appUserRepository.save(appUser);
         sessionService.revokeAllSessionsByUserId(appUser.getId());
 
         meterRegistry.counter("auth.password_change.success").increment();
