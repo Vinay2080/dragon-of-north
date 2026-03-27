@@ -30,7 +30,7 @@ jobs:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
         with:
           args: --image jetbrains/qodana-jvm-community:2025.3
-          pr-mode: true              # scan only changed files → less noise
+          pr-mode: false              # scan only changed files → less noise
           use-caches: true
           upload-result: true        # view reports in GitHub UI
           post-pr-comment: true
