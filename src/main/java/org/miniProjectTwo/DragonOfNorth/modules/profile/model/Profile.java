@@ -30,9 +30,30 @@ public class Profile extends BaseEntity {
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "avatar_source", length = 32, nullable = false)
+    private AvatarSource avatarSource = AvatarSource.NONE;
+
+    @Column(name = "avatar_external_url", length = 500)
+    private String avatarExternalUrl;
+
     @Column(name = "bio", length = 1000)
     private String bio;
 
     @Column(name = "username", length = 50, unique = true)
     private String username;
+
+    @PrePersist
+    @PreUpdate
+    private void normalizeAvatarMetadata() {
+        boolean hasAvatar = avatarUrl != null && !avatarUrl.isBlank();
+
+        if (avatarSource == null) {
+            avatarSource = hasAvatar ? AvatarSource.USER_DEFINED : AvatarSource.NONE;
+        }
+
+        if (avatarSource == AvatarSource.NONE && !hasAvatar) {
+            avatarExternalUrl = null;
+        }
+    }
 }

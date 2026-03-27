@@ -38,6 +38,7 @@ export default function ProfileDropdown() {
     const firstThemeItemRef = useRef(null);
     const closeSubmenuTimerRef = useRef(null);
     const navigate = useNavigate();
+    const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
 
     const clearSubmenuCloseTimer = () => {
         if (closeSubmenuTimerRef.current) {
@@ -93,9 +94,16 @@ export default function ProfileDropdown() {
     const fallbackSeed = useMemo(() => resolveUserSeed(user), [user]);
 
     const avatarSrc = useMemo(() => {
-        const explicitAvatar = user?.avatarUrl;
-        return explicitAvatar || buildDicebearAvatarUrl(fallbackSeed);
-    }, [user, fallbackSeed]);
+        const explicitAvatar = user?.avatarUrl || user?.avatar_url;
+        if (avatarLoadFailed || !explicitAvatar) {
+            return buildDicebearAvatarUrl(fallbackSeed);
+        }
+        return explicitAvatar;
+    }, [user, fallbackSeed, avatarLoadFailed]);
+
+    useEffect(() => {
+        setAvatarLoadFailed(false);
+    }, [user?.avatarUrl, user?.avatar_url]);
 
     return (
         <>
@@ -117,9 +125,8 @@ export default function ProfileDropdown() {
                         src={avatarSrc}
                         alt="User avatar"
                         className="h-6 w-6 rounded-full border border-border object-cover"
-                        onError={(event) => {
-                            event.currentTarget.src = buildDicebearAvatarUrl(fallbackSeed);
-                        }}
+                        referrerPolicy="no-referrer"
+                        onError={() => setAvatarLoadFailed(true)}
                     />
                 </button>
 

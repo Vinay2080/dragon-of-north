@@ -7,10 +7,62 @@ import {clearAccessToken} from '../services/tokenStore';
 
 const IDENTIFIER_HINT_KEY = 'auth_identifier_hint';
 
+const extractResponseData = (result) => {
+    if (result?.data && typeof result.data === 'object' && !Array.isArray(result.data)) {
+        return result.data;
+    }
+
+    if (result && typeof result === 'object' && !Array.isArray(result) && !result.type) {
+        return result;
+    }
+
+    return null;
+};
+
+const normalizeUserPayload = (payload = {}) => {
+    if (!payload) {
+        return null;
+    }
+
+    return {
+        ...payload,
+        username: payload?.username || payload?.user_name || '',
+        displayName: payload?.displayName || payload?.display_name || '',
+        bio: payload?.bio || '',
+        avatarUrl: payload?.avatarUrl || payload?.avatar_url || '',
+        authProvider: payload?.authProvider || payload?.auth_provider || null,
+    };
+};
+
 export const AuthProvider = ({children}) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState(null);
+
+    const hydrateUserProfile = useCallback(async (baseUser = null) => {
+        const profileResult = await apiService.get(API_CONFIG.ENDPOINTS.PROFILE);
+        if (apiService.isErrorResponse(profileResult)) {
+            return baseUser;
+        }
+
+        const profilePayload = extractResponseData(profileResult);
+        if (!profilePayload) {
+            return baseUser;
+        }
+
+        const mergedUser = normalizeUserPayload({
+            ...(baseUser || {}),
+            ...profilePayload,
+        });
+
+        setUser(mergedUser);
+        localStorage.setItem('user', JSON.stringify(mergedUser));
+        if (mergedUser?.identifier) {
+            localStorage.setItem(IDENTIFIER_HINT_KEY, mergedUser.identifier);
+        }
+
+        return mergedUser;
+    }, []);
 
     const checkAuthStatus = useCallback(async () => {
         try {
@@ -27,7 +79,7 @@ export const AuthProvider = ({children}) => {
             }
 
             if (hydratedUser) {
-                setUser(hydratedUser);
+                setUser(normalizeUserPayload(hydratedUser));
             }
 
             let refreshSucceeded = false;
@@ -50,6 +102,7 @@ export const AuthProvider = ({children}) => {
             if (!apiService.isErrorResponse(sessionResult) && Array.isArray(sessionResult?.data)) {
                 setIsAuthenticated(true);
                 localStorage.setItem('isAuthenticated', 'true');
+                await hydrateUserProfile(hydratedUser);
                 return;
             }
 
@@ -66,7 +119,7 @@ export const AuthProvider = ({children}) => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [hydrateUserProfile]);
 
     useEffect(() => {
         void checkAuthStatus();
@@ -75,7 +128,7 @@ export const AuthProvider = ({children}) => {
     const login = useCallback((userData = null) => {
         const storedUserRaw = localStorage.getItem('user');
         const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
-        const resolvedUser = userData || storedUser;
+        const resolvedUser = normalizeUserPayload(userData || storedUser || null);
 
         setIsAuthenticated(true);
         setUser(resolvedUser || null);
@@ -87,7 +140,9 @@ export const AuthProvider = ({children}) => {
                 localStorage.setItem(IDENTIFIER_HINT_KEY, resolvedUser.identifier);
             }
         }
-    }, []);
+
+        void hydrateUserProfile(resolvedUser);
+    }, [hydrateUserProfile]);
 
     const logout = useCallback(async () => {
         try {
@@ -109,10 +164,10 @@ export const AuthProvider = ({children}) => {
 
     const patchUser = useCallback((nextFields = {}) => {
         setUser((previousUser) => {
-            const mergedUser = {
+            const mergedUser = normalizeUserPayload({
                 ...(previousUser || {}),
                 ...nextFields,
-            };
+            });
 
             localStorage.setItem('user', JSON.stringify(mergedUser));
             if (mergedUser.identifier) {

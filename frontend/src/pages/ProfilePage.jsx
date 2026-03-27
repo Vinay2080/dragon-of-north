@@ -192,7 +192,7 @@ const ProfilePage = () => {
     const fallbackSeed = useMemo(() => resolveUserSeed(profileForm.username ? profileForm : user), [profileForm, user]);
 
     const avatarSrc = useMemo(() => {
-        return profileForm.avatarUrl || user?.avatarUrl || buildDicebearAvatarUrl(fallbackSeed);
+        return profileForm.avatarUrl || user?.avatarUrl || user?.avatar_url || buildDicebearAvatarUrl(fallbackSeed);
     }, [profileForm.avatarUrl, user, fallbackSeed]);
 
     const setInlineErrorByCode = (result) => {

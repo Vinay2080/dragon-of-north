@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.modules.profile.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.miniProjectTwo.DragonOfNorth.modules.profile.model.AvatarSource;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.model.Profile;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.repo.ProfileRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
@@ -36,13 +37,43 @@ public class ProfileServiceImpl implements org.miniProjectTwo.DragonOfNorth.modu
         profile.setAppUser(appUser);
         if (userInfo != null) {
             profile.setDisplayName(userInfo.name());
-            profile.setAvatarUrl(userInfo.picture());
+            applyGoogleAvatar(profile, userInfo.picture());
             profile.setUsername(generateUniqueUsername(userInfo.name()));
         } else {
             profile.setDisplayName(appUser.getEmail());
             profile.setUsername(generateUniqueUsername(appUser.getEmail()));
         }
         profileRepository.save(profile);
+    }
+
+    @Override
+    @Transactional
+    public void syncGoogleAvatar(UUID userId, OAuthUserInfo userInfo) {
+        if (userInfo == null) {
+            return;
+        }
+
+        String googleAvatar = normalizeAvatarUrl(userInfo.picture());
+        if (googleAvatar == null) {
+            return;
+        }
+
+        Profile profile = getOrCreateProfile(userId);
+        AvatarSource source = profile.getAvatarSource() == null ? AvatarSource.NONE : profile.getAvatarSource();
+
+        if (source == AvatarSource.USER_DEFINED) {
+            return;
+        }
+
+        boolean alreadySynced = source == AvatarSource.GOOGLE
+                && googleAvatar.equals(profile.getAvatarUrl())
+                && googleAvatar.equals(profile.getAvatarExternalUrl());
+
+        if (alreadySynced) {
+            return;
+        }
+
+        applyGoogleAvatar(profile, googleAvatar);
     }
 
     @Override
@@ -64,7 +95,9 @@ public class ProfileServiceImpl implements org.miniProjectTwo.DragonOfNorth.modu
         }
 
         updateIfNotNull(bio, profile::setBio);
-        updateIfNotNull(avatarUrl, profile::setAvatarUrl);
+        if (avatarUrl != null) {
+            applyUserAvatarUpdate(profile, avatarUrl);
+        }
         updateIfNotNull(displayName, profile::setDisplayName);
 
     }
@@ -151,5 +184,37 @@ public class ProfileServiceImpl implements org.miniProjectTwo.DragonOfNorth.modu
         if (value != null) {
             setter.accept(value);
         }
+    }
+
+    private void applyUserAvatarUpdate(Profile profile, String rawAvatarUrl) {
+        String normalized = normalizeAvatarUrl(rawAvatarUrl);
+        if (normalized == null) {
+            profile.setAvatarUrl(null);
+            profile.setAvatarExternalUrl(null);
+            profile.setAvatarSource(AvatarSource.NONE);
+            return;
+        }
+
+        profile.setAvatarUrl(normalized);
+        profile.setAvatarExternalUrl(null);
+        profile.setAvatarSource(AvatarSource.USER_DEFINED);
+    }
+
+    private void applyGoogleAvatar(Profile profile, String rawGoogleAvatarUrl) {
+        String googleAvatar = normalizeAvatarUrl(rawGoogleAvatarUrl);
+        if (googleAvatar == null) {
+            return;
+        }
+        profile.setAvatarUrl(googleAvatar);
+        profile.setAvatarExternalUrl(googleAvatar);
+        profile.setAvatarSource(AvatarSource.GOOGLE);
+    }
+
+    private String normalizeAvatarUrl(String avatarUrl) {
+        if (avatarUrl == null) {
+            return null;
+        }
+        String normalized = avatarUrl.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }

@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.modules.profile.service;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.miniProjectTwo.DragonOfNorth.modules.profile.model.AvatarSource;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.model.Profile;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.repo.ProfileRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.impl.ProfileServiceImpl;
@@ -69,6 +70,8 @@ class ProfileServiceImplTest {
         assertEquals(appUser, saved.getAppUser());
         assertEquals("John Smith", saved.getDisplayName());
         assertEquals("https://cdn.example/avatar.png", saved.getAvatarUrl());
+        assertEquals(AvatarSource.GOOGLE, saved.getAvatarSource());
+        assertEquals("https://cdn.example/avatar.png", saved.getAvatarExternalUrl());
         assertNotNull(saved.getUsername());
         assertTrue(saved.getUsername().startsWith("johnsmith_"));
     }
@@ -91,6 +94,7 @@ class ProfileServiceImplTest {
         Profile saved = captor.getValue();
 
         assertEquals("mail.user@example.com", saved.getDisplayName());
+        assertEquals(AvatarSource.NONE, saved.getAvatarSource());
         assertNotNull(saved.getUsername());
         assertTrue(saved.getUsername().startsWith("mailuserexamplecom_"));
     }
@@ -118,6 +122,7 @@ class ProfileServiceImplTest {
         profile.setUsername("old_name");
         profile.setBio("old_bio");
         profile.setAvatarUrl("old_avatar");
+        profile.setAvatarSource(AvatarSource.NONE);
         profile.setDisplayName("old_display");
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -132,7 +137,64 @@ class ProfileServiceImplTest {
         assertEquals("new_name", profile.getUsername());
         assertEquals("new_bio", profile.getBio());
         assertEquals("new_avatar", profile.getAvatarUrl());
+        assertEquals(AvatarSource.USER_DEFINED, profile.getAvatarSource());
+        assertNull(profile.getAvatarExternalUrl());
         assertEquals("new_display", profile.getDisplayName());
+    }
+
+    @Test
+    void updateProfile_shouldResetAvatarSource_whenAvatarCleared() {
+        UUID userId = UUID.randomUUID();
+
+        Profile profile = new Profile();
+        profile.setAvatarUrl("https://google.example/avatar.png");
+        profile.setAvatarSource(AvatarSource.USER_DEFINED);
+        profile.setAvatarExternalUrl("https://google.example/avatar.png");
+
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, List.of()));
+        SecurityContextHolder.setContext(context);
+
+        when(profileRepository.findByAppUserId(userId)).thenReturn(Optional.of(profile));
+
+        profileService.updateProfile(null, "   ", null, null);
+
+        assertNull(profile.getAvatarUrl());
+        assertEquals(AvatarSource.NONE, profile.getAvatarSource());
+        assertNull(profile.getAvatarExternalUrl());
+    }
+
+    @Test
+    void syncGoogleAvatar_shouldSkip_whenAvatarIsUserDefined() {
+        UUID userId = UUID.randomUUID();
+        Profile profile = new Profile();
+        profile.setAvatarSource(AvatarSource.USER_DEFINED);
+        profile.setAvatarUrl("https://custom.example/avatar.png");
+
+        OAuthUserInfo userInfo = OAuthUserInfo.builder().picture("https://google.example/new.png").build();
+        when(profileRepository.findByAppUserId(userId)).thenReturn(Optional.of(profile));
+
+        profileService.syncGoogleAvatar(userId, userInfo);
+
+        assertEquals("https://custom.example/avatar.png", profile.getAvatarUrl());
+        assertEquals(AvatarSource.USER_DEFINED, profile.getAvatarSource());
+        assertNull(profile.getAvatarExternalUrl());
+    }
+
+    @Test
+    void syncGoogleAvatar_shouldUpdate_whenAvatarIsMissing() {
+        UUID userId = UUID.randomUUID();
+        Profile profile = new Profile();
+        profile.setAvatarSource(AvatarSource.NONE);
+
+        OAuthUserInfo userInfo = OAuthUserInfo.builder().picture("https://google.example/new.png").build();
+        when(profileRepository.findByAppUserId(userId)).thenReturn(Optional.of(profile));
+
+        profileService.syncGoogleAvatar(userId, userInfo);
+
+        assertEquals("https://google.example/new.png", profile.getAvatarUrl());
+        assertEquals("https://google.example/new.png", profile.getAvatarExternalUrl());
+        assertEquals(AvatarSource.GOOGLE, profile.getAvatarSource());
     }
 
     @Test

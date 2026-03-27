@@ -12,6 +12,8 @@ const ProfileHeader = ({
                        }) => {
     const resolvedDisplayName = displayName || username || 'User';
     const shouldShowUsername = Boolean(username) && username !== resolvedDisplayName;
+    const fallbackSeed = (username || displayName || email || 'user').trim();
+    const fallbackAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fallbackSeed || 'user')}`;
 
     return (
         <section className="rounded-xl border border-border bg-card p-6">
@@ -21,6 +23,10 @@ const ProfileHeader = ({
                         src={avatarSrc}
                         alt="Profile avatar"
                         className="h-16 w-16 rounded-full border border-border object-cover"
+                        referrerPolicy="no-referrer"
+                        onError={(event) => {
+                            event.currentTarget.src = fallbackAvatar;
+                        }}
                     />
                     <div>
                         <h1 className="text-2xl text-foreground">

@@ -8,6 +8,8 @@ import java.util.UUID;
 public interface ProfileService {
     void createProfile(UUID userId, OAuthUserInfo userInfo);
 
+    void syncGoogleAvatar(UUID userId, OAuthUserInfo userInfo);
+
     void updateProfile(String bio, String avatarUrl, String displayName, String username);
 
     Profile getProfile();

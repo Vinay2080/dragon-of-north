@@ -60,6 +60,7 @@ public class OAuthServiceImpl implements OAuthService {
             OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
             validateExpectedIdentifier(userInfo, expectedIdentifier);
             AppUser appUser = findOrCreateUserForGoogleAuth(userInfo);
+            profileService.syncGoogleAvatar(appUser.getId(), userInfo);
             auditUserId = appUser.getId();
             finalizeAuthentication(appUser, deviceId, httpRequest, response);
             auditEventLogger.log("auth.oauth.google.login", auditUserId, deviceId, ipAddress, "success", null, requestId);
@@ -82,6 +83,7 @@ public class OAuthServiceImpl implements OAuthService {
             OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
             validateExpectedIdentifier(userInfo, expectedIdentifier);
             AppUser appUser = findOrCreateUserForSignup(userInfo);
+            profileService.syncGoogleAvatar(appUser.getId(), userInfo);
             auditUserId = appUser.getId();
             finalizeAuthentication(appUser, deviceId, httpRequest, response);
             auditEventLogger.log("auth.oauth.google.signup", auditUserId, deviceId, ipAddress, "success", null, requestId);

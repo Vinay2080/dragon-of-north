@@ -93,6 +93,7 @@ class OAuthServiceImplTest {
         verify(appUserRepository).save(any(AppUser.class));
         verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
         verify(profileService).createProfile(newUser.getId(), userInfo);
+        verify(profileService).syncGoogleAvatar(newUser.getId(), userInfo);
         verify(sessionService).createSession(eq(newUser), eq("refresh"), any(), eq("device-1"), any());
         verify(authCommonServiceImpl).setAccessToken(response, "access");
         verify(authCommonServiceImpl).setRefreshToken(response, "refresh");
@@ -128,6 +129,7 @@ class OAuthServiceImplTest {
         ArgumentCaptor<UserAuthProvider> authProviderCaptor = ArgumentCaptor.forClass(UserAuthProvider.class);
         verify(userAuthProviderRepository).save(authProviderCaptor.capture());
         verify(profileService, never()).createProfile(any(UUID.class), any());
+        verify(profileService).syncGoogleAvatar(existingUser.getId(), userInfo);
         verify(authCommonServiceImpl).setAccessToken(response, "access");
         verify(authCommonServiceImpl).setRefreshToken(response, "refresh");
 
