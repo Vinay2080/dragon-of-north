@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import React from 'react';
+import {Navigate, useLocation} from 'react-router-dom';
 import {useAuth} from '../context/authUtils';
 
 /**
@@ -8,22 +8,7 @@ import {useAuth} from '../context/authUtils';
  */
 const ProtectedRoute = ({children}) => {
     const {isAuthenticated, isLoading} = useAuth();
-    const navigate = useNavigate();
-    const [isGateOpen, setIsGateOpen] = useState(true);
-
-
-    useEffect(() => {
-        if (!isGateOpen || isAuthenticated) {
-            return;
-        }
-
-        const originalOverflow = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-
-        return () => {
-            document.body.style.overflow = originalOverflow;
-        };
-    }, [isGateOpen, isAuthenticated]);
+    const location = useLocation();
 
     // Show loading state while checking auth
     if (isLoading) {
@@ -39,31 +24,7 @@ const ProtectedRoute = ({children}) => {
     }
 
     if (!isAuthenticated) {
-        return (
-            <div className="protected-gate">
-                <div
-                    className={isGateOpen ? 'protected-gate__content protected-gate__content--blurred' : 'protected-gate__content'}>
-                    {children}
-                </div>
-
-                {isGateOpen && (
-                    <div className="protected-gate__overlay" onClick={() => setIsGateOpen(false)}>
-                        <div className="protected-gate__modal" onClick={(event) => event.stopPropagation()}>
-                            <h2 className="protected-gate__title">Login Required</h2>
-                            <p className="protected-gate__description">You need to be logged in to view your
-                                sessions.</p>
-                            <div className="protected-gate__actions">
-                                <button type="button" className="btn-primary" onClick={() => navigate('/login')}>Login
-                                </button>
-                                <button type="button" className="btn-subtle"
-                                        onClick={() => setIsGateOpen(false)}>Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
+        return <Navigate to="/login" state={{from: location}} replace/>;
     }
 
     // Render protected content

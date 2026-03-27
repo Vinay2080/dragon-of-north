@@ -1,5 +1,5 @@
-import React, {useEffect, useMemo, useState} from 'react';
-import {Link, useNavigate} from 'react-router-dom';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import {useToast} from '../hooks/useToast';
@@ -15,6 +15,7 @@ import AuthDivider from '../components/auth/AuthDivider';
 import {getDeviceId} from '../utils/device';
 import {useAuth} from '../context/authUtils';
 import {useDocumentTitle} from '../hooks/useDocumentTitle';
+import {persistPostLoginRedirect, resolvePostLoginRedirectPath} from '../utils/postLoginRedirect';
 
 const AUTH_STEP = {
     EMAIL_ENTRY: 'EMAIL_ENTRY',
@@ -33,6 +34,7 @@ const OTP_FLOW = {
 const AuthPage = () => {
     useDocumentTitle('Login');
     const navigate = useNavigate();
+    const location = useLocation();
     const {toast} = useToast();
     const {login, isAuthenticated, isLoading} = useAuth();
     const authState = useAuthState();
@@ -50,11 +52,27 @@ const AuthPage = () => {
         [email]
     );
 
+    const navigateAfterAuthSuccess = useCallback((defaultPath = '/') => {
+        const redirectPath = resolvePostLoginRedirectPath({
+            location,
+            defaultPath,
+        });
+
+        navigate(redirectPath, {replace: true});
+    }, [location, navigate]);
+
+    useEffect(() => {
+        const intendedPath = location.state?.from?.pathname;
+        if (intendedPath) {
+            persistPostLoginRedirect(intendedPath);
+        }
+    }, [location.state]);
+
     useEffect(() => {
         if (!isLoading && isAuthenticated) {
-            navigate('/sessions', {replace: true});
+            navigateAfterAuthSuccess('/');
         }
-    }, [isAuthenticated, isLoading, navigate]);
+    }, [isAuthenticated, isLoading, navigateAfterAuthSuccess]);
 
     const resetFlow = () => {
         setStep(AUTH_STEP.EMAIL_ENTRY);
@@ -219,7 +237,7 @@ const AuthPage = () => {
 
         authState.setSuccess('Welcome back!');
         login({identifier: normalizedEmail});
-        navigate('/sessions');
+        navigateAfterAuthSuccess('/');
     };
 
     //  CLEAN GOOGLE SUCCESS HANDLER
@@ -246,7 +264,10 @@ const AuthPage = () => {
             identifier: resolvedIdentifier,
         });
 
-        navigate('/auth/callback');
+        navigate('/auth/callback', {
+            replace: true,
+            state: {from: location.state?.from},
+        });
     };
 
     const handleGoogleError = (message) => {

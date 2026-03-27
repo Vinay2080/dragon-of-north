@@ -1,21 +1,23 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import {useAuth} from '../context/authUtils';
 import AuthCardLayout from '../components/auth/AuthCardLayout';
+import {resolvePostLoginRedirectPath} from '../utils/postLoginRedirect';
 
 const STATUS_MESSAGES = [
     'Authenticating with Google...',
     'Verifying your identity...',
     'Creating secure session...',
-    'Redirecting to sessions...',
+    'Redirecting to your destination...',
 ];
 
 const IDENTIFIER_HINT_KEY = 'auth_identifier_hint';
 
 const OAuthCallbackPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const {login} = useAuth();
     const [stepIndex, setStepIndex] = useState(0);
     const handledRef = useRef(false);
@@ -70,7 +72,12 @@ const OAuthCallbackPage = () => {
                 const result = await Promise.race([verificationRequest, timeoutPromise]);
                 if (!apiService.isErrorResponse(result) && Array.isArray(result?.data)) {
                     login(getHydratedUser());
-                    navigate('/sessions', {replace: true});
+                    const redirectPath = resolvePostLoginRedirectPath({
+                        location,
+                        defaultPath: '/',
+                    });
+
+                    navigate(redirectPath, {replace: true});
                     return;
                 }
             } catch (error) {
@@ -85,7 +92,7 @@ const OAuthCallbackPage = () => {
         return () => {
             window.clearInterval(progressInterval);
         };
-    }, [login, navigate]);
+    }, [location, login, navigate]);
 
     return (
         <AuthCardLayout
