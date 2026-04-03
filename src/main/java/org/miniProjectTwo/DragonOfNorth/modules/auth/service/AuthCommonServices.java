@@ -25,7 +25,7 @@ public interface AuthCommonServices {
     void refreshToken(String refreshToken, HttpServletResponse response, AuthRequestContext context);
 
     /**
-     * Ensures user has the default role if no roles are assigned.
+     * Ensures the user has the default role if no roles are assigned.
      */
     void assignDefaultRole(AppUser appUser);
 

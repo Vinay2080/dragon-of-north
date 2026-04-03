@@ -20,10 +20,8 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.*;
 
 import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.success;
 import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.successMessage;
@@ -65,6 +63,12 @@ public class AuthenticationController {
 
     private final AuthenticationServiceResolver resolver;
     private final AuthCommonServices authCommonServices;
+
+    @GetMapping("/csrf")
+    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> csrf(CsrfToken csrfToken) {
+        csrfToken.getToken();
+        return ResponseEntity.ok(successMessage("csrf token ready"));
+    }
 
     @PostMapping("/identifier/status")
     @Operation(summary = "Check user status by identifier",
@@ -204,19 +208,6 @@ public class AuthenticationController {
         return ResponseEntity.ok(successMessage("refresh token sent"));
     }
 
-    private String extractRefreshToken(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) {
-            return null;
-        }
-
-        for (Cookie cookie : cookies) {
-            if ("refresh_token".equals(cookie.getName())) {
-                return cookie.getValue();
-            }
-        }
-        return null;
-    }
 
     @PostMapping("/password/forgot/request")
     @Operation(
@@ -281,5 +272,24 @@ public class AuthenticationController {
     ) {
         authCommonServices.changePassword(request);
         return ResponseEntity.ok(successMessage("password change successful"));
+    }
+//
+//    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> deleteAccount(
+//            @Valid @RequestBody
+//    )
+
+
+    private String extractRefreshToken(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return null;
+        }
+
+        for (Cookie cookie : cookies) {
+            if ("refresh_token".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }

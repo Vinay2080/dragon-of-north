@@ -225,11 +225,13 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "device ID missing");
         }
 
-        UUID userId = null;
+        UUID userId;
         try {
             userId = jwtServices.extractUserId(refreshToken);
-        } catch (BusinessException ignored) {
-            // keep nullable userId in the audit event when token extraction fails
+        } catch (BusinessException businessException) {
+            meterRegistry.counter("auth.logout.failure").increment();
+            auditEventLogger.log("auth.logout", null, deviceId, ipAddress, "failure", "invalid refresh token: " + businessException.getMessage(), requestId);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Invalid refresh token");
         }
 
         try {

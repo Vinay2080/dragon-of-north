@@ -1,4 +1,4 @@
-import {CSRF_HEADER_NAME, ensureCsrfToken, isStateChangingMethod} from '../utils/csrf';
+import {ensureCsrfHeader} from '../utils/csrf';
 import {API_CONFIG} from '../config';
 import {getDeviceId} from '../utils/device';
 import {clearAccessToken, extractAccessToken, getAccessToken, setAccessToken} from '../services/tokenStore';
@@ -39,16 +39,20 @@ const refreshAccessToken = async (): Promise<void> => {
     }
 
     refreshPromise = (async () => {
-        const csrfToken = await ensureCsrfToken();
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}${API_CONFIG.ENDPOINTS.REFRESH_TOKEN}`, {
-            method: 'POST',
+        const method = 'POST';
+        const requestConfig = await ensureCsrfHeader({
+            method,
             headers: {
                 'Content-Type': 'application/json',
-                [CSRF_HEADER_NAME]: csrfToken,
             },
             credentials: 'include',
             body: JSON.stringify({device_id: getDeviceId()}),
         });
+
+        const response = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL || ''}${API_CONFIG.ENDPOINTS.REFRESH_TOKEN}`,
+            requestConfig as RequestInit,
+        );
 
         if (!response.ok) {
             clearAccessToken();
@@ -113,16 +117,15 @@ const create = (defaults: RequestConfig) => {
         });
 
         const requestMethod = merged.method || 'GET';
-        const isMutatingRequest = isStateChangingMethod(requestMethod);
-        const requestHeaders = {...(merged.headers || {})};
-
-        if (isMutatingRequest) {
-            requestHeaders[CSRF_HEADER_NAME] = await ensureCsrfToken();
-        }
+        const requestWithCsrf = await ensureCsrfHeader({
+            ...merged,
+            method: requestMethod,
+            headers: {...((merged.headers || {}) as Record<string, string>)},
+        });
 
         const response = await fetch(`${merged.baseURL || ''}${merged.url || ''}`, {
-            method: merged.method || 'GET',
-            headers: requestHeaders,
+            method: requestMethod,
+            headers: (requestWithCsrf.headers || {}) as HeadersInit,
             credentials: merged.withCredentials ? 'include' : 'same-origin',
             body: merged.data ? JSON.stringify(merged.data) : undefined,
         });

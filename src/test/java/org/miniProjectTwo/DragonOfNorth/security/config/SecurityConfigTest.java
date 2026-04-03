@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.security.config;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.miniProjectTwo.DragonOfNorth.security.filter.CsrfCookieFilter;
 import org.miniProjectTwo.DragonOfNorth.security.filter.JwtFilter;
 import org.miniProjectTwo.DragonOfNorth.security.handler.RestAccessDeniedHandler;
 import org.miniProjectTwo.DragonOfNorth.security.handler.RestAuthenticationEntryPoint;
@@ -28,6 +29,9 @@ class SecurityConfigTest {
     private JwtFilter jwtFilter;
 
     @Mock
+    private CsrfCookieFilter csrfCookieFilter;
+
+    @Mock
     private AuthenticationConfiguration authenticationConfiguration;
 
     @Mock
@@ -41,13 +45,20 @@ class SecurityConfigTest {
 
     @BeforeEach
     void setUp() {
-        securityConfig = new SecurityConfig(corsConfigurationSource, jwtFilter, authenticationEntryPoint, accessDeniedHandler);
+        securityConfig = new SecurityConfig(
+                corsConfigurationSource,
+                jwtFilter,
+                csrfCookieFilter,
+                authenticationEntryPoint,
+                accessDeniedHandler
+        );
     }
 
     @Test
     void publicUrls_shouldContainExpectedEndpoints() {
         // assert
         assertArrayEquals(new String[]{
+                "/api/v1/auth/csrf",
                 "/api/v1/auth/identifier/status",
                 "/api/v1/auth/identifier/sign-up",
                 "/api/v1/auth/identifier/sign-up/complete",
@@ -58,7 +69,6 @@ class SecurityConfigTest {
                 "/api/v1/auth/oauth/google/signup",
                 "/api/v1/auth/password/forgot/request",
                 "/api/v1/auth/password/forgot/reset",
-                "/api/v1/auth/csrf",
                 "/api/v1/otp/**",
                 "/swagger-ui/**",
                 "/v3/api-docs/**",

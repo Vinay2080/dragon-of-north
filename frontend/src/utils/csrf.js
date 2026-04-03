@@ -3,7 +3,6 @@ import {API_CONFIG} from '../config'
 export const CSRF_COOKIE_NAME = API_CONFIG.CSRF_COOKIE_NAME || 'XSRF-TOKEN'
 export const CSRF_HEADER_NAME = API_CONFIG.CSRF_HEADER_NAME || 'X-XSRF-TOKEN'
 
-let cachedCsrfToken = null
 let csrfBootstrapPromise = null
 
 export const isStateChangingMethod = (method = 'GET') => {
@@ -30,56 +29,53 @@ export const readCookie = (cookieName) => {
     return null
 }
 
-const fetchCsrfToken = async () => {
-    const endpoint = API_CONFIG.ENDPOINTS.CSRF || '/api/v1/auth/csrf'
-    const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+export const attachCsrfHeader = (requestOptions = {}) => {
+    const method = (requestOptions.method || 'GET').toUpperCase()
+    if (!isStateChangingMethod(method)) {
+        return requestOptions
+    }
+
+    const csrfToken = readCookie(CSRF_COOKIE_NAME)
+    if (!csrfToken) {
+        return requestOptions
+    }
+
+    return {
+        ...requestOptions,
+        headers: {
+            ...(requestOptions.headers || {}),
+            [CSRF_HEADER_NAME]: csrfToken,
+        },
+    }
+}
+
+export const ensureCsrfCookie = async () => {
+    const existingToken = readCookie(CSRF_COOKIE_NAME)
+    if (existingToken) {
+        return existingToken
+    }
+
+    if (csrfBootstrapPromise) {
+        return csrfBootstrapPromise
+    }
+
+    csrfBootstrapPromise = fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CSRF}`, {
         method: 'GET',
         credentials: 'include',
         headers: {
             Accept: 'application/json',
         },
     })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error('Failed to initialize CSRF token')
+            }
 
-    if (!response.ok) {
-        throw new Error('Failed to bootstrap CSRF token')
-    }
+            const token = readCookie(CSRF_COOKIE_NAME)
+            if (!token) {
+                throw new Error(`CSRF cookie ${CSRF_COOKIE_NAME} was not set`)
+            }
 
-    // In cross-subdomain deployments, document.cookie may not expose api-domain cookies.
-    // Read token from API JSON payload as a fallback when the cookie is not directly visible.
-    let tokenFromBody = null
-    try {
-        const data = await response.json()
-        tokenFromBody = data?.data?.token || data?.token || null
-    } catch {
-        tokenFromBody = null
-    }
-
-    const tokenFromCookie = readCookie(CSRF_COOKIE_NAME)
-    if (!tokenFromCookie && !tokenFromBody) {
-        throw new Error(`CSRF cookie ${CSRF_COOKIE_NAME} was not set by backend`)
-    }
-
-    return tokenFromCookie || tokenFromBody
-}
-
-export const ensureCsrfToken = async ({forceRefresh = false} = {}) => {
-    const tokenFromCookie = readCookie(CSRF_COOKIE_NAME)
-    if (!forceRefresh && tokenFromCookie) {
-        cachedCsrfToken = tokenFromCookie
-        return tokenFromCookie
-    }
-
-    if (!forceRefresh && cachedCsrfToken && tokenFromCookie) {
-        return cachedCsrfToken
-    }
-
-    if (!forceRefresh && csrfBootstrapPromise) {
-        return csrfBootstrapPromise
-    }
-
-    csrfBootstrapPromise = fetchCsrfToken()
-        .then((token) => {
-            cachedCsrfToken = token
             return token
         })
         .finally(() => {
@@ -87,4 +83,17 @@ export const ensureCsrfToken = async ({forceRefresh = false} = {}) => {
         })
 
     return csrfBootstrapPromise
+}
+
+export const ensureCsrfHeader = async (requestOptions = {}) => {
+    const method = (requestOptions.method || 'GET').toUpperCase()
+    if (!isStateChangingMethod(method)) {
+        return requestOptions
+    }
+
+    if (!readCookie(CSRF_COOKIE_NAME)) {
+        await ensureCsrfCookie()
+    }
+
+    return attachCsrfHeader(requestOptions)
 }

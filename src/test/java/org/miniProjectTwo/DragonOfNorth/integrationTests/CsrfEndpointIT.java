@@ -8,11 +8,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import static org.hamcrest.Matchers.emptyOrNullString;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -30,11 +27,9 @@ class CsrfEndpointIT extends BaseIntegrationTest {
     }
 
     @Test
-    void csrfEndpoint_shouldReturnTokenAndSetCookie() throws Exception {
-        mockMvc.perform(get("/api/v1/auth/csrf"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.apiResponseStatus").value("success"))
-                .andExpect(jsonPath("$.data.token", not(emptyOrNullString())))
+    void protectedGet_shouldSetCsrfCookieWithoutCsrfEndpoint() throws Exception {
+        mockMvc.perform(get("/api/v1/profile"))
+                .andExpect(status().isUnauthorized())
                 .andExpect(cookie().exists("XSRF-TOKEN"));
     }
 }
