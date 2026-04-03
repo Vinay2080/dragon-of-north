@@ -4577,6 +4577,22 @@ a:hover {
     .scc-card-wrapper[style*="--i: 6"] { animation-delay: 0.41s; }
     .scc-card-wrapper[style*="--i: 7"] { animation-delay: 0.45s; }
 
+    .scc-grid--refreshed .scc-card {
+        animation: scc-card-refresh-flash 0.55s ease;
+    }
+
+    @keyframes scc-card-refresh-flash {
+        0% {
+            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+        }
+        35% {
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+        }
+    }
+
     /* ── LOADING SKELETON ────────────────────────────── */
     .scc-loading-skeleton {
         display: flex;
@@ -4663,44 +4679,59 @@ a:hover {
         flex-shrink: 0;
     }
 
+    .scc-refresh-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+    }
+
+    .scc-last-updated {
+        margin: 0;
+        font-size: 11px;
+        color: var(--don-text-muted);
+        opacity: 0.9;
+        transition: opacity 0.24s ease;
+    }
+
     .scc-refresh-btn {
-        width: 36px;
+        min-width: 36px;
         height: 36px;
-        display: grid;
-        place-items: center;
-        background: var(--don-bg-card);
+        padding: 0 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: transparent;
         border: 1px solid var(--don-border-default);
         border-radius: 8px;
         color: var(--don-text-primary);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1;
+        white-space: nowrap;
         cursor: pointer;
-        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     }
 
     .scc-refresh-btn svg {
-        transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        flex-shrink: 0;
     }
 
-    .scc-refresh-btn.loading svg {
-        animation: spinSmooth 1s linear infinite;
-    }
-
-    @keyframes spinSmooth {
-        from {
-            transform: rotate(0deg);
-        }
-        to {
-            transform: rotate(360deg);
-        }
+    .scc-refresh-btn > span:first-child {
+        display: inline-flex;
+        width: 14px;
+        justify-content: center;
+        font-size: 14px;
     }
 
     .scc-refresh-btn:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--don-bg-card) 75%, var(--don-accent) 25%);
+        background: color-mix(in srgb, var(--don-bg-surface) 85%, var(--don-accent) 15%);
         border-color: var(--don-accent);
-        transform: scale(1.08);
     }
 
     .scc-refresh-btn:active:not(:disabled) {
-        transform: scale(0.92);
+        background: color-mix(in srgb, var(--don-bg-surface) 76%, var(--don-accent) 24%);
     }
 
     .scc-refresh-btn:disabled {
@@ -4807,8 +4838,7 @@ a:hover {
     }
 
     .light .scc-refresh-btn:hover:not(:disabled) {
-        background: rgba(139, 92, 246, 0.15);
-        backdrop-filter: blur(4px);
+        background: rgba(139, 92, 246, 0.12);
     }
 
     .light .scc-revoked-toggle:hover {
@@ -4881,11 +4911,14 @@ a:hover {
     }
 
     .dark .scc-refresh-btn:hover:not(:disabled) {
-        background: transparent;
+        background: rgba(124, 58, 237, 0.08);
         border-color: #8b5cf6;
         color: #d8b4fe;
-        box-shadow: 0 0 16px rgba(139, 92, 246, 0.35);
-        transform: scale(1.08);
+        box-shadow: none;
+    }
+
+    .dark .scc-last-updated {
+        color: #94a3b8;
     }
 
     .dark .scc-collapse {
@@ -5391,7 +5424,12 @@ a:hover {
 
         .scc-hero__actions {
             width: 100%;
+            justify-content: space-between;
             gap: 8px;
+        }
+
+        .scc-refresh-meta {
+            align-items: flex-start;
         }
 
         .scc-danger-btn {
