@@ -91,9 +91,11 @@ const ProfilePage = () => {
     const [initialProfile, setInitialProfile] = useState(() => buildProfileFromUser(user));
     const [profileForm, setProfileForm] = useState(() => buildProfileFromUser(user));
     const [profileErrors, setProfileErrors] = useState(EMPTY_PROFILE_ERRORS);
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
 
     const [activeSessionsCount, setActiveSessionsCount] = useState(0);
     const [lastLoginAt, setLastLoginAt] = useState('—');
+    const [lastLoginTimestamp, setLastLoginTimestamp] = useState(null);
     const cachedProfileRef = useRef(buildProfileFromUser(user));
 
     const applyProfileLocally = useCallback((profilePayload) => {
@@ -154,9 +156,11 @@ const ProfilePage = () => {
             const sessions = result.data;
             const activeSessions = sessions.filter((session) => !session.revoked);
             const sortedByLastSeen = [...sessions].sort((a, b) => getSessionTimestamp(b) - getSessionTimestamp(a));
+            const lastSeen = sortedByLastSeen[0]?.last_used_at || sortedByLastSeen[0]?.created_at;
 
             setActiveSessionsCount(activeSessions.length);
-            setLastLoginAt(formatDateTime(sortedByLastSeen[0]?.last_used_at || sortedByLastSeen[0]?.created_at));
+            setLastLoginTimestamp(lastSeen ? new Date(lastSeen).getTime() : null);
+            setLastLoginAt(formatDateTime(lastSeen));
         };
 
         void loadSessionsPreview();
@@ -209,6 +213,27 @@ const ProfilePage = () => {
         return false;
     };
 
+    const lastLoginRelative = useMemo(() => {
+        if (!lastLoginTimestamp || !Number.isFinite(lastLoginTimestamp)) {
+            return '—';
+        }
+
+        const diffSeconds = Math.max(0, Math.floor((Date.now() - lastLoginTimestamp) / 1000));
+        if (diffSeconds < 60) return `${diffSeconds}s ago`;
+        const diffMinutes = Math.floor(diffSeconds / 60);
+        if (diffMinutes < 60) return `${diffMinutes} min ago`;
+        const diffHours = Math.floor(diffMinutes / 60);
+        if (diffHours < 24) return `${diffHours}h ago`;
+        const diffDays = Math.floor(diffHours / 24);
+        return `${diffDays}d ago`;
+    }, [lastLoginTimestamp]);
+
+    const cancelProfileEdit = () => {
+        setProfileForm(initialProfile);
+        setProfileErrors(EMPTY_PROFILE_ERRORS);
+        setIsEditingProfile(false);
+    };
+
     const submitProfile = async (event) => {
         event.preventDefault();
         if (!hasProfileChanges || isProfileSubmitting) {
@@ -231,6 +256,7 @@ const ProfilePage = () => {
         const serverPayload = normalizeProfile(getResponseData(result) || profileForm);
         applyProfileLocally(serverPayload);
         toast.success('Profile updated successfully.');
+        setIsEditingProfile(false);
         setIsProfileSubmitting(false);
     };
 
@@ -244,6 +270,7 @@ const ProfilePage = () => {
                 bio={profileForm.bio}
                 activeSessions={activeSessionsCount}
                 lastLoginAt={lastLoginAt}
+                lastLoginRelative={lastLoginRelative}
                 onManageSessions={() => navigate('/sessions')}
             />
 
@@ -254,39 +281,42 @@ const ProfilePage = () => {
                     profileErrors={profileErrors}
                     hasChanges={hasProfileChanges}
                     isSubmitting={isProfileSubmitting}
+                    isEditing={isEditingProfile}
+                    onEdit={() => setIsEditingProfile(true)}
+                    onCancel={cancelProfileEdit}
                     onFieldChange={(field, value) => {
                         setProfileForm((prev) => ({...prev, [field]: value}));
                     }}
                     onSubmit={submitProfile}
                 />
 
-                <div className="space-y-6">
-                    <SecuritySection
-                        authProvider={profileForm.authProvider || user?.authProvider || user?.auth_provider}/>
-
-                    <section className="rounded-xl border border-border bg-card p-6">
-                        <h2 className="text-lg font-semibold text-foreground">Session summary</h2>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            You currently have {activeSessionsCount} active
-                            session{activeSessionsCount === 1 ? '' : 's'}.
-                        </p>
-                        <button
-                            type="button"
-                            onClick={() => navigate('/sessions')}
-                            className="mt-4 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground"
-                        >
-                            Open sessions page
-                        </button>
-                    </section>
-                </div>
+                <SecuritySection authProvider={profileForm.authProvider || user?.authProvider || user?.auth_provider}/>
             </div>
+
+            <section className="group rounded-2xl border border-slate-200/80 bg-slate-50/80 p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/70">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Session summary / activity</h2>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            You currently have {activeSessionsCount} active session{activeSessionsCount === 1 ? '' : 's'}.
+                        </p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200/80 bg-white/70 px-3 py-2 dark:border-slate-800 dark:bg-slate-900/70">
+                        <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Current device</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Desktop browser</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Last activity: {lastLoginRelative}</p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => navigate('/sessions')}
+                    className="mt-4 h-10 rounded-lg border border-slate-300 px-4 text-sm font-medium text-slate-700 transition-all hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                    View all sessions
+                </button>
+            </section>
         </div>
     );
 };
 
 export default ProfilePage;
-
-
-
-
-

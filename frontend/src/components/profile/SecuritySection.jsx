@@ -125,14 +125,23 @@ const SecuritySection = ({authProvider}) => {
     };
 
     return (
-        <section className="rounded-xl border border-border bg-card p-6">
-            <div className="mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Security</h2>
-                <p className="text-sm text-muted-foreground">
-                    {canChangePassword
-                        ? 'Change your password and keep your account protected.'
-                        : 'You signed in with Google. Password is managed by Google.'}
-                </p>
+        <section className="group rounded-2xl border border-slate-200/80 bg-slate-50/80 p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/70">
+            <div className="mb-4 space-y-3">
+                <div className="flex items-center gap-3">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                        {normalizedAuthProvider === 'GOOGLE' ? 'G' : '🔒'}
+                    </span>
+                    <div>
+                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Security control panel</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                            {normalizedAuthProvider === 'GOOGLE' ? 'Signed in via Google' : 'Signed in with local credentials'}
+                        </p>
+                    </div>
+                </div>
+                <div className="rounded-xl border border-slate-200/80 bg-white/70 px-3 py-2 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300">
+                    <p>{canChangePassword ? 'Password is managed in this account.' : 'Password managed by Google.'}</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Enable MFA (coming soon) · Add backup authentication (coming soon)</p>
+                </div>
             </div>
 
             {!canChangePassword ? null : (
@@ -212,7 +221,6 @@ const SecuritySection = ({authProvider}) => {
 };
 
 export default SecuritySection;
-
 
 
 
