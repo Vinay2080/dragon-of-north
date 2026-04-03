@@ -172,6 +172,33 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         recordPasswordChangeSuccess(appUser.getId());
     }
 
+
+    @Override
+    @Transactional
+    public void deleteCurrentUser(AuthRequestContext context, HttpServletResponse response) {
+        UUID userId = null;
+        try {
+            AppUser appUser = findAuthenticatedUser();
+            userId = appUser.getId();
+
+            userStateValidator.validate(appUser, UserLifecycleOperation.ACCOUNT_DELETE);
+            appUser.setAppUserStatus(AppUserStatus.DELETED);
+            appUser.setDeletedAt(java.time.LocalDateTime.now());
+            appUser.setDeletionReason("self_service_delete");
+            appUserRepository.save(appUser);
+
+            sessionService.revokeAllSessionsByUserId(userId);
+            clearAuthCookies(response);
+
+            meterRegistry.counter("user.delete.success").increment();
+            auditEventLogger.log("user.delete", userId, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
+        } catch (BusinessException exception) {
+            meterRegistry.counter("user.delete.failure").increment();
+            auditEventLogger.log("user.delete", userId, context.deviceId(), context.ipAddress(), "failure", exception.getMessage(), context.requestId());
+            throw exception;
+        }
+    }
+
     private AppUser findAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getPrincipal() == null) {

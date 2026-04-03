@@ -13,6 +13,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
@@ -79,6 +80,9 @@ class AuthCommonServiceImplTest {
 
     @Mock
     private AuditEventLogger auditEventLogger;
+
+    @Mock
+    private UserStateValidator userStateValidator;
 
     @AfterEach
     void clearSecurityContext() {
@@ -169,7 +173,6 @@ class AuthCommonServiceImplTest {
         when(userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), Provider.LOCAL)).thenReturn(true);
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
         when(authentication.getPrincipal()).thenReturn(new AppUserDetails(user));
-        when(appUserRepository.isEmailVerified(user.getId())).thenReturn(false);
         when(meterRegistry.counter(anyString())).thenReturn(failureCounter);
 
         BusinessException exception = assertThrows(BusinessException.class, () ->
@@ -203,5 +206,43 @@ class AuthCommonServiceImplTest {
         verify(passwordEncoder, never()).matches(anyString(), anyString());
         verify(appUserRepository, never()).save(any());
         verify(sessionService, never()).revokeAllSessionsByUserId(any());
+    }
+
+    @Test
+    void deleteCurrentUser_shouldSoftDeleteAndRevokeSessions() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+        user.setAppUserStatus(ACTIVE);
+
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, Set.of()));
+        SecurityContextHolder.setContext(context);
+
+        Counter successCounter = mock(Counter.class);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(meterRegistry.counter("user.delete.success")).thenReturn(successCounter);
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        authCommonService.deleteCurrentUser(new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit"), response);
+
+        assertEquals(org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.DELETED, user.getAppUserStatus());
+        assertNotNull(user.getDeletedAt());
+        verify(appUserRepository).save(user);
+        verify(sessionService).revokeAllSessionsByUserId(userId);
+        verify(auditEventLogger).log("user.delete", userId, "device-1", "127.0.0.1", "success", null, "req-1");
+    }
+
+    @Test
+    void deleteCurrentUser_shouldFailWhenUnauthenticated() {
+        Counter failureCounter = mock(Counter.class);
+        when(meterRegistry.counter("user.delete.failure")).thenReturn(failureCounter);
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> authCommonService.deleteCurrentUser(new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit"), response));
+
+        assertEquals(ErrorCode.ACCESS_DENIED, exception.getErrorCode());
+        verify(auditEventLogger).log(eq("user.delete"), eq(null), eq("device-1"), eq("127.0.0.1"), eq("failure"), any(), eq("req-1"));
     }
 }

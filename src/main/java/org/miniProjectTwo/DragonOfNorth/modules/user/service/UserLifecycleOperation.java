@@ -13,7 +13,10 @@ public enum UserLifecycleOperation {
     PASSWORD_RESET_CONFIRM(true),
     PASSWORD_CHANGE(true),
     PROFILE_READ(true),
-    PROFILE_UPDATE(true);
+    PROFILE_UPDATE(true),
+    SESSION_READ(true),
+    SESSION_MANAGE(true),
+    ACCOUNT_DELETE(true);
 
     private final boolean activeAllowed;
 

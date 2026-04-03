@@ -53,4 +53,9 @@ public interface AuthCommonServices {
      * Changes password for the authenticated user.
      */
     void changePassword(@Valid PasswordChangeRequest request);
+
+    /**
+     * Soft-deletes the authenticated account, revokes sessions, and clears auth cookies.
+     */
+    void deleteCurrentUser(AuthRequestContext context, HttpServletResponse response);
 }

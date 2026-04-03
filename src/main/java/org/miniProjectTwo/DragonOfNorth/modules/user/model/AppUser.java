@@ -101,6 +101,17 @@ public class AppUser extends BaseEntity {
     private LocalDateTime lastLoginAt;
 
     /**
+     * Timestamp when the account was soft deleted.
+     */
+    private LocalDateTime deletedAt;
+
+    /**
+     * Optional internal reason for account deletion.
+     */
+    @Column(name = "deletion_reason", length = 255)
+    private String deletionReason;
+
+    /**
      * Checks whether at least one role is assigned.
      *
      * @return {@code true} when roles are non-empty

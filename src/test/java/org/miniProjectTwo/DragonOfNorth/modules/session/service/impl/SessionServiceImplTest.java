@@ -9,6 +9,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.impl.SessionServiceImpl;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -49,6 +50,8 @@ class SessionServiceImplTest {
     private Counter counter;
     @Mock
     private AuditEventLogger auditEventLogger;
+    @Mock
+    private UserStateValidator userStateValidator;
 
     @Test
     void createSession_shouldReplaceExistingDeviceSession() {
@@ -79,6 +82,9 @@ class SessionServiceImplTest {
         session.setLastUsedAt(Instant.now());
         session.setExpiryDate(Instant.now().plusSeconds(60));
 
+        AppUser user = new AppUser();
+        user.setId(userId);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
         when(sessionRepository.findAllByAppUserIdOrderByLastUsedAtDesc(userId)).thenReturn(List.of(session));
 
         var result = sessionService.getSessionsForUser(userId);
@@ -89,12 +95,15 @@ class SessionServiceImplTest {
 
     @Test
     void revokeAllOtherSessions_shouldThrow_whenDeviceIdBlank() {
+        AppUser user = new AppUser();
+        user.setId(UUID.randomUUID());
+        when(appUserRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(meterRegistry.counter(any())).thenReturn(counter);
         BusinessException ex = assertThrows(BusinessException.class,
-                () -> sessionService.revokeAllOtherSessions(UUID.randomUUID(), " "));
+                () -> sessionService.revokeAllOtherSessions(user.getId(), " "));
 
         assertEquals(ErrorCode.INVALID_TOKEN, ex.getErrorCode());
-        verify(auditEventLogger).log(eq("session.revoke.others"), any(UUID.class), eq(" "), isNull(), eq("failure"), eq("device ID missing"), isNull());
+        verify(auditEventLogger).log(eq("session.revoke.others"), eq(user.getId()), eq(" "), isNull(), eq("failure"), eq("device ID missing"), isNull());
 
     }
 
@@ -184,6 +193,9 @@ class SessionServiceImplTest {
     @Test
     void revokeAllOtherSessions_shouldLogSuccess_whenSessionsExist() {
         UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
         when(meterRegistry.counter(any())).thenReturn(counter);
         when(sessionRepository.revokeAllOtherSessions(userId, "currentDevice")).thenReturn(3);
 

@@ -8,6 +8,8 @@ import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -34,6 +36,7 @@ public class SessionServiceImpl implements SessionService {
     private final AppUserRepository appUserRepository;
     private final MeterRegistry meterRegistry;
     private final AuditEventLogger auditEventLogger;
+    private final UserStateValidator userStateValidator;
 
     @Value("${app.security.jwt.expiration.refresh-token}")
     private long refreshTokenDurationMs;
@@ -99,6 +102,7 @@ public class SessionServiceImpl implements SessionService {
     @Override
     @Transactional(readOnly = true)
     public List<SessionSummaryResponse> getSessionsForUser(UUID userId) {
+        findValidatedUser(userId, UserLifecycleOperation.SESSION_READ);
         return sessionRepository.findAllByAppUserIdOrderByLastUsedAtDesc(userId)
                 .stream()
                 .map(session -> new SessionSummaryResponse(
@@ -118,6 +122,7 @@ public class SessionServiceImpl implements SessionService {
     @Override
     @Transactional
     public void revokeSessionById(UUID userId, UUID sessionId) {
+        findValidatedUser(userId, UserLifecycleOperation.SESSION_MANAGE);
         Session session = sessionRepository.findByIdAndAppUserId(sessionId, userId)
                 .orElseThrow(() -> {
                     meterRegistry.counter("session.revoked.failure").increment();
@@ -139,6 +144,7 @@ public class SessionServiceImpl implements SessionService {
     @Override
     @Transactional
     public int revokeAllOtherSessions(UUID userId, String currentDeviceId) {
+        findValidatedUser(userId, UserLifecycleOperation.SESSION_MANAGE);
         if (currentDeviceId == null || currentDeviceId.trim().isEmpty()) {
             meterRegistry.counter("session.revoked.failure").increment();
             auditEventLogger.log("session.revoke.others", userId, currentDeviceId, null, "failure", "device ID missing", null);
@@ -162,6 +168,7 @@ public class SessionServiceImpl implements SessionService {
                     auditEventLogger.log("session.rotate", userId, deviceId, null, "failure", "user not found", null);
                     return new BusinessException(ErrorCode.USER_NOT_FOUND, "user not found");
                 });
+        userStateValidator.validate(appUser, UserLifecycleOperation.SESSION_MANAGE);
         String oldTokenHash = tokenHasher.hashToken(oldRefreshToken);
         Session session = sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser(oldTokenHash, deviceId, appUser)
                 .orElseThrow(() -> {
@@ -199,4 +206,11 @@ public class SessionServiceImpl implements SessionService {
         meterRegistry.counter("session.revoked.all_user").increment(revoked);
         auditEventLogger.log("session.revoke.all_user", userId, null, null, "success", "revoked_count=" + revoked, null);
     }
+    private AppUser findValidatedUser(UUID userId, UserLifecycleOperation operation) {
+        AppUser user = appUserRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "User not found"));
+        userStateValidator.validate(user, operation);
+        return user;
+    }
+
 }
