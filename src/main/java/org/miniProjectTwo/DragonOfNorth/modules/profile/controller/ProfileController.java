@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.modules.profile.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.profile.api.ProfileApi;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.dto.UpdateProfileRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.dto.response.GetProfileResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.model.Profile;
@@ -24,11 +25,12 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
 @RestController
 @RequestMapping("/api/v1/profile")
 @RequiredArgsConstructor
-public class ProfileController {
+public class ProfileController implements ProfileApi {
 
     private final ProfileService profileService;
     private final UserAuthProviderRepository userAuthProviderRepository;
 
+    @Override
     @PatchMapping
     public ApiResponse<GetProfileResponse> updateProfile(@RequestBody UpdateProfileRequest request) {
         Profile profile = profileService.updateProfile(
@@ -40,6 +42,16 @@ public class ProfileController {
         return ApiResponse.success(toResponse(profile, resolveAuthProvider(resolveCurrentUserId())));
     }
 
+    @Override
+    @GetMapping
+    public ApiResponse<GetProfileResponse> getProfile() {
+        Profile profile = profileService.getProfile();
+        UUID userId = resolveCurrentUserId();
+        Provider authProvider = resolveAuthProvider(userId);
+
+        return ApiResponse.success(toResponse(profile, authProvider));
+    }
+
     private GetProfileResponse toResponse(Profile profile, Provider authProvider) {
         return new GetProfileResponse(
                 profile.getUsername(),
@@ -48,15 +60,6 @@ public class ProfileController {
                 profile.getAvatarUrl(),
                 authProvider
         );
-    }
-
-    @GetMapping
-    public ApiResponse<GetProfileResponse> getProfile() {
-        Profile profile = profileService.getProfile();
-        UUID userId = resolveCurrentUserId();
-        Provider authProvider = resolveAuthProvider(userId);
-
-        return ApiResponse.success(toResponse(profile, authProvider));
     }
 
     private UUID resolveCurrentUserId() {

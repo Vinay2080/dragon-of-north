@@ -10,6 +10,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 /**
  * Request DTO for verifying OTP codes delivered via SMS.
  */
+@Schema(name = "PhoneVerifyRequest", description = "Request payload for verifying an OTP that was sent to a phone number.")
 public record PhoneVerifyRequest(
         @Pattern(message = "invalid phone number", regexp = "[6-9]\\d{9}$")
         @Size(message = "invalid phone number size", min = 10, max = 14)

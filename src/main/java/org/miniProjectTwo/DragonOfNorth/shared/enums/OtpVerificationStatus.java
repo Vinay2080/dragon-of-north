@@ -1,5 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.shared.enums;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.dto.request.EmailVerifyRequest;
@@ -17,6 +18,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl.OtpServiceImpl;
  */
 @Getter
 @RequiredArgsConstructor
+@Schema(description = "Outcome of an OTP verification attempt.")
 public enum OtpVerificationStatus {
 
     SUCCESS(true, "Verification successful"),
