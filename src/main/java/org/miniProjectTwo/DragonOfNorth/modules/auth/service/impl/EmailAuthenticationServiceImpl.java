@@ -9,10 +9,16 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderReposi
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,6 +50,8 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     private final MeterRegistry meterRegistry;
     private final AuditEventLogger auditEventLogger;
     private final ProfileService profileService;
+    private final OtpService otpService;
+    private final UserStateValidator userStateValidator;
 
 
     /**
@@ -77,16 +85,7 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     public AppUserStatusFinderResponse getUserStatus(String identifier) {
         meterRegistry.counter("auth.status_lookup.requested").increment();
         return appUserRepository.findByEmail(identifier)
-                .map(user -> new AppUserStatusFinderResponse(
-                        true,
-                        userAuthProviderRepository.findAllByUserId(user.getId())
-                                .stream()
-                                .map(UserAuthProvider::getProvider)
-                                .distinct()
-                                .toList(),
-                        user.isEmailVerified(),
-                        user.getAppUserStatus()
-                ))
+                .map(this::buildStatusResponse)
                 .orElseGet(AppUserStatusFinderResponse::notFound);
     }
 
@@ -104,24 +103,14 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
      * @return created user status response
      */
     @Override
+    @Transactional
     public AppUserStatusFinderResponse signUpUser(AppUserSignUpRequest request) {
-        AppUser user = new AppUser();
-        user.setEmail(request.identifier());
-        user.setPassword(passwordEncoder.encode(request.password()));
-        user.setAppUserStatus(ACTIVE);
-        user.setEmailVerified(false);
         try {
-            AppUser savedUser = appUserRepository.save(user);
-            UserAuthProvider localProvider = new UserAuthProvider();
-            localProvider.setUser(savedUser);
-            localProvider.setProvider(LOCAL);
-            userAuthProviderRepository.save(localProvider);
-            meterRegistry.counter("auth.signup.success").increment();
-            auditEventLogger.log("auth.signup", null, null, null, "success", "identifier_type=EMAIL", null);
+            prepareUserForSignup(request);
+            recordSignupSuccess();
             return getUserStatus(request.identifier());
         } catch (RuntimeException ex) {
-            meterRegistry.counter("auth.signup.failure").increment();
-            auditEventLogger.log("auth.signup", null, null, null, "failure", ex.getMessage(), null);
+            recordSignupFailure(ex);
             throw ex;
         }
     }
@@ -147,19 +136,130 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     @Override
     public AppUserStatusFinderResponse completeSignUp(String identifier) {
         try {
-            AppUser appUser = appUserRepository.findByEmail(identifier).orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
-            authCommonServices.assignDefaultRole(appUser);
-            appUser.setEmailVerified(true);
-            appUserRepository.save(appUser);
-            profileService.createProfile(appUser.getId(), null);
-            meterRegistry.counter("auth.signup.complete.success").increment();
-            auditEventLogger.log("auth.signup.complete", appUser.getId(), null, null, "success", "identifier_type=EMAIL", null);
+            AppUser appUser = findUserByEmail(identifier);
+            userStateValidator.validate(appUser, UserLifecycleOperation.LOCAL_SIGNUP_COMPLETE);
+            ensureSignupOtpVerified(identifier);
+            completeEmailSignup(appUser);
+            recordSignupCompleteSuccess(appUser);
             return getUserStatus(identifier);
         } catch (RuntimeException ex) {
-            meterRegistry.counter("auth.signup.complete.failure").increment();
-            auditEventLogger.log("auth.signup.complete", null, null, null, "failure", ex.getMessage(), null);
+            recordSignupCompleteFailure(ex);
             throw ex;
         }
+    }
+
+    private AppUserStatusFinderResponse buildStatusResponse(AppUser user) {
+        return new AppUserStatusFinderResponse(
+                true,
+                userAuthProviderRepository.findAllByUserId(user.getId())
+                        .stream()
+                        .map(UserAuthProvider::getProvider)
+                        .distinct()
+                        .toList(),
+                user.isEmailVerified(),
+                user.getAppUserStatus()
+        );
+    }
+
+    private AppUser buildEmailUser(AppUserSignUpRequest request) {
+        AppUser user = new AppUser();
+        user.setEmail(request.identifier());
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setAppUserStatus(ACTIVE);
+        user.setEmailVerified(false);
+        return user;
+    }
+
+    private void persistLocalProvider(AppUser savedUser) {
+        UserAuthProvider localProvider = new UserAuthProvider();
+        localProvider.setUser(savedUser);
+        localProvider.setProvider(LOCAL);
+        userAuthProviderRepository.save(localProvider);
+    }
+
+    private AppUser findUserByEmail(String identifier) {
+        return appUserRepository.findByEmail(identifier)
+                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
+    }
+
+    private void prepareUserForSignup(AppUserSignUpRequest request) {
+        appUserRepository.findByEmailForUpdate(request.identifier())
+                .map(existingUser -> reactivateDeletedAccount(existingUser, request))
+                .orElseGet(() -> createNewUser(request));
+    }
+
+    private AppUser createNewUser(AppUserSignUpRequest request) {
+        AppUser savedUser = appUserRepository.save(buildEmailUser(request));
+        persistLocalProvider(savedUser);
+        return savedUser;
+    }
+
+    private AppUser reactivateDeletedAccount(AppUser appUser, AppUserSignUpRequest request) {
+        userStateValidator.validate(appUser, UserLifecycleOperation.LOCAL_SIGNUP_START);
+        if (!userStateValidator.isDeleted(appUser)) {
+            throw new BusinessException(ErrorCode.USER_OPERATION_NOT_ALLOWED,
+                    UserLifecycleOperation.LOCAL_SIGNUP_START.name(),
+                    appUser.getAppUserStatus().name());
+        }
+
+        appUser.setPassword(passwordEncoder.encode(request.password()));
+        appUser.setEmailVerified(false);
+        persistLocalProviderIfMissing(appUser);
+        AppUser savedUser = appUserRepository.save(appUser);
+        recordReactivationStarted(savedUser);
+        return savedUser;
+    }
+
+    private void persistLocalProviderIfMissing(AppUser savedUser) {
+        if (!userAuthProviderRepository.existsByUserIdAndProvider(savedUser.getId(), LOCAL)) {
+            persistLocalProvider(savedUser);
+        }
+    }
+
+    private void ensureSignupOtpVerified(String identifier) {
+        OtpToken otpToken;
+        try {
+            otpToken = otpService.fetchLatest(identifier.trim().toLowerCase(), EMAIL, OtpPurpose.SIGNUP);
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException(ErrorCode.OTP_VERIFICATION_REQUIRED);
+        }
+
+        if (!otpToken.isConsumed() || otpToken.isExpired() || otpToken.getVerifiedAt() == null) {
+            throw new BusinessException(ErrorCode.OTP_VERIFICATION_REQUIRED);
+        }
+    }
+
+    private void completeEmailSignup(AppUser appUser) {
+        authCommonServices.assignDefaultRole(appUser);
+        appUser.setEmailVerified(true);
+        appUser.setAppUserStatus(ACTIVE);
+        appUserRepository.save(appUser);
+        profileService.ensureProfileExists(appUser.getId(), null);
+    }
+
+    private void recordSignupSuccess() {
+        meterRegistry.counter("auth.signup.success").increment();
+        auditEventLogger.log("auth.signup", null, null, null, "success", "identifier_type=EMAIL", null);
+    }
+
+    private void recordSignupFailure(RuntimeException ex) {
+        meterRegistry.counter("auth.signup.failure").increment();
+        auditEventLogger.log("auth.signup", null, null, null, "failure", ex.getMessage(), null);
+    }
+
+    private void recordSignupCompleteSuccess(AppUser appUser) {
+        meterRegistry.counter("auth.signup.complete.success").increment();
+        auditEventLogger.log("auth.signup.complete", appUser.getId(), null, null, "success", "identifier_type=EMAIL", null);
+    }
+
+    private void recordSignupCompleteFailure(RuntimeException ex) {
+        meterRegistry.counter("auth.signup.complete.failure").increment();
+        auditEventLogger.log("auth.signup.complete", null, null, null, "failure", ex.getMessage(), null);
+    }
+
+    private void recordReactivationStarted(AppUser appUser) {
+        meterRegistry.counter("auth.reactivation.started").increment();
+        auditEventLogger.log("auth.reactivation", appUser.getId(), null, null, "started", "identifier_type=EMAIL", null);
     }
 
 

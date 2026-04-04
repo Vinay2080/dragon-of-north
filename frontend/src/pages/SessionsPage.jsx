@@ -44,6 +44,7 @@ const SessionsPage = () => {
     const [revokingOthers, setRevokingOthers] = useState(false);
     const [showRevoked, setShowRevoked] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [refreshHighlight, setRefreshHighlight] = useState(false);
 
     const currentDeviceId = getDeviceId();
 
@@ -99,6 +100,10 @@ const SessionsPage = () => {
 
         if (result?.api_response_status === 'success' && Array.isArray(result?.data)) {
             setSessions(result.data);
+            if (withAnimation) {
+                setRefreshHighlight(true);
+                window.setTimeout(() => setRefreshHighlight(false), 700);
+            }
         } else {
             toast.warning('Unexpected sessions response from server.');
         }
@@ -245,11 +250,14 @@ const SessionsPage = () => {
                                 type="button"
                                 onClick={() => loadSessions(true)}
                                 disabled={!isAuthenticated || refreshSpinning || loadingSessions}
-                                className={`scc-refresh-btn ${refreshSpinning ? 'loading' : ''}`}
+                                className={`scc-refresh-btn ${refreshSpinning || loadingSessions ? 'is-loading' : ''}`}
                                 aria-label="Refresh sessions"
                                 title="Refresh sessions"
                             >
-                                {/* Refresh Icon */}
+                                <span className={`scc-refresh-icon ${refreshSpinning || loadingSessions ? 'spin' : ''}`}
+                                      aria-hidden>
+                                    ↻
+                                </span>
                             </button>
                             <button
                                 type="button"
@@ -285,7 +293,7 @@ const SessionsPage = () => {
                                 <h2>Active Sessions</h2>
                                 <p>{activeSessions.length} active session{activeSessions.length === 1 ? '' : 's'}</p>
                             </div>
-                            <div className="scc-grid">
+                            <div className={`scc-grid ${refreshHighlight ? 'scc-grid--refreshed' : ''}`}>
                                 {activeSessions
                                     .filter((session) => session.session_id !== currentSession?.session_id)
                                     .map((session, idx) => (
@@ -350,4 +358,3 @@ const SessionsPage = () => {
 };
 
 export default SessionsPage;
-

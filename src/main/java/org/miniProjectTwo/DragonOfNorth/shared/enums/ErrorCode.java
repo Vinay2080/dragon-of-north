@@ -30,14 +30,22 @@ public enum ErrorCode {
     ACCESS_DENIED("AUTH_006", "Access is denied", HttpStatus.FORBIDDEN),
     CSRF_INVALID("AUTH_007", "Invalid or missing CSRF token", HttpStatus.FORBIDDEN),
     PASSWORD_CHANGE_NOT_ALLOWED("AUTH_008", "Password change not allowed for Google accounts", HttpStatus.FORBIDDEN),
+    INVALID_CURRENT_PASSWORD("AUTH_009", "Current password is incorrect", HttpStatus.BAD_REQUEST),
+    WEAK_PASSWORD("AUTH_010", "Password must be at least 8 characters with letters and numbers", HttpStatus.BAD_REQUEST),
+    SAME_PASSWORD("AUTH_011", "New password must be different from current password", HttpStatus.BAD_REQUEST),
 
     ROLE_NOT_FOUND("ROL_009", "role %s not found", HttpStatus.NOT_FOUND),
 
     USER_NOT_FOUND("USER_001", "user not found", HttpStatus.NOT_FOUND),
     USER_ALREADY_VERIFIED("USER_002", "user is already verified", HttpStatus.CONFLICT),
+    USER_OPERATION_NOT_ALLOWED("USER_003", "Operation %s is not allowed for account status %s", HttpStatus.FORBIDDEN),
+    USER_REACTIVATION_REQUIRED("USER_004", "Account is deleted. Complete verification to reactivate", HttpStatus.FORBIDDEN),
+    USER_BLOCKED("USER_005", "Account is blocked", HttpStatus.LOCKED),
 
     INVALID_INPUT("VAL_001", "invalid input", HttpStatus.BAD_REQUEST),
     EMAIL_NOT_VERIFIED("VAL_002", "email not verified", HttpStatus.UNAUTHORIZED),
+    PHONE_NOT_VERIFIED("VAL_003", "phone not verified", HttpStatus.UNAUTHORIZED),
+    OTP_VERIFICATION_REQUIRED("VAL_004", "Verification required before completing signup", HttpStatus.BAD_REQUEST),
 
     OTP_RATE_LIMIT("OTP_001", "wait %s seconds before requesting another OTP for %s", HttpStatus.TOO_MANY_REQUESTS),
     OTP_TOO_MANY_REQUESTS("OTP_002", "Too many otp requests. Blocked for %s minutes.", HttpStatus.TOO_MANY_REQUESTS),

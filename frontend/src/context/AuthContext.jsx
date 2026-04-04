@@ -1,9 +1,10 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import {apiService} from '../services/apiService';
 import {AuthContext} from './authContext';
 import {API_CONFIG} from '../config';
 import {getDeviceId} from '../utils/device.js';
-import {clearAccessToken} from '../services/tokenStore';
+import {clearAuthClientState, isDeletedUserStatus} from '../services/authSession';
 
 const IDENTIFIER_HINT_KEY = 'auth_identifier_hint';
 
@@ -31,16 +32,49 @@ const normalizeUserPayload = (payload = {}) => {
         bio: payload?.bio || '',
         avatarUrl: payload?.avatarUrl || payload?.avatar_url || '',
         authProvider: payload?.authProvider || payload?.auth_provider || null,
+        status: payload?.status || payload?.user_status || payload?.userStatus || null,
     };
 };
 
 export const AuthProvider = ({children}) => {
+    const navigate = useNavigate();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState(null);
 
-    const hydrateUserProfile = useCallback(async (baseUser = null) => {
+    const clearLocalAuthState = useCallback(() => {
+        setIsAuthenticated(false);
+        setUser(null);
+        clearAuthClientState();
+        apiService.resetRateLimitInfo();
+    }, []);
+
+    const forceLogout = useCallback(({redirectTo = '/signup'} = {}) => {
+        clearLocalAuthState();
+        if (redirectTo) {
+            navigate(redirectTo, {replace: true});
+        }
+    }, [clearLocalAuthState, navigate]);
+
+    const persistUserState = useCallback((nextUser) => {
+        if (!nextUser) {
+            localStorage.removeItem('user');
+            return null;
+        }
+
+        const normalizedUser = normalizeUserPayload(nextUser);
+        setUser(normalizedUser);
+        localStorage.setItem('user', JSON.stringify(normalizedUser));
+        if (normalizedUser?.identifier) {
+            localStorage.setItem(IDENTIFIER_HINT_KEY, normalizedUser.identifier);
+        }
+
+        return normalizedUser;
+    }, []);
+
+    const syncUserProfile = useCallback(async (baseUser = null) => {
         const profileResult = await apiService.get(API_CONFIG.ENDPOINTS.PROFILE);
+
         if (apiService.isErrorResponse(profileResult)) {
             return baseUser;
         }
@@ -55,14 +89,13 @@ export const AuthProvider = ({children}) => {
             ...profilePayload,
         });
 
-        setUser(mergedUser);
-        localStorage.setItem('user', JSON.stringify(mergedUser));
-        if (mergedUser?.identifier) {
-            localStorage.setItem(IDENTIFIER_HINT_KEY, mergedUser.identifier);
+        if (isDeletedUserStatus(mergedUser?.status)) {
+            forceLogout({redirectTo: '/signup'});
+            return null;
         }
 
-        return mergedUser;
-    }, []);
+        return persistUserState(mergedUser);
+    }, [forceLogout, persistUserState]);
 
     const checkAuthStatus = useCallback(async () => {
         try {
@@ -80,6 +113,10 @@ export const AuthProvider = ({children}) => {
 
             if (hydratedUser) {
                 setUser(normalizeUserPayload(hydratedUser));
+                if (isDeletedUserStatus(hydratedUser?.status)) {
+                    forceLogout({redirectTo: '/signup'});
+                    return;
+                }
             }
 
             let refreshSucceeded = false;
@@ -102,24 +139,27 @@ export const AuthProvider = ({children}) => {
             if (!apiService.isErrorResponse(sessionResult) && Array.isArray(sessionResult?.data)) {
                 setIsAuthenticated(true);
                 localStorage.setItem('isAuthenticated', 'true');
-                await hydrateUserProfile(hydratedUser);
+                const syncedUser = await syncUserProfile(hydratedUser);
+                if (!syncedUser) {
+                    return;
+                }
                 return;
             }
 
-            setIsAuthenticated(false);
-            setUser(null);
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('user');
+            clearLocalAuthState();
         } catch (error) {
             console.error('Auth check failed:', error);
-            setIsAuthenticated(false);
-            setUser(null);
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('user');
+            clearLocalAuthState();
         } finally {
             setIsLoading(false);
         }
-    }, [hydrateUserProfile]);
+    }, [clearLocalAuthState, forceLogout, syncUserProfile]);
+
+    useEffect(() => {
+        return apiService.onAuthFailure(() => {
+            forceLogout({redirectTo: '/signup'});
+        });
+    }, [forceLogout]);
 
     useEffect(() => {
         void checkAuthStatus();
@@ -141,8 +181,8 @@ export const AuthProvider = ({children}) => {
             }
         }
 
-        void hydrateUserProfile(resolvedUser);
-    }, [hydrateUserProfile]);
+        void syncUserProfile(resolvedUser);
+    }, [syncUserProfile]);
 
     const logout = useCallback(async () => {
         try {
@@ -152,15 +192,9 @@ export const AuthProvider = ({children}) => {
         } catch (error) {
             console.error('Logout API failed:', error);
         } finally {
-            setIsAuthenticated(false);
-            setUser(null);
-            clearAccessToken();
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('user');
-            localStorage.removeItem(IDENTIFIER_HINT_KEY);
-            apiService.resetRateLimitInfo();
+            clearLocalAuthState();
         }
-    }, []);
+    }, [clearLocalAuthState]);
 
     const patchUser = useCallback((nextFields = {}) => {
         setUser((previousUser) => {
@@ -184,9 +218,12 @@ export const AuthProvider = ({children}) => {
         user,
         login,
         logout,
+        forceLogout,
         checkAuthStatus,
         patchUser,
-    }), [isAuthenticated, isLoading, user, login, logout, checkAuthStatus, patchUser]);
+        syncUserProfile,
+        persistUserState,
+    }), [isAuthenticated, isLoading, user, login, logout, forceLogout, checkAuthStatus, patchUser, syncUserProfile, persistUserState]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

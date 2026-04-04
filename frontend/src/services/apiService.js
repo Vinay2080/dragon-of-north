@@ -2,32 +2,17 @@ import {API_CONFIG} from '../config';
 import {getDeviceId} from '../utils/device';
 import {mapErrorCodeToMessage} from '../utils/errorMapper';
 import {exponentialBackoffDelay, shouldRetryRequest, wait} from '../utils/networkUtils';
-import {CSRF_COOKIE_NAME, CSRF_HEADER_NAME, ensureCsrfToken, isStateChangingMethod, readCookie} from '../utils/csrf';
+import {ensureCsrfHeader} from '../utils/csrf';
 import {clearAccessToken, extractAccessToken, getAccessToken, setAccessToken} from './tokenStore';
+import {clearAuthClientState, extractUserStatus, isDeletedUserStatus} from './authSession';
 
 const AUTO_REFRESH_EXCLUDED_ENDPOINTS = new Set([
     API_CONFIG.ENDPOINTS.LOGIN,
     API_CONFIG.ENDPOINTS.REFRESH_TOKEN,
     API_CONFIG.ENDPOINTS.LOGOUT,
-    API_CONFIG.ENDPOINTS.CSRF,
     API_CONFIG.ENDPOINTS.PASSWORD_CHANGE,
     API_CONFIG.ENDPOINTS.PASSWORD_RESET_REQUEST,
     API_CONFIG.ENDPOINTS.PASSWORD_RESET_CONFIRM,
-]);
-
-const CSRF_OPTIONAL_ENDPOINTS = new Set([
-    API_CONFIG.ENDPOINTS.IDENTIFIER_STATUS,
-    API_CONFIG.ENDPOINTS.LOGIN,
-    API_CONFIG.ENDPOINTS.SIGNUP,
-    API_CONFIG.ENDPOINTS.SIGNUP_COMPLETE,
-    API_CONFIG.ENDPOINTS.OAUTH_GOOGLE,
-    API_CONFIG.ENDPOINTS.OAUTH_GOOGLE_SIGNUP,
-    API_CONFIG.ENDPOINTS.PASSWORD_RESET_REQUEST,
-    API_CONFIG.ENDPOINTS.PASSWORD_RESET_CONFIRM,
-    API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST,
-    API_CONFIG.ENDPOINTS.EMAIL_OTP_VERIFY,
-    API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST,
-    API_CONFIG.ENDPOINTS.PHONE_OTP_VERIFY,
 ]);
 
 class ApiService {
@@ -36,6 +21,15 @@ class ApiService {
         this.rateLimitListeners = [];
         this.isRefreshing = false;
         this.refreshPromise = null;
+        this.authFailureListeners = [];
+        this.authFailureInProgress = false;
+    }
+
+    onAuthFailure(callback) {
+        this.authFailureListeners.push(callback);
+        return () => {
+            this.authFailureListeners = this.authFailureListeners.filter((listener) => listener !== callback);
+        };
     }
 
     onRateLimitUpdate(callback) {
@@ -47,6 +41,35 @@ class ApiService {
 
     notifyRateLimitUpdate() {
         this.rateLimitListeners.forEach(callback => callback(this.rateLimitInfo));
+    }
+
+    isDeletedStatusPayload(payload) {
+        return isDeletedUserStatus(extractUserStatus(payload));
+    }
+
+    notifyAuthFailure(reason, payload = null) {
+        if (this.authFailureInProgress) {
+            return;
+        }
+
+        this.authFailureInProgress = true;
+        clearAuthClientState();
+
+        if (this.authFailureListeners.length > 0) {
+            this.authFailureListeners.forEach((listener) => {
+                try {
+                    listener({reason, payload});
+                } catch (listenerError) {
+                    console.error('Auth failure listener error:', listenerError);
+                }
+            });
+        } else if (typeof window !== 'undefined') {
+            window.location.assign('/signup');
+        }
+
+        setTimeout(() => {
+            this.authFailureInProgress = false;
+        }, 0);
     }
 
     extractRateLimitHeaders(response) {
@@ -88,25 +111,16 @@ class ApiService {
         this.isRefreshing = true;
 
         this.refreshPromise = (async () => {
-            let csrfToken = readCookie(CSRF_COOKIE_NAME);
-            if (!csrfToken) {
-                csrfToken = await ensureCsrfToken();
-            }
-
-            const headers = {
-                'Content-Type': 'application/json',
-            };
-
-            if (csrfToken) {
-                headers[CSRF_HEADER_NAME] = csrfToken;
-            }
-
-            return fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REFRESH_TOKEN}`, {
+            const requestOptions = await ensureCsrfHeader({
                 method: 'POST',
-                headers,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 credentials: 'include',
                 body: JSON.stringify({device_id: getDeviceId()}),
             });
+
+            return fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REFRESH_TOKEN}`, requestOptions);
         })().then(async (res) => {
             if (!res.ok) {
                 clearAccessToken();
@@ -168,7 +182,8 @@ class ApiService {
 
         const {skipAuthRefresh = false, ...requestOptions} = options;
         const url = `${API_CONFIG.BASE_URL}${endpoint}`;
-        const defaultOptions = {
+
+        let defaultOptions = {
             headers: {'Content-Type': 'application/json', ...requestOptions.headers},
             credentials: 'include',
             ...requestOptions,
@@ -179,21 +194,9 @@ class ApiService {
             defaultOptions.headers.Authorization = `Bearer ${accessToken}`;
         }
 
-        const method = (defaultOptions.method || 'GET').toUpperCase();
+        defaultOptions = await ensureCsrfHeader(defaultOptions);
 
         try {
-            if (isStateChangingMethod(method)) {
-                const csrfIsOptionalForEndpoint = CSRF_OPTIONAL_ENDPOINTS.has(endpoint);
-
-                if (!csrfIsOptionalForEndpoint) {
-                    const csrfToken = await ensureCsrfToken();
-                    defaultOptions.headers = {
-                        ...defaultOptions.headers,
-                        [CSRF_HEADER_NAME]: csrfToken,
-                    };
-                }
-            }
-
             const response = await fetch(url, defaultOptions);
             this.extractRateLimitHeaders(response);
 
@@ -223,6 +226,14 @@ class ApiService {
 
             if (!response.ok) {
                 const normalizedError = this.normalizeApiError(data, 'An error occurred');
+
+                if (response.status === 401) {
+                    this.notifyAuthFailure('UNAUTHORIZED', data);
+                }
+
+                if (this.isDeletedStatusPayload(data)) {
+                    this.notifyAuthFailure('DELETED', data);
+                }
 
                 if (response.status === 429) {
                     return {
@@ -268,6 +279,17 @@ class ApiService {
                     type: 'API_ERROR',
                     status: response.status,
                     ...normalizedError,
+                    data,
+                };
+            }
+
+            if (this.isDeletedStatusPayload(data)) {
+                this.notifyAuthFailure('DELETED', data);
+                return {
+                    type: 'API_ERROR',
+                    status: 401,
+                    errorCode: 'ACCOUNT_DELETED',
+                    message: 'Your account has been deleted. Please sign up again to continue.',
                     data,
                 };
             }

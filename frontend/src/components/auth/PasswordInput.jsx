@@ -15,6 +15,7 @@ const PasswordInput = ({
                            hasError = false,
                            disabled = false,
                            required = false,
+                           className = '',
                            ...props
                        }) => {
     const [showPassword, setShowPassword] = useState(false);
@@ -29,7 +30,7 @@ const PasswordInput = ({
                 placeholder={placeholder}
                 disabled={disabled}
                 required={required}
-                className={`password-input-field ${hasError ? 'error' : ''}`}
+                className={`auth-input password-input-field ${hasError ? 'error' : ''} ${className}`.trim()}
             />
             <button
                 type="button"

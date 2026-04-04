@@ -8,6 +8,8 @@ import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -34,6 +36,7 @@ public class SessionServiceImpl implements SessionService {
     private final AppUserRepository appUserRepository;
     private final MeterRegistry meterRegistry;
     private final AuditEventLogger auditEventLogger;
+    private final UserStateValidator userStateValidator;
 
     @Value("${app.security.jwt.expiration.refresh-token}")
     private long refreshTokenDurationMs;
@@ -75,8 +78,7 @@ public class SessionServiceImpl implements SessionService {
     @Transactional
     public void revokeSession(String refreshToken, String deviceId) {
         UUID userId = jwtServices.extractUserId(refreshToken);
-        AppUser appUser = appUserRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "User not found"));
+        AppUser appUser = loadAndValidateUser(userId, UserLifecycleOperation.SESSION_REVOKE_CURRENT);
 
         String tokenHash = tokenHasher.hashToken(refreshToken);
 
@@ -118,6 +120,7 @@ public class SessionServiceImpl implements SessionService {
     @Override
     @Transactional
     public void revokeSessionById(UUID userId, UUID sessionId) {
+        loadAndValidateUser(userId, UserLifecycleOperation.SESSION_REVOKE_BY_ID);
         Session session = sessionRepository.findByIdAndAppUserId(sessionId, userId)
                 .orElseThrow(() -> {
                     meterRegistry.counter("session.revoked.failure").increment();
@@ -144,6 +147,7 @@ public class SessionServiceImpl implements SessionService {
             auditEventLogger.log("session.revoke.others", userId, currentDeviceId, null, "failure", "device ID missing", null);
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "device ID missing");
         }
+        loadAndValidateUser(userId, UserLifecycleOperation.SESSION_REVOKE_OTHERS);
         int revokedCount = sessionRepository.revokeAllOtherSessions(userId, currentDeviceId);
         meterRegistry.counter("session.revoked.others").increment(revokedCount);
         auditEventLogger.log("session.revoke.others", userId, currentDeviceId, null, "success", "revoked_count=" + revokedCount, null);
@@ -157,11 +161,7 @@ public class SessionServiceImpl implements SessionService {
     @Transactional
     public UUID validateAndRotateSession(String oldRefreshToken, String newRefreshToken, String deviceId) {
         UUID userId = jwtServices.extractUserId(oldRefreshToken);
-        AppUser appUser = appUserRepository.findById(userId)
-                .orElseThrow(() -> {
-                    auditEventLogger.log("session.rotate", userId, deviceId, null, "failure", "user not found", null);
-                    return new BusinessException(ErrorCode.USER_NOT_FOUND, "user not found");
-                });
+        AppUser appUser = loadAndValidateUser(userId, UserLifecycleOperation.SESSION_ROTATE_REFRESH);
         String oldTokenHash = tokenHasher.hashToken(oldRefreshToken);
         Session session = sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser(oldTokenHash, deviceId, appUser)
                 .orElseThrow(() -> {
@@ -198,5 +198,12 @@ public class SessionServiceImpl implements SessionService {
         int revoked = sessionRepository.revokeAllSessionsByUserId(userId);
         meterRegistry.counter("session.revoked.all_user").increment(revoked);
         auditEventLogger.log("session.revoke.all_user", userId, null, null, "success", "revoked_count=" + revoked, null);
+    }
+
+    private AppUser loadAndValidateUser(UUID userId, UserLifecycleOperation operation) {
+        AppUser appUser = appUserRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "User not found"));
+        userStateValidator.validate(appUser, operation);
+        return appUser;
     }
 }

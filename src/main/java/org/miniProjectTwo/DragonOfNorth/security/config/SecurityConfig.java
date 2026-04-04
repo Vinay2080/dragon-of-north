@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.security.config;
 
 import lombok.RequiredArgsConstructor;
+import org.miniProjectTwo.DragonOfNorth.security.filter.CsrfCookieFilter;
 import org.miniProjectTwo.DragonOfNorth.security.filter.JwtFilter;
 import org.miniProjectTwo.DragonOfNorth.security.handler.RestAccessDeniedHandler;
 import org.miniProjectTwo.DragonOfNorth.security.handler.RestAuthenticationEntryPoint;
@@ -20,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfigurationSource;
 
@@ -30,7 +32,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
  * <ul>
  *   <li>Enables web and method-level security</li>
  *   <li>Builds a stateless {@link SecurityFilterChain} for token-based (JWT) authentication</li>
- *   <li>Disables CSRF protection as the application is stateless</li>
+ *   <li>Uses cookie-based CSRF protection via {@link CookieCsrfTokenRepository}</li>
  *   <li>Whitelists public endpoints defined in {@link #public_urls}</li>
  *   <li>Requires authentication for all other endpoints</li>
  *   <li>Registers a JWT filter for token validation</li>
@@ -44,14 +46,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    /**
-     * Ant-style request matcher patterns that are publicly accessible (no authentication required).
-     * <p>Examples (to be filled as needed):
-     * - "/auth/**" for authentication endpoints (login/register)
-     * - "/swagger-ui/**" and "/v3/api-docs/**" for API documentation
-     * - "/health", "/actuator/**" for health checks/actuator
-     */
     public static final String[] public_urls = {
+            "/api/v1/auth/csrf",
             "/api/v1/auth/identifier/status",
             "/api/v1/auth/identifier/sign-up",
             "/api/v1/auth/identifier/sign-up/complete",
@@ -62,7 +58,6 @@ public class SecurityConfig {
             "/api/v1/auth/oauth/google/signup",
             "/api/v1/auth/password/forgot/request",
             "/api/v1/auth/password/forgot/reset",
-            "/api/v1/auth/csrf",
             "/api/v1/otp/**",
 
             //swagger ui and OpenAPI documentation
@@ -80,27 +75,19 @@ public class SecurityConfig {
 
     /**
      * Ant-style request matcher patterns that bypass CSRF protection.
-     * <p>These endpoints are publicly accessible or have specific security requirements
-     * that make CSRF protection unnecessary or problematic:
-     * - Actuator and documentation endpoints (public access)
-     * - Pre-authentication endpoints (no CSRF tokens available yet)
-     * - OAuth endpoints (external token exchange flows)
+     * Keep bypass scoped to pre-auth auth endpoints only.
      */
     public static final String[] csrf_bypass_urls = {
-            "/actuator/**",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            // Public pre-auth lookup endpoint; keep it callable without CSRF bootstrap race.
-            "/api/v1/auth/identifier/status",
-            // Public login endpoint should not fail when the browser token bootstrap is out of sync.
-            "/api/v1/auth/identifier/login",
-            // Google OAuth token exchange is a public pre-auth flow.
-            "/api/v1/auth/oauth/google",
-            "/api/v1/auth/oauth/google/signup"
+            "/api/v1/auth/identifier/**",
+            "/api/v1/auth/jwt/refresh",
+            "/api/v1/auth/oauth/**",
+            "/api/v1/auth/password/forgot/**",
+            "/api/v1/otp/**"
     };
 
     private final CorsConfigurationSource corsConfigurationSource;
     private final JwtFilter jwtFilter;
+    private final CsrfCookieFilter csrfCookieFilter;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
 
@@ -109,21 +96,6 @@ public class SecurityConfig {
 
     @Value("${app.security.cookie.same-site:Lax}")
     private String cookieSameSite;
-
-    /**
-     * Configures the HTTP security filter chain.
-     *
-     * <p>Pipeline summary:
-     * - Enables cookie-based CSRF protection for browser requests.
-     * - Allows anonymous access to {@link #public_urls}.
-     * - Requires authentication for all other requests.
-     * - Adds the {@link #jwtFilter} before {@link UsernamePasswordAuthenticationFilter}
-     * so JWT tokens are processed prior to username/password auth.
-     * - Sets session management to {@link SessionCreationPolicy#STATELESS}.
-     *
-     * @param httpSecurity the {@link HttpSecurity} to configure
-     * @return the configured {@link SecurityFilterChain}
-     */
 
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity httpSecurity) {
@@ -145,6 +117,7 @@ public class SecurityConfig {
                                 .requestMatchers(public_urls).permitAll()
                                 .anyRequest()
                                 .authenticated())
+                .addFilterAfter(csrfCookieFilter, CsrfFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -16,6 +16,7 @@ import AuthButton from '../components/auth/AuthButton';
 import AuthDivider from '../components/auth/AuthDivider';
 import {validatePassword} from '../utils/validation';
 import {useAuth} from '../context/authUtils';
+import AlertBanner from '../components/AlertBanner.jsx';
 
 const SignupPage = () => {
     const location = useLocation();
@@ -33,6 +34,43 @@ const SignupPage = () => {
     const [fieldErrors, setFieldErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+    const reason = useMemo(() => {
+        const stateReason = location.state?.reason;
+        const queryReason = new URLSearchParams(location.search).get('reason');
+        return stateReason || queryReason;
+    }, [location.search, location.state]);
+
+    const banner = useMemo(() => {
+        if (reason === 'deleted') {
+            return {type: 'error', message: 'User was deleted. Please sign up again to reactivate.'};
+        }
+
+        if (reason === 'inactive') {
+            return {type: 'info', message: 'User not found. Please sign up.'};
+        }
+
+        return null;
+    }, [reason]);
+
+    useEffect(() => {
+        if (!reason) {
+            return;
+        }
+
+        const params = new URLSearchParams(location.search);
+        params.delete('reason');
+        const nextState = {...(location.state || {})};
+        delete nextState.reason;
+
+        navigate({
+            pathname: location.pathname,
+            search: params.toString() ? `?${params.toString()}` : '',
+        }, {
+            replace: true,
+            state: Object.keys(nextState).length ? nextState : null,
+        });
+    }, [location.pathname, location.search, location.state, navigate, reason]);
 
     useEffect(() => {
         if (!isLoading && isAuthenticated) {
@@ -141,25 +179,12 @@ const SignupPage = () => {
             return;
         }
 
-        // Step 2: only after sign-up success, request OTP for SIGNUP verification.
-        const otpEndpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
-        const otpPayload = identifierType === 'EMAIL' ? {email: identifier, otp_purpose: 'SIGNUP'} : {phone: identifier, otp_purpose: 'SIGNUP'};
-        const otpResult = await apiService.post(otpEndpoint, otpPayload);
-
-        if (apiService.isErrorResponse(otpResult)) {
-            const errorMsg = otpResult.message || 'Failed to send OTP. Please try again.';
-            toast.error(errorMsg);
-            authState.setError(errorMsg);
-            setLoading(false);
-            return;
-        }
-
-        authState.setSuccess('Signup complete. Please verify via OTP.');
+        authState.setSuccess('Signup successful. Please login.');
         setShowSuccessMessage(true);
         setLoading(false);
 
         setTimeout(() => {
-            navigate('/otp', {state: {identifier, identifierType}});
+            navigate('/login', {replace: true, state: {reason: 'signup_success'}});
         }, 1500);
     };
 
@@ -177,12 +202,13 @@ const SignupPage = () => {
                 subtitle={<span>Setting up account for <span
                     className="font-medium text-cyan-300">{identifier}</span></span>}
             >
+                <AlertBanner type={banner?.type} message={banner?.message}/>
                 <AuthFlowProgress currentStep="signup"/>
 
                 {showSuccessMessage ? (
                     <AuthSuccessMessage
                         message={authState.message}
-                        actionLabel="Going to verification..."
+                        actionLabel="Redirecting to login..."
                     />
                 ) : (
                     <form onSubmit={handleGetOtp} noValidate>

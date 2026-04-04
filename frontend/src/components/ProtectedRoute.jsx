@@ -1,14 +1,22 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {Navigate, useLocation} from 'react-router-dom';
 import {useAuth} from '../context/authUtils';
+import {isDeletedUserStatus} from '../services/authSession';
 
 /**
  * ProtectedRoute Component
  * Wraps routes that require authentication
  */
 const ProtectedRoute = ({children}) => {
-    const {isAuthenticated, isLoading} = useAuth();
+    const {isAuthenticated, isLoading, user, forceLogout} = useAuth();
     const location = useLocation();
+    const isDeletedUser = isDeletedUserStatus(user?.status);
+
+    useEffect(() => {
+        if (isDeletedUser) {
+            forceLogout({redirectTo: '/signup'});
+        }
+    }, [forceLogout, isDeletedUser]);
 
     // Show loading state while checking auth
     if (isLoading) {
@@ -25,6 +33,10 @@ const ProtectedRoute = ({children}) => {
 
     if (!isAuthenticated) {
         return <Navigate to="/login" state={{from: location}} replace/>;
+    }
+
+    if (isDeletedUser) {
+        return <Navigate to="/signup" state={{reason: 'ACCOUNT_DELETED', from: location}} replace/>;
     }
 
     // Render protected content

@@ -6,9 +6,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
 import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
-import org.miniProjectTwo.DragonOfNorth.modules.session.service.impl.SessionServiceImpl;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -26,8 +27,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SessionServiceImplTest {
@@ -49,6 +49,8 @@ class SessionServiceImplTest {
     private Counter counter;
     @Mock
     private AuditEventLogger auditEventLogger;
+    @Mock
+    private UserStateValidator userStateValidator;
 
     @Test
     void createSession_shouldReplaceExistingDeviceSession() {
@@ -184,12 +186,33 @@ class SessionServiceImplTest {
     @Test
     void revokeAllOtherSessions_shouldLogSuccess_whenSessionsExist() {
         UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
         when(meterRegistry.counter(any())).thenReturn(counter);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
         when(sessionRepository.revokeAllOtherSessions(userId, "currentDevice")).thenReturn(3);
 
         int result = sessionService.revokeAllOtherSessions(userId, "currentDevice");
 
         assertEquals(3, result);
+        verify(userStateValidator).validate(user, UserLifecycleOperation.SESSION_REVOKE_OTHERS);
         verify(auditEventLogger).log("session.revoke.others", userId, "currentDevice", null, "success", "revoked_count=3", null);
+    }
+
+    @Test
+    void revokeSession_shouldThrow_whenUserStateNotAllowed() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+
+        when(jwtServices.extractUserId("refresh")).thenReturn(userId);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        doThrow(new BusinessException(ErrorCode.USER_BLOCKED))
+                .when(userStateValidator).validate(user, UserLifecycleOperation.SESSION_REVOKE_CURRENT);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> sessionService.revokeSession("refresh", "device1"));
+
+        assertEquals(ErrorCode.USER_BLOCKED, ex.getErrorCode());
     }
 }

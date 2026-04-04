@@ -9,10 +9,14 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusF
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl.PhoneAuthenticationServiceImpl;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.mockito.ArgumentCaptor;
@@ -21,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,6 +55,12 @@ class PhoneAuthenticationServiceImplTest {
 
     @Mock
     private AuditEventLogger auditEventLogger;
+
+    @Mock
+    private OtpService otpService;
+
+    @Mock
+    private UserStateValidator userStateValidator;
 
 
     @InjectMocks
@@ -181,6 +192,12 @@ class PhoneAuthenticationServiceImplTest {
 
         when(appUserRepository.findByPhone(phoneNumber)).thenReturn(Optional.of(appUser));
         when(userAuthProviderRepository.findAllByUserId(appUser.getId())).thenReturn(List.of());
+        OtpToken otpToken = OtpToken.builder()
+                .consumed(true)
+                .expiresAt(Instant.now().plusSeconds(60))
+                .verifiedAt(Instant.now())
+                .build();
+        when(otpService.fetchLatest(phoneNumber, PHONE, OtpPurpose.SIGNUP)).thenReturn(otpToken);
 
         //act
         AppUserStatusFinderResponse response = phoneAuthenticationService.completeSignUp(phoneNumber);
@@ -189,6 +206,7 @@ class PhoneAuthenticationServiceImplTest {
         assertEquals(ACTIVE, response.appUserStatus(), "method should return status ACTIVE for valid input (i.e. valid phone number, user exists and user status is ACTIVE");
 
         //verify
+        verify(userStateValidator).validate(appUser, UserLifecycleOperation.LOCAL_SIGNUP_COMPLETE);
         verify(authCommonServices).assignDefaultRole(appUser);
         verify(appUserRepository).save(appUser);
         verify(auditEventLogger).log("auth.signup.complete", appUser.getId(), null, null, "success", "identifier_type=PHONE", null);

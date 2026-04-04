@@ -25,7 +25,7 @@ public interface AuthCommonServices {
     void refreshToken(String refreshToken, HttpServletResponse response, AuthRequestContext context);
 
     /**
-     * Ensures user has the default role if no roles are assigned.
+     * Ensures the user has the default role if no roles are assigned.
      */
     void assignDefaultRole(AppUser appUser);
 
@@ -53,4 +53,9 @@ public interface AuthCommonServices {
      * Changes password for the authenticated user.
      */
     void changePassword(@Valid PasswordChangeRequest request);
+
+    /**
+     * Soft deletes the authenticated account, revokes sessions, and clears auth cookies.
+     */
+    void deleteAccount(HttpServletResponse response, AuthRequestContext context);
 }

@@ -1,7 +1,9 @@
-import {CSRF_HEADER_NAME, ensureCsrfToken, isStateChangingMethod} from '../utils/csrf';
+import {ensureCsrfHeader} from '../utils/csrf';
 import {API_CONFIG} from '../config';
 import {getDeviceId} from '../utils/device';
-import {clearAccessToken, extractAccessToken, getAccessToken, setAccessToken} from '../services/tokenStore';
+import {extractAccessToken, getAccessToken, setAccessToken} from '../services/tokenStore';
+import {logout} from '../services/auth';
+import {extractUserStatus, isDeletedUserStatus} from '../services/authSession';
 
 type RequestConfig = {
     baseURL?: string;
@@ -21,6 +23,16 @@ const responseErrorInterceptors: Array<(error: unknown) => Promise<never>> = [];
 
 let refreshPromise: Promise<void> | null = null;
 
+const redirectToSignup = (): void => {
+    if (typeof window !== 'undefined' && window.location.pathname !== '/signup') {
+        window.location.assign('/signup');
+    }
+};
+
+const payloadHasDeletedStatus = (payload: unknown): boolean => {
+    return isDeletedUserStatus(extractUserStatus(payload as Record<string, unknown>));
+};
+
 const extractAuthErrorStatus = (error: unknown): number | null => {
     const errorRecord = error as { response?: { status?: number } };
     return typeof errorRecord?.response?.status === 'number' ? errorRecord.response.status : null;
@@ -33,25 +45,35 @@ const tryPersistToken = (payload: unknown): void => {
     }
 };
 
+const parseResponseBody = async (response: Response): Promise<unknown> => {
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+        return response.json();
+    }
+
+    return response.text();
+};
+
 const refreshAccessToken = async (): Promise<void> => {
     if (refreshPromise) {
         return refreshPromise;
     }
 
     refreshPromise = (async () => {
-        const csrfToken = await ensureCsrfToken();
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}${API_CONFIG.ENDPOINTS.REFRESH_TOKEN}`, {
+        const requestConfig = await ensureCsrfHeader({
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                [CSRF_HEADER_NAME]: csrfToken,
-            },
+            headers: {'Content-Type': 'application/json'},
             credentials: 'include',
             body: JSON.stringify({device_id: getDeviceId()}),
         });
 
+        const response = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL || ''}${API_CONFIG.ENDPOINTS.REFRESH_TOKEN}`,
+            requestConfig as RequestInit,
+        );
+
         if (!response.ok) {
-            clearAccessToken();
+            logout();
             throw new Error('Refresh request failed');
         }
 
@@ -74,15 +96,6 @@ const applyRequestInterceptors = async (config: RequestConfig) => {
     }
 
     return currentConfig;
-};
-
-const parseResponseBody = async (response: Response): Promise<unknown> => {
-    const contentType = response.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
-        return response.json();
-    }
-
-    return response.text();
 };
 
 const runSuccessInterceptors = (payload: {data: unknown; status: number; headers: Headers}): unknown => {
@@ -113,16 +126,15 @@ const create = (defaults: RequestConfig) => {
         });
 
         const requestMethod = merged.method || 'GET';
-        const isMutatingRequest = isStateChangingMethod(requestMethod);
-        const requestHeaders = {...(merged.headers || {})};
-
-        if (isMutatingRequest) {
-            requestHeaders[CSRF_HEADER_NAME] = await ensureCsrfToken();
-        }
+        const requestWithCsrf = await ensureCsrfHeader({
+            ...merged,
+            method: requestMethod,
+            headers: {...((merged.headers || {}) as Record<string, string>)},
+        });
 
         const response = await fetch(`${merged.baseURL || ''}${merged.url || ''}`, {
-            method: merged.method || 'GET',
-            headers: requestHeaders,
+            method: requestMethod,
+            headers: (requestWithCsrf.headers || {}) as HeadersInit,
             credentials: merged.withCredentials ? 'include' : 'same-origin',
             body: merged.data ? JSON.stringify(merged.data) : undefined,
         });
@@ -135,9 +147,7 @@ const create = (defaults: RequestConfig) => {
             try {
                 return await runErrorInterceptors(error);
             } catch (interceptorError) {
-                const shouldRetry =
-                    extractAuthErrorStatus(interceptorError) === 401
-                    && !config.__isRetryRequest;
+                const shouldRetry = extractAuthErrorStatus(interceptorError) === 401 && !config.__isRetryRequest;
 
                 if (shouldRetry) {
                     await refreshAccessToken();
@@ -168,6 +178,7 @@ const create = (defaults: RequestConfig) => {
                 },
             },
         },
+        get: (url: string, config: RequestConfig = {}) => request({...config, method: 'GET', url}),
         post: (url: string, data?: unknown, config: RequestConfig = {}) => request({...config, method: 'POST', url, data}),
     };
 };
@@ -196,8 +207,26 @@ apiClient.interceptors.request.use((config: RequestConfig): RequestConfig => {
 });
 
 apiClient.interceptors.response.use(
-    (response: {data: unknown; status: number; headers: Headers}): {data: unknown; status: number; headers: Headers} => response,
-    async (error: unknown): Promise<never> => Promise.reject(error),
+    (response: {data: unknown; status: number; headers: Headers}): {data: unknown; status: number; headers: Headers} => {
+        if (payloadHasDeletedStatus(response?.data)) {
+            logout();
+            redirectToSignup();
+        }
+
+        return response;
+    },
+    async (error: unknown): Promise<never> => {
+        const errorRecord = error as {response?: {status?: number; data?: unknown}};
+        const status = errorRecord?.response?.status;
+        const payload = errorRecord?.response?.data;
+
+        if (status === 401 || payloadHasDeletedStatus(payload)) {
+            logout();
+            redirectToSignup();
+        }
+
+        return Promise.reject(error);
+    },
 );
 
 export default apiClient;

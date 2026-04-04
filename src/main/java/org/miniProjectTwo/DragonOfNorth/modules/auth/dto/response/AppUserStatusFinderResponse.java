@@ -7,6 +7,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.Provider;
 
 import java.util.List;
 
+@Schema(name = "AppUserStatusFinderResponse", description = "Response payload describing account existence, verification state, and linked providers for an identifier.")
 public record AppUserStatusFinderResponse(
         @Schema(description = "Whether an account exists for the identifier.", example = "true")
         boolean exists,

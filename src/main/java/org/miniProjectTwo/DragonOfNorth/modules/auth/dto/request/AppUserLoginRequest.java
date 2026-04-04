@@ -26,6 +26,7 @@ import jakarta.validation.constraints.NotBlank;
  * and sets secure cookies. Access tokens are short-lived while refresh tokens enable
  * session continuation without re-authentication.</p>
  */
+@Schema(name = "AppUserLoginRequest", description = "Request payload for local login using an email address or phone number plus password.")
 public record AppUserLoginRequest(
         @NotBlank
         @Schema(description = "Email or phone used for login.", example = "intern.candidate@example.com")

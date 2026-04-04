@@ -57,6 +57,10 @@ public interface AppUserRepository extends JpaRepository<@NonNull AppUser, @NonN
     @Query("select u from AppUser u where u.email = :email")
     Optional<AppUser> findByEmailForUpdate(@Param("email") String email);
 
+    @Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from AppUser u where u.phone = :phone")
+    Optional<AppUser> findByPhoneForUpdate(@Param("phone") String phone);
+
     /**
      * Reads account status by email without loading the full entity.
      *

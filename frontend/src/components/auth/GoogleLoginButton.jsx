@@ -114,7 +114,7 @@ const GoogleLoginButton = ({onSuccess, onError, onStart, disabled = false, autoP
 
             buttonRef.current.innerHTML = '';
             const measuredWidth = buttonRef.current.clientWidth || 320;
-            const buttonWidth = Math.min(360, Math.max(220, Math.floor(measuredWidth)));
+            const buttonWidth = Math.max(1, Math.floor(measuredWidth));
             window.google.accounts.id.renderButton(buttonRef.current, {
                 type: 'standard',
                 theme: 'outline',

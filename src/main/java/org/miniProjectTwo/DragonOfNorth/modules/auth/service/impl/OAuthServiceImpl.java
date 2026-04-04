@@ -11,6 +11,8 @@ import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
@@ -46,6 +48,7 @@ public class OAuthServiceImpl implements OAuthService {
     private final AuthCommonServiceImpl authCommonServiceImpl;
     private final ProfileService profileService;
     private final AuditEventLogger auditEventLogger;
+    private final UserStateValidator userStateValidator;
 
     /**
      * Authenticates a user with Google and establishes an application session.
@@ -53,21 +56,15 @@ public class OAuthServiceImpl implements OAuthService {
     @Override
     @Transactional
     public void authenticatedWithGoogle(String idToken, String deviceId, String expectedIdentifier, HttpServletRequest httpRequest, HttpServletResponse response) {
-        String ipAddress = httpRequest.getHeader("X-Forwarded-For");
-        String requestId = httpRequest.getHeader("X-Request-Id");
-        UUID auditUserId = null;
-        try {
-            OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
-            validateExpectedIdentifier(userInfo, expectedIdentifier);
-            AppUser appUser = findOrCreateUserForGoogleAuth(userInfo);
-            profileService.syncGoogleAvatar(appUser.getId(), userInfo);
-            auditUserId = appUser.getId();
-            finalizeAuthentication(appUser, deviceId, httpRequest, response);
-            auditEventLogger.log("auth.oauth.google.login", auditUserId, deviceId, ipAddress, "success", null, requestId);
-        } catch (BusinessException exception) {
-            auditEventLogger.log("auth.oauth.google.login", auditUserId, deviceId, ipAddress, "failure", exception.getMessage(), requestId);
-            throw exception;
-        }
+        executeGoogleFlow(
+                "auth.oauth.google.login",
+                idToken,
+                deviceId,
+                expectedIdentifier,
+                httpRequest,
+                response,
+                this::findOrCreateUserForGoogleAuth
+        );
     }
 
     /**
@@ -76,21 +73,94 @@ public class OAuthServiceImpl implements OAuthService {
     @Override
     @Transactional
     public void signupWithGoogle(String idToken, String deviceId, String expectedIdentifier, HttpServletRequest httpRequest, HttpServletResponse response) {
-        String ipAddress = httpRequest.getHeader("X-Forwarded-For");
-        String requestId = httpRequest.getHeader("X-Request-Id");
+        executeGoogleFlow(
+                "auth.oauth.google.signup",
+                idToken,
+                deviceId,
+                expectedIdentifier,
+                httpRequest,
+                response,
+                this::findOrCreateUserForSignup
+        );
+    }
+
+    private AppUser findOrCreateUserForSignup(OAuthUserInfo userInfo) {
+        Optional<UserAuthProvider> existingByProviderId = userAuthProviderRepository.findByProviderAndProviderId(Provider.GOOGLE, userInfo.sub());
+        if (existingByProviderId.isPresent()) {
+            return reactivateForGoogleIfNeeded(existingByProviderId.get().getUser(), UserLifecycleOperation.GOOGLE_SIGNUP);
+        }
+
+        Optional<AppUser> existingByEmail = appUserRepository.findByEmailForUpdate(userInfo.email());
+        if (existingByEmail.isPresent()) {
+            AppUser user = existingByEmail.get();
+            if (userStateValidator.isDeleted(user)) {
+                linkGoogleProvider(user, userInfo.sub());
+                return reactivateForGoogleIfNeeded(markGoogleIdentityVerified(user), UserLifecycleOperation.GOOGLE_SIGNUP);
+            }
+            if (userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), Provider.GOOGLE)) {
+                throw new BusinessException(ErrorCode.INVALID_OAUTH_TOKEN, "Google account mismatch. Please login again.");
+            }
+            throw new BusinessException(ErrorCode.OAUTH_LINK_CONFIRMATION_REQUIRED,
+                    "Account already exists. Login with password before linking Google.");
+        }
+
+        return createNewUserWithRetry(userInfo);
+    }
+
+    private void executeGoogleFlow(String eventName,
+                                   String idToken,
+                                   String deviceId,
+                                   String expectedIdentifier,
+                                   HttpServletRequest httpRequest,
+                                   HttpServletResponse response,
+                                   GoogleUserResolver userResolver) {
+        RequestMetadata metadata = extractRequestMetadata(httpRequest);
         UUID auditUserId = null;
         try {
-            OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
-            validateExpectedIdentifier(userInfo, expectedIdentifier);
-            AppUser appUser = findOrCreateUserForSignup(userInfo);
-            profileService.syncGoogleAvatar(appUser.getId(), userInfo);
+            OAuthUserInfo userInfo = verifyGoogleIdentity(idToken, expectedIdentifier);
+            AppUser appUser = userResolver.resolve(userInfo);
+            synchronizeGoogleProfile(appUser, userInfo);
             auditUserId = appUser.getId();
             finalizeAuthentication(appUser, deviceId, httpRequest, response);
-            auditEventLogger.log("auth.oauth.google.signup", auditUserId, deviceId, ipAddress, "success", null, requestId);
+            recordOauthSuccess(eventName, auditUserId, deviceId, metadata);
         } catch (BusinessException exception) {
-            auditEventLogger.log("auth.oauth.google.signup", auditUserId, deviceId, ipAddress, "failure", exception.getMessage(), requestId);
+            recordOauthFailure(eventName, auditUserId, deviceId, metadata, exception);
             throw exception;
         }
+    }
+
+    private AppUser findOrCreateUserForGoogleAuth(OAuthUserInfo userInfo) {
+        Optional<UserAuthProvider> existingByProviderId = userAuthProviderRepository.findByProviderAndProviderId(Provider.GOOGLE, userInfo.sub());
+        if (existingByProviderId.isPresent()) {
+            return reactivateForGoogleIfNeeded(existingByProviderId.get().getUser(), UserLifecycleOperation.GOOGLE_LOGIN);
+        }
+
+        Optional<AppUser> existingByEmail = appUserRepository.findByEmailForUpdate(userInfo.email());
+        if (existingByEmail.isPresent()) {
+            AppUser user = existingByEmail.get();
+            userStateValidator.validate(user, UserLifecycleOperation.GOOGLE_LOGIN);
+            linkGoogleProvider(user, userInfo.sub());
+            return reactivateForGoogleIfNeeded(markGoogleIdentityVerified(user), UserLifecycleOperation.GOOGLE_LOGIN);
+        }
+
+        return createNewUserWithRetry(userInfo);
+    }
+
+    private RequestMetadata extractRequestMetadata(HttpServletRequest httpRequest) {
+        return new RequestMetadata(
+                httpRequest.getHeader("X-Forwarded-For"),
+                httpRequest.getHeader("X-Request-Id")
+        );
+    }
+
+    private OAuthUserInfo verifyGoogleIdentity(String idToken, String expectedIdentifier) {
+        OAuthUserInfo userInfo = tokenVerifierService.verifyToken(idToken);
+        validateExpectedIdentifier(userInfo, expectedIdentifier);
+        return userInfo;
+    }
+
+    private void synchronizeGoogleProfile(AppUser appUser, OAuthUserInfo userInfo) {
+        profileService.syncGoogleAvatar(appUser.getId(), userInfo);
     }
 
 
@@ -123,46 +193,47 @@ public class OAuthServiceImpl implements OAuthService {
         sessionService.createSession(appUser, refreshToken, ipAddress, deviceId, userAgent);
     }
 
-    private AppUser findOrCreateUserForGoogleAuth(OAuthUserInfo userInfo) {
-        Optional<UserAuthProvider> existingByProviderId = userAuthProviderRepository.findByProviderAndProviderId(Provider.GOOGLE, userInfo.sub());
-        if (existingByProviderId.isPresent()) {
-            return existingByProviderId.get().getUser();
-        }
-
-        Optional<AppUser> existingByEmail = appUserRepository.findByEmailForUpdate(userInfo.email());
-        if (existingByEmail.isPresent()) {
-            AppUser user = existingByEmail.get();
-            linkGoogleProvider(user, userInfo.sub());
-            user.setEmailVerified(true);
-            return user;
-        }
-
-        return createNewUserWithRetry(userInfo);
+    private void recordOauthSuccess(String eventName, UUID userId, String deviceId, RequestMetadata metadata) {
+        auditEventLogger.log(eventName, userId, deviceId, metadata.ipAddress(), "success", null, metadata.requestId());
     }
 
-    private AppUser findOrCreateUserForSignup(OAuthUserInfo userInfo) {
-        Optional<UserAuthProvider> existingByProviderId = userAuthProviderRepository.findByProviderAndProviderId(Provider.GOOGLE, userInfo.sub());
-        if (existingByProviderId.isPresent()) {
-            return existingByProviderId.get().getUser();
-        }
-
-        Optional<AppUser> existingByEmail = appUserRepository.findByEmailForUpdate(userInfo.email());
-        if (existingByEmail.isPresent()) {
-            AppUser user = existingByEmail.get();
-            if (userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), Provider.GOOGLE)) {
-                throw new BusinessException(ErrorCode.INVALID_OAUTH_TOKEN, "Google account mismatch. Please login again.");
-            }
-            throw new BusinessException(ErrorCode.OAUTH_LINK_CONFIRMATION_REQUIRED,
-                    "Account already exists. Login with password before linking Google.");
-        }
-
-        return createNewUserWithRetry(userInfo);
+    private void recordOauthFailure(String eventName, UUID userId, String deviceId, RequestMetadata metadata, BusinessException exception) {
+        auditEventLogger.log(eventName, userId, deviceId, metadata.ipAddress(), "failure", exception.getMessage(), metadata.requestId());
     }
 
     private void updateLoginInfo(AppUser user) {
         user.setLastLoginAt(LocalDateTime.now());
         user.setFailedLoginAttempts(0);
         user.setAccountLocked(false);
+    }
+
+    private AppUser reactivateForGoogleIfNeeded(AppUser user, UserLifecycleOperation operation) {
+        userStateValidator.validate(user, operation);
+        if (!userStateValidator.isDeleted(user)) {
+            return user;
+        }
+
+        user.setAppUserStatus(AppUserStatus.ACTIVE);
+        user.setEmailVerified(true);
+        profileService.ensureProfileExists(user.getId(), null);
+        auditEventLogger.log("auth.reactivation", user.getId(), null, null, "success", "identifier_type=GOOGLE", null);
+        return user;
+    }
+
+    private void linkGoogleProvider(AppUser appUser, String providerId) {
+        if (userAuthProviderRepository.existsByUserIdAndProvider(appUser.getId(), Provider.GOOGLE)) {
+            return;
+        }
+        UserAuthProvider provider = new UserAuthProvider();
+        provider.setUser(appUser);
+        provider.setProvider(Provider.GOOGLE);
+        provider.setProviderId(providerId);
+        userAuthProviderRepository.save(provider);
+    }
+
+    private AppUser markGoogleIdentityVerified(AppUser user) {
+        user.setEmailVerified(true);
+        return user;
     }
 
     private AppUser createNewUserWithRetry(OAuthUserInfo userInfo) {
@@ -181,7 +252,7 @@ public class OAuthServiceImpl implements OAuthService {
 
             AppUser savedUser = appUserRepository.save(newUser);
             linkGoogleProvider(savedUser, userInfo.sub());
-            profileService.createProfile(savedUser.getId(), userInfo);
+            profileService.ensureProfileExists(savedUser.getId(), userInfo);
             return savedUser;
 
         } catch (DataIntegrityViolationException e) {
@@ -197,18 +268,15 @@ public class OAuthServiceImpl implements OAuthService {
             existingUser.setEmailVerified(true);
             existingUser.setPassword(null);
             linkGoogleProvider(existingUser, userInfo.sub());
-            return existingUser;
+            return reactivateForGoogleIfNeeded(existingUser, UserLifecycleOperation.GOOGLE_SIGNUP);
         }
     }
 
-    private void linkGoogleProvider(AppUser appUser, String providerId) {
-        if (userAuthProviderRepository.existsByUserIdAndProvider(appUser.getId(), Provider.GOOGLE)) {
-            return;
-        }
-        UserAuthProvider provider = new UserAuthProvider();
-        provider.setUser(appUser);
-        provider.setProvider(Provider.GOOGLE);
-        provider.setProviderId(providerId);
-        userAuthProviderRepository.save(provider);
+    @FunctionalInterface
+    private interface GoogleUserResolver {
+        AppUser resolve(OAuthUserInfo userInfo);
+    }
+
+    private record RequestMetadata(String ipAddress, String requestId) {
     }
 }

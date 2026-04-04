@@ -9,6 +9,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 /**
  * Request DTO for verifying OTP codes delivered via email.
  */
+@Schema(name = "EmailVerifyRequest", description = "Request payload for verifying an OTP that was sent to an email address.")
 public record EmailVerifyRequest(
         @Pattern(regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", message = "enter a valid email")
         @NotBlank(message = "email cannot be blank")

@@ -11,6 +11,8 @@ import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
@@ -54,6 +56,8 @@ class OAuthServiceImplTest {
     private ProfileService profileService;
     @Mock
     private AuditEventLogger auditEventLogger;
+    @Mock
+    private UserStateValidator userStateValidator;
 
     @InjectMocks
     private OAuthServiceImpl oAuthService;
@@ -92,7 +96,7 @@ class OAuthServiceImplTest {
 
         verify(appUserRepository).save(any(AppUser.class));
         verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
-        verify(profileService).createProfile(newUser.getId(), userInfo);
+        verify(profileService).ensureProfileExists(newUser.getId(), userInfo);
         verify(profileService).syncGoogleAvatar(newUser.getId(), userInfo);
         verify(sessionService).createSession(eq(newUser), eq("refresh"), any(), eq("device-1"), any());
         verify(authCommonServiceImpl).setAccessToken(response, "access");
@@ -128,7 +132,8 @@ class OAuthServiceImplTest {
 
         ArgumentCaptor<UserAuthProvider> authProviderCaptor = ArgumentCaptor.forClass(UserAuthProvider.class);
         verify(userAuthProviderRepository).save(authProviderCaptor.capture());
-        verify(profileService, never()).createProfile(any(UUID.class), any());
+        verify(userStateValidator, times(2)).validate(existingUser, UserLifecycleOperation.GOOGLE_LOGIN);
+        verify(profileService, never()).ensureProfileExists(any(UUID.class), any());
         verify(profileService).syncGoogleAvatar(existingUser.getId(), userInfo);
         verify(authCommonServiceImpl).setAccessToken(response, "access");
         verify(authCommonServiceImpl).setRefreshToken(response, "refresh");

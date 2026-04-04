@@ -9,6 +9,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 /**
  * Request DTO for generating OTP codes via email delivery.
  */
+@Schema(name = "EmailOtpRequest", description = "Request payload for sending an OTP to an email address.")
 public record EmailOtpRequest(
         @Pattern(regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", message = "enter a valid email")
         @NotBlank(message = "Email cannot be empty")

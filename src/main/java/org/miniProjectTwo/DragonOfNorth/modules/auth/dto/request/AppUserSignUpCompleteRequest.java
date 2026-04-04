@@ -8,6 +8,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 /**
  * Request record for completing the user sign-up process.
  */
+@Schema(name = "AppUserSignUpCompleteRequest", description = "Request payload for completing sign-up after OTP verification succeeds.")
 public record AppUserSignUpCompleteRequest(
         @NotBlank
         @Schema(description = "Identifier that has completed OTP verification.", example = "user2@example.com")

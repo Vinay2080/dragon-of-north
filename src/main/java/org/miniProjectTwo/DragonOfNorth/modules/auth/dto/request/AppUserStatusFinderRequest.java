@@ -8,6 +8,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 /**
  * Request record for checking user registration status and existence.
  */
+@Schema(name = "AppUserStatusFinderRequest", description = "Request payload used to inspect whether an account exists for an email address or phone number.")
 public record AppUserStatusFinderRequest(
         @NotBlank(message = "identifier cannot be blank")
         @Schema(description = "Identifier to search. Can be email or phone number.", example = "intern.candidate@example.com")

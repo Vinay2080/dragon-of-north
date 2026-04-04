@@ -5,7 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './components/AppLayout';
 import SignupPage from './pages/SignupPage';
 import OtpPage from './pages/OtpPage';
-import AuthPage from './pages/AuthPage';
+import LoginPage from './pages/LoginPage.jsx';
 import SessionsPage from './pages/SessionsPage';
 import ForgotPasswordRequestPage from './pages/ForgotPasswordRequestPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -26,6 +26,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import {useRouteDocumentTitle} from './hooks/useDocumentTitle';
 import ProfilePage from './pages/ProfilePage.jsx';
+import {clearAuthClientState} from './services/authSession';
 
 const AppShell = () => {
     const navigate = useNavigate();
@@ -33,8 +34,7 @@ const AppShell = () => {
     useRouteDocumentTitle();
 
     const onTimeout = useCallback(() => {
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('user');
+        clearAuthClientState();
         toast.error('Your session timed out. Please log in again.');
         navigate('/');
     }, [navigate, toast]);
@@ -63,7 +63,7 @@ const AppShell = () => {
                     <Route path="/terms" element={<TermsOfServicePage/>}/>
                     <Route path="/signup" element={<SignupPage/>}/>
                     <Route path="/otp" element={<OtpPage/>}/>
-                    <Route path="/login" element={<AuthPage/>}/>
+                    <Route path="/login" element={<LoginPage/>}/>
                     <Route path="/auth/callback" element={<OAuthCallbackPage/>}/>
                     <Route path="/forgot-password" element={<ForgotPasswordRequestPage/>}/>
                     <Route path="/reset-password" element={<ResetPasswordPage/>}/>

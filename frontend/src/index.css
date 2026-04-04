@@ -1,6 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,6 +8,9 @@
 
 /* shading preset bridge: --preset a1Xf8HS */
 :root {
+    --font-sans: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
@@ -215,7 +215,7 @@ body {
 }
 
 body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-sans), sans-serif;
     font-size: 16px;
     line-height: 1.6;
     color: hsl(var(--foreground));
@@ -276,7 +276,7 @@ p {
 
 code, .mono, .token-value, .ip-addr,
 .version-tag, .timestamp {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 0.875em;
 }
 
@@ -1565,6 +1565,21 @@ a:hover {
         @apply text-[0.68rem] font-semibold uppercase tracking-[0.16em];
     }
 
+    .auth-form-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        width: 100%;
+    }
+
+    .auth-form-stack > .auth-input,
+    .auth-form-stack > .password-input-wrapper,
+    .auth-form-stack > .auth-primary-btn,
+    .auth-form-stack > .auth-oauth-wrap,
+    .auth-form-stack > .validation-error {
+        width: 100%;
+    }
+
     /* Light Theme */
     .light .auth-label {
         color: #64748b;
@@ -1578,7 +1593,10 @@ a:hover {
     .auth-input {
         @apply w-full px-4 py-[0.86rem] text-sm outline-none transition-all duration-200;
         border-radius: 12px;
-        font-family: 'Inter', sans-serif;
+        min-height: 48px;
+        line-height: 1.25;
+        font-family: var(--font-sans), sans-serif;
+        box-sizing: border-box;
     }
 
     /* Light Theme */
@@ -1769,22 +1787,18 @@ a:hover {
     }
 
     .password-input-wrapper {
-        display: flex;
-        align-items: center;
-        border-radius: 12px;
-        overflow: hidden;
-        transition: all 200ms ease;
+        position: relative;
+        width: 100%;
     }
 
     /* Light Theme */
     .light .password-input-wrapper {
-        background: #ffffff;
-        border: 1px solid rgba(0, 0, 0, 0.1);
+        background: transparent;
+        border: none;
     }
 
     .light .password-input-wrapper:focus-within {
-        border-color: #7c3aed;
-        box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+        box-shadow: none;
     }
 
     .light .password-input-field {
@@ -1797,26 +1811,32 @@ a:hover {
 
     .light .password-toggle-btn {
         color: #7c3aed;
+        /* No transitions */
+        transition: none !important;
     }
 
     .light .password-toggle-btn:hover:not(:disabled) {
         color: #8b5cf6;
-        background: rgba(124, 58, 237, 0.08);
+        /* No animations on hover */
+        transition: none !important;
+        transform: none !important;
     }
 
     .light .password-toggle-btn:active:not(:disabled) {
         color: #6d28d9;
+        /* No animations on active */
+        transition: none !important;
+        transform: none !important;
     }
 
     /* Dark Theme */
     .dark .password-input-wrapper {
-        background: rgba(2, 6, 23, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: transparent;
+        border: none;
     }
 
     .dark .password-input-wrapper:focus-within {
-        border-color: #8b5cf6;
-        box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+        box-shadow: none;
     }
 
     .dark .password-input-field {
@@ -1833,7 +1853,6 @@ a:hover {
 
     .dark .password-toggle-btn:hover:not(:disabled) {
         color: #a78bfa;
-        background: rgba(139, 92, 246, 0.1);
     }
 
     .dark .password-toggle-btn:active:not(:disabled) {
@@ -1841,13 +1860,9 @@ a:hover {
     }
 
     .password-input-field {
-        flex: 1;
-        background: transparent;
-        border: none;
-        padding: 12px 16px;
-        outline: none;
-        font-family: 'Inter', sans-serif;
-        font-size: 14px;
+        width: 100%;
+        padding-right: 4.75rem;
+        font-family: var(--font-sans), sans-serif;
     }
 
     .password-input-field:disabled {
@@ -1856,21 +1871,36 @@ a:hover {
     }
 
     .password-toggle-btn {
-        padding: 0 14px;
+        position: absolute;
+        right: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 0.125rem 0.5rem;
         background: transparent;
         border: none;
         cursor: pointer;
-        transition: all 150ms ease;
         font-size: 12px;
-        font-weight: 600;
+        font-weight: 500;
         display: flex;
         align-items: center;
         justify-content: center;
-        height: 100%;
-        min-width: 50px;
-        flex-shrink: 0;
+        height: auto;
+        min-width: 0;
         white-space: nowrap;
         letter-spacing: 0.03125rem;
+        z-index: 1;
+        /* Disable all animations and transitions */
+        transition: none !important;
+        animation: none !important;
+    }
+
+    .password-toggle-btn:hover:not(:disabled) {
+        transform: translateY(-50%) !important;
+    }
+
+    .password-toggle-btn:active:not(:disabled) {
+        transform: translateY(-50%) !important;
+        background: transparent !important;
     }
 
 
@@ -1933,6 +1963,10 @@ a:hover {
         background: linear-gradient(135deg, #8b5cf6, #6366f1);
         border: none;
         cursor: pointer;
+        min-height: 48px;
+        line-height: 1.25;
+        box-sizing: border-box;
+        font-family: var(--font-sans), sans-serif;
     }
 
     /* Light Theme - Softer shadow */
@@ -1974,6 +2008,8 @@ a:hover {
         justify-content: center;
         overflow: visible;
         min-height: 48px;
+        padding-inline: 0.25rem;
+        box-sizing: border-box;
     }
 
     /* Light Theme */
@@ -2005,6 +2041,10 @@ a:hover {
         align-items: center;
         justify-content: center;
         overflow: visible;
+        min-height: 48px;
+        line-height: 1.25;
+        box-sizing: border-box;
+        font-weight: 500;
     }
 
     .auth-oauth-button-target > div,
@@ -2916,23 +2956,30 @@ a:hover {
         border: 1px solid #e5e7eb;
         background: #ffffff;
         color: var(--don-text-primary);
-        font-size: 13px;
-        font-weight: 600;
-        display: inline-flex;
+        display: flex;
         align-items: center;
         justify-content: center;
+        object-fit: cover;
         text-transform: uppercase;
     }
 
     .dashboard-avatar-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: none;
+        border-radius: 9999px;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
-        transition: all 200ms ease-out;
+        transition: transform 180ms ease, opacity 180ms ease;
     }
 
     .dashboard-avatar-btn:hover {
-        transform: translateY(-1px) scale(1.03);
-        border-color: rgba(139, 92, 246, 0.3);
-        box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+        transform: translateY(-1px);
+        opacity: 0.96;
     }
 
     .dark .dashboard-avatar {
@@ -2941,8 +2988,7 @@ a:hover {
     }
 
     .dark .dashboard-avatar-btn:hover {
-        border-color: rgba(139, 92, 246, 0.3);
-        box-shadow: 0 0 16px rgba(139, 92, 246, 0.15);
+        opacity: 0.96;
     }
 
     .profile-menu {
@@ -4577,6 +4623,22 @@ a:hover {
     .scc-card-wrapper[style*="--i: 6"] { animation-delay: 0.41s; }
     .scc-card-wrapper[style*="--i: 7"] { animation-delay: 0.45s; }
 
+    .scc-grid--refreshed .scc-card {
+        animation: scc-card-refresh-flash 0.55s ease;
+    }
+
+    @keyframes scc-card-refresh-flash {
+        0% {
+            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+        }
+        35% {
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+        }
+    }
+
     /* ── LOADING SKELETON ────────────────────────────── */
     .scc-loading-skeleton {
         display: flex;
@@ -4666,25 +4728,30 @@ a:hover {
     .scc-refresh-btn {
         width: 36px;
         height: 36px;
-        display: grid;
-        place-items: center;
-        background: var(--don-bg-card);
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
         border: 1px solid var(--don-border-default);
         border-radius: 8px;
         color: var(--don-text-primary);
         cursor: pointer;
-        transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.12s ease, opacity 0.2s ease;
     }
 
-    .scc-refresh-btn svg {
-        transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    .scc-refresh-icon {
+        display: inline-flex;
+        width: 14px;
+        height: 14px;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        line-height: 1;
+        transform-origin: center;
     }
 
-    .scc-refresh-btn.loading svg {
-        animation: spinSmooth 1s linear infinite;
-    }
-
-    @keyframes spinSmooth {
+    @keyframes scc-refresh-spin {
         from {
             transform: rotate(0deg);
         }
@@ -4693,18 +4760,23 @@ a:hover {
         }
     }
 
+    .scc-refresh-icon.spin {
+        animation: scc-refresh-spin 0.7s linear 1;
+    }
+
     .scc-refresh-btn:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--don-bg-card) 75%, var(--don-accent) 25%);
+        background: color-mix(in srgb, var(--don-bg-surface) 85%, var(--don-accent) 15%);
         border-color: var(--don-accent);
-        transform: scale(1.08);
     }
 
     .scc-refresh-btn:active:not(:disabled) {
-        transform: scale(0.92);
+        transform: scale(0.96);
+        background: color-mix(in srgb, var(--don-bg-surface) 76%, var(--don-accent) 24%);
     }
 
+    .scc-refresh-btn.is-loading,
     .scc-refresh-btn:disabled {
-        opacity: 0.5;
+        opacity: 0.65;
         cursor: not-allowed;
     }
 
@@ -4807,8 +4879,7 @@ a:hover {
     }
 
     .light .scc-refresh-btn:hover:not(:disabled) {
-        background: rgba(139, 92, 246, 0.15);
-        backdrop-filter: blur(4px);
+        background: rgba(139, 92, 246, 0.12);
     }
 
     .light .scc-revoked-toggle:hover {
@@ -4881,11 +4952,10 @@ a:hover {
     }
 
     .dark .scc-refresh-btn:hover:not(:disabled) {
-        background: transparent;
+        background: rgba(124, 58, 237, 0.08);
         border-color: #8b5cf6;
         color: #d8b4fe;
-        box-shadow: 0 0 16px rgba(139, 92, 246, 0.35);
-        transform: scale(1.08);
+        box-shadow: none;
     }
 
     .dark .scc-collapse {
@@ -5391,8 +5461,10 @@ a:hover {
 
         .scc-hero__actions {
             width: 100%;
+            justify-content: space-between;
             gap: 8px;
         }
+
 
         .scc-danger-btn {
             flex: 1;

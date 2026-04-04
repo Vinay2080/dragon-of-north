@@ -44,7 +44,11 @@ public class ApplicationExceptionHandler {
         // Builds error response from a business exception
         final ErrorResponse errorResponse = ErrorResponse.builder()
                 .code(businessException.getErrorCode().getCode())
-                .defaultMessage(businessException.getErrorCode().getDefaultMessage())
+                .defaultMessage(
+                        businessException.getMessage() != null && !businessException.getMessage().isBlank()
+                                ? businessException.getMessage()
+                                : businessException.getErrorCode().getDefaultMessage()
+                )
                 .build();
 
         return ResponseEntity

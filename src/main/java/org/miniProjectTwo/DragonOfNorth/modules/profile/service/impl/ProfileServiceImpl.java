@@ -7,6 +7,8 @@ import org.miniProjectTwo.DragonOfNorth.modules.profile.model.Profile;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.repo.ProfileRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
@@ -24,6 +26,7 @@ public class ProfileServiceImpl implements org.miniProjectTwo.DragonOfNorth.modu
 
     private final ProfileRepository profileRepository;
     private final AppUserRepository appUserRepository;
+    private final UserStateValidator userStateValidator;
 
     @Override
     public void createProfile(UUID userId, OAuthUserInfo userInfo) {
@@ -44,6 +47,13 @@ public class ProfileServiceImpl implements org.miniProjectTwo.DragonOfNorth.modu
             profile.setUsername(generateUniqueUsername(appUser.getEmail()));
         }
         profileRepository.save(profile);
+    }
+
+    @Override
+    public void ensureProfileExists(UUID userId, OAuthUserInfo userInfo) {
+        if (!profileRepository.existsByAppUserId(userId)) {
+            createProfile(userId, userInfo);
+        }
     }
 
     @Override
@@ -78,13 +88,9 @@ public class ProfileServiceImpl implements org.miniProjectTwo.DragonOfNorth.modu
 
     @Override
     @Transactional
-    public void updateProfile(String bio, String avatarUrl, String displayName, String username) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "User must be authenticated to update profile");
-        }
-
-        UUID userId = resolveUserId(authentication);
+    public Profile updateProfile(String bio, String avatarUrl, String displayName, String username) {
+        AppUser appUser = findAuthenticatedUser(UserLifecycleOperation.PROFILE_UPDATE);
+        UUID userId = appUser.getId();
         Profile profile = getOrCreateProfile(userId);
 
         if (username != null && !username.equalsIgnoreCase(profile.getUsername())) {
@@ -99,18 +105,25 @@ public class ProfileServiceImpl implements org.miniProjectTwo.DragonOfNorth.modu
             applyUserAvatarUpdate(profile, avatarUrl);
         }
         updateIfNotNull(displayName, profile::setDisplayName);
-
+        return profile;
     }
 
     @Override
     public Profile getProfile() {
+        return getOrCreateProfile(findAuthenticatedUser(UserLifecycleOperation.PROFILE_READ).getId());
+    }
+
+    private AppUser findAuthenticatedUser(UserLifecycleOperation operation) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "User must be authenticated to view profile");
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "User must be authenticated");
         }
 
         UUID userId = resolveUserId(authentication);
-        return getOrCreateProfile(userId);
+        AppUser appUser = appUserRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        userStateValidator.validate(appUser, operation);
+        return appUser;
     }
 
     private Profile getOrCreateProfile(UUID userId) {

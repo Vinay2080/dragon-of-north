@@ -116,7 +116,7 @@ export default function ProfileDropdown() {
                         }
                         setIsOpen((v) => !v);
                     }}
-                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200/80 bg-white/70 px-2 py-1.5 text-sm text-slate-700 shadow-sm transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200"
+                    className="dashboard-avatar-btn"
                     aria-haspopup="menu"
                     aria-expanded={isOpen}
                     aria-label="Open profile menu"
@@ -124,7 +124,7 @@ export default function ProfileDropdown() {
                     <img
                         src={avatarSrc}
                         alt="User avatar"
-                        className="h-6 w-6 rounded-full border border-border object-cover"
+                        className="dashboard-avatar"
                         referrerPolicy="no-referrer"
                         onError={() => setAvatarLoadFailed(true)}
                     />
@@ -275,4 +275,3 @@ export default function ProfileDropdown() {
         </>
     );
 }
-

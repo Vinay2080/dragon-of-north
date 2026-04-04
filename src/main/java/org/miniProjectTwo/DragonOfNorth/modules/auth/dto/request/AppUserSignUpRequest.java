@@ -31,6 +31,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
  * through {@code ApiResponse} wrapper. User must complete verification via {@code AppUserSignUpCompleteRequest}
  * before full authentication capabilities are enabled.</p>
  */
+@Schema(name = "AppUserSignUpRequest", description = "Request payload for starting a local identifier-based sign-up flow.")
 public record AppUserSignUpRequest(
 
         @NotBlank
