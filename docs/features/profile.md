@@ -13,6 +13,7 @@ Allow authenticated users to read and update profile metadata and expose primary
 3. Update path writes profile fields via profile service.
 4. Read path fetches profile entity and resolves provider (`LOCAL`/`GOOGLE`).
 5. API response returns normalized profile payload.
+6. Provisioning paths call `ensureProfileExists(...)` for idempotent profile creation.
 
 ## Key Classes (controllers, services, repositories)
 - Controller: `ProfileController`
@@ -28,6 +29,7 @@ Allow authenticated users to read and update profile metadata and expose primary
 - Principal can arrive as `AppUserDetails`, `AppUser`, UUID, or raw string UUID.
 - Unsupported principal shape throws unauthorized business exception.
 - Provider may be null if neither LOCAL nor GOOGLE mapping exists.
+- Profile creation for auth/oauth flows is idempotent via `ensureProfileExists`.
 
 ## Dependencies
 - Spring Security context

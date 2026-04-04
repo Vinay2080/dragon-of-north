@@ -13,6 +13,8 @@ import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
@@ -38,8 +40,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.ACTIVE;
-import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.LOCKED;
+import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.eq;
@@ -79,6 +80,9 @@ class AuthCommonServiceImplTest {
 
     @Mock
     private AuditEventLogger auditEventLogger;
+
+    @Mock
+    private UserStateValidator userStateValidator;
 
     @AfterEach
     void clearSecurityContext() {
@@ -169,7 +173,6 @@ class AuthCommonServiceImplTest {
         when(userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), Provider.LOCAL)).thenReturn(true);
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
         when(authentication.getPrincipal()).thenReturn(new AppUserDetails(user));
-        when(appUserRepository.isEmailVerified(user.getId())).thenReturn(false);
         when(meterRegistry.counter(anyString())).thenReturn(failureCounter);
 
         BusinessException exception = assertThrows(BusinessException.class, () ->
@@ -249,6 +252,97 @@ class AuthCommonServiceImplTest {
 
         assertEquals(ErrorCode.SAME_PASSWORD, exception.getErrorCode());
         assertEquals("New password must be different from current password", exception.getMessage());
+        verify(appUserRepository, never()).save(any());
+        verify(sessionService, never()).revokeAllSessionsByUserId(any());
+    }
+
+    @Test
+    void refreshToken_shouldValidateUserStateBeforeRotation() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        Counter successCounter = mock(Counter.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+
+        when(jwtServices.extractUserId("old-refresh")).thenReturn(userId);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(jwtServices.generateRefreshToken(userId)).thenReturn("new-refresh");
+        when(sessionService.validateAndRotateSession("old-refresh", "new-refresh", "device-1")).thenReturn(userId);
+        when(roleRepository.findRolesById(userId)).thenReturn(Set.of());
+        when(jwtServices.refreshAccessToken("new-refresh", Set.of())).thenReturn("new-access");
+        when(meterRegistry.counter(anyString())).thenReturn(successCounter);
+
+        authCommonService.refreshToken("old-refresh", response, context);
+
+        verify(userStateValidator).validate(user, UserLifecycleOperation.SESSION_ROTATE_REFRESH);
+        verify(sessionService).validateAndRotateSession("old-refresh", "new-refresh", "device-1");
+    }
+
+    @Test
+    void logoutUser_shouldValidateUserStateBeforeSessionRevoke() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        Counter successCounter = mock(Counter.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+
+        when(jwtServices.extractUserId("refresh-token")).thenReturn(userId);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(meterRegistry.counter(anyString())).thenReturn(successCounter);
+
+        authCommonService.logoutUser("refresh-token", response, context);
+
+        verify(userStateValidator).validate(user, UserLifecycleOperation.SESSION_REVOKE_CURRENT);
+        verify(sessionService).revokeSession("refresh-token", "device-1");
+    }
+
+    @Test
+    void deleteAccount_shouldValidateStateAndSoftDelete() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+        user.setAppUserStatus(ACTIVE);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        Counter successCounter = mock(Counter.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, Set.of()));
+        SecurityContextHolder.setContext(securityContext);
+
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(meterRegistry.counter(anyString())).thenReturn(successCounter);
+
+        authCommonService.deleteAccount(response, context);
+
+        assertEquals(DELETED, user.getAppUserStatus());
+        verify(userStateValidator).validate(user, UserLifecycleOperation.ACCOUNT_DELETION);
+        verify(appUserRepository).save(user);
+        verify(sessionService).revokeAllSessionsByUserId(userId);
+    }
+
+    @Test
+    void deleteAccount_shouldNotDeleteWhenStateValidationFails() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, Set.of()));
+        SecurityContextHolder.setContext(securityContext);
+
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        doThrow(new BusinessException(ErrorCode.USER_BLOCKED))
+                .when(userStateValidator).validate(user, UserLifecycleOperation.ACCOUNT_DELETION);
+
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> authCommonService.deleteAccount(response, context));
+
+        assertEquals(ErrorCode.USER_BLOCKED, exception.getErrorCode());
         verify(appUserRepository, never()).save(any());
         verify(sessionService, never()).revokeAllSessionsByUserId(any());
     }

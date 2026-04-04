@@ -124,6 +124,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
         UUID userId = extractLogoutUserId(refreshToken, context);
         try {
+            userStateValidator.validate(findUserById(userId), UserLifecycleOperation.SESSION_REVOKE_CURRENT);
             sessionService.revokeSession(refreshToken, context.deviceId());
         } catch (BusinessException exception) {
             recordLogoutFailure(userId, context, exception.getMessage());
@@ -171,6 +172,23 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         sessionService.revokeAllSessionsByUserId(appUser.getId());
 
         recordPasswordChangeSuccess(appUser.getId());
+    }
+
+    @Override
+    @Transactional
+    public void deleteAccount(HttpServletResponse response, AuthRequestContext context) {
+        AppUser appUser = findAuthenticatedUser();
+        userStateValidator.validate(appUser, UserLifecycleOperation.ACCOUNT_DELETION);
+        appUser.setAppUserStatus(AppUserStatus.DELETED);
+        appUserRepository.save(appUser);
+        sessionService.revokeAllSessionsByUserId(appUser.getId());
+        clearAuthCookies(response);
+        recordAccountDeletionSuccess(appUser.getId(), context);
+    }
+
+    private void recordAccountDeletionSuccess(UUID userId, AuthRequestContext context) {
+        meterRegistry.counter("auth.account_delete.success").increment();
+        auditEventLogger.log("auth.account_delete", userId, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
     }
 
     private AppUser findAuthenticatedUser() {
@@ -332,8 +350,14 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         ensureDeviceIdPresent(context.deviceId());
     }
 
+    private AppUser findUserById(UUID userId) {
+        return appUserRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    }
+
     private TokenRefreshData rotateRefreshTokens(String oldRefreshToken, String deviceId) {
         UUID userIdFromOldToken = jwtServices.extractUserId(oldRefreshToken);
+        userStateValidator.validate(findUserById(userIdFromOldToken), UserLifecycleOperation.SESSION_ROTATE_REFRESH);
         String newRefreshToken = jwtServices.generateRefreshToken(userIdFromOldToken);
         UUID userId = sessionService.validateAndRotateSession(oldRefreshToken, newRefreshToken, deviceId);
         Set<Role> roles = roleRepository.findRolesById(userId);

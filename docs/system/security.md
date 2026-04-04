@@ -26,6 +26,12 @@
 - Method-level security is enabled (`@EnableMethodSecurity`) for future fine-grained rules.
 - Role entities (`roles`, `permissions`) support RBAC expansion.
 
+## User Lifecycle Enforcement
+
+- `UserStateValidator` enforces lifecycle gates using `UserLifecycleOperation`.
+- State-changing auth/session operations validate account state before mutation.
+- Disallowed states fail fast with business errors (for example blocked/deleted restrictions).
+
 ## Security Headers
 - CSP default policy: `default-src 'self'`
 - HSTS enabled for subdomains, 1 year max-age

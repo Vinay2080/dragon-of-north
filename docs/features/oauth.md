@@ -11,7 +11,7 @@ Authenticate or sign up users using Google ID tokens while preserving the same s
 1. Controller receives `id_token` (+ optional expected identifier/device id).
 2. Service verifies token against configured Google client id.
 3. Existing-account path: authenticate and issue cookies.
-4. Signup path: create/link user + provider record, assign defaults, issue cookies.
+4. Signup path: create/link user + provider record, ensure profile exists, issue cookies.
 5. Session entry is persisted for refresh-token lifecycle.
 
 ## Key Classes (controllers, services, repositories)
@@ -24,11 +24,13 @@ Authenticate or sign up users using Google ID tokens while preserving the same s
 - Provider linkage prevents local password flow from bypassing provider constraints.
 - Expected identifier can be checked to reduce token-account mismatch risk.
 - Tokens are not trusted until verification service validates signature/audience.
+- User lifecycle is validated (`GOOGLE_LOGIN` / `GOOGLE_SIGNUP`) before completing auth.
 
 ## Edge cases
 - Existing identifier with incompatible provider path is rejected.
 - Invalid/expired Google token results in authentication failure.
 - Duplicate provider mapping prevented by DB uniqueness.
+- Deleted users can be reactivated through allowed Google lifecycle operations.
 
 ## Dependencies
 - Google OAuth config (`google.client-id`)

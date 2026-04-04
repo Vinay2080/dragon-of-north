@@ -184,5 +184,18 @@ class AuthenticationControllerTest {
         verify(authCommonServices).login(eq(request.identifier()), eq(request.password()), any(), any(AuthRequestContext.class));
     }
 
+    @Test
+    void deleteAccount_shouldReturnOk_whenRequestIsValid() throws Exception {
+        DeviceIdRequest request = new DeviceIdRequest("device-1");
+
+        mockMvc.perform(post("/api/v1/auth/account/delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"));
+
+        verify(authCommonServices).deleteAccount(any(), any(AuthRequestContext.class));
+    }
+
 
 }

@@ -487,4 +487,50 @@ public interface AuthenticationApi {
             )
             PasswordChangeRequest request
     );
+
+    @Operation(
+            summary = "Delete account (soft)",
+            description = "Marks the authenticated account as DELETED, revokes all sessions, and clears authentication cookies."
+    )
+    @SecurityRequirement(name = "accessTokenCookie")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Account deleted successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "accountDeleted",
+                                    value = """
+                                            {
+                                              "message": "account deleted successfully",
+                                              "api_response_status": "success",
+                                              "time": "2026-04-04T06:45:00Z"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "Authentication is required"),
+            @ApiResponse(responseCode = "403", description = "Account deletion is not allowed for this account state")
+    })
+    ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> deleteAccount(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Device identifier used for audit context.",
+                    content = @Content(
+                            examples = @ExampleObject(
+                                    name = "deleteAccountRequest",
+                                    value = """
+                                            {
+                                              "device_id": "web-chrome-macos"
+                                            }
+                                            """
+                            )
+                    )
+            )
+            DeviceIdRequest deviceIdRequest,
+            @Parameter(hidden = true) HttpServletRequest request,
+            @Parameter(hidden = true) HttpServletResponse response
+    );
 }

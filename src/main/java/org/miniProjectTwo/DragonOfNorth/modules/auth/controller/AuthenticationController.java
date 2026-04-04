@@ -11,6 +11,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusF
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -30,7 +31,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @GetMapping("/csrf")
-    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> csrf(CsrfToken csrfToken) {
+    public ResponseEntity<ApiResponse<?>> csrf(CsrfToken csrfToken) {
         csrfToken.getToken();
         return ResponseEntity.ok(successMessage("csrf token ready"));
     }
@@ -67,7 +68,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/identifier/login")
-    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> loginUser(
+    public ResponseEntity<ApiResponse<?>> loginUser(
             @RequestBody @Valid AppUserLoginRequest request,
             HttpServletResponse httpServletResponse,
             HttpServletRequest httpServletRequest
@@ -79,7 +80,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/jwt/refresh")
-    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> refreshToken(
+    public ResponseEntity<ApiResponse<?>> refreshToken(
             HttpServletRequest request,
             HttpServletResponse response,
             @RequestBody @Valid DeviceIdRequest deviceIdRequest
@@ -91,7 +92,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/password/forgot/request")
-    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> requestPasswordResetOtp(
+    public ResponseEntity<ApiResponse<?>> requestPasswordResetOtp(
             @RequestBody @Valid PasswordResetRequestOtpRequest request
     ) {
         authCommonServices.requestPasswordResetOtp(request.identifier(), request.identifierType());
@@ -100,7 +101,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/password/forgot/reset")
-    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> resetPassword(
+    public ResponseEntity<ApiResponse<?>> resetPassword(
             @RequestBody @Valid PasswordResetConfirmRequest request
     ) {
         authCommonServices.resetPassword(request);
@@ -109,7 +110,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/identifier/logout")
-    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> logoutUser(
+    public ResponseEntity<ApiResponse<?>> logoutUser(
             HttpServletResponse response,
             HttpServletRequest request,
             @RequestBody @Valid DeviceIdRequest deviceIdRequest
@@ -121,13 +122,24 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/password/change")
-    public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> changePassword(
+    public ResponseEntity<ApiResponse<?>> changePassword(
             @RequestBody @Valid PasswordChangeRequest request
     ) {
         authCommonServices.changePassword(request);
         return ResponseEntity.ok(successMessage("password change successful"));
     }
 
+    @Override
+    @PostMapping("/account/delete")
+    public ResponseEntity<ApiResponse<?>> deleteAccount(
+            @RequestBody @Valid DeviceIdRequest deviceIdRequest,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, deviceIdRequest.deviceId());
+        authCommonServices.deleteAccount(response, context);
+        return ResponseEntity.ok(successMessage("account deleted successfully"));
+    }
     private String extractRefreshToken(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {

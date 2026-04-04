@@ -9,10 +9,15 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusF
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
+import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.mockito.ArgumentCaptor;
@@ -21,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,6 +63,10 @@ class EmailAuthenticationServiceImplTest {
 
     @Mock
     private ProfileService profileService;
+    @Mock
+    private OtpService otpService;
+    @Mock
+    private UserStateValidator userStateValidator;
 
     private final String email = "test@mockito.com";
 
@@ -158,7 +168,7 @@ class EmailAuthenticationServiceImplTest {
         assertEquals(ACTIVE, capturedUser.getAppUserStatus(), "user status should be ACTIVE once the user is saved");
 
         verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
-        verify(profileService, never()).createProfile(any(UUID.class), any());
+        verify(profileService, never()).ensureProfileExists(any(UUID.class), any());
         verify(auditEventLogger).log("auth.signup", null, null, null, "success", "identifier_type=EMAIL", null);
         verify(auditEventLogger, never()).log(eq("auth.signup"), isNull(), isNull(), isNull(), eq("failure"), anyString(), isNull());
     }
@@ -177,6 +187,12 @@ class EmailAuthenticationServiceImplTest {
 
         when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(appUser));
         when(userAuthProviderRepository.findAllByUserId(appUser.getId())).thenReturn(List.of());
+        OtpToken otpToken = OtpToken.builder()
+                .consumed(true)
+                .expiresAt(Instant.now().plusSeconds(60))
+                .verifiedAt(Instant.now())
+                .build();
+        when(otpService.fetchLatest(email, EMAIL, OtpPurpose.SIGNUP)).thenReturn(otpToken);
 
         //act
         AppUserStatusFinderResponse response = emailAuthenticationService.completeSignUp(email);
@@ -186,9 +202,10 @@ class EmailAuthenticationServiceImplTest {
         assertEquals(ACTIVE, response.appUserStatus(), "method should return status ACTIVE when called");
 
         //verify
+        verify(userStateValidator).validate(appUser, UserLifecycleOperation.LOCAL_SIGNUP_COMPLETE);
         verify(authCommonServices).assignDefaultRole(appUser);
         verify(appUserRepository).save(appUser);
-        verify(profileService).createProfile(appUser.getId(), null);
+        verify(profileService).ensureProfileExists(appUser.getId(), null);
         verify(auditEventLogger).log("auth.signup.complete", appUser.getId(), null, null, "success", "identifier_type=EMAIL", null);
 
     }
@@ -206,7 +223,7 @@ class EmailAuthenticationServiceImplTest {
 
         //verify
         verify(appUserRepository, never()).save(any());
-        verify(profileService, never()).createProfile(any(UUID.class), any());
+        verify(profileService, never()).ensureProfileExists(any(UUID.class), any());
         verify(auditEventLogger).log(eq("auth.signup.complete"), isNull(), isNull(), isNull(), eq("failure"), anyString(), isNull());
     }
 

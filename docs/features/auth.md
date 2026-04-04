@@ -13,10 +13,11 @@ Handle status lookup, sign-up progression, login, token refresh, logout, and pas
 - `POST /api/v1/auth/password/forgot/request`
 - `POST /api/v1/auth/password/forgot/reset`
 - `POST /api/v1/auth/password/change`
+- `POST /api/v1/auth/account/delete`
 
 ## Flow (step-by-step backend flow)
 1. Controller receives identifier-based request and resolves auth strategy.
-2. Service validates account/provider state and credential/OTP requirements.
+2. Service validates account/provider state via `UserStateValidator` and enforces credential/OTP requirements.
 3. On login/refresh, JWTs are minted and refresh session is created/rotated.
 4. Access/refresh cookies are written or cleared based on outcome.
 5. Metrics and audit events are recorded for success/failure.
@@ -32,6 +33,7 @@ Handle status lookup, sign-up progression, login, token refresh, logout, and pas
 - Refresh token value is persisted only as hash.
 - Local login is blocked for Google-only accounts.
 - Password reset/change revokes active sessions.
+- State-changing auth flows (login, refresh, logout, password reset/change, account delete) are lifecycle-gated.
 
 ## Edge cases
 - Missing refresh cookie or missing `device_id` returns auth error.
