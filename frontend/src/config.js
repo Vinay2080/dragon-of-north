@@ -18,6 +18,7 @@ export const API_CONFIG = {
         PASSWORD_RESET_REQUEST: '/api/v1/auth/password/forgot/request',
         PASSWORD_RESET_CONFIRM: '/api/v1/auth/password/forgot/reset',
         PASSWORD_CHANGE: '/api/v1/auth/password/change',
+        ACCOUNT_DELETE: '/api/v1/auth/account/delete',
 
         // Profile
         PROFILE: '/api/v1/profile',

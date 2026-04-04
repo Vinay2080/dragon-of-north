@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import AuthButton from '../auth/AuthButton';
 import PasswordInput from '../auth/PasswordInput';
 import ValidationError from '../Validation/ValidationError';
@@ -22,11 +23,13 @@ const EMPTY_PASSWORD_ERRORS = {
 const PASSWORD_COMPLEXITY_MESSAGE = 'Password must be at least 8 characters with letters and numbers';
 
 const SecuritySection = ({authProvider}) => {
+    const navigate = useNavigate();
     const {toast} = useToast();
-    const {user} = useAuth();
+    const {user, logout} = useAuth();
     const [passwordForm, setPasswordForm] = useState(EMPTY_PASSWORD_STATE);
     const [passwordErrors, setPasswordErrors] = useState(EMPTY_PASSWORD_ERRORS);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDeleteSubmitting, setIsDeleteSubmitting] = useState(false);
     const normalizedAuthProvider = String(authProvider || '').toUpperCase();
     const canChangePassword = !normalizedAuthProvider || normalizedAuthProvider === 'LOCAL';
 
@@ -193,6 +196,39 @@ const SecuritySection = ({authProvider}) => {
         }
     };
 
+    const deleteAccount = async () => {
+        if (isDeleteSubmitting) {
+            return;
+        }
+
+        const confirmed = window.confirm('Delete your account permanently? This action cannot be undone.');
+        if (!confirmed) {
+            return;
+        }
+
+        setIsDeleteSubmitting(true);
+        try {
+            const result = await apiService.post(API_CONFIG.ENDPOINTS.ACCOUNT_DELETE, {
+                device_id: getDeviceId(),
+            });
+
+            if (apiService.isErrorResponse(result)) {
+                if (result?.status === 401 || result?.status === 403) {
+                    toast.error('Your session has expired. Please log in again.');
+                } else {
+                    toast.error(result.backendMessage || result.message || 'Unable to delete account right now.');
+                }
+                return;
+            }
+
+            toast.success('Account deleted successfully.');
+            await logout();
+            navigate('/signup');
+        } finally {
+            setIsDeleteSubmitting(false);
+        }
+    };
+
     return (
         <section
             className="group rounded-3xl border border-slate-200/80 bg-[rgba(255,255,255,0.86)] p-6 shadow-[0_18px_36px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_rgba(15,23,42,0.12)] dark:border-slate-800/80 dark:bg-[rgba(11,18,32,0.92)]">
@@ -296,15 +332,22 @@ const SecuritySection = ({authProvider}) => {
                 </AuthButton>
                 </form>
             )}
+
+            <div className="mt-6 rounded-2xl border border-rose-200/80 bg-rose-50/70 p-4 shadow-sm dark:border-rose-500/25 dark:bg-rose-500/10">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-rose-700 dark:text-rose-300">Danger zone</h3>
+                <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">Deleting your account removes your profile and active sessions permanently.</p>
+                <button
+                    type="button"
+                    onClick={deleteAccount}
+                    disabled={isDeleteSubmitting}
+                    className="mt-4 h-11 rounded-2xl border border-rose-300/70 bg-[linear-gradient(135deg,#f43f5e,#fb7185)] px-4 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(244,63,94,0.32)] focus:outline-none focus:ring-2 focus:ring-rose-300/60 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-400/35"
+                >
+                    {isDeleteSubmitting ? 'Deleting account...' : 'Delete account'}
+                </button>
+            </div>
         </section>
     );
 };
 
 export default SecuritySection;
-
-
-
-
-
-
 

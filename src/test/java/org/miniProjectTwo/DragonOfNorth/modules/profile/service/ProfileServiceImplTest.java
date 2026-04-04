@@ -8,6 +8,8 @@ import org.miniProjectTwo.DragonOfNorth.modules.profile.repo.ProfileRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.impl.ProfileServiceImpl;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -35,6 +37,9 @@ class ProfileServiceImplTest {
 
     @Mock
     private AppUserRepository appUserRepository;
+
+    @Mock
+    private UserStateValidator userStateValidator;
 
     @InjectMocks
     private ProfileServiceImpl profileService;
@@ -117,6 +122,8 @@ class ProfileServiceImplTest {
     @Test
     void updateProfile_shouldUpdateFields_whenPrincipalIsUuid() {
         UUID userId = UUID.randomUUID();
+        AppUser appUser = new AppUser();
+        appUser.setId(userId);
 
         Profile profile = new Profile();
         profile.setUsername("old_name");
@@ -129,6 +136,7 @@ class ProfileServiceImplTest {
         context.setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, List.of()));
         SecurityContextHolder.setContext(context);
 
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(appUser));
         when(profileRepository.findByAppUserId(userId)).thenReturn(Optional.of(profile));
         when(profileRepository.existsByUsernameIgnoreCase("new_name")).thenReturn(false);
 
@@ -140,11 +148,14 @@ class ProfileServiceImplTest {
         assertEquals(AvatarSource.USER_DEFINED, profile.getAvatarSource());
         assertNull(profile.getAvatarExternalUrl());
         assertEquals("new_display", profile.getDisplayName());
+        verify(userStateValidator).validate(appUser, UserLifecycleOperation.PROFILE_UPDATE);
     }
 
     @Test
     void updateProfile_shouldResetAvatarSource_whenAvatarCleared() {
         UUID userId = UUID.randomUUID();
+        AppUser appUser = new AppUser();
+        appUser.setId(userId);
 
         Profile profile = new Profile();
         profile.setAvatarUrl("https://google.example/avatar.png");
@@ -155,6 +166,7 @@ class ProfileServiceImplTest {
         context.setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, List.of()));
         SecurityContextHolder.setContext(context);
 
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(appUser));
         when(profileRepository.findByAppUserId(userId)).thenReturn(Optional.of(profile));
 
         profileService.updateProfile(null, "   ", null, null);
@@ -162,6 +174,7 @@ class ProfileServiceImplTest {
         assertNull(profile.getAvatarUrl());
         assertEquals(AvatarSource.NONE, profile.getAvatarSource());
         assertNull(profile.getAvatarExternalUrl());
+        verify(userStateValidator).validate(appUser, UserLifecycleOperation.PROFILE_UPDATE);
     }
 
     @Test
