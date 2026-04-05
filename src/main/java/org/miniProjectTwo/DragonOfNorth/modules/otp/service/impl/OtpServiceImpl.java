@@ -90,6 +90,8 @@ public class OtpServiceImpl implements OtpService {
         try {
             enforceRateLimits(normalizedIdentifier, otpType, otpPurpose);
 
+            invalidatePreviousOtp(normalizedIdentifier, otpType, otpPurpose);
+
             String otp = generateOtp();
             String hash = BCrypt.hashpw(otp, BCrypt.gensalt());
 
@@ -105,6 +107,17 @@ public class OtpServiceImpl implements OtpService {
             auditEventLogger.log("auth.otp.request", null, null, null, "failure", resolveFailureReason(ex), null);
             throw ex;
         }
+    }
+
+    private void invalidatePreviousOtp(String identifier, IdentifierType otpType, OtpPurpose otpPurpose) {
+        otpTokenRepository
+                .findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(identifier, otpType, otpPurpose)
+                .ifPresent(prev -> {
+                    if (!prev.isConsumed()) {
+                        prev.setConsumed(true);
+                        otpTokenRepository.save(prev);
+                    }
+                });
     }
 
     /**

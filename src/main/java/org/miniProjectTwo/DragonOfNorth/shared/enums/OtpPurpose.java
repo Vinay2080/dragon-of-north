@@ -17,6 +17,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl.OtpServiceImpl;
 public enum OtpPurpose {
     SIGNUP,
     LOGIN,
+    LOGIN_UNVERIFIED,
     PASSWORD_RESET,
     TWO_FACTOR_AUTH
 }

@@ -20,9 +20,29 @@ const OtpPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const {toast} = useToast();
-    const {identifier, identifierType, flow} = location.state || {};
+
+    // Persist identifier/flow in localStorage so the page survives a browser refresh.
+    const stateIdentifier = location.state?.identifier;
+    const stateIdentifierType = location.state?.identifierType;
+    const stateFlow = location.state?.flow;
+
+    const identifier = stateIdentifier || localStorage.getItem('otpIdentifier') || undefined;
+    const identifierType = stateIdentifierType || localStorage.getItem('otpIdentifierType') || 'EMAIL';
+    const flow = stateFlow || localStorage.getItem('otpFlow') || OTP_FLOW.SIGNUP;
     const resolvedFlow = flow || OTP_FLOW.SIGNUP;
     const isLoginUnverifiedFlow = resolvedFlow === OTP_FLOW.LOGIN_UNVERIFIED;
+
+    useEffect(() => {
+        if (identifier) {
+            localStorage.setItem('otpIdentifier', identifier);
+        }
+        if (identifierType) {
+            localStorage.setItem('otpIdentifierType', identifierType);
+        }
+        if (flow) {
+            localStorage.setItem('otpFlow', flow);
+        }
+    }, [identifier, identifierType, flow]);
 
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [otpError, setOtpError] = useState('');
@@ -61,6 +81,9 @@ const OtpPage = () => {
         if (result?.api_response_status === 'success') {
             localStorage.removeItem('otpTimer');
             localStorage.removeItem('otpTimerTimestamp');
+            localStorage.removeItem('otpIdentifier');
+            localStorage.removeItem('otpIdentifierType');
+            localStorage.removeItem('otpFlow');
             toast.success(
                 isLoginUnverifiedFlow
                     ? 'Email verified successfully. Please log in.'
@@ -87,9 +110,9 @@ const OtpPage = () => {
 
         setOtpError('');
         setLoading(true);
-        // Verification API: /api/v1/otp/email/verify or /api/v1/otp/phone/verify (otp_purpose=SIGNUP)
+        // Verification API: /api/v1/otp/email/verify or /api/v1/otp/phone/verify
         const endpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_VERIFY : API_CONFIG.ENDPOINTS.PHONE_OTP_VERIFY;
-        const payload = identifierType === 'EMAIL' ? {email: identifier, otp: otpCode, otp_purpose: 'SIGNUP'} : {phone: identifier, otp: otpCode, otp_purpose: 'SIGNUP'};
+        const payload = identifierType === 'EMAIL' ? {email: identifier, otp: otpCode, otp_purpose: resolvedFlow} : {phone: identifier, otp: otpCode, otp_purpose: resolvedFlow};
         const verifyResult = await apiService.post(endpoint, payload);
 
         if (apiService.isErrorResponse(verifyResult)) {
@@ -121,7 +144,7 @@ const OtpPage = () => {
 
         // Resend uses the same OTP request APIs as initial signup OTP issuance.
         const endpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
-        const payload = identifierType === 'EMAIL' ? {email: identifier, otp_purpose: 'SIGNUP'} : {phone: identifier, otp_purpose: 'SIGNUP'};
+        const payload = identifierType === 'EMAIL' ? {email: identifier, otp_purpose: resolvedFlow} : {phone: identifier, otp_purpose: resolvedFlow};
         const result = await apiService.post(endpoint, payload);
 
         if (apiService.isErrorResponse(result)) {

@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.ACTIVE;
+import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.PENDING_VERIFICATION;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode.USER_NOT_FOUND;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.EMAIL;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
@@ -165,7 +166,7 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
         AppUser user = new AppUser();
         user.setEmail(request.identifier());
         user.setPassword(passwordEncoder.encode(request.password()));
-        user.setAppUserStatus(ACTIVE);
+        user.setAppUserStatus(PENDING_VERIFICATION);
         user.setEmailVerified(false);
         return user;
     }
@@ -204,6 +205,7 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
 
         appUser.setPassword(passwordEncoder.encode(request.password()));
         appUser.setEmailVerified(false);
+        appUser.setAppUserStatus(PENDING_VERIFICATION);
         persistLocalProviderIfMissing(appUser);
         AppUser savedUser = appUserRepository.save(appUser);
         recordReactivationStarted(savedUser);
@@ -217,16 +219,25 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     }
 
     private void ensureSignupOtpVerified(String identifier) {
-        OtpToken otpToken;
-        try {
-            otpToken = otpService.fetchLatest(identifier.trim().toLowerCase(), EMAIL, OtpPurpose.SIGNUP);
-        } catch (IllegalArgumentException ex) {
+        OtpToken otpToken = findVerifiedSignupOtp(identifier);
+        if (otpToken == null || !otpToken.isConsumed() || otpToken.isExpired() || otpToken.getVerifiedAt() == null) {
             throw new BusinessException(ErrorCode.OTP_VERIFICATION_REQUIRED);
         }
+    }
 
-        if (!otpToken.isConsumed() || otpToken.isExpired() || otpToken.getVerifiedAt() == null) {
-            throw new BusinessException(ErrorCode.OTP_VERIFICATION_REQUIRED);
+    private OtpToken findVerifiedSignupOtp(String identifier) {
+        String normalizedIdentifier = identifier.trim().toLowerCase();
+        for (OtpPurpose purpose : new OtpPurpose[]{OtpPurpose.SIGNUP, OtpPurpose.LOGIN_UNVERIFIED}) {
+            try {
+                OtpToken token = otpService.fetchLatest(normalizedIdentifier, EMAIL, purpose);
+                if (token.isConsumed() && !token.isExpired() && token.getVerifiedAt() != null) {
+                    return token;
+                }
+            } catch (IllegalArgumentException ignored) {
+                // No token for this purpose, try next
+            }
         }
+        return null;
     }
 
     private void completeEmailSignup(AppUser appUser) {
