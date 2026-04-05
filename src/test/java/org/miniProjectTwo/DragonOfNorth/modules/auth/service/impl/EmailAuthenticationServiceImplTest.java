@@ -17,6 +17,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
@@ -226,6 +227,66 @@ class EmailAuthenticationServiceImplTest {
         verify(appUserRepository, never()).save(any());
         verify(profileService, never()).ensureProfileExists(any(UUID.class), any());
         verify(auditEventLogger).log(eq("auth.signup.complete"), isNull(), isNull(), isNull(), eq("failure"), anyString(), isNull());
+    }
+
+    @Test
+    void completeSignUp_shouldSucceed_whenLoginUnverifiedOtpIsVerified() {
+
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
+
+        //arrange
+        AppUser appUser = new AppUser();
+        appUser.setId(java.util.UUID.randomUUID());
+        appUser.setEmail(email);
+        appUser.setAppUserStatus(ACTIVE);
+        appUser.setEmailVerified(false);
+
+        when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(appUser));
+        when(userAuthProviderRepository.findAllByUserId(appUser.getId())).thenReturn(List.of());
+
+        // No SIGNUP OTP exists; LOGIN_UNVERIFIED OTP is verified
+        when(otpService.fetchLatest(email, EMAIL, OtpPurpose.SIGNUP))
+                .thenThrow(new IllegalArgumentException("OTP not found"));
+        OtpToken loginUnverifiedOtp = OtpToken.builder()
+                .consumed(true)
+                .expiresAt(Instant.now().plusSeconds(60))
+                .verifiedAt(Instant.now())
+                .build();
+        when(otpService.fetchLatest(email, EMAIL, OtpPurpose.LOGIN_UNVERIFIED))
+                .thenReturn(loginUnverifiedOtp);
+
+        //act
+        AppUserStatusFinderResponse response = emailAuthenticationService.completeSignUp(email);
+
+        //assert
+        assertNotNull(response);
+        assertEquals(ACTIVE, response.appUserStatus());
+        verify(authCommonServices).assignDefaultRole(appUser);
+    }
+
+    @Test
+    void completeSignUp_shouldThrowOtpVerificationRequired_whenNoValidOtpExists() {
+
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
+
+        //arrange
+        AppUser appUser = new AppUser();
+        appUser.setId(java.util.UUID.randomUUID());
+        appUser.setEmail(email);
+        appUser.setAppUserStatus(ACTIVE);
+
+        when(appUserRepository.findByEmail(email)).thenReturn(Optional.of(appUser));
+
+        // Both SIGNUP and LOGIN_UNVERIFIED OTPs are missing
+        when(otpService.fetchLatest(email, EMAIL, OtpPurpose.SIGNUP))
+                .thenThrow(new IllegalArgumentException("OTP not found"));
+        when(otpService.fetchLatest(email, EMAIL, OtpPurpose.LOGIN_UNVERIFIED))
+                .thenThrow(new IllegalArgumentException("OTP not found"));
+
+        //act + assert
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> emailAuthenticationService.completeSignUp(email));
+        assertEquals(ErrorCode.OTP_VERIFICATION_REQUIRED, exception.getErrorCode());
     }
 
 }

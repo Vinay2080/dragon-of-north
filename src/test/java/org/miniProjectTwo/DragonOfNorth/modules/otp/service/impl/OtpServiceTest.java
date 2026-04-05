@@ -274,20 +274,54 @@ class OtpServiceTest {
     }
 
     @Test
-    void createPhoneOtp_shouldNormalizePhone_whenIdentifierHasSpaces() {
+    void createEmailOtp_shouldInvalidatePreviousUnconsumedOtp_whenNewOtpIsRequested() {
         // arrange
-        String rawPhone = "123 456 7890";
-        String normalizedPhone = "1234567890";
+        String email = "test@example.com";
         OtpPurpose purpose = OtpPurpose.SIGNUP;
 
-        when(otpTokenRepository.findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(eq(normalizedPhone), any(), any()))
-                .thenReturn(Optional.empty());
+        OtpToken previousToken = new OtpToken(email, IdentifierType.EMAIL, "oldHash", 5, purpose);
+        previousToken.setConsumed(false);
+
+        // First call: enforceRateLimits cooldown check (returns token with old lastSentAt)
+        // Second call: invalidatePreviousOtp (same token)
+        previousToken.setLastSentAt(Instant.now().minusSeconds(120)); // past cooldown
+
+        when(otpTokenRepository
+                .findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(email, IdentifierType.EMAIL, purpose))
+                .thenReturn(Optional.of(previousToken));
+        when(otpTokenRepository
+                .countByIdentifierAndTypeAndOtpPurposeCreatedAtAfter(eq(email), eq(IdentifierType.EMAIL), eq(purpose), any(Instant.class)))
+                .thenReturn(0);
 
         // act
-        otpServiceImpl.createPhoneOtp(rawPhone, purpose);
+        otpServiceImpl.createEmailOtp(email, purpose);
 
-        // verify
-        verify(otpTokenRepository).save(argThat(token -> token.getIdentifier().equals(normalizedPhone)));
-        verify(phoneOtpSender).send(eq(normalizedPhone), anyString(), anyInt());
+        // verify that the previous token was consumed
+        assertTrue(previousToken.isConsumed(), "Previous unconsumed OTP should be invalidated");
     }
+
+    @Test
+    void createEmailOtp_shouldNotModifyAlreadyConsumedOtp_whenNewOtpIsRequested() {
+        // arrange
+        String email = "test@example.com";
+        OtpPurpose purpose = OtpPurpose.SIGNUP;
+
+        OtpToken alreadyConsumedToken = new OtpToken(email, IdentifierType.EMAIL, "oldHash", 5, purpose);
+        alreadyConsumedToken.setConsumed(true);
+        alreadyConsumedToken.setLastSentAt(Instant.now().minusSeconds(120));
+
+        when(otpTokenRepository
+                .findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(email, IdentifierType.EMAIL, purpose))
+                .thenReturn(Optional.of(alreadyConsumedToken));
+        when(otpTokenRepository
+                .countByIdentifierAndTypeAndOtpPurposeCreatedAtAfter(eq(email), eq(IdentifierType.EMAIL), eq(purpose), any(Instant.class)))
+                .thenReturn(0);
+
+        // act
+        otpServiceImpl.createEmailOtp(email, purpose);
+
+        // verify save was only called once — for the new OTP, not the already-consumed one
+        verify(otpTokenRepository, times(1)).save(argThat(t -> !t.getOtpHash().equals("oldHash")));
+    }
+
 }

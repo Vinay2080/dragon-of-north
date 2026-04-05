@@ -21,28 +21,31 @@ const OtpPage = () => {
     const navigate = useNavigate();
     const {toast} = useToast();
 
-    // Persist identifier/flow in localStorage so the page survives a browser refresh.
+    // Persist identifier/flow in sessionStorage so the page survives a browser refresh
+    // within the same tab, but not across different browser sessions.
     const stateIdentifier = location.state?.identifier;
     const stateIdentifierType = location.state?.identifierType;
     const stateFlow = location.state?.flow;
 
-    const identifier = stateIdentifier || localStorage.getItem('otpIdentifier') || undefined;
-    const identifierType = stateIdentifierType || localStorage.getItem('otpIdentifierType') || 'EMAIL';
-    const flow = stateFlow || localStorage.getItem('otpFlow') || OTP_FLOW.SIGNUP;
+    // If fresh navigation state is provided, it takes priority and overwrites session storage.
+    // If no state (e.g. page refresh), fall back to session storage from the same tab session.
+    const identifier = stateIdentifier || sessionStorage.getItem('otpIdentifier') || undefined;
+    const identifierType = stateIdentifierType || sessionStorage.getItem('otpIdentifierType') || 'EMAIL';
+    const flow = stateFlow || sessionStorage.getItem('otpFlow') || OTP_FLOW.SIGNUP;
     const resolvedFlow = flow || OTP_FLOW.SIGNUP;
     const isLoginUnverifiedFlow = resolvedFlow === OTP_FLOW.LOGIN_UNVERIFIED;
 
     useEffect(() => {
-        if (identifier) {
-            localStorage.setItem('otpIdentifier', identifier);
+        if (stateIdentifier) {
+            sessionStorage.setItem('otpIdentifier', stateIdentifier);
         }
-        if (identifierType) {
-            localStorage.setItem('otpIdentifierType', identifierType);
+        if (stateIdentifierType) {
+            sessionStorage.setItem('otpIdentifierType', stateIdentifierType);
         }
-        if (flow) {
-            localStorage.setItem('otpFlow', flow);
+        if (stateFlow) {
+            sessionStorage.setItem('otpFlow', stateFlow);
         }
-    }, [identifier, identifierType, flow]);
+    }, [stateIdentifier, stateIdentifierType, stateFlow]);
 
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [otpError, setOtpError] = useState('');
@@ -81,9 +84,9 @@ const OtpPage = () => {
         if (result?.api_response_status === 'success') {
             localStorage.removeItem('otpTimer');
             localStorage.removeItem('otpTimerTimestamp');
-            localStorage.removeItem('otpIdentifier');
-            localStorage.removeItem('otpIdentifierType');
-            localStorage.removeItem('otpFlow');
+            sessionStorage.removeItem('otpIdentifier');
+            sessionStorage.removeItem('otpIdentifierType');
+            sessionStorage.removeItem('otpFlow');
             toast.success(
                 isLoginUnverifiedFlow
                     ? 'Email verified successfully. Please log in.'
