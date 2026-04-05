@@ -147,8 +147,9 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
     }
 
     private AppUser buildPhoneUser(AppUserSignUpRequest request) {
+        String normalizedIdentifier = IdentifierNormalizer.normalizePhone(request.identifier());
         AppUser appUser = new AppUser();
-        appUser.setPhone(IdentifierNormalizer.normalizePhone(request.identifier()));
+        appUser.setPhone(normalizedIdentifier);
         appUser.setPassword(passwordEncoder.encode(request.password()));
         appUser.setAppUserStatus(ACTIVE);
         return appUser;
@@ -162,7 +163,7 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
     }
 
     private AppUser findUserByPhone(String identifier) {
-        return appUserRepository.findByPhone(IdentifierNormalizer.normalizePhone(identifier))
+        return appUserRepository.findByPhone(identifier)
                 .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
     }
 
@@ -203,7 +204,7 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
     private void ensureSignupOtpVerified(String identifier) {
         OtpToken otpToken;
         try {
-            otpToken = otpService.fetchLatest(IdentifierNormalizer.normalizePhone(identifier), PHONE, OtpPurpose.SIGNUP);
+            otpToken = otpService.fetchLatest(identifier, PHONE, OtpPurpose.SIGNUP);
         } catch (BusinessException ex) {
             if (ex.getErrorCode() != ErrorCode.OTP_NOT_FOUND) {
                 throw ex;

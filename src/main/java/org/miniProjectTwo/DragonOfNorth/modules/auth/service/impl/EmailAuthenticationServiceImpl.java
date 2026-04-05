@@ -169,8 +169,9 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     }
 
     private AppUser buildEmailUser(AppUserSignUpRequest request) {
+        String normalizedIdentifier = IdentifierNormalizer.normalizeEmail(request.identifier());
         AppUser user = new AppUser();
-        user.setEmail(IdentifierNormalizer.normalizeEmail(request.identifier()));
+        user.setEmail(normalizedIdentifier);
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setAppUserStatus(PENDING_VERIFICATION);
         user.setEmailVerified(false);
@@ -185,7 +186,7 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     }
 
     private AppUser findUserByEmail(String identifier) {
-        return appUserRepository.findByEmail(IdentifierNormalizer.normalizeEmail(identifier))
+        return appUserRepository.findByEmail(identifier)
                 .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
     }
 
@@ -225,7 +226,7 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     }
 
     private void ensureSignupOtpVerified(String identifier) {
-        String normalizedIdentifier = IdentifierNormalizer.normalizeEmail(identifier);
+        String normalizedIdentifier = identifier;
         OtpToken latestVerified = null;
 
         for (OtpPurpose purpose : List.of(OtpPurpose.SIGNUP, OtpPurpose.LOGIN_UNVERIFIED)) {
