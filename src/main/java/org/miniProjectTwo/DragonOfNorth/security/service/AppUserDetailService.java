@@ -5,6 +5,7 @@ import org.jspecify.annotations.NullMarked;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
+import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -43,14 +44,15 @@ public class AppUserDetailService implements UserDetailsService {
     @Override
     @NullMarked
     public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
-
-
+        String normalizedIdentifier = identifier != null && identifier.contains("@")
+                ? IdentifierNormalizer.normalizeEmail(identifier)
+                : IdentifierNormalizer.normalizePhone(identifier);
         Optional<AppUser> appUser;
 
-        if (identifier.contains("@")) {
-            appUser = repository.findByEmail(identifier);
+        if (normalizedIdentifier != null && normalizedIdentifier.contains("@")) {
+            appUser = repository.findByEmail(normalizedIdentifier);
         } else {
-            appUser = repository.findByPhone(identifier);
+            appUser = repository.findByPhone(normalizedIdentifier);
         }
 
         AppUser user = appUser.orElseThrow(

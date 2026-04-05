@@ -31,6 +31,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.ACTIVE;
+import static org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode.OTP_VERIFICATION_REQUIRED;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.PHONE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -151,6 +152,7 @@ class PhoneAuthenticationServiceImplTest {
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
         when(appUserRepository.save(any(AppUser.class))).thenReturn(appUser);
         when(appUserRepository.findByPhone(request.identifier())).thenReturn(Optional.of(appUser));
+        when(appUserRepository.findByPhoneForUpdate(request.identifier())).thenReturn(Optional.empty());
         when(userAuthProviderRepository.findAllByUserId(appUser.getId())).thenReturn(List.of());
 
         //act
@@ -210,6 +212,28 @@ class PhoneAuthenticationServiceImplTest {
         verify(authCommonServices).assignDefaultRole(appUser);
         verify(appUserRepository).save(appUser);
         verify(auditEventLogger).log("auth.signup.complete", appUser.getId(), null, null, "success", "identifier_type=PHONE", null);
+    }
+
+    @Test
+    void completeSignUp_shouldRejectWhenSignupOtpNotVerifiedEvenIfConsumed_whenVerifiedAtMissing() {
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
+        AppUser appUser = new AppUser();
+        appUser.setId(java.util.UUID.randomUUID());
+        appUser.setPhone(phoneNumber);
+        appUser.setAppUserStatus(ACTIVE);
+
+        OtpToken otpToken = OtpToken.builder()
+                .consumed(true)
+                .expiresAt(Instant.now().plusSeconds(60))
+                .verifiedAt(null)
+                .build();
+
+        when(appUserRepository.findByPhone(phoneNumber)).thenReturn(Optional.of(appUser));
+        when(otpService.fetchLatest(phoneNumber, PHONE, OtpPurpose.SIGNUP)).thenReturn(otpToken);
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> phoneAuthenticationService.completeSignUp(phoneNumber));
+        assertEquals(OTP_VERIFICATION_REQUIRED, ex.getErrorCode());
+        verify(appUserRepository, never()).save(any());
     }
 
     @Test

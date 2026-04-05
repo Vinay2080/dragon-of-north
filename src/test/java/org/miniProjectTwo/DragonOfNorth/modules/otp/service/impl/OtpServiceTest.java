@@ -52,7 +52,7 @@ class OtpServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(meterRegistry.counter(anyString())).thenReturn(counter);
+        lenient().when(meterRegistry.counter(anyString())).thenReturn(counter);
         otpServiceImpl = new OtpServiceImpl(otpTokenRepository, emailOtpSender, phoneOtpSender, meterRegistry, auditEventLogger);
         ReflectionTestUtils.setField(otpServiceImpl, "otpLength", 6);
         ReflectionTestUtils.setField(otpServiceImpl, "ttlMinutes", 5);
@@ -81,6 +81,7 @@ class OtpServiceTest {
         otpServiceImpl.createPhoneOtp(phone, purpose);
 
         // verify
+        verify(otpTokenRepository).invalidateActiveTokens(eq(phone), eq(IdentifierType.PHONE), eq(purpose));
         verify(otpTokenRepository).save(any(OtpToken.class));
         verify(phoneOtpSender, atLeastOnce()).send(anyString(), anyString(), anyInt());
     }
@@ -233,7 +234,24 @@ class OtpServiceTest {
                 .thenReturn(5); // maxRequestsPerWindow is 5 in setUp
 
         // act & assert
-        assertThrows(IllegalStateException.class, () -> otpServiceImpl.createEmailOtp(email, purpose));
+        BusinessException exception = assertThrows(BusinessException.class, () -> otpServiceImpl.createEmailOtp(email, purpose));
+        assertEquals(ErrorCode.OTP_TOO_MANY_REQUESTS, exception.getErrorCode());
+    }
+
+    @Test
+    void fetchLatest_shouldThrowBusinessExceptionOtpNotFound_whenTokenMissing() {
+        // arrange
+        when(otpTokenRepository.findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc("missing@example.com", IdentifierType.EMAIL, OtpPurpose.SIGNUP))
+                .thenReturn(Optional.empty());
+
+        // act
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> otpServiceImpl.fetchLatest("missing@example.com", IdentifierType.EMAIL, OtpPurpose.SIGNUP)
+        );
+
+        // assert
+        assertEquals(ErrorCode.OTP_NOT_FOUND, exception.getErrorCode());
     }
 
     @Test

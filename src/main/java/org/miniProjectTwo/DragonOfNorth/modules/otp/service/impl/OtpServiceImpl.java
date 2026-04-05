@@ -13,6 +13,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpVerificationStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
+import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
@@ -68,7 +69,7 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     @Override
     public void createEmailOtp(String email, OtpPurpose otpPurpose) {
-        createOtp(emailOtpSender, otpPurpose, email, EMAIL, e -> e.trim().toLowerCase());
+        createOtp(emailOtpSender, otpPurpose, email, EMAIL, IdentifierNormalizer::normalizeEmail);
     }
 
     /**
@@ -77,7 +78,7 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     @Override
     public void createPhoneOtp(String phone, OtpPurpose otpPurpose) {
-        createOtp(phoneOtpSender, otpPurpose, phone, PHONE, p -> p.replace(" ", ""));
+        createOtp(phoneOtpSender, otpPurpose, phone, PHONE, IdentifierNormalizer::normalizePhone);
     }
 
     /**
@@ -116,7 +117,7 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     @Override
     public OtpVerificationStatus verifyEmailOtp(String email, String providedOtp, OtpPurpose otpPurpose) {
-        return verifyToken(fetchLatest(email.trim().toLowerCase(), EMAIL, otpPurpose), providedOtp, otpPurpose);
+        return verifyToken(fetchLatest(IdentifierNormalizer.normalizeEmail(email), EMAIL, otpPurpose), providedOtp, otpPurpose);
     }
 
     /**
@@ -126,7 +127,7 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     @Override
     public OtpVerificationStatus verifyPhoneOtp(String phone, String providedOtp, OtpPurpose otpPurpose) {
-        return verifyToken(fetchLatest(phone.replace(" ", ""), PHONE, otpPurpose), providedOtp, otpPurpose);
+        return verifyToken(fetchLatest(IdentifierNormalizer.normalizePhone(phone), PHONE, otpPurpose), providedOtp, otpPurpose);
     }
 
     /**
@@ -139,7 +140,7 @@ public class OtpServiceImpl implements OtpService {
                 .findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(identifier, otpType, otpPurpose)
                 .orElseThrow(() -> {
                     auditEventLogger.log("auth.otp.verify", null, null, null, "failure", "otp_not_found", null);
-                    return new IllegalArgumentException("OTP not found");
+                    return new BusinessException(ErrorCode.OTP_NOT_FOUND);
                 });
     }
 
@@ -228,7 +229,7 @@ public class OtpServiceImpl implements OtpService {
         if (requestCount >= maxRequestsPerWindow) {
             meterRegistry.counter("auth.otp.request.failure").increment();
             auditEventLogger.log("auth.otp.request", null, null, null, "failure", "request_window_exceeded", null);
-            throw new IllegalStateException("Too many otp requests. Blocked for " + blockDurationMinutes + " minutes.");
+            throw new BusinessException(ErrorCode.OTP_TOO_MANY_REQUESTS, blockDurationMinutes);
         }
 
     }

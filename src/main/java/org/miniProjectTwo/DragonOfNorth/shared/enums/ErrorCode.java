@@ -41,6 +41,7 @@ public enum ErrorCode {
     USER_OPERATION_NOT_ALLOWED("USER_003", "Operation %s is not allowed for account status %s", HttpStatus.FORBIDDEN),
     USER_REACTIVATION_REQUIRED("USER_004", "Account is deleted. Complete verification to reactivate", HttpStatus.FORBIDDEN),
     USER_BLOCKED("USER_005", "Account is blocked", HttpStatus.LOCKED),
+    USER_ALREADY_ACTIVE("USER_006", "User is already active", HttpStatus.CONFLICT),
 
     INVALID_INPUT("VAL_001", "invalid input", HttpStatus.BAD_REQUEST),
     EMAIL_NOT_VERIFIED("VAL_002", "email not verified", HttpStatus.UNAUTHORIZED),
@@ -49,6 +50,7 @@ public enum ErrorCode {
 
     OTP_RATE_LIMIT("OTP_001", "wait %s seconds before requesting another OTP for %s", HttpStatus.TOO_MANY_REQUESTS),
     OTP_TOO_MANY_REQUESTS("OTP_002", "Too many otp requests. Blocked for %s minutes.", HttpStatus.TOO_MANY_REQUESTS),
+    OTP_NOT_FOUND("OTP_003", "OTP not found", HttpStatus.NOT_FOUND),
 
     INVALID_OAUTH_TOKEN("OAUTH_001", "Invalid OAuth token", HttpStatus.UNAUTHORIZED),
     EMAIL_ALREADY_EXISTS("OAUTH_002", "email is already associated with another OAuth provider", HttpStatus.CONFLICT),

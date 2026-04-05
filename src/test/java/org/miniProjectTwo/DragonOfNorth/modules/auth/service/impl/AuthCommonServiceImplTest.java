@@ -185,6 +185,36 @@ class AuthCommonServiceImplTest {
     }
 
     @Test
+    void login_shouldNormalizeEmailBeforeLookup_whenEmailHasWhitespaceAndUppercase() {
+        AppUser user = new AppUser();
+        user.setId(UUID.randomUUID());
+        user.setEmail("user@example.com");
+        user.setEmailVerified(true);
+        user.setRoles(Set.of());
+
+        Authentication authentication = mock(Authentication.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        Counter successCounter = mock(Counter.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+
+        when(appUserRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), Provider.LOCAL)).thenReturn(true);
+        when(authenticationManager.authenticate(any())).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(new AppUserDetails(user));
+        when(jwtServices.generateAccessToken(any(), any())).thenReturn("access");
+        when(jwtServices.generateRefreshToken(any())).thenReturn("refresh");
+        when(meterRegistry.counter(anyString())).thenReturn(successCounter);
+
+        authCommonService.login(" USER@EXAMPLE.COM ", "Secret@123", response, context);
+
+        verify(appUserRepository).findByEmail("user@example.com");
+        verify(authenticationManager).authenticate(argThat(token ->
+                token instanceof UsernamePasswordAuthenticationToken up &&
+                        "user@example.com".equals(up.getPrincipal())
+        ));
+    }
+
+    @Test
     void changePassword_shouldRejectGoogleOnlyAccounts() {
         UUID userId = UUID.randomUUID();
         AppUser user = new AppUser();

@@ -24,6 +24,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
+import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -69,15 +70,16 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
     @Override
     public void login(String identifier, String password, HttpServletResponse response, AuthRequestContext context) {
+        String normalizedIdentifier = normalizeIdentifier(identifier);
         UUID auditUserId = null;
         try {
-            AppUser user = findUserForLogin(identifier);
+            AppUser user = findUserForLogin(normalizedIdentifier);
             auditUserId = user.getId();
 
             userStateValidator.validate(user, UserLifecycleOperation.LOCAL_LOGIN);
             ensureLocalProvider(user);
-            AppUser authenticatedUser = authenticateUser(identifier, password);
-            ensureIdentifierVerified(user, identifier);
+            AppUser authenticatedUser = authenticateUser(normalizedIdentifier, password);
+            ensureIdentifierVerified(user, normalizedIdentifier);
 
             LoginTokens loginTokens = generateLoginTokens(authenticatedUser);
             persistLoginSession(authenticatedUser, loginTokens.refreshToken(), context);
@@ -254,10 +256,11 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     }
 
     private AppUser findUserByIdentifier(String identifier, IdentifierType identifierType) {
+        String normalizedIdentifier = IdentifierNormalizer.normalize(identifier, identifierType);
         return identifierType == IdentifierType.EMAIL
-                ? appUserRepository.findByEmail(identifier)
-                  .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND))
-                : appUserRepository.findByPhone(identifier)
+                ? appUserRepository.findByEmail(normalizedIdentifier)
+                   .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND))
+                : appUserRepository.findByPhone(normalizedIdentifier)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
@@ -290,11 +293,12 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     }
 
     private void createPasswordResetOtp(String identifier, IdentifierType identifierType) {
+        String normalizedIdentifier = IdentifierNormalizer.normalize(identifier, identifierType);
         if (identifierType == IdentifierType.EMAIL) {
-            otpService.createEmailOtp(identifier, OtpPurpose.PASSWORD_RESET);
+            otpService.createEmailOtp(normalizedIdentifier, OtpPurpose.PASSWORD_RESET);
             return;
         }
-        otpService.createPhoneOtp(identifier, OtpPurpose.PASSWORD_RESET);
+        otpService.createPhoneOtp(normalizedIdentifier, OtpPurpose.PASSWORD_RESET);
     }
 
     private void recordPasswordResetRequestSuccess(UUID userId, IdentifierType identifierType) {
@@ -303,9 +307,10 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     }
 
     private AppUser findUserByIdentifierOrNull(String identifier, IdentifierType identifierType) {
+        String normalizedIdentifier = IdentifierNormalizer.normalize(identifier, identifierType);
         return identifierType == IdentifierType.EMAIL
-                ? appUserRepository.findByEmail(identifier).orElse(null)
-                : appUserRepository.findByPhone(identifier).orElse(null);
+                ? appUserRepository.findByEmail(normalizedIdentifier).orElse(null)
+                : appUserRepository.findByPhone(normalizedIdentifier).orElse(null);
     }
 
     private void validateLogoutRequest(String refreshToken, AuthRequestContext context) {
@@ -418,6 +423,15 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         if (!identifier.contains("@") && !user.isPhoneNumberVerified()) {
             throw new BusinessException(ErrorCode.PHONE_NOT_VERIFIED, "Phone number not verified. Please verify your phone before logging in.");
         }
+    }
+
+    private String normalizeIdentifier(String identifier) {
+        if (identifier == null) {
+            return null;
+        }
+        return identifier.contains("@")
+                ? IdentifierNormalizer.normalizeEmail(identifier)
+                : IdentifierNormalizer.normalizePhone(identifier);
     }
 
     private LoginTokens generateLoginTokens(AppUser appUser) {

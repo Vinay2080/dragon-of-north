@@ -17,8 +17,11 @@ public class UserStateValidator {
             throw new BusinessException(ErrorCode.USER_OPERATION_NOT_ALLOWED, operation.name(), "UNKNOWN");
         }
 
-        if (status == ACTIVE && isActiveAllowed(operation)) {
-            return;
+        if (status == ACTIVE) {
+            if (isActiveAllowed(operation)) {
+                return;
+            }
+            throw new BusinessException(ErrorCode.USER_ALREADY_ACTIVE);
         }
 
         if (status == PENDING_VERIFICATION) {

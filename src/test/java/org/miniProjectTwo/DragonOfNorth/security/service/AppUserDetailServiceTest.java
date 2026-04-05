@@ -52,6 +52,26 @@ class AppUserDetailServiceTest {
     }
 
     @Test
+    void loadUserByUsername_shouldNormalizeEmail_whenEmailHasWhitespaceAndUppercase() {
+        // arrange
+        String rawEmail = " TEST@Example.com ";
+        String normalizedEmail = "test@example.com";
+        AppUser appUser = new AppUser();
+        appUser.setId(UUID.randomUUID());
+        appUser.setEmail(normalizedEmail);
+
+        when(repository.findByEmail(normalizedEmail)).thenReturn(Optional.of(appUser));
+
+        // act
+        UserDetails userDetails = appUserDetailService.loadUserByUsername(rawEmail);
+
+        // assert
+        assertNotNull(userDetails);
+        verify(repository).findByEmail(normalizedEmail);
+        verify(repository, never()).findByPhone(anyString());
+    }
+
+    @Test
     void loadUserByUsername_shouldReturnUserDetails_whenPhoneIsProvidedAndUserExists() {
         // arrange
         String phone = "1234567890";

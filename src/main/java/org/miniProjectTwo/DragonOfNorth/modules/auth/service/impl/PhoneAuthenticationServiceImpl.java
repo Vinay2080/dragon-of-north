@@ -20,6 +20,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
+import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,7 +79,8 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
     @Override
     public AppUserStatusFinderResponse getUserStatus(String identifier) {
         meterRegistry.counter("auth.status_lookup.requested").increment();
-        return appUserRepository.findByPhone(identifier)
+        String normalizedIdentifier = IdentifierNormalizer.normalizePhone(identifier);
+        return appUserRepository.findByPhone(normalizedIdentifier)
                 .map(this::buildStatusResponse)
                 .orElseGet(AppUserStatusFinderResponse::notFound);
     }
@@ -96,10 +98,11 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
     @Override
     @Transactional
     public AppUserStatusFinderResponse signUpUser(AppUserSignUpRequest request) {
+        String normalizedIdentifier = IdentifierNormalizer.normalizePhone(request.identifier());
         try {
-            prepareUserForSignup(request);
+            prepareUserForSignup(request, normalizedIdentifier);
             recordSignupSuccess();
-            return getUserStatus(request.identifier());
+            return getUserStatus(normalizedIdentifier);
         } catch (RuntimeException ex) {
             recordSignupFailure(ex);
             throw ex;
@@ -120,13 +123,14 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
     @Override
     @Transactional
     public AppUserStatusFinderResponse completeSignUp(String identifier) {
+        String normalizedIdentifier = IdentifierNormalizer.normalizePhone(identifier);
         try {
-            AppUser appUser = findUserByPhone(identifier);
+            AppUser appUser = findUserByPhone(normalizedIdentifier);
             userStateValidator.validate(appUser, UserLifecycleOperation.LOCAL_SIGNUP_COMPLETE);
-            ensureSignupOtpVerified(identifier);
+            ensureSignupOtpVerified(normalizedIdentifier);
             completePhoneSignup(appUser);
             recordSignupCompleteSuccess(appUser);
-            return getUserStatus(identifier);
+            return getUserStatus(normalizedIdentifier);
         } catch (RuntimeException ex) {
             recordSignupCompleteFailure(ex);
             throw ex;
@@ -144,7 +148,7 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
 
     private AppUser buildPhoneUser(AppUserSignUpRequest request) {
         AppUser appUser = new AppUser();
-        appUser.setPhone(request.identifier());
+        appUser.setPhone(IdentifierNormalizer.normalizePhone(request.identifier()));
         appUser.setPassword(passwordEncoder.encode(request.password()));
         appUser.setAppUserStatus(ACTIVE);
         return appUser;
@@ -158,12 +162,12 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
     }
 
     private AppUser findUserByPhone(String identifier) {
-        return appUserRepository.findByPhone(identifier)
+        return appUserRepository.findByPhone(IdentifierNormalizer.normalizePhone(identifier))
                 .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
     }
 
-    private void prepareUserForSignup(AppUserSignUpRequest request) {
-        appUserRepository.findByPhoneForUpdate(request.identifier())
+    private void prepareUserForSignup(AppUserSignUpRequest request, String normalizedIdentifier) {
+        appUserRepository.findByPhoneForUpdate(normalizedIdentifier)
                 .map(existingUser -> reactivateDeletedAccount(existingUser, request))
                 .orElseGet(() -> createNewUser(request));
     }
@@ -199,12 +203,15 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
     private void ensureSignupOtpVerified(String identifier) {
         OtpToken otpToken;
         try {
-            otpToken = otpService.fetchLatest(identifier.replace(" ", ""), PHONE, OtpPurpose.SIGNUP);
-        } catch (IllegalArgumentException ex) {
+            otpToken = otpService.fetchLatest(IdentifierNormalizer.normalizePhone(identifier), PHONE, OtpPurpose.SIGNUP);
+        } catch (BusinessException ex) {
+            if (ex.getErrorCode() != ErrorCode.OTP_NOT_FOUND) {
+                throw ex;
+            }
             throw new BusinessException(ErrorCode.OTP_VERIFICATION_REQUIRED);
         }
 
-        if (!otpToken.isConsumed() || otpToken.isExpired() || otpToken.getVerifiedAt() == null) {
+        if (otpToken == null || otpToken.isExpired() || otpToken.getVerifiedAt() == null) {
             throw new BusinessException(ErrorCode.OTP_VERIFICATION_REQUIRED);
         }
     }

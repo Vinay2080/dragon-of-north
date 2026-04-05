@@ -4,6 +4,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -21,6 +22,7 @@ public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
     /**
      * Returns the latest OTP token for identifier/type/purpose.
      */
+    @Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     Optional<OtpToken> findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(
             String identifier,
             IdentifierType type,

@@ -21,6 +21,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
+import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,7 +88,8 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     @Override
     public AppUserStatusFinderResponse getUserStatus(String identifier) {
         meterRegistry.counter("auth.status_lookup.requested").increment();
-        return appUserRepository.findByEmail(identifier)
+        String normalizedIdentifier = IdentifierNormalizer.normalizeEmail(identifier);
+        return appUserRepository.findByEmail(normalizedIdentifier)
                 .map(this::buildStatusResponse)
                 .orElseGet(AppUserStatusFinderResponse::notFound);
     }
@@ -108,10 +110,11 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     @Override
     @Transactional
     public AppUserStatusFinderResponse signUpUser(AppUserSignUpRequest request) {
+        String normalizedIdentifier = IdentifierNormalizer.normalizeEmail(request.identifier());
         try {
-            prepareUserForSignup(request);
+            prepareUserForSignup(request, normalizedIdentifier);
             recordSignupSuccess();
-            return getUserStatus(request.identifier());
+            return getUserStatus(normalizedIdentifier);
         } catch (RuntimeException ex) {
             recordSignupFailure(ex);
             throw ex;
@@ -138,13 +141,14 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     @Transactional
     @Override
     public AppUserStatusFinderResponse completeSignUp(String identifier) {
+        String normalizedIdentifier = IdentifierNormalizer.normalizeEmail(identifier);
         try {
-            AppUser appUser = findUserByEmail(identifier);
+            AppUser appUser = findUserByEmail(normalizedIdentifier);
             userStateValidator.validate(appUser, UserLifecycleOperation.LOCAL_SIGNUP_COMPLETE);
-            ensureSignupOtpVerified(identifier);
+            ensureSignupOtpVerified(normalizedIdentifier);
             completeEmailSignup(appUser);
             recordSignupCompleteSuccess(appUser);
-            return getUserStatus(identifier);
+            return getUserStatus(normalizedIdentifier);
         } catch (RuntimeException ex) {
             recordSignupCompleteFailure(ex);
             throw ex;
@@ -166,7 +170,7 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
 
     private AppUser buildEmailUser(AppUserSignUpRequest request) {
         AppUser user = new AppUser();
-        user.setEmail(request.identifier());
+        user.setEmail(IdentifierNormalizer.normalizeEmail(request.identifier()));
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setAppUserStatus(PENDING_VERIFICATION);
         user.setEmailVerified(false);
@@ -181,12 +185,12 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     }
 
     private AppUser findUserByEmail(String identifier) {
-        return appUserRepository.findByEmail(identifier)
+        return appUserRepository.findByEmail(IdentifierNormalizer.normalizeEmail(identifier))
                 .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
     }
 
-    private void prepareUserForSignup(AppUserSignUpRequest request) {
-        appUserRepository.findByEmailForUpdate(request.identifier())
+    private void prepareUserForSignup(AppUserSignUpRequest request, String normalizedIdentifier) {
+        appUserRepository.findByEmailForUpdate(normalizedIdentifier)
                 .map(existingUser -> reactivateDeletedAccount(existingUser, request))
                 .orElseGet(() -> createNewUser(request));
     }
@@ -221,18 +225,21 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
     }
 
     private void ensureSignupOtpVerified(String identifier) {
-        String normalizedIdentifier = identifier.trim().toLowerCase();
+        String normalizedIdentifier = IdentifierNormalizer.normalizeEmail(identifier);
         OtpToken latestVerified = null;
 
         for (OtpPurpose purpose : List.of(OtpPurpose.SIGNUP, OtpPurpose.LOGIN_UNVERIFIED)) {
             try {
                 OtpToken candidate = otpService.fetchLatest(normalizedIdentifier, EMAIL, purpose);
-                if (candidate != null && candidate.isConsumed() && !candidate.isExpired() && candidate.getVerifiedAt() != null) {
+                if (candidate != null && !candidate.isExpired() && candidate.getVerifiedAt() != null) {
                     if (latestVerified == null || candidate.getVerifiedAt().isAfter(latestVerified.getVerifiedAt())) {
                         latestVerified = candidate;
                     }
                 }
-            } catch (IllegalArgumentException ex) {
+            } catch (BusinessException ex) {
+                if (ex.getErrorCode() != ErrorCode.OTP_NOT_FOUND) {
+                    throw ex;
+                }
                 // No OTP found for this purpose, continue checking other purposes
             }
         }
