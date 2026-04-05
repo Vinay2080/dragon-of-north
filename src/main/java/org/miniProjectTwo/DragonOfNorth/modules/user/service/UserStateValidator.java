@@ -21,6 +21,13 @@ public class UserStateValidator {
             return;
         }
 
+        if (status == PENDING_VERIFICATION) {
+            if (operation == UserLifecycleOperation.LOCAL_SIGNUP_COMPLETE) {
+                return;
+            }
+            throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED, "Email not verified");
+        }
+
         if (status == LOCKED) {
             throw new BusinessException(ErrorCode.USER_BLOCKED);
         }

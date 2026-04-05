@@ -8,8 +8,9 @@ import org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl.OtpServiceImpl;
  * <p>
  * Purpose determines OTP expiration, rate limits, and verification behavior.
  * SIGNUP for account creation, LOGIN for authentication, PASSWORD_RESET for
- * recovery, TWO_FACTOR_AUTH for enhanced security. Critical for OtpService
- * routing and security rule enforcement.
+ * recovery, TWO_FACTOR_AUTH for enhanced security, LOGIN_UNVERIFIED for
+ * triggering email verification when a PENDING_VERIFICATION user attempts login.
+ * Critical for OtpService routing and security rule enforcement.
  *
  * @see OtpServiceImpl for purpose-based processing
  * @see EmailOtpRequest and PhoneOtpRequest for purpose usage
@@ -18,5 +19,6 @@ public enum OtpPurpose {
     SIGNUP,
     LOGIN,
     PASSWORD_RESET,
-    TWO_FACTOR_AUTH
+    TWO_FACTOR_AUTH,
+    LOGIN_UNVERIFIED
 }

@@ -87,9 +87,10 @@ const OtpPage = () => {
 
         setOtpError('');
         setLoading(true);
-        // Verification API: /api/v1/otp/email/verify or /api/v1/otp/phone/verify (otp_purpose=SIGNUP)
+        const otpPurpose = resolvedFlow === OTP_FLOW.LOGIN_UNVERIFIED ? 'LOGIN_UNVERIFIED' : 'SIGNUP';
+        // Verification API: /api/v1/otp/email/verify or /api/v1/otp/phone/verify
         const endpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_VERIFY : API_CONFIG.ENDPOINTS.PHONE_OTP_VERIFY;
-        const payload = identifierType === 'EMAIL' ? {email: identifier, otp: otpCode, otp_purpose: 'SIGNUP'} : {phone: identifier, otp: otpCode, otp_purpose: 'SIGNUP'};
+        const payload = identifierType === 'EMAIL' ? {email: identifier, otp: otpCode, otp_purpose: otpPurpose} : {phone: identifier, otp: otpCode, otp_purpose: otpPurpose};
         const verifyResult = await apiService.post(endpoint, payload);
 
         if (apiService.isErrorResponse(verifyResult)) {
@@ -119,9 +120,10 @@ const OtpPage = () => {
         if (timer > 0) return;
         setResendLoading(true);
 
-        // Resend uses the same OTP request APIs as initial signup OTP issuance.
+        const otpPurpose = resolvedFlow === OTP_FLOW.LOGIN_UNVERIFIED ? 'LOGIN_UNVERIFIED' : 'SIGNUP';
+        // Resend uses the same OTP request APIs as initial OTP issuance.
         const endpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
-        const payload = identifierType === 'EMAIL' ? {email: identifier, otp_purpose: 'SIGNUP'} : {phone: identifier, otp_purpose: 'SIGNUP'};
+        const payload = identifierType === 'EMAIL' ? {email: identifier, otp_purpose: otpPurpose} : {phone: identifier, otp_purpose: otpPurpose};
         const result = await apiService.post(endpoint, payload);
 
         if (apiService.isErrorResponse(result)) {

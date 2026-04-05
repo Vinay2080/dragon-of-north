@@ -179,13 +179,31 @@ const SignupPage = () => {
             return;
         }
 
-        authState.setSuccess('Signup successful. Please login.');
-        setShowSuccessMessage(true);
-        setLoading(false);
+        // Step 2: request OTP for email verification.
+        authState.setLoading('Sending verification code...');
+        const otpEndpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
+        const otpPayload = identifierType === 'EMAIL' ? {email: identifier, otp_purpose: 'SIGNUP'} : {phone: identifier, otp_purpose: 'SIGNUP'};
+        const otpResult = await apiService.post(otpEndpoint, otpPayload);
 
-        setTimeout(() => {
-            navigate('/login', {replace: true, state: {reason: 'signup_success'}});
-        }, 1500);
+        if (apiService.isErrorResponse(otpResult)) {
+            const errorMsg = otpResult.message || 'Failed to send verification code.';
+            toast.error(errorMsg);
+            authState.setError(errorMsg);
+            setLoading(false);
+            return;
+        }
+
+        setLoading(false);
+        authState.setIdle();
+
+        // Step 3: navigate to OTP page for verification.
+        navigate('/otp', {
+            state: {
+                identifier,
+                identifierType,
+                flow: 'SIGNUP',
+            },
+        });
     };
 
     if (!identifier) {

@@ -199,7 +199,7 @@ const AuthPage = () => {
             API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST,
             {
                 email: normalizedEmail,
-                otp_purpose: 'SIGNUP',
+                otp_purpose: 'LOGIN_UNVERIFIED',
             }
         );
 

@@ -90,6 +90,8 @@ public class OtpServiceImpl implements OtpService {
         try {
             enforceRateLimits(normalizedIdentifier, otpType, otpPurpose);
 
+            otpTokenRepository.invalidateActiveTokens(normalizedIdentifier, otpType, otpPurpose);
+
             String otp = generateOtp();
             String hash = BCrypt.hashpw(otp, BCrypt.gensalt());
 

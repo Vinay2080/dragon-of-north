@@ -33,6 +33,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.ACTIVE;
+import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.PENDING_VERIFICATION;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.EMAIL;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -128,7 +129,7 @@ class EmailAuthenticationServiceImplTest {
 
 
     @Test
-    void signUpUser_shouldSaveUserWithEncodedPassword_AndSetUserStatusAsACTIVE_whenCalled() {
+    void signUpUser_shouldSaveUserWithEncodedPassword_AndSetUserStatusAsPENDING_VERIFICATION_whenCalled() {
 
         when(meterRegistry.counter(anyString())).thenReturn(counter);
 
@@ -139,7 +140,7 @@ class EmailAuthenticationServiceImplTest {
         AppUser appUser = new AppUser();
         appUser.setEmail(request.identifier());
         appUser.setPassword(request.password());
-        appUser.setAppUserStatus(ACTIVE);
+        appUser.setAppUserStatus(PENDING_VERIFICATION);
         appUser.setId(java.util.UUID.randomUUID());
 
         when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
@@ -152,7 +153,7 @@ class EmailAuthenticationServiceImplTest {
 
         //assert
         assertNotNull(response, "method response should not be null");
-        assertEquals(ACTIVE, response.appUserStatus(), "method should return status ACTIVE");
+        assertEquals(PENDING_VERIFICATION, response.appUserStatus(), "method should return status PENDING_VERIFICATION");
 
         //verify
         verify(passwordEncoder).encode(request.password());
@@ -165,7 +166,7 @@ class EmailAuthenticationServiceImplTest {
 
         assertEquals("encodedPassword", capturedUser.getPassword(), "password must be encoded before saving to the database");
         assertEquals(request.identifier(), capturedUser.getEmail(), "saved email and received email should be same");
-        assertEquals(ACTIVE, capturedUser.getAppUserStatus(), "user status should be ACTIVE once the user is saved");
+        assertEquals(PENDING_VERIFICATION, capturedUser.getAppUserStatus(), "user status should be PENDING_VERIFICATION once the user is saved");
 
         verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
         verify(profileService, never()).ensureProfileExists(any(UUID.class), any());
