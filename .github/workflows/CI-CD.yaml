@@ -26,49 +26,77 @@ env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}/backend
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
+  # UNIT TESTS
+
+  unit-tests:
+    runs-on: ubuntu-latest
     steps:
-      # 📥 Checkout
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # ☕ Java setup
-      - name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      # ⚡ Cache Maven
       - name: Cache Maven
         uses: actions/cache@v4
         with:
-          path: ~/.m2
+          path: ~/.m2/repository
           key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            maven-${{ runner.os }}-
 
-      # 🔧 Permissions
       - name: Make mvnw executable
         run: chmod +x mvnw
 
-      # 🧪 Tests (always run)
-      - name: Run tests
-        run: ./mvnw test
+      - name: Run unit tests
+        run: ./mvnw test -T 1C
 
-      # 🐳 Docker build setup (ONLY for tags)
-      - name: Set up Docker Buildx
-        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+  # INTEGRATION TESTS
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Cache Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+
+      - name: Make mvnw executable
+        run: chmod +x mvnw
+
+      - name: Run integration tests
+        run: ./mvnw verify -DskipTests
+
+  # BUILD + DEPLOY
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - unit-tests
+      - integration-tests
+    # Only run on version tags
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 🏷️ Metadata (ONLY version tag, NO latest)
-      - name: Extract Docker metadata
-        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -76,30 +104,21 @@ jobs:
           tags: |
             type=ref,event=tag
 
-      # 🔐 Login to GHCR
-      - name: Log in to GHCR
-        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+      - name: Login GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 📦 Build & Push image
-      - name: Build and push Docker image
-        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+      - name: Build & push image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
-      # 🚀 Deploy to EC2 (FULL stack, not just backend)
       - name: Deploy to EC2
-        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
         uses: appleboy/ssh-action@v1.0.3
         env:
           IMAGE_TAG: ${{ github.ref_name }}
@@ -110,29 +129,6 @@ jobs:
           envs: IMAGE_TAG
           script: |
             cd app
-
-            # 🔥 Set version dynamically
             export IMAGE_TAG="$IMAGE_TAG"
-            echo "Deploying version: $IMAGE_TAG"
-
-            # 📥 Pull latest images (all services)
             docker compose pull
-
-            # 🚀 Start ALL services (nginx included)
             docker compose up -d
-
-            # 🧹 Cleanup old images (safe)
-            docker image prune -f
-
-            # ⏳ Wait for backend
-            echo "Waiting for backend health..."
-            for i in {1..10}; do
-              if curl -f http://localhost:8080/actuator/health; then
-                echo "Deployment successful."
-                exit 0
-              fi
-              sleep 5
-            done
-
-            echo "Deployment failed!"
-            exit 1
