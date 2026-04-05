@@ -66,6 +66,10 @@ app:
       expiration:
         access-token: ${access_token}
         refresh-token: ${refresh_token}
+    cookie:
+      same-site: None
+      secure: false
+      domain: localhost
 
 otp:
   length: ${otp_length}
