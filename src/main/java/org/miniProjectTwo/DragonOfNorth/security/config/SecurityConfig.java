@@ -91,11 +91,14 @@ public class SecurityConfig {
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
 
-    @Value("${app.security.cookie.secure:false}")
+    @Value("${app.security.cookie.secure}")
     private boolean cookieSecure;
 
-    @Value("${app.security.cookie.same-site:Lax}")
+    @Value("${app.security.cookie.same-site}")
     private String cookieSameSite;
+
+    @Value("${app.security.cookie.domain}")
+    private String cookieDomain;
 
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity httpSecurity) {
@@ -142,7 +145,8 @@ public class SecurityConfig {
         repository.setCookiePath("/");
         repository.setCookieCustomizer(cookie -> cookie
                 .sameSite(cookieSameSite)
-                .secure(cookieSecure));
+                .secure(cookieSecure)
+                .domain(cookieDomain));
         return repository;
     }
 
