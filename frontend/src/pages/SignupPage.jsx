@@ -3,7 +3,7 @@ import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
 import {useAuthState} from '../hooks/authStateHook';
-import {AuthLoadingOverlay, AuthSuccessMessage} from '../components/auth/AuthStateComponents';
+import {AuthLoadingOverlay} from '../components/auth/AuthStateComponents';
 import RateLimitInfo from '../components/RateLimitInfo';
 import {useToast} from '../hooks/useToast';
 import ValidationError from '../components/Validation/ValidationError';
@@ -17,6 +17,12 @@ import AuthDivider from '../components/auth/AuthDivider';
 import {validatePassword} from '../utils/validation';
 import {useAuth} from '../context/authUtils';
 import AlertBanner from '../components/AlertBanner.jsx';
+
+const OTP_SESSION_KEYS = {
+    IDENTIFIER: 'otpIdentifier',
+    IDENTIFIER_TYPE: 'otpIdentifierType',
+    FLOW: 'otpFlow',
+};
 
 const SignupPage = () => {
     const location = useLocation();
@@ -33,7 +39,6 @@ const SignupPage = () => {
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({});
     const [loading, setLoading] = useState(false);
-    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
     const reason = useMemo(() => {
         const stateReason = location.state?.reason;
@@ -197,6 +202,9 @@ const SignupPage = () => {
         authState.setIdle();
 
         // Step 3: navigate to OTP page for verification.
+        sessionStorage.setItem(OTP_SESSION_KEYS.IDENTIFIER, identifier);
+        sessionStorage.setItem(OTP_SESSION_KEYS.IDENTIFIER_TYPE, identifierType);
+        sessionStorage.setItem(OTP_SESSION_KEYS.FLOW, 'SIGNUP');
         navigate('/otp', {
             state: {
                 identifier,
@@ -223,14 +231,8 @@ const SignupPage = () => {
                 <AlertBanner type={banner?.type} message={banner?.message}/>
                 <AuthFlowProgress currentStep="signup"/>
 
-                {showSuccessMessage ? (
-                    <AuthSuccessMessage
-                        message={authState.message}
-                        actionLabel="Redirecting to login..."
-                    />
-                ) : (
-                    <form onSubmit={handleGetOtp} noValidate>
-                        <div className="space-y-4">
+                <form onSubmit={handleGetOtp} noValidate>
+                    <div className="space-y-4">
                             {/* Password Input */}
                             <div className="relative">
                                 <AuthInput
@@ -311,13 +313,12 @@ const SignupPage = () => {
                             >
                                 {loading ? 'Sending OTP...' : 'Get OTP'}
                             </AuthButton>
-                        </div>
-                        <RateLimitInfo/>
-                    </form>
-                )}
+                    </div>
+                    <RateLimitInfo/>
+                </form>
 
                 {/* Google button moved below main CTA */}
-                {isEmailIdentifier && !showSuccessMessage && (
+                {isEmailIdentifier && (
                     <div className="mt-6">
                         <AuthDivider label="OR continue with"/>
                         <div className="auth-section">

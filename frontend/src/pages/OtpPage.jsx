@@ -15,34 +15,27 @@ const OTP_FLOW = {
     LOGIN_UNVERIFIED: 'LOGIN_UNVERIFIED',
 };
 
+const OTP_SESSION_KEYS = {
+    IDENTIFIER: 'otpIdentifier',
+    IDENTIFIER_TYPE: 'otpIdentifierType',
+    FLOW: 'otpFlow',
+};
+
 const OtpPage = () => {
     useDocumentTitle('Verify OTP');
     const location = useLocation();
     const navigate = useNavigate();
     const {toast} = useToast();
-    const {identifier, identifierType, flow} = location.state || {};
-    const resolvedFlow = flow || OTP_FLOW.SIGNUP;
+    const identifier = location.state?.identifier || sessionStorage.getItem(OTP_SESSION_KEYS.IDENTIFIER);
+    const identifierType = location.state?.identifierType || sessionStorage.getItem(OTP_SESSION_KEYS.IDENTIFIER_TYPE);
+    const resolvedFlow = location.state?.flow || sessionStorage.getItem(OTP_SESSION_KEYS.FLOW) || OTP_FLOW.SIGNUP;
     const isLoginUnverifiedFlow = resolvedFlow === OTP_FLOW.LOGIN_UNVERIFIED;
 
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [otpError, setOtpError] = useState('');
     const [loading, setLoading] = useState(false);
     const [resendLoading, setResendLoading] = useState(false);
-    const [timer, setTimer] = useState(() => {
-        const savedTimer = localStorage.getItem('otpTimer');
-        const savedTime = localStorage.getItem('otpTimerTimestamp');
-        if (savedTimer && savedTime) {
-            const elapsed = Math.floor((Date.now() - parseInt(savedTime, 10)) / 1000);
-            const remaining = parseInt(savedTimer, 10) - elapsed;
-            return remaining > 0 ? remaining : 0;
-        }
-        return 60;
-    });
-
-    useEffect(() => {
-        localStorage.setItem('otpTimer', timer.toString());
-        localStorage.setItem('otpTimerTimestamp', Date.now().toString());
-    }, [timer]);
+    const [timer, setTimer] = useState(60);
 
     useEffect(() => {
         let interval;
@@ -50,28 +43,58 @@ const OtpPage = () => {
         return () => clearInterval(interval);
     }, [timer]);
 
+    useEffect(() => {
+        if (!identifier || !identifierType) {
+            return;
+        }
+        sessionStorage.setItem(OTP_SESSION_KEYS.IDENTIFIER, identifier);
+        sessionStorage.setItem(OTP_SESSION_KEYS.IDENTIFIER_TYPE, identifierType);
+        sessionStorage.setItem(OTP_SESSION_KEYS.FLOW, resolvedFlow);
+    }, [identifier, identifierType, resolvedFlow]);
+
+    const clearOtpSessionState = () => {
+        sessionStorage.removeItem(OTP_SESSION_KEYS.IDENTIFIER);
+        sessionStorage.removeItem(OTP_SESSION_KEYS.IDENTIFIER_TYPE);
+        sessionStorage.removeItem(OTP_SESSION_KEYS.FLOW);
+    };
+
+    const getOtpPurpose = () => (
+        resolvedFlow === OTP_FLOW.LOGIN_UNVERIFIED ? 'LOGIN_UNVERIFIED' : 'SIGNUP'
+    );
+
     const completeSignup = async () => {
-        // Finalization API after OTP success: POST /api/v1/auth/identifier/sign-up/complete
         const result = await apiService.post(API_CONFIG.ENDPOINTS.SIGNUP_COMPLETE, {identifier, identifier_type: identifierType});
         if (apiService.isErrorResponse(result)) {
             toast.error(result.message || 'Failed to complete registration.');
             return false;
         }
-
-        if (result?.api_response_status === 'success') {
-            localStorage.removeItem('otpTimer');
-            localStorage.removeItem('otpTimerTimestamp');
-            toast.success(
-                isLoginUnverifiedFlow
-                    ? 'Email verified successfully. Please log in.'
-                    : 'Account verification completed. Please log in.'
-            );
-            navigate('/login', {state: {identifier}});
-            return true;
+        if (result?.api_response_status !== 'success') {
+            toast.error(result?.message || 'Failed to complete registration.');
+            return false;
         }
+        return true;
+    };
 
-        toast.error(result?.message || 'Failed to complete registration.');
-        return false;
+    const handleOtpSuccess = async () => {
+        const completed = await completeSignup(); // temporary for current backend contract
+        if (!completed) {
+            return;
+        }
+        clearOtpSessionState();
+        setTimer(0);
+        toast.success(
+            isLoginUnverifiedFlow
+                ? 'Email verified successfully. Please log in.'
+                : 'Account verification completed. Please log in.'
+        );
+        navigate('/login', {state: {identifier}});
+    };
+
+    const verifyOtp = async (otpCode) => {
+        const otpPurpose = getOtpPurpose();
+        const endpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_VERIFY : API_CONFIG.ENDPOINTS.PHONE_OTP_VERIFY;
+        const payload = identifierType === 'EMAIL' ? {email: identifier, otp: otpCode, otp_purpose: otpPurpose} : {phone: identifier, otp: otpCode, otp_purpose: otpPurpose};
+        return apiService.post(endpoint, payload);
     };
 
     const handleVerifyOtpCode = async (otpCode) => {
@@ -87,11 +110,7 @@ const OtpPage = () => {
 
         setOtpError('');
         setLoading(true);
-        const otpPurpose = resolvedFlow === OTP_FLOW.LOGIN_UNVERIFIED ? 'LOGIN_UNVERIFIED' : 'SIGNUP';
-        // Verification API: /api/v1/otp/email/verify or /api/v1/otp/phone/verify
-        const endpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_VERIFY : API_CONFIG.ENDPOINTS.PHONE_OTP_VERIFY;
-        const payload = identifierType === 'EMAIL' ? {email: identifier, otp: otpCode, otp_purpose: otpPurpose} : {phone: identifier, otp: otpCode, otp_purpose: otpPurpose};
-        const verifyResult = await apiService.post(endpoint, payload);
+        const verifyResult = await verifyOtp(otpCode);
 
         if (apiService.isErrorResponse(verifyResult)) {
             setOtpError(verifyResult.message || 'OTP verification failed.');
@@ -101,8 +120,7 @@ const OtpPage = () => {
         }
 
         if (verifyResult?.api_response_status === 'success') {
-            // Backend contract: OTP verify success gates sign-up completion call.
-            await completeSignup();
+            await handleOtpSuccess();
         } else {
             setOtpError(verifyResult?.message || 'Invalid OTP. Please try again.');
             toast.error(verifyResult?.message || 'Invalid OTP. Please try again.');
@@ -120,8 +138,7 @@ const OtpPage = () => {
         if (timer > 0) return;
         setResendLoading(true);
 
-        const otpPurpose = resolvedFlow === OTP_FLOW.LOGIN_UNVERIFIED ? 'LOGIN_UNVERIFIED' : 'SIGNUP';
-        // Resend uses the same OTP request APIs as initial OTP issuance.
+        const otpPurpose = getOtpPurpose();
         const endpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;
         const payload = identifierType === 'EMAIL' ? {email: identifier, otp_purpose: otpPurpose} : {phone: identifier, otp_purpose: otpPurpose};
         const result = await apiService.post(endpoint, payload);
@@ -139,7 +156,7 @@ const OtpPage = () => {
         setResendLoading(false);
     };
 
-    if (!identifier) {
+    if (!identifier || !identifierType) {
         navigate('/');
         return null;
     }

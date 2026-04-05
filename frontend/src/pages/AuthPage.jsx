@@ -31,6 +31,12 @@ const OTP_FLOW = {
     LOGIN_UNVERIFIED: 'LOGIN_UNVERIFIED',
 };
 
+const OTP_SESSION_KEYS = {
+    IDENTIFIER: 'otpIdentifier',
+    IDENTIFIER_TYPE: 'otpIdentifierType',
+    FLOW: 'otpFlow',
+};
+
 const AuthPage = () => {
     useDocumentTitle('Login');
     const navigate = useNavigate();
@@ -212,6 +218,9 @@ const AuthPage = () => {
         }
 
         toast.success('OTP sent successfully. Please verify your email.');
+        sessionStorage.setItem(OTP_SESSION_KEYS.IDENTIFIER, normalizedEmail);
+        sessionStorage.setItem(OTP_SESSION_KEYS.IDENTIFIER_TYPE, 'EMAIL');
+        sessionStorage.setItem(OTP_SESSION_KEYS.FLOW, OTP_FLOW.LOGIN_UNVERIFIED);
         navigate('/otp', {
             state: {
                 identifier: normalizedEmail,
@@ -469,4 +478,3 @@ const AuthPage = () => {
 };
 
 export default AuthPage;
-
