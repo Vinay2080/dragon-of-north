@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.modules.user.service;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.UserLifecycleOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.springframework.stereotype.Component;
 

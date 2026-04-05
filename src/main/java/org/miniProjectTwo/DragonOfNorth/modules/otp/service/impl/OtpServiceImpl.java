@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.repo.OtpTokenRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpSender;
@@ -15,6 +16,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +32,7 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.OtpVerificationStatu
  * Coordinates OTP generation, verification, and rate limiting.
  */
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OtpServiceImpl implements OtpService {
@@ -38,6 +41,7 @@ public class OtpServiceImpl implements OtpService {
     private final PhoneOtpSender phoneOtpSender;
     private final MeterRegistry meterRegistry;
     private final AuditEventLogger auditEventLogger;
+    private final Environment environment;
 
     @Value("${otp.length}")
     private int otpLength;
@@ -94,6 +98,9 @@ public class OtpServiceImpl implements OtpService {
             otpTokenRepository.invalidateActiveTokens(normalizedIdentifier, otpType, otpPurpose);
 
             String otp = generateOtp();
+            if (environment.matchesProfiles("dev")) {
+                log.info("Generated OTP for {} {}: {}", otpType, normalizedIdentifier, otp);
+            }
             String hash = BCrypt.hashpw(otp, BCrypt.gensalt());
 
             OtpToken otpToken = new OtpToken(normalizedIdentifier, otpType, hash, ttlMinutes, otpPurpose);

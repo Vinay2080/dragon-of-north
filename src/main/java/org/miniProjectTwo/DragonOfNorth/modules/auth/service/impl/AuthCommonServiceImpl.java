@@ -14,7 +14,6 @@ import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
-import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserLifecycleOperation;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;

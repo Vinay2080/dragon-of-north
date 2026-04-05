@@ -1,4 +1,4 @@
-package org.miniProjectTwo.DragonOfNorth.modules.user.service;
+package org.miniProjectTwo.DragonOfNorth.shared.enums;
 
 import lombok.Getter;
 
