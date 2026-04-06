@@ -854,22 +854,6 @@ a:hover {
         line-height: 1;
     }
 
-    .btn-primary,
-    .btn-secondary {
-        @apply px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200;
-        background: linear-gradient(135deg, #14b8a6, #0ea5e9);
-    }
-
-    .btn-primary:hover,
-    .btn-secondary:hover {
-        filter: brightness(1.1);
-    }
-
-    .btn-primary:active,
-    .btn-secondary:active {
-        transform: scale(0.98);
-    }
-
     .btn-ghost {
         background: transparent;
         color: var(--don-accent-text);
