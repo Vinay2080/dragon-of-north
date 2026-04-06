@@ -286,7 +286,7 @@ const SecuritySection = ({authProvider}) => {
                     <AuthButton
                         type="submit"
                         disabled={isSubmitting}
-                        className="h-11 rounded-2xl border-0 bg-[linear-gradient(135deg,#14B8A6,#0EA5E9)] px-4 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(20,184,166,0.24)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(20,184,166,0.32)] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="profile-primary-btn h-11"
                     >
                     {isSubmitting ? (
                         <span className="btn-loading-indicator">
@@ -304,4 +304,3 @@ const SecuritySection = ({authProvider}) => {
 };
 
 export default SecuritySection;
-

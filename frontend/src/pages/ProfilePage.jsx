@@ -320,7 +320,7 @@ const ProfilePage = () => {
                 <button
                     type="button"
                     onClick={() => navigate('/sessions')}
-                    className="mt-4 h-11 rounded-2xl border border-teal-400/60 bg-[linear-gradient(135deg,#14B8A6,#0EA5E9)] px-4 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(20,184,166,0.24)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(20,184,166,0.32)] focus:outline-none focus:ring-2 focus:ring-teal-400/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-teal-400/30"
+                    className="profile-primary-btn mt-4 h-11"
                 >
                     View all sessions
                 </button>

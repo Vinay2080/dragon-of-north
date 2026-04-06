@@ -738,44 +738,18 @@ a:hover {
     /* ── PRIMARY & SECONDARY CTA (Unified) ────────────────── */
     .btn-primary,
     .btn-secondary {
-        @apply px-6 py-3 rounded-lg font-medium text-white transition-all duration-300;
-        background: linear-gradient(136deg, #7c3aed 0%, #8b5cf6 100%);
-        box-shadow: 0 8px 18px rgba(124, 58, 237, 0.2);
+        @apply px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200;
+        background: linear-gradient(135deg, #14b8a6, #0ea5e9);
     }
 
     .btn-primary:hover,
     .btn-secondary:hover {
-        background: #ffffff;
-        color: #000000;
-        font-weight: 700;
-        transform: translateY(-1px) scale(1.05);
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.24);
+        filter: brightness(1.1);
     }
 
-    .dark .btn-primary,
-    .dark .btn-secondary {
-        background: linear-gradient(136deg, #a78bfa 0%, #8b5cf6 58%, #6366f1 100%);
-        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.38);
-    }
-
-    .dark .btn-primary:hover,
-    .dark .btn-secondary:hover {
-        background: #ffffff;
-        color: #000000;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.38);
-    }
-
-    .light .btn-primary,
-    .light .btn-secondary {
-        background: linear-gradient(136deg, #8b5cf6 0%, #a78bfa 100%);
-        box-shadow: 0 6px 16px rgba(139, 92, 246, 0.2);
-    }
-
-    .light .btn-primary:hover,
-    .light .btn-secondary:hover {
-        background: #ffffff;
-        color: #000000;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.24);
+    .btn-primary:active,
+    .btn-secondary:active {
+        transform: scale(0.98);
     }
 
     /* ── GHOST CTA (Minimal, text-based) ────────────────– */
@@ -882,44 +856,18 @@ a:hover {
 
     .btn-primary,
     .btn-secondary {
-        @apply px-6 py-3 rounded-lg font-medium text-white transition-all duration-300;
-        background: linear-gradient(136deg, #7c3aed 0%, #8b5cf6 100%);
-        box-shadow: 0 8px 18px rgba(124, 58, 237, 0.2);
+        @apply px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200;
+        background: linear-gradient(135deg, #14b8a6, #0ea5e9);
     }
 
     .btn-primary:hover,
     .btn-secondary:hover {
-        background: #ffffff;
-        color: #000000;
-        font-weight: 700;
-        transform: translateY(-1px) scale(1.05);
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.24);
+        filter: brightness(1.1);
     }
 
-    .dark .btn-primary,
-    .dark .btn-secondary {
-        background: linear-gradient(136deg, #a78bfa 0%, #8b5cf6 58%, #6366f1 100%);
-        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.38);
-    }
-
-    .dark .btn-primary:hover,
-    .dark .btn-secondary:hover {
-        background: #ffffff;
-        color: #000000;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.38);
-    }
-
-    .light .btn-primary,
-    .light .btn-secondary {
-        background: linear-gradient(136deg, #8b5cf6 0%, #a78bfa 100%);
-        box-shadow: 0 6px 16px rgba(139, 92, 246, 0.2);
-    }
-
-    .light .btn-primary:hover,
-    .light .btn-secondary:hover {
-        background: #ffffff;
-        color: #000000;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.24);
+    .btn-primary:active,
+    .btn-secondary:active {
+        transform: scale(0.98);
     }
 
     .btn-ghost {
@@ -1959,8 +1907,8 @@ a:hover {
     }
 
     .auth-primary-btn {
-        @apply w-full rounded-[14px] px-4 py-[0.86rem] text-sm font-semibold text-white transition duration-200;
-        background: linear-gradient(135deg, #8b5cf6, #6366f1);
+        @apply w-full rounded-xl px-4 py-[0.86rem] text-sm font-semibold text-white transition duration-200;
+        background: linear-gradient(135deg, #14b8a6, #0ea5e9);
         border: none;
         cursor: pointer;
         min-height: 48px;
@@ -1969,24 +1917,63 @@ a:hover {
         font-family: var(--font-sans), sans-serif;
     }
 
-    /* Light Theme - Softer shadow */
-    .light .auth-primary-btn {
-        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
+    .auth-primary-btn:hover:not(:disabled) {
+        filter: brightness(1.1);
     }
 
-    .light .auth-primary-btn:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.35);
+    .auth-primary-btn:active:not(:disabled) {
+        transform: scale(0.98);
     }
 
-    /* Dark Theme - Stronger glow */
-    .dark .auth-primary-btn {
-        box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+    .profile-primary-btn {
+        @apply rounded-xl border-0 px-4 text-sm font-semibold text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-400/50 disabled:cursor-not-allowed disabled:opacity-60;
+        background: linear-gradient(135deg, #14b8a6, #0ea5e9);
     }
 
-    .dark .auth-primary-btn:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 0 35px rgba(139, 92, 246, 0.7);
+    .profile-primary-btn:hover:not(:disabled) {
+        filter: brightness(1.1);
+    }
+
+    .profile-primary-btn:active:not(:disabled) {
+        transform: scale(0.98);
+    }
+
+    .danger-zone-panel {
+        @apply mt-6 rounded-2xl border p-4 shadow-sm;
+        border-color: rgba(251, 113, 133, 0.5);
+        background: rgba(255, 228, 230, 0.8);
+    }
+
+    .dark .danger-zone-panel {
+        border-color: rgba(251, 113, 133, 0.45);
+        background: rgba(76, 5, 25, 0.5);
+    }
+
+    .danger-zone-title {
+        @apply text-sm font-semibold uppercase tracking-[0.12em];
+        color: #be123c;
+    }
+
+    .dark .danger-zone-title {
+        color: #fda4af;
+    }
+
+    .danger-zone-button {
+        @apply mt-4 h-11 rounded-xl border px-4 text-sm font-semibold text-white transition-all duration-200 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60;
+        border-color: rgba(251, 113, 133, 0.7);
+        background: linear-gradient(135deg, #f43f5e, #fb7185);
+    }
+
+    .danger-zone-button:hover:not(:disabled) {
+        filter: brightness(1.08);
+    }
+
+    .danger-zone-button:active:not(:disabled) {
+        transform: scale(0.98);
+    }
+
+    .danger-zone-button:focus-visible {
+        box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.35);
     }
 
     /* Both themes - Disabled state */

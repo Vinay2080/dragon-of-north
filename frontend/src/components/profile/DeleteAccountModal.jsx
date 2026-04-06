@@ -1,11 +1,12 @@
 import React from 'react';
+import {createPortal} from 'react-dom';
 
 const DeleteAccountModal = ({open, isLoading, onCancel, onConfirm}) => {
     if (!open) {
         return null;
     }
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-account-title">
             <div
                 className="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px] transition-opacity duration-200"
@@ -32,15 +33,15 @@ const DeleteAccountModal = ({open, isLoading, onCancel, onConfirm}) => {
                         type="button"
                         onClick={onConfirm}
                         disabled={isLoading}
-                        className="h-10 rounded-2xl border border-rose-300/70 bg-[linear-gradient(135deg,#f43f5e,#fb7185)] px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(244,63,94,0.26)] transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-400/40"
+                        className="danger-zone-button mt-0 h-10"
                     >
                         {isLoading ? 'Deleting...' : 'Confirm Delete'}
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
 export default DeleteAccountModal;
-

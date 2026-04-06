@@ -49,8 +49,8 @@ const DeleteAccountSection = () => {
 
     return (
         <>
-            <div className="mt-6 rounded-2xl border border-rose-200/80 bg-rose-50/70 p-4 shadow-sm dark:border-rose-500/25 dark:bg-rose-500/10">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-rose-700 dark:text-rose-300">Danger zone</h3>
+            <div className="danger-zone-panel">
+                <h3 className="danger-zone-title">Danger zone</h3>
                 <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
                     Deleting your account marks it as deleted and immediately signs you out.
                 </p>
@@ -58,7 +58,7 @@ const DeleteAccountSection = () => {
                     type="button"
                     onClick={() => setIsConfirmOpen(true)}
                     disabled={isDeleting}
-                    className="mt-4 h-11 rounded-2xl border border-rose-300/70 bg-[linear-gradient(135deg,#f43f5e,#fb7185)] px-4 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(244,63,94,0.32)] focus:outline-none focus:ring-2 focus:ring-rose-300/60 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-400/35"
+                    className="danger-zone-button"
                 >
                     {isDeleting ? 'Deleting account...' : 'Delete account'}
                 </button>
