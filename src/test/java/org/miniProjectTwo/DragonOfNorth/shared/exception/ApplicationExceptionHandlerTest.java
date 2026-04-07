@@ -8,8 +8,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ErrorResponse;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
-import org.miniProjectTwo.DragonOfNorth.shared.exception.ApplicationExceptionHandler;
-import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.MethodParameter;
@@ -23,6 +21,9 @@ import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.lang.reflect.Method;
@@ -175,6 +176,48 @@ class ApplicationExceptionHandlerTest {
         assertEquals(HttpStatus.METHOD_NOT_ALLOWED, response.getStatusCode());
         assertEquals("METHOD_NOT_ALLOWED", errorResponse.code());
         assertTrue(errorResponse.defaultMessage().contains("PATCH"));
+    }
+
+    @Test
+    void handleMaxUploadSizeExceeded_ShouldReturnInvalidInput() {
+        MaxUploadSizeExceededException ex = new MaxUploadSizeExceededException(2 * 1024 * 1024);
+
+        ResponseEntity<ApiResponse<ErrorResponse>> response =
+                exceptionHandler.handleMaxUploadSizeExceeded(ex);
+
+        assertNotNull(response.getBody(), "Response body should not be null");
+        ErrorResponse errorResponse = response.getBody().getData();
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(ErrorCode.INVALID_INPUT.getCode(), errorResponse.code());
+        assertEquals("File size exceeds limit of 2MB", errorResponse.defaultMessage());
+    }
+
+    @Test
+    void handleMissingRequestPart_ShouldReturnInvalidInput() {
+        MissingServletRequestPartException ex = new MissingServletRequestPartException("file");
+
+        ResponseEntity<ApiResponse<ErrorResponse>> response =
+                exceptionHandler.handleMissingRequestPart(ex);
+
+        assertNotNull(response.getBody(), "Response body should not be null");
+        ErrorResponse errorResponse = response.getBody().getData();
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(ErrorCode.INVALID_INPUT.getCode(), errorResponse.code());
+        assertEquals("Missing multipart field: file", errorResponse.defaultMessage());
+    }
+
+    @Test
+    void handleMultipartException_ShouldReturnSpecificFormatMessage() {
+        MultipartException ex = new MultipartException("Invalid image file");
+
+        ResponseEntity<ApiResponse<ErrorResponse>> response =
+                exceptionHandler.handleMultipartException(ex);
+
+        assertNotNull(response.getBody(), "Response body should not be null");
+        ErrorResponse errorResponse = response.getBody().getData();
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(ErrorCode.INVALID_INPUT.getCode(), errorResponse.code());
+        assertEquals("Invalid multipart file format", errorResponse.defaultMessage());
     }
 
 

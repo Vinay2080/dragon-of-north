@@ -15,6 +15,9 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -177,6 +180,29 @@ public class ApplicationExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(ApiResponse.failed(errorResponse));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
+        log.warn("Upload rejected due to size limit: {}", ex.getMessage());
+        return handleException(new BusinessException(ErrorCode.INVALID_INPUT, "File size exceeds limit of 2MB"));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleMissingRequestPart(MissingServletRequestPartException ex) {
+        log.warn("Missing multipart request part: {}", ex.getRequestPartName());
+        return handleException(new BusinessException(ErrorCode.INVALID_INPUT,
+                "Missing multipart field: " + ex.getRequestPartName()));
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleMultipartException(MultipartException ex) {
+        String message = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase();
+        String clientMessage = message.contains("size")
+                ? "File size exceeds limit of 2MB"
+                : "Invalid multipart file format";
+        log.warn("Multipart parsing failed: {}", ex.getMessage());
+        return handleException(new BusinessException(ErrorCode.INVALID_INPUT, clientMessage));
     }
 
 

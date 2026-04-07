@@ -23,6 +23,10 @@ spring:
       password: ${redis_password}
       repositories:
         enabled: false
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
   flyway:
     enabled: true
     baseline-on-migrate: true
@@ -131,5 +135,8 @@ session:
 google:
   client-id: ${google_client_id}
 
-
+cloudinary:
+  cloud-name: ${cloudinary_cloud_name}
+  api-key: ${cloudinary_api_key}
+  api-secret: ${cloudinary_api_secret}
 #todo configuration and validated

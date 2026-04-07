@@ -10,6 +10,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestCont
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordChangeRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
+import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -83,6 +84,9 @@ class AuthCommonServiceImplTest {
 
     @Mock
     private UserStateValidator userStateValidator;
+
+    @Mock
+    private ProfileService profileService;
 
     @AfterEach
     void clearSecurityContext() {
@@ -349,6 +353,7 @@ class AuthCommonServiceImplTest {
 
         assertEquals(DELETED, user.getAppUserStatus());
         verify(userStateValidator).validate(user, UserLifecycleOperation.ACCOUNT_DELETION);
+        verify(profileService).deleteProfileImage(userId);
         verify(appUserRepository).save(user);
         verify(sessionService).revokeAllSessionsByUserId(userId);
     }
@@ -375,5 +380,6 @@ class AuthCommonServiceImplTest {
         assertEquals(ErrorCode.USER_BLOCKED, exception.getErrorCode());
         verify(appUserRepository, never()).save(any());
         verify(sessionService, never()).revokeAllSessionsByUserId(any());
+        verify(profileService, never()).deleteProfileImage(any());
     }
 }

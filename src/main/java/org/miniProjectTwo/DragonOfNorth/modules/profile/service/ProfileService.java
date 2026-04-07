@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.modules.profile.service;
 
 import org.miniProjectTwo.DragonOfNorth.modules.profile.model.Profile;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -16,4 +17,7 @@ public interface ProfileService {
 
     Profile getProfile();
 
+    Profile updateProfileImage(UUID userId, MultipartFile multipartFile);
+
+    void deleteProfileImage(UUID userId);
 }

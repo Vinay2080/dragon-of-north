@@ -53,6 +53,10 @@ public class BusinessException extends RuntimeException {
             return msg;
         }
 
+        if (!msg.contains("%")) {
+            return String.valueOf(args[0]);
+        }
+
         try {
             return String.format(msg, args);
         } catch (Exception ex) {

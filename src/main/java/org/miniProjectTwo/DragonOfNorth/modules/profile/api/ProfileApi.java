@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.dto.UpdateProfileRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.dto.response.GetProfileResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.profile.dto.response.ProfileImageResponse;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "Profile", description = "Read and update the authenticated user's profile.")
 @SecurityRequirement(name = "accessTokenCookie")
@@ -34,6 +36,7 @@ public interface ProfileApi {
                                                 "display_name": "Arya Stark",
                                                 "bio": "Explorer, archer, and dragon rider in training.",
                                                 "avatar_url": "https://cdn.dragonofnorth.dev/avatars/arya.png",
+                                                "avatar_source": "USER_DEFINED",
                                                 "auth_provider": "LOCAL"
                                               },
                                               "time": "2026-04-04T06:45:00Z"
@@ -64,6 +67,24 @@ public interface ProfileApi {
                     )
             )
             UpdateProfileRequest request
+    );
+
+    @Operation(
+            summary = "Upload profile image",
+            description = "Uploads a profile image to Cloudinary and updates the stored image URL for the authenticated user."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Profile image uploaded"),
+            @ApiResponse(responseCode = "400", description = "Invalid file type or size"),
+            @ApiResponse(responseCode = "401", description = "Authentication is required"),
+            @ApiResponse(responseCode = "404", description = "Profile or user not found")
+    })
+    org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<ProfileImageResponse> uploadProfileImage(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Multipart file to upload as the profile image."
+            )
+            MultipartFile file
     );
 
     @Operation(

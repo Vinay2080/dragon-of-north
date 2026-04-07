@@ -43,6 +43,9 @@ public class Profile extends BaseEntity {
     @Column(name = "username", length = 50, unique = true)
     private String username;
 
+    @Column(name = "avatar_public_id")
+    private String avatarPublicId;
+
     @PrePersist
     @PreUpdate
     private void normalizeAvatarMetadata() {

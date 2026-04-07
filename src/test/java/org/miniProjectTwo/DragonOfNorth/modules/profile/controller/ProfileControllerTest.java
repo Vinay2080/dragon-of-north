@@ -19,18 +19,19 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -204,5 +205,30 @@ class ProfileControllerTest {
                         .content(payload))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.data.code").value(ErrorCode.USERNAME_ALREADY_TAKEN.getCode()));
+    }
+
+    @Test
+    void uploadProfileImage_shouldReturnAvatarMetadata_whenUploadSucceeds() throws Exception {
+        UUID userId = UUID.randomUUID();
+        setAuthContext(userId);
+
+        Profile profile = buildProfile();
+        profile.setAvatarUrl("https://res.cloudinary.com/demo/image/upload/v1/profile_images/new.png");
+        profile.setAvatarSource(AvatarSource.USER_DEFINED);
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "avatar.png",
+                "image/png",
+                "content".getBytes()
+        );
+
+        when(profileService.updateProfileImage(eq(userId), any(MultipartFile.class))).thenReturn(profile);
+
+        mockMvc.perform(multipart("/api/v1/profile/image").file(file))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"))
+                .andExpect(jsonPath("$.data.avatarUrl").value("https://res.cloudinary.com/demo/image/upload/v1/profile_images/new.png"))
+                .andExpect(jsonPath("$.data.avatarSource").value("USER_DEFINED"));
     }
 }
