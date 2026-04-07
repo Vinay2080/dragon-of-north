@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import Cropper from 'react-easy-crop';
+import {X} from 'lucide-react';
 import {API_CONFIG} from '../../config';
 import {apiService} from '../../services/apiService';
 import {createObjectUrl, cropImageToBlob, revokeObjectUrl, validateAvatarFile} from '../../utils/avatarCrop';
@@ -264,9 +265,16 @@ const AvatarUploadModal = ({isOpen, onClose, onUploadSuccess, currentAvatarSrc})
                 aria-modal="true"
                 aria-labelledby="avatar-upload-title"
             >
-                <div className="mb-4 flex items-center justify-between">
+                <div className="relative mb-4">
                     <h2 id="avatar-upload-title" className="protected-gate__title">Update avatar</h2>
-                    <button type="button" className="btn-subtle" onClick={closeModal}>Close</button>
+                    <button
+                        type="button"
+                        aria-label="Close modal"
+                        onClick={closeModal}
+                        className="absolute right-3 top-3 h-8 w-8 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 active:bg-red-200 transition-colors duration-200 shadow-sm hover:shadow-md"
+                    >
+                        <X className="h-4 w-4"/>
+                    </button>
                 </div>
 
                 <p className="protected-gate__description">Choose an image, adjust the crop, and confirm when the

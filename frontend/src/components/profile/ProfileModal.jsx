@@ -1,4 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
+import {X} from 'lucide-react';
 import AuthButton from '../auth/AuthButton';
 import AuthInput from '../auth/AuthInput';
 import PasswordInput from '../auth/PasswordInput';
@@ -315,9 +316,16 @@ const ProfileModal = ({isOpen, onClose, onProfileUpdated}) => {
     return (
         <div className="protected-gate__overlay" onClick={closeModal}>
             <div className="protected-gate__modal" onClick={(event) => event.stopPropagation()}>
-                <div className="flex items-center justify-between mb-4">
+                <div className="relative mb-4">
                     <h2 className="protected-gate__title">Profile</h2>
-                    <button type="button" className="btn-subtle" onClick={closeModal}>Close</button>
+                    <button
+                        type="button"
+                        aria-label="Close modal"
+                        onClick={closeModal}
+                        className="absolute right-3 top-3 h-8 w-8 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-600 active:bg-red-200 transition-colors duration-200 shadow-sm hover:shadow-md"
+                    >
+                        <X className="h-4 w-4"/>
+                    </button>
                 </div>
 
                 {loadingProfile ? (
