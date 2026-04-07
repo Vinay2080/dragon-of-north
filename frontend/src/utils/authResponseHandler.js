@@ -66,18 +66,12 @@ export const handleAuthResponse = (result, navigate, toast, identifier, identifi
         hasCode(AUTH_ERROR_CODES.USER_REACTIVATION_REQUIRED, errorCode) ||
         status === APP_USER_STATUS.DELETED
     ) {
-        navigate('/signup', {
-            replace: true,
-            state: {
-                identifier,
-                reason: 'USER_NOT_FOUND',
-            },
-        });
-        return {type: 'REDIRECTED', destination: 'SIGNUP'};
+        toast.error('Invalid email or password');
+        return {type: 'ERROR'};
     }
 
     if (hasCode(AUTH_ERROR_CODES.AUTHENTICATION_FAILED, errorCode)) {
-        toast.error('Invalid username or password');
+        toast.error('Invalid email or password');
         return {type: 'ERROR'};
     }
 

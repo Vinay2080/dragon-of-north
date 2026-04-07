@@ -15,6 +15,10 @@ const AUTO_REFRESH_EXCLUDED_ENDPOINTS = new Set([
     API_CONFIG.ENDPOINTS.PASSWORD_RESET_CONFIRM,
 ]);
 
+const AUTH_FAILURE_401_IGNORED_ENDPOINTS = new Set([
+    API_CONFIG.ENDPOINTS.LOGIN,
+]);
+
 class ApiService {
     constructor() {
         this.rateLimitInfo = {remaining: null, capacity: null, retryAfter: null};
@@ -183,8 +187,16 @@ class ApiService {
         const {skipAuthRefresh = false, ...requestOptions} = options;
         const url = `${API_CONFIG.BASE_URL}${endpoint}`;
 
+        const isFormDataBody = typeof FormData !== 'undefined' && requestOptions.body instanceof FormData;
+        const mergedHeaders = {'Content-Type': 'application/json', ...requestOptions.headers};
+
+        if (isFormDataBody) {
+            delete mergedHeaders['Content-Type'];
+            delete mergedHeaders['content-type'];
+        }
+
         let defaultOptions = {
-            headers: {'Content-Type': 'application/json', ...requestOptions.headers},
+            headers: mergedHeaders,
             credentials: 'include',
             ...requestOptions,
         };
@@ -227,7 +239,7 @@ class ApiService {
             if (!response.ok) {
                 const normalizedError = this.normalizeApiError(data, 'An error occurred');
 
-                if (response.status === 401) {
+                if (response.status === 401 && !AUTH_FAILURE_401_IGNORED_ENDPOINTS.has(endpoint)) {
                     this.notifyAuthFailure('UNAUTHORIZED', data);
                 }
 
@@ -315,6 +327,10 @@ class ApiService {
 
     post(endpoint, body, options = {}) {
         return this.request(endpoint, {...options, method: 'POST', body: JSON.stringify(body)});
+    }
+
+    postFormData(endpoint, formData, options = {}) {
+        return this.request(endpoint, {...options, method: 'POST', body: formData});
     }
 
     put(endpoint, body, options = {}) {

@@ -8,6 +8,7 @@ import {formatDateTime} from '../components/sessions/sessionFormatters';
 import ProfileHeader from '../components/profile/ProfileHeader.jsx';
 import ProfileInfoSection from '../components/profile/ProfileInfoSection.jsx';
 import ProfileSettings from '../components/profile/ProfileSettings.jsx';
+import AvatarUploadModal from '../components/profile/AvatarUploadModal.jsx';
 
 const EMPTY_PROFILE = {
     username: '',
@@ -99,6 +100,7 @@ const ProfilePage = () => {
     const [profileForm, setProfileForm] = useState(() => buildProfileFromUser(user));
     const [profileErrors, setProfileErrors] = useState(EMPTY_PROFILE_ERRORS);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
     const [activeSessionsCount, setActiveSessionsCount] = useState(0);
     const [lastLoginAt, setLastLoginAt] = useState('—');
@@ -266,6 +268,16 @@ const ProfilePage = () => {
         setIsProfileSubmitting(false);
     };
 
+    const handleAvatarUploadSuccess = useCallback((nextAvatarUrl) => {
+        const updatedProfile = {
+            ...cachedProfileRef.current,
+            avatarUrl: nextAvatarUrl,
+        };
+
+        applyProfileLocally(updatedProfile);
+        toast.success('Avatar updated successfully.');
+    }, [applyProfileLocally, toast]);
+
     return (
         <div
             className="mx-auto w-full max-w-6xl space-y-6 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_32%),linear-gradient(180deg,rgba(248,250,252,0.96),rgba(248,250,252,1))] px-4 py-6 dark:bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.10),transparent_28%),linear-gradient(180deg,#0B1220,#0F172A)] sm:px-6 lg:px-8">
@@ -294,6 +306,7 @@ const ProfilePage = () => {
                         setProfileForm((prev) => ({...prev, [field]: value}));
                     }}
                     onSubmit={submitProfile}
+                    onOpenAvatarUpload={() => setIsAvatarModalOpen(true)}
                 />
 
                 <ProfileSettings authProvider={profileForm.authProvider || user?.authProvider || user?.auth_provider}/>
@@ -325,6 +338,13 @@ const ProfilePage = () => {
                     View all sessions
                 </button>
             </section>
+
+            <AvatarUploadModal
+                isOpen={isAvatarModalOpen}
+                onClose={() => setIsAvatarModalOpen(false)}
+                onUploadSuccess={handleAvatarUploadSuccess}
+                currentAvatarSrc={avatarSrc}
+            />
         </div>
     );
 };

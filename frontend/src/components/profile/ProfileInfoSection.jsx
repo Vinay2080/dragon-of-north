@@ -13,7 +13,8 @@ const ProfileInfoSection = ({
                                 onFieldChange,
                                 onEdit,
                                 onCancel,
-                                onSubmit
+                                onSubmit,
+                                onOpenAvatarUpload
                             }) => {
     const readOnlyField = (label, value, fallback = 'Not set') => (
         <div
@@ -31,15 +32,24 @@ const ProfileInfoSection = ({
                     <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Account information</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Manage your public profile details.</p>
                 </div>
-                {!isEditing ? (
+                <div className="flex items-center gap-2">
                     <button
                         type="button"
-                        onClick={onEdit}
+                        onClick={onOpenAvatarUpload}
                         className="h-11 rounded-2xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-400/25 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
-                        Edit profile
+                        Change avatar
                     </button>
-                ) : null}
+                    {!isEditing ? (
+                        <button
+                            type="button"
+                            onClick={onEdit}
+                            className="h-11 rounded-2xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-400/25 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800"
+                        >
+                            Edit profile
+                        </button>
+                    ) : null}
+                </div>
             </div>
 
             {loading ? <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">Syncing profile...</p> : null}

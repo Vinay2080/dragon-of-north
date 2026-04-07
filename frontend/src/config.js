@@ -22,6 +22,7 @@ export const API_CONFIG = {
 
         // Profile
         PROFILE: '/api/v1/profile',
+        PROFILE_IMAGE_UPLOAD: '/api/v1/profile/image',
 
         // OTP
         EMAIL_OTP_REQUEST: '/api/v1/otp/email/request',

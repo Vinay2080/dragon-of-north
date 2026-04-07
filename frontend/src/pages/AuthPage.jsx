@@ -243,6 +243,7 @@ const AuthPage = () => {
             authState.setError(backendMessage);
             setShowAuthError(true);
             setPasswordError(backendMessage);
+            setPassword('');
             return;
         }
 
