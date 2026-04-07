@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -277,9 +278,10 @@ public class ProfileServiceImpl implements ProfileService {
     private Map<String, Object> uploadToCloudinary(MultipartFile file) {
         try {
             Uploader uploader = cloudinary.uploader();
-            return uploader.upload(file.getBytes(), ObjectUtils.asMap(
+            Map<?, ?> rawResult = uploader.upload(file.getBytes(), ObjectUtils.asMap(
                     "folder", PROFILE_IMAGE_FOLDER
             ));
+            return toTypedUploadResult(rawResult);
         } catch (IOException exception) {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Failed to upload image: " + exception.getMessage());
         } catch (RuntimeException exception) {
@@ -290,6 +292,16 @@ public class ProfileServiceImpl implements ProfileService {
             }
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid image upload payload");
         }
+    }
+
+    private Map<String, Object> toTypedUploadResult(Map<?, ?> rawResult) {
+        Map<String, Object> typedResult = new HashMap<>();
+        for (Map.Entry<?, ?> entry : rawResult.entrySet()) {
+            if (entry.getKey() instanceof String key) {
+                typedResult.put(key, entry.getValue());
+            }
+        }
+        return typedResult;
     }
 
     private String extractImageUrl(Map<String, Object> uploadResult) {
