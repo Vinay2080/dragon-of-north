@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {Zap} from 'lucide-react';
 import {useNavigate} from 'react-router-dom';
 import {useToast} from '../../hooks/useToast';
 import {useAuth} from '../../context/authUtils';
@@ -49,11 +50,21 @@ const DeleteAccountSection = () => {
 
     return (
         <>
-            <div className="mt-6 rounded-2xl border border-rose-200/80 bg-rose-50/70 p-4 shadow-sm dark:border-rose-500/25 dark:bg-rose-500/10">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-rose-700 dark:text-rose-300">Danger zone</h3>
-                <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+            <div
+                className="mt-8 rounded-2xl border border-rose-200/70 bg-white/55 p-5 shadow-sm backdrop-blur transition-colors dark:border-rose-500/25 dark:bg-slate-950/35">
+                <div className="flex items-start gap-3">
+                    <span
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-200/70 bg-rose-50/70 text-rose-700 shadow-sm dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-200">
+                        <Zap className="h-5 w-5"/>
+                    </span>
+                    <div className="min-w-0">
+                        <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-rose-800 dark:text-rose-200">Danger
+                            zone</h3>
+                        <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
                     Deleting your account marks it as deleted and immediately signs you out.
                 </p>
+                    </div>
+                </div>
                 <button
                     type="button"
                     onClick={() => setIsConfirmOpen(true)}

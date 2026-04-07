@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {Shield} from 'lucide-react';
 import AuthButton from '../auth/AuthButton';
 import PasswordInput from '../auth/PasswordInput';
 import ValidationError from '../Validation/ValidationError';
@@ -196,16 +197,20 @@ const SecuritySection = ({authProvider}) => {
 
     return (
         <section
-            className="group rounded-3xl border border-slate-200/80 bg-[rgba(255,255,255,0.86)] p-6 shadow-[0_18px_36px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_rgba(15,23,42,0.12)] dark:border-slate-800/80 dark:bg-[rgba(11,18,32,0.92)]">
+            className="group rounded-3xl border border-slate-200/80 bg-white/60 p-6 shadow-[0_22px_52px_rgba(15,23,42,0.10)] backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-sky-200/70 hover:shadow-[0_28px_62px_rgba(14,165,233,0.12)] dark:border-slate-800/80 dark:bg-slate-950/30 dark:hover:border-sky-500/25">
             <div className="mb-4 space-y-3">
                 <div className="flex items-center gap-3">
                     <span
-                        className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl border text-xs font-semibold shadow-sm ${
+                        className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl border text-xs font-semibold shadow-sm backdrop-blur ${
                             canChangePassword
-                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300'
-                                : 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-500/25 dark:bg-orange-500/10 dark:text-orange-300'
+                                ? 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-200'
+                                : 'border-orange-200/80 bg-orange-50/70 text-orange-700 dark:border-orange-500/25 dark:bg-orange-500/10 dark:text-orange-200'
                         }`}>
-                        {normalizedAuthProvider === 'GOOGLE' ? 'G' : '🔒'}
+                        {normalizedAuthProvider === 'GOOGLE' ? (
+                            <span className="text-sm font-semibold">G</span>
+                        ) : (
+                            <Shield className="h-5 w-5"/>
+                        )}
                     </span>
                     <div>
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Security control panel</h2>
@@ -214,10 +219,10 @@ const SecuritySection = ({authProvider}) => {
                         </p>
                     </div>
                 </div>
-                <div className={`rounded-2xl border px-4 py-3 text-sm shadow-sm ${
+                <div className={`rounded-2xl border px-4 py-3 text-sm shadow-sm backdrop-blur ${
                     canChangePassword
-                        ? 'border-teal-200/80 bg-teal-50/70 text-slate-700 dark:border-teal-500/25 dark:bg-teal-500/10 dark:text-slate-200'
-                        : 'border-orange-200/80 bg-orange-50/80 text-slate-700 dark:border-orange-500/25 dark:bg-orange-500/10 dark:text-slate-200'
+                        ? 'border-teal-200/70 bg-white/55 text-slate-700 dark:border-teal-500/25 dark:bg-slate-950/35 dark:text-slate-200'
+                        : 'border-orange-200/70 bg-white/55 text-slate-700 dark:border-orange-500/25 dark:bg-slate-950/35 dark:text-slate-200'
                 }`}>
                     <p>{canChangePassword ? 'Password is managed in this account.' : 'Password managed by Google.'}</p>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Enable MFA (coming soon) · Add backup authentication (coming soon)</p>

@@ -1,4 +1,6 @@
 import React from 'react';
+import {ChevronDown, User} from 'lucide-react';
+import IconButton from '../ui/IconButton.jsx';
 import AuthButton from '../auth/AuthButton';
 import AuthInput from '../auth/AuthInput';
 import ValidationError from '../Validation/ValidationError';
@@ -26,28 +28,28 @@ const ProfileInfoSection = ({
 
     return (
         <section
-            className="group rounded-3xl border border-slate-200/80 bg-[rgba(255,255,255,0.86)] p-6 shadow-[0_18px_36px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_rgba(20,184,166,0.12)] dark:border-slate-800/80 dark:bg-[rgba(11,18,32,0.92)]">
+            className="group rounded-3xl border border-slate-200/80 bg-white/60 p-6 shadow-[0_22px_52px_rgba(15,23,42,0.10)] backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-200/70 hover:shadow-[0_28px_62px_rgba(20,184,166,0.14)] dark:border-slate-800/80 dark:bg-slate-950/30 dark:hover:border-teal-500/25">
             <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Account information</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Manage your public profile details.</p>
+                <div className="flex min-w-0 items-start gap-3">
+                    <span
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-teal-200/70 bg-teal-50/70 text-teal-700 shadow-sm backdrop-blur dark:border-teal-500/25 dark:bg-teal-500/10 dark:text-teal-200">
+                        <span className="text-sm font-semibold">@</span>
+                    </span>
+                    <div className="min-w-0">
+                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Account
+                            information</h2>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">Manage your public profile
+                            details.</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={onOpenAvatarUpload}
-                        className="h-11 rounded-2xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-400/25 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                        Change avatar
-                    </button>
+                    <IconButton label="Change avatar" tooltip="Change avatar" onClick={onOpenAvatarUpload}>
+                        <User className="h-[18px] w-[18px]"/>
+                    </IconButton>
                     {!isEditing ? (
-                        <button
-                            type="button"
-                            onClick={onEdit}
-                            className="h-11 rounded-2xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-400/25 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800"
-                        >
-                            Edit profile
-                        </button>
+                        <IconButton label="Edit profile" tooltip="Edit profile" onClick={onEdit}>
+                            <ChevronDown className="h-[18px] w-[18px] -rotate-90"/>
+                        </IconButton>
                     ) : null}
                 </div>
             </div>
