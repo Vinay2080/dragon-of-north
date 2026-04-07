@@ -8,7 +8,8 @@ const ProfileHeader = ({
                            bio,
                            activeSessions,
                            lastLoginAt,
-                           onManageSessions
+                           onManageSessions,
+                           onAvatarClick
                        }) => {
     const resolvedDisplayName = displayName || username || 'User';
     const shouldShowUsername = Boolean(username) && username !== resolvedDisplayName;
@@ -23,8 +24,17 @@ const ProfileHeader = ({
                     <img
                         src={avatarSrc}
                         alt="Profile avatar"
-                        className="h-14 w-14 rounded-full border border-teal-200/80 object-cover ring-4 ring-teal-500/10 transition-transform duration-300 group-hover:scale-[1.02] dark:border-teal-500/30 dark:ring-teal-400/10"
+                        className="h-14 w-14 rounded-full border border-teal-200/80 object-cover ring-4 ring-teal-500/10 transition-transform duration-300 group-hover:scale-[1.02] dark:border-teal-500/30 dark:ring-teal-400/10 cursor-zoom-in"
                         referrerPolicy="no-referrer"
+                        onClick={onAvatarClick}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => {
+                            if ((event.key === 'Enter' || event.key === ' ') && onAvatarClick) {
+                                event.preventDefault();
+                                onAvatarClick();
+                            }
+                        }}
                         onError={(event) => {
                             event.currentTarget.src = fallbackAvatar;
                         }}
