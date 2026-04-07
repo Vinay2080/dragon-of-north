@@ -8,7 +8,7 @@ public class InvalidOAuthTokenException extends BusinessException {
         super(ErrorCode.INVALID_OAUTH_TOKEN);
     }
 
-    public InvalidOAuthTokenException(String msg) {
-        super(ErrorCode.INVALID_OAUTH_TOKEN, msg);
+    public InvalidOAuthTokenException(String ignoredMsg) {
+        super(ErrorCode.INVALID_OAUTH_TOKEN);
     }
 }
