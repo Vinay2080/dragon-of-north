@@ -681,18 +681,9 @@ a:hover {
        ──────────────────────────────────────────────── */
 
     /* ── BUTTON INTERACTIONS ──────────────────────── */
-
-    button {
-        transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
-    }
-
-    button:hover:not(:disabled) {
-        transform: translateY(-1px);
-    }
-
-    button:active:not(:disabled) {
-        transform: scale(0.97);
-    }
+    /* IMPORTANT: do NOT use unscoped selectors like `button {}`.
+       Button interaction styling is handled by component classes (Tailwind).
+       If legacy `.btn` is used, it provides its own transitions. */
 
     /* ── CARD HOVER DEPTH ─────────────────────────── */
 
@@ -752,47 +743,14 @@ a:hover {
         will-change: transform, box-shadow;
     }
 
-    /* ── PRIMARY & SECONDARY CTA (Unified) ────────────────── */
+    /* ── PRIMARY & SECONDARY CTA (Legacy) ────────────────── */
+    /* Legacy `.btn-primary/.btn-secondary` styles were violet gradients and
+       can conflict with the standardized teal primary system.
+       Keep them neutral to avoid leaking colors during interaction states.
+       Prefer using `src/components/ui/Button.jsx` going forward. */
     .btn-primary,
     .btn-secondary {
-        @apply px-6 py-3 rounded-lg font-medium text-white transition-all duration-300;
-        background: linear-gradient(136deg, #7c3aed 0%, #8b5cf6 100%);
-        box-shadow: 0 8px 18px rgba(124, 58, 237, 0.2);
-    }
-
-    .btn-primary:hover,
-    .btn-secondary:hover {
-        background: #ffffff;
-        color: #000000;
-        font-weight: 700;
-        transform: translateY(-1px) scale(1.05);
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.24);
-    }
-
-    .dark .btn-primary,
-    .dark .btn-secondary {
-        background: linear-gradient(136deg, #a78bfa 0%, #8b5cf6 58%, #6366f1 100%);
-        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.38);
-    }
-
-    .dark .btn-primary:hover,
-    .dark .btn-secondary:hover {
-        background: #ffffff;
-        color: #000000;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.38);
-    }
-
-    .light .btn-primary,
-    .light .btn-secondary {
-        background: linear-gradient(136deg, #8b5cf6 0%, #a78bfa 100%);
-        box-shadow: 0 6px 16px rgba(139, 92, 246, 0.2);
-    }
-
-    .light .btn-primary:hover,
-    .light .btn-secondary:hover {
-        background: #ffffff;
-        color: #000000;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.24);
+        @apply px-6 py-3 rounded-lg font-medium transition-all duration-300;
     }
 
     /* ── GHOST CTA (Minimal, text-based) ────────────────– */

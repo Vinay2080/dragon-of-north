@@ -10,6 +10,7 @@ import ProfileInfoSection from '../components/profile/ProfileInfoSection.jsx';
 import ProfileSettings from '../components/profile/ProfileSettings.jsx';
 import AvatarUploadModal from '../components/profile/AvatarUploadModal.jsx';
 import AvatarPreviewModal from '../components/profile/AvatarPreviewModal.jsx';
+import Button from '../components/ui/Button.jsx';
 
 const EMPTY_PROFILE = {
     username: '',
@@ -333,13 +334,14 @@ const ProfilePage = () => {
                             activity: {lastLoginAt || '—'}</p>
                     </div>
                 </div>
-                <button
+                <Button
                     type="button"
+                    variant="secondary"
                     onClick={() => navigate('/sessions')}
-                    className="mt-4 h-11 rounded-2xl border border-teal-400/60 bg-[linear-gradient(135deg,#14B8A6,#0EA5E9)] px-4 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(20,184,166,0.24)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(20,184,166,0.32)] focus:outline-none focus:ring-2 focus:ring-teal-400/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-teal-400/30"
+                    className="mt-4 h-11 rounded-2xl"
                 >
                     View all sessions
-                </button>
+                </Button>
             </section>
 
             <AvatarUploadModal

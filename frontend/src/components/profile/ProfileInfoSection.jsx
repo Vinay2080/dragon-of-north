@@ -1,5 +1,5 @@
 import React from 'react';
-import AuthButton from '../auth/AuthButton';
+import Button from '../ui/Button.jsx';
 import AuthInput from '../auth/AuthInput';
 import ValidationError from '../Validation/ValidationError';
 
@@ -40,21 +40,23 @@ const ProfileInfoSection = ({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
+                    <Button
                         type="button"
                         onClick={onOpenAvatarUpload}
-                        className="h-10 rounded-lg border border-slate-300/80 bg-white/90 px-3 text-xs font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-400/40 dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:border-slate-600"
+                        variant="secondary"
+                        className="h-10 rounded-lg px-3 text-xs"
                     >
                         Change avatar
-                    </button>
+                    </Button>
                     {!isEditing ? (
-                        <button
+                        <Button
                             type="button"
                             onClick={onEdit}
-                            className="h-10 rounded-lg border border-teal-300/60 bg-gradient-to-br from-teal-500/90 to-teal-600/90 px-3 text-xs font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-teal-400/40 dark:border-teal-400/40 dark:from-teal-600/90 dark:to-teal-700/90"
+                            variant="primary"
+                            className="h-10 rounded-lg px-3 text-xs"
                         >
                             Edit profile
-                        </button>
+                        </Button>
                     ) : null}
                 </div>
             </div>
@@ -107,10 +109,11 @@ const ProfileInfoSection = ({
                     </div>
 
                     <div className="flex items-center gap-2 pt-2">
-                        <AuthButton
+                        <Button
                             type="submit"
                             disabled={!hasChanges || isSubmitting}
-                            className="h-10 rounded-lg border-0 bg-gradient-to-br from-teal-500 to-teal-600 px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(20,184,166,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(20,184,166,0.36)] focus:outline-none focus:ring-2 focus:ring-teal-400/40 disabled:cursor-not-allowed disabled:opacity-50 dark:from-teal-600 dark:to-teal-700"
+                            variant="primary"
+                            className="h-10 rounded-lg"
                         >
                             {isSubmitting ? (
                                 <span className="btn-loading-indicator">
@@ -118,14 +121,15 @@ const ProfileInfoSection = ({
                                 <span>Saving profile...</span>
                             </span>
                             ) : 'Save profile'}
-                        </AuthButton>
-                        <button
+                        </Button>
+                        <Button
                             type="button"
                             onClick={onCancel}
-                            className="h-10 rounded-lg border border-slate-300/80 bg-white/90 px-4 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300/40 dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:border-slate-600"
+                            variant="secondary"
+                            className="h-10 rounded-lg"
                         >
                             Cancel
-                        </button>
+                        </Button>
                     </div>
                 </form>
             )}

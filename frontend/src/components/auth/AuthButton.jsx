@@ -1,17 +1,15 @@
 import React from 'react';
+import Button from '../ui/Button.jsx';
 
 const AuthButton = ({className = '', loading = false, children, disabled, ...props}) => {
     const resolvedClassName = `auth-primary-btn ${className}`.trim();
 
     return (
-        <button
+        <Button
             {...props}
+            variant="primary"
             className={resolvedClassName}
             disabled={disabled || loading}
-            style={{
-                opacity: loading ? 0.8 : 1,
-                cursor: loading ? 'not-allowed' : 'pointer',
-            }}
         >
             {loading ? (
                 <span className="btn-loading-indicator">
@@ -21,7 +19,7 @@ const AuthButton = ({className = '', loading = false, children, disabled, ...pro
             ) : (
                 children
             )}
-        </button>
+        </Button>
     );
 };
 

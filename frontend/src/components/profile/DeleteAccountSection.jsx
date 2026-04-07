@@ -4,6 +4,7 @@ import {useToast} from '../../hooks/useToast';
 import {useAuth} from '../../context/authUtils';
 import {deleteCurrentUser} from '../../services/userAccountService';
 import DeleteAccountModal from './DeleteAccountModal';
+import Button from '../ui/Button.jsx';
 
 const DeleteAccountSection = () => {
     const navigate = useNavigate();
@@ -63,11 +64,12 @@ const DeleteAccountSection = () => {
                         </p>
                     </div>
                 </div>
-                <button
+                <Button
                     type="button"
                     onClick={() => setIsConfirmOpen(true)}
                     disabled={isDeleting}
-                    className="mt-4 h-10 rounded-lg border border-rose-400/70 bg-gradient-to-br from-rose-600 to-rose-700 px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(244,63,94,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(244,63,94,0.36)] focus:outline-none focus:ring-2 focus:ring-rose-400/40 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-500/40"
+                    variant="danger"
+                    className="mt-4 h-10 rounded-lg"
                 >
                     {isDeleting ? (
                         <span className="flex items-center justify-center gap-2">
@@ -77,7 +79,7 @@ const DeleteAccountSection = () => {
                     ) : (
                         'Delete account'
                     )}
-                </button>
+                </Button>
             </div>
 
             <DeleteAccountModal
