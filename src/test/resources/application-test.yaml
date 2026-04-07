@@ -35,6 +35,9 @@ cookie_same_site: None
 cookie_secure: false
 backend_url: localhost:8080
 google_client_id: test-google-client-id
+cloudinary_cloud_name: test-cloud
+cloudinary_api_key: test-api-key
+cloudinary_api_secret: test-api-secret
 
 access_token: 60000          # 1 minute (shorter for faster tests)
 refresh_token: 300000       # 5 minutes (shorter for faster tests)
