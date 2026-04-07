@@ -1,14 +1,20 @@
 import React from 'react';
+import {createPortal} from 'react-dom';
 
 const DeleteAccountModal = ({open, isLoading, onCancel, onConfirm}) => {
     if (!open) {
         return null;
     }
 
-    return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-account-title">
+    const modalContent = (
+        <div
+            className="fixed top-0 left-0 z-[9999] flex h-screen w-screen items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-title"
+        >
             <div
-                className="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px] transition-opacity duration-200"
+                className="absolute inset-0 bg-black/60 backdrop-blur-[6px] transition-opacity duration-200"
                 onClick={isLoading ? undefined : onCancel}
                 aria-hidden="true"
             />
@@ -40,6 +46,8 @@ const DeleteAccountModal = ({open, isLoading, onCancel, onConfirm}) => {
             </div>
         </div>
     );
+
+    return createPortal(modalContent, document.body);
 };
 
 export default DeleteAccountModal;

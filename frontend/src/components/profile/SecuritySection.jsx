@@ -196,31 +196,38 @@ const SecuritySection = ({authProvider}) => {
 
     return (
         <section
-            className="group rounded-3xl border border-slate-200/80 bg-[rgba(255,255,255,0.86)] p-6 shadow-[0_18px_36px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_rgba(15,23,42,0.12)] dark:border-slate-800/80 dark:bg-[rgba(11,18,32,0.92)]">
-            <div className="mb-4 space-y-3">
-                <div className="flex items-center gap-3">
-                    <span
-                        className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl border text-xs font-semibold shadow-sm ${
-                            canChangePassword
-                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300'
-                                : 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-500/25 dark:bg-orange-500/10 dark:text-orange-300'
-                        }`}>
-                        {normalizedAuthProvider === 'GOOGLE' ? 'G' : '🔒'}
-                    </span>
+            className="group rounded-3xl border border-slate-200/80 bg-[rgba(255,255,255,0.88)] p-6 shadow-[0_20px_40px_rgba(15,23,42,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_48px_rgba(59,130,246,0.12)] dark:border-slate-800/80 dark:bg-[rgba(11,18,32,0.94)]">
+            <div className="mb-6 space-y-3">
+                <div className="flex items-start gap-3">
+                    <div className={`mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg border shadow-sm ${
+                        canChangePassword
+                            ? 'border-emerald-300/50 bg-gradient-to-br from-emerald-500/20 to-teal-500/15 text-emerald-700 dark:border-emerald-400/30 dark:from-emerald-500/15 dark:to-teal-500/10 dark:text-emerald-300'
+                            : 'border-blue-300/50 bg-gradient-to-br from-blue-500/20 to-cyan-500/15 text-blue-700 dark:border-blue-400/30 dark:from-blue-500/15 dark:to-cyan-500/10 dark:text-blue-300'
+                    }`}>
+                        {canChangePassword ? (
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        ) : (
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        )}
+                    </div>
                     <div>
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Security control panel</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">Security control panel</h2>
+                        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
                             {normalizedAuthProvider === 'GOOGLE' ? 'Signed in via Google' : 'Signed in with local credentials'}
                         </p>
                     </div>
                 </div>
-                <div className={`rounded-2xl border px-4 py-3 text-sm shadow-sm ${
+                <div className={`rounded-2xl border px-4 py-3 text-sm shadow-sm transition-all ${
                     canChangePassword
-                        ? 'border-teal-200/80 bg-teal-50/70 text-slate-700 dark:border-teal-500/25 dark:bg-teal-500/10 dark:text-slate-200'
-                        : 'border-orange-200/80 bg-orange-50/80 text-slate-700 dark:border-orange-500/25 dark:bg-orange-500/10 dark:text-slate-200'
+                        ? 'border-emerald-200/70 bg-gradient-to-br from-emerald-50/80 to-teal-50/60 text-slate-700 dark:border-emerald-500/25 dark:bg-gradient-to-br dark:from-emerald-500/10 dark:to-teal-500/8 dark:text-slate-200'
+                        : 'border-blue-200/70 bg-gradient-to-br from-blue-50/80 to-cyan-50/60 text-slate-700 dark:border-blue-500/25 dark:bg-gradient-to-br dark:from-blue-500/10 dark:to-cyan-500/8 dark:text-slate-200'
                 }`}>
-                    <p>{canChangePassword ? 'Password is managed in this account.' : 'Password managed by Google.'}</p>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Enable MFA (coming soon) · Add backup authentication (coming soon)</p>
+                    <p className="font-medium">{canChangePassword ? 'Password is managed in this account.' : 'Password managed by Google.'}</p>
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Enable MFA (coming soon) · Add backup authentication (coming soon)</p>
                 </div>
             </div>
 
@@ -239,14 +246,14 @@ const SecuritySection = ({authProvider}) => {
                 />
 
                 <div>
-                    <label className="auth-label">Current password</label>
+                    <label className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Current password</label>
                     <PasswordInput
                         id="currentPassword"
                         name="currentPassword"
                         value={passwordForm.currentPassword}
                         onChange={(event) => updatePasswordField('currentPassword', event.target.value)}
                         hasError={Boolean(passwordErrors.currentPassword.length)}
-                        className="border-slate-200 bg-white/90 focus:border-[#14B8A6] focus:ring-4 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-950/60 dark:focus:border-[#14B8A6] dark:focus:ring-teal-400/10"
+                        className="border-slate-200/70 bg-white/85 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 dark:border-slate-700/70 dark:bg-slate-950/50 dark:focus:border-teal-400 dark:focus:ring-teal-400/15 rounded-lg transition-colors"
                         placeholder="Current password"
                         autoComplete="current-password"
                     />
@@ -254,14 +261,14 @@ const SecuritySection = ({authProvider}) => {
                 </div>
 
                 <div>
-                    <label className="auth-label">New password</label>
+                    <label className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">New password</label>
                     <PasswordInput
                         id="newPassword"
                         name="newPassword"
                         value={passwordForm.newPassword}
                         onChange={(event) => updatePasswordField('newPassword', event.target.value)}
                         hasError={Boolean(passwordErrors.newPassword.length)}
-                        className="border-slate-200 bg-white/90 focus:border-[#14B8A6] focus:ring-4 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-950/60 dark:focus:border-[#14B8A6] dark:focus:ring-teal-400/10"
+                        className="border-slate-200/70 bg-white/85 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 dark:border-slate-700/70 dark:bg-slate-950/50 dark:focus:border-teal-400 dark:focus:ring-teal-400/15 rounded-lg transition-colors"
                         placeholder="New password"
                         autoComplete="new-password"
                     />
@@ -269,24 +276,25 @@ const SecuritySection = ({authProvider}) => {
                 </div>
 
                 <div>
-                    <label className="auth-label">Confirm password</label>
+                    <label className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Confirm password</label>
                     <PasswordInput
                         id="confirmPassword"
                         name="confirmPassword"
                         value={passwordForm.confirmPassword}
                         onChange={(event) => updatePasswordField('confirmPassword', event.target.value)}
                         hasError={Boolean(passwordErrors.confirmPassword.length)}
-                        className="border-slate-200 bg-white/90 focus:border-[#14B8A6] focus:ring-4 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-950/60 dark:focus:border-[#14B8A6] dark:focus:ring-teal-400/10"
+                        className="border-slate-200/70 bg-white/85 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/20 dark:border-slate-700/70 dark:bg-slate-950/50 dark:focus:border-teal-400 dark:focus:ring-teal-400/15 rounded-lg transition-colors"
                         placeholder="Confirm password"
                         autoComplete="new-password"
                     />
                     <ValidationError errors={passwordErrors.confirmPassword}/>
                 </div>
 
+                <div className="pt-2">
                     <AuthButton
                         type="submit"
                         disabled={isSubmitting}
-                        className="h-11 rounded-2xl border-0 bg-[linear-gradient(135deg,#14B8A6,#0EA5E9)] px-4 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(20,184,166,0.24)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(20,184,166,0.32)] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-10 rounded-lg border-0 bg-gradient-to-br from-teal-500 to-teal-600 px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(20,184,166,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(20,184,166,0.36)] focus:outline-none focus:ring-2 focus:ring-teal-400/40 disabled:cursor-not-allowed disabled:opacity-50 dark:from-teal-600 dark:to-teal-700"
                     >
                     {isSubmitting ? (
                         <span className="btn-loading-indicator">
@@ -295,6 +303,7 @@ const SecuritySection = ({authProvider}) => {
                         </span>
                     ) : 'Update password'}
                 </AuthButton>
+                </div>
                 </form>
             )}
 

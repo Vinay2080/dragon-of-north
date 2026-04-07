@@ -9,6 +9,7 @@ import ProfileHeader from '../components/profile/ProfileHeader.jsx';
 import ProfileInfoSection from '../components/profile/ProfileInfoSection.jsx';
 import ProfileSettings from '../components/profile/ProfileSettings.jsx';
 import AvatarUploadModal from '../components/profile/AvatarUploadModal.jsx';
+import AvatarPreviewModal from '../components/profile/AvatarPreviewModal.jsx';
 
 const EMPTY_PROFILE = {
     username: '',
@@ -101,6 +102,7 @@ const ProfilePage = () => {
     const [profileErrors, setProfileErrors] = useState(EMPTY_PROFILE_ERRORS);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+    const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
 
     const [activeSessionsCount, setActiveSessionsCount] = useState(0);
     const [lastLoginAt, setLastLoginAt] = useState('—');
@@ -290,6 +292,7 @@ const ProfilePage = () => {
                 activeSessions={activeSessionsCount}
                 lastLoginAt={lastLoginAt}
                 onManageSessions={() => navigate('/sessions')}
+                onAvatarClick={() => setIsAvatarPreviewOpen(true)}
             />
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -344,6 +347,12 @@ const ProfilePage = () => {
                 onClose={() => setIsAvatarModalOpen(false)}
                 onUploadSuccess={handleAvatarUploadSuccess}
                 currentAvatarSrc={avatarSrc}
+            />
+
+            <AvatarPreviewModal
+                isOpen={isAvatarPreviewOpen}
+                imageSrc={avatarSrc}
+                onClose={() => setIsAvatarPreviewOpen(false)}
             />
         </div>
     );

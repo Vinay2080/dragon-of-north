@@ -49,18 +49,34 @@ const DeleteAccountSection = () => {
 
     return (
         <>
-            <div className="mt-6 rounded-2xl border border-rose-200/80 bg-rose-50/70 p-4 shadow-sm dark:border-rose-500/25 dark:bg-rose-500/10">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-rose-700 dark:text-rose-300">Danger zone</h3>
-                <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
-                    Deleting your account marks it as deleted and immediately signs you out.
-                </p>
+            <div className="mt-6 rounded-2xl border border-rose-200/70 bg-gradient-to-br from-rose-50/80 to-rose-100/60 p-5 shadow-sm transition-all dark:border-rose-500/25 dark:bg-gradient-to-br dark:from-rose-500/10 dark:to-rose-600/5">
+                <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg bg-rose-500/15 ring-1 ring-rose-300/40 dark:bg-rose-500/10 dark:ring-rose-400/30">
+                        <svg className="h-5 w-5 text-rose-700 dark:text-rose-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-rose-800 dark:text-rose-200">Danger zone</h3>
+                        <p className="mt-1.5 text-sm text-slate-700 dark:text-slate-300">
+                            Deleting your account marks it as deleted and immediately signs you out.
+                        </p>
+                    </div>
+                </div>
                 <button
                     type="button"
                     onClick={() => setIsConfirmOpen(true)}
                     disabled={isDeleting}
-                    className="mt-4 h-11 rounded-2xl border border-rose-300/70 bg-[linear-gradient(135deg,#f43f5e,#fb7185)] px-4 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(244,63,94,0.24)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(244,63,94,0.32)] focus:outline-none focus:ring-2 focus:ring-rose-300/60 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-400/35"
+                    className="mt-4 h-10 rounded-lg border border-rose-400/70 bg-gradient-to-br from-rose-600 to-rose-700 px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(244,63,94,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(244,63,94,0.36)] focus:outline-none focus:ring-2 focus:ring-rose-400/40 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-500/40"
                 >
-                    {isDeleting ? 'Deleting account...' : 'Delete account'}
+                    {isDeleting ? (
+                        <span className="flex items-center justify-center gap-2">
+                            <span className="spinner spinner-sm"></span>
+                            <span>Deleting account...</span>
+                        </span>
+                    ) : (
+                        'Delete account'
+                    )}
                 </button>
             </div>
 

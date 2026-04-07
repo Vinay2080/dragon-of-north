@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,8 +10,9 @@
 
 /* shading preset bridge: --preset a1Xf8HS */
 :root {
-    --font-sans: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
-    --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --font-display: 'Syne', sans-serif;
+    --font-sans: 'DM Mono', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --font-mono: 'DM Mono', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
@@ -108,6 +111,20 @@
     --toast-close-bg: rgba(0, 0, 0, 0.05);
     --toast-close-hover: rgba(0, 0, 0, 0.1);
     --toast-icon: #111827;
+
+    /* ── PROFILE REDESIGN COLORS ──────────────────── */
+    --bg-base: #0D0F14;
+    --bg-surface: #111318;
+    --bg-elevated: #161920;
+    --accent: #00FFC2;
+    --accent-dim: rgba(0, 255, 194, 0.08);
+    --accent-border: rgba(0, 255, 194, 0.20);
+    --accent-glow: rgba(0, 255, 194, 0.15);
+    --text-primary: #E8EAF0;
+    --text-secondary: #6B7280;
+    --text-mono: #A0A8B8;
+    --border-default: rgba(255, 255, 255, 0.06);
+    --border-hover: rgba(255, 255, 255, 0.12);
 }
 
 :root[data-theme="dark"],
@@ -2463,8 +2480,8 @@ a:hover {
         bottom: 0;
         width: min(280px, 88vw);
         padding: var(--s4) var(--s3);
-        background: var(--don-bg-surface);
-        border-right: 1px solid var(--don-border-subtle);
+        background: #0A0C10;
+        border-right: 0.5px solid rgba(255, 255, 255, 0.06);
         z-index: 60;
         overflow-y: auto;
         overflow-x: hidden;
@@ -2507,28 +2524,30 @@ a:hover {
     .dashboard-sidebar__toggle {
         width: 36px;
         height: 36px;
-        border-radius: var(--r-lg);
-        border: 1px solid transparent;
+        border-radius: 6px;
+        border: 0.5px solid transparent;
         background: transparent;
-        color: var(--don-text-secondary);
+        color: var(--text-secondary);
         display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
+        transition: all 0.15s ease;
     }
 
     .dashboard-sidebar__toggle:hover {
-        background: var(--don-bg-hover);
-        color: var(--don-text-primary);
-        border-color: var(--don-border-subtle);
+        background: var(--bg-elevated);
+        color: var(--text-primary);
+        border-color: rgba(255, 255, 255, 0.12);
     }
 
     .dashboard-sidebar__brand {
         padding: 0 var(--s2) var(--s4);
-        font-size: 14px;
-        font-weight: 700;
+        font-family: var(--font-display);
+        font-size: 15px;
+        font-weight: 800;
         letter-spacing: -0.01em;
-        color: var(--don-text-primary);
+        color: var(--text-primary);
         opacity: 1;
         transform: translateX(0);
         white-space: nowrap;
@@ -2553,37 +2572,41 @@ a:hover {
         justify-content: flex-start;
         gap: var(--s3);
         width: 100%;
-        border: 1px solid transparent;
-        border-radius: var(--r-lg);
+        border: 0.5px solid transparent;
+        border-radius: 6px;
         background: transparent;
-        color: var(--don-text-secondary);
-        padding: 10px var(--s3);
+        color: var(--text-secondary);
+        padding: 8px 12px;
         text-align: left;
         cursor: pointer;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        transition: all 0.15s ease;
     }
 
     .dashboard-layout--expanded .dashboard-nav-item {
         justify-content: flex-start;
-        padding: 10px var(--s3);
+        padding: 8px 12px;
     }
 
     .dashboard-nav-item:hover {
-        background: var(--don-bg-hover);
-        color: var(--don-text-primary);
+        background: var(--bg-elevated);
+        color: var(--text-primary);
+        border-color: rgba(0, 255, 194, 0.20);
     }
 
     .dashboard-nav-item--active {
-        background: var(--don-accent-dim);
-        border-color: var(--don-border-default);
-        color: var(--don-accent-text);
-        box-shadow: inset 3px 0 0 var(--don-accent);
+        background: rgba(0, 255, 194, 0.08);
+        border-color: rgba(0, 255, 194, 0.20);
+        color: var(--accent);
     }
 
     .dashboard-nav-item__label {
         white-space: nowrap;
-        font-size: 14px;
-        font-weight: 500;
-        letter-spacing: -0.01em;
+        font-size: 13px;
+        font-weight: 400;
+        letter-spacing: 0;
+        font-family: var(--font-mono);
         max-width: 130px;
         opacity: 1;
         transform: translateX(0);
@@ -2725,8 +2748,8 @@ a:hover {
         --topbar-translate-y: 0%;
         --topbar-scale-y: 1;
         padding: var(--topbar-padding-expanded) var(--topbar-padding-inline);
-        border-bottom: 1px solid var(--don-border-subtle);
-        background: var(--don-bg-base);
+        border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+        background: #0D0F14;
         backdrop-filter: none;
         transform: translateY(var(--topbar-translate-y)) scaleY(var(--topbar-scale-y));
         will-change: transform, padding, backdrop-filter, box-shadow;
@@ -2764,12 +2787,12 @@ a:hover {
     }
 
     .dark .dashboard-topbar {
-        background: #0f172a;
-        border-bottom-color: rgba(255, 255, 255, 0.1);
+        background: #0D0F14;
+        border-bottom-color: rgba(255, 255, 255, 0.06);
     }
 
     .dark .header.shrunk {
-        background: #0f172a;
+        background: #0D0F14;
     }
 
     .dark .header.shrunk {
@@ -2786,10 +2809,10 @@ a:hover {
     .dashboard-mobile-menu-btn {
         width: 36px;
         height: 36px;
-        border-radius: var(--r-lg);
-        border: 1px solid #e5e7eb;
-        background: #ffffff;
-        color: var(--don-text-primary);
+        border-radius: 6px;
+        border: 0.5px solid rgba(255, 255, 255, 0.06);
+        background: transparent;
+        color: var(--text-secondary);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -2799,21 +2822,22 @@ a:hover {
     }
 
     .dashboard-mobile-menu-btn:hover {
-        border-color: rgba(139, 92, 246, 0.3);
-        background: #f8f7ff;
-        transform: scale(1.03) rotate(1deg);
-        box-shadow: 0 0 12px rgba(139, 92, 246, 0.1);
+        border-color: rgba(0, 255, 194, 0.20);
+        background: rgba(0, 255, 194, 0.05);
+        color: var(--accent);
+        box-shadow: 0 0 12px rgba(0, 255, 194, 0.10);
     }
 
     .dark .dashboard-mobile-menu-btn {
-        border-color: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.06);
         background: transparent;
     }
 
     .dark .dashboard-mobile-menu-btn:hover {
-        border-color: rgba(139, 92, 246, 0.3);
-        background: rgba(139, 92, 246, 0.05);
-        box-shadow: 0 0 16px rgba(139, 92, 246, 0.15);
+        border-color: rgba(0, 255, 194, 0.20);
+        background: rgba(0, 255, 194, 0.05);
+        color: var(--accent);
+        box-shadow: 0 0 16px rgba(0, 255, 194, 0.15);
     }
 
     .dashboard-topbar__title {
@@ -2822,7 +2846,8 @@ a:hover {
         line-height: 1.2;
         font-weight: 700;
         letter-spacing: -0.02em;
-        color: var(--don-text-primary);
+        color: var(--text-primary);
+        font-family: var(--font-mono);
     }
 
     .dashboard-topbar__actions {
@@ -2838,36 +2863,38 @@ a:hover {
 
     .auth-system-trigger {
         height: 36px;
-        border: 1px solid #e5e7eb;
-        border-radius: var(--r-lg);
-        background: #ffffff;
-        color: var(--don-text-primary);
+        border: 0.5px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text-secondary);
         display: inline-flex;
         align-items: center;
         gap: 0;
         padding: 0 var(--s3);
-        font-size: 13px;
-        font-weight: 600;
+        font-size: 12px;
+        font-weight: 400;
+        font-family: var(--font-mono);
         cursor: pointer;
         transition: all 200ms ease-out;
     }
 
     .auth-system-trigger:hover {
-        border-color: rgba(139, 92, 246, 0.3);
-        background: #f8f7ff;
-        transform: scale(1.03) rotate(1deg);
-        box-shadow: 0 0 12px rgba(139, 92, 246, 0.1);
+        border-color: rgba(0, 255, 194, 0.20);
+        background: rgba(0, 255, 194, 0.05);
+        color: var(--accent);
+        box-shadow: 0 0 12px rgba(0, 255, 194, 0.10);
     }
 
     .dark .auth-system-trigger {
-        border-color: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.06);
         background: transparent;
     }
 
     .dark .auth-system-trigger:hover {
-        border-color: rgba(139, 92, 246, 0.3);
-        background: rgba(139, 92, 246, 0.05);
-        box-shadow: 0 0 16px rgba(139, 92, 246, 0.15);
+        border-color: rgba(0, 255, 194, 0.20);
+        background: rgba(0, 255, 194, 0.05);
+        color: var(--accent);
+        box-shadow: 0 0 16px rgba(0, 255, 194, 0.15);
     }
 
     .auth-system-trigger:hover {
@@ -2883,9 +2910,9 @@ a:hover {
         right: 0;
         width: min(540px, calc(100vw - 120px));
         border-radius: 12px;
-        border: 1px solid var(--don-border-default);
-        background: var(--don-bg-surface);
-        box-shadow: 0 10px 28px color-mix(in srgb, var(--don-bg-base) 78%, transparent);
+        border: 0.5px solid rgba(255, 255, 255, 0.06);
+        background: #111318;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
         padding: var(--s4);
         opacity: 0;
         transform: translateY(-4px) scale(0.98);
@@ -2912,11 +2939,12 @@ a:hover {
 
     .auth-system-dropdown__title {
         margin-bottom: var(--s2);
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: var(--don-text-muted);
+        color: var(--text-mono);
+        font-family: var(--font-mono);
     }
 
     .auth-system-dropdown__items {
