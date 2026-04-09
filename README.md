@@ -10,14 +10,13 @@
   <sub>
     Dragon of North is a production-style backend that handles secure login, OTP verification, and device-aware sessions.
     It is designed to stop common auth failures like abuse spikes, token misuse, and refresh races before they become incidents.
-    The system has been load tested with 10,000+ requests to prove stability under real traffic patterns.
+    It includes cookie-based auth, CSRF protection, refresh rotation, rate limiting, audit logs, and profile management.
   </sub>
-</p>
 
 <!-- ─── IMPACT STRIP ─────────────────────────────────────────────── -->
 
 <div align="center">
-  <b>JWT + RSA-2048 &nbsp;·&nbsp; Redis Rate Limiting &nbsp;·&nbsp; Device-Aware Sessions &nbsp;·&nbsp; OTP via AWS &nbsp;·&nbsp; Continuous Deployment via GitHub Actions</b>
+  <b>JWT + RSA-2048 &nbsp;·&nbsp; Cookie Auth + CSRF &nbsp;·&nbsp; Redis Rate Limiting &nbsp;·&nbsp; Device-Bound Sessions &nbsp;·&nbsp; OTP via AWS &nbsp;·&nbsp; Profile Images via Cloudinary</b>
 </div>
 
 <br>
@@ -50,6 +49,7 @@
   <img src="https://img.shields.io/badge/PostgreSQL_16-336791?style=flat-square&amp;logo=postgresql&amp;logoColor=white">
   <img src="https://img.shields.io/badge/Redis_7-DC382D?style=flat-square&amp;logo=redis&amp;logoColor=white">
   <img src="https://img.shields.io/badge/AWS_SES%2FSNS-FF9900?style=flat-square&amp;logo=amazonaws&amp;logoColor=white">
+  <img src="https://img.shields.io/badge/Cloudinary-3448C5?style=flat-square&amp;logo=cloudinary&amp;logoColor=white">
   <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&amp;logo=docker&amp;logoColor=white">
   <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&amp;logo=githubactions&amp;logoColor=white">
   <img src="https://img.shields.io/badge/License-MIT-22c55e?style=flat-square">
@@ -119,6 +119,11 @@ GitHub Actions auto-deploy pipeline on every push
 
 🧪 &nbsp; **Load tested**
 12 k6 scenarios · auth storms · refresh races · session chaos
+
+<br>
+
+🧩 &nbsp; **Frontend auth ergonomics**
+Paste-safe password inputs · submit semantics aligned (button type=submit) · show/hide password toggles
 
 </td>
 </tr>
@@ -239,7 +244,7 @@ production.
 <tr>
 <td><b>🔐 Security &amp; Authentication</b></td>
 <td>Protect account access and prevent token misuse.</td>
-<td>RSA-2048 JWT signing, rotating refresh tokens, SHA-256 hash-at-rest, BCrypt password hashing, and Google OAuth2 provider-link validation.</td>
+<td>RSA-2048 JWT signing, access token via header or cookie, rotating refresh tokens stored as SHA-256 hashes, BCrypt password hashing, and Google OAuth2 ID-token verification + provider linking.</td>
 </tr>
 
 <tr>
@@ -251,14 +256,33 @@ production.
 <tr>
 <td><b>📱 Session Management</b></td>
 <td>Contain compromise to the right scope and support real multi-device behavior.</td>
-<td>Device-bound sessions (device ID + IP + user-agent), selective/global revocation, strict refresh rotation, and `@Version` optimistic locking.</td>
+<td>Device-bound sessions (device ID + IP + user-agent), rotate on refresh, revoke current / by ID / others / all-by-user, and <code>@Version</code> optimistic locking.</td>
 </tr>
 
 <tr>
 <td><b>📧 OTP System</b></td>
 <td>Verify users safely across channels with anti-reuse controls.</td>
-<td>Purpose-scoped OTPs, BCrypt-stored OTP values, request throttling, verification state tracking, and delivery through AWS SES/SNS.</td>
+<td>Purpose-scoped OTPs, BCrypt-stored OTP values, request throttling + verification state tracking, and delivery through AWS SES/SNS (email + phone).</td>
 </tr>
+
+<tr>
+<td><b>🧑‍💼 Profile</b></td>
+<td>Keep user identity data and avatar lifecycle consistent.</td>
+<td>Create/ensure profile, read/update fields, upload/delete profile image via Cloudinary, sync Google avatar into profile.</td>
+</tr>
+
+<tr>
+<td><b>🔑 Password Lifecycle</b></td>
+<td>Make resets and account cleanup explicit and auditable.</td>
+<td>Forgot-password OTP request, reset, password change, and account delete.</td>
+</tr>
+
+<tr>
+<td><b>🛡️ Abuse Controls</b></td>
+<td>Reject bursts and credential abuse without falling over.</td>
+<td>Redis-backed Bucket4j filter with per-endpoint rules, X-RateLimit headers, Retry-After responses, and fail-open availability behavior if Redis is down.</td>
+</tr>
+
 </table>
 </div>
 
@@ -280,19 +304,54 @@ production.
 
 **🧠 &nbsp; What makes this different?**
 
-Most junior backend projects are CRUD apps with JWT bolted on at the end.
-This system was designed around failure modes — the attacks, races, and abuse patterns that real auth infrastructure has
-to survive.
+Most auth examples stop at a happy-path login once.
+This repo keeps going into the parts that usually become incidents: refresh rotation, device revocation, abuse controls,
+and recovery workflows.
 
 <br>
 </td>
 </tr>
 </table>
 </div>
+<td>Purpose-scoped OTPs, BCrypt-stored OTP values, request throttling + verification state tracking, and delivery through AWS SES/SNS (email + phone).</td>
 
+
+<tr>
+<td><b>🧑‍💼 Profile</b></td>
+<td>Keep user identity data and avatar lifecycle consistent.</td>
+<td>Create/ensure profile, read/update fields, upload/delete profile image via Cloudinary, sync Google avatar into profile.</td>
+</tr>
+
+<tr>
+<td><b>🔑 Password Lifecycle</b></td>
+<td>Make resets and account cleanup explicit and auditable.</td>
+<td>Forgot-password OTP request, reset, password change, and account delete.</td>
+</tr>
+
+<tr>
+<td><b>🛡️ Abuse Controls</b></td>
+<td>Reject bursts and credential abuse without falling over.</td>
+<td>Redis-backed Bucket4j filter with per-endpoint rules, X-RateLimit headers, Retry-After responses, and fail-open availability behavior if Redis is down.</td>
+</tr>
 <br>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
+
+<br>
+
+<!-- ─── START HERE NAV ───────────────────────────────────────────── -->
+
+<h3 align="center">🧭 &nbsp; Start Here (docs map)</h3>
+
+| What you want                                | Where to look                    |
+|----------------------------------------------|----------------------------------|
+| System overview                              | `docs/system/system-overview.md` |
+| Security model                               | `docs/system/security.md`        |
+| API contract notes                           | `docs/contracts/api.md`          |
+| Auth / OTP / Sessions / Profile feature docs | `docs/features/`                 |
+| Design decisions (ADRs)                      | `docs/decisions/`                |
+| Load test scenarios                          | `load_tests/README.md`           |
+
 <!--                     ENGINEERING FOCUS                           -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
@@ -371,6 +430,18 @@ to survive.
 <td valign="top"><br>🚨 &nbsp; OAuth identity mismatch / takeover<br><br></td>
 <td align="center" valign="middle">→</td>
 <td valign="top"><br>✅ &nbsp; Explicit provider-ID linking rules + mismatch rejection<br><br></td>
+</tr>
+
+<tr>
+<td valign="top"><br>🚨 &nbsp; Credential stuffing / brute-force bursts<br><br></td>
+<td align="center" valign="middle">→</td>
+<td valign="top"><br>✅ &nbsp; Redis + Bucket4j per-endpoint limits with <code>X-RateLimit-*</code> + <code>Retry-After</code> headers (fail-open for availability if Redis is down)<br><br></td>
+</tr>
+
+<tr>
+<td valign="top"><br>🚨 &nbsp; Cookie auth without CSRF protection (request forgery risk)<br><br></td>
+<td align="center" valign="middle">→</td>
+<td valign="top"><br>✅ &nbsp; CSRF enabled via cookie token repository (<code>XSRF-TOKEN</code> cookie + <code>X-XSRF-TOKEN</code> header) with explicit bypass list for bootstrap / pre-auth endpoints<br><br></td>
 </tr>
 
 </table>
@@ -904,6 +975,27 @@ alarm fires, not the user.
 
 </td>
 </tr>
+
+<tr>
+<td valign="top" style="padding:12px 16px;">
+
+**Cloudinary for profile images**
+
+Profile images are uploaded/deleted through Cloudinary instead of storing files in the app container.
+This keeps the backend stateless and avoids tying user uploads to EC2 disk lifecycle, deploys, or container restarts.
+
+</td>
+<td valign="top" style="padding:12px 16px;">
+
+**OAuth + local login coexistence (provider linking)**
+
+Google OAuth and email/password logins converge into the same session + cookie model, but users are still gated by their
+linked providers.
+Local login is explicitly blocked for Google-only accounts, and OAuth tokens are verified (issuer + audience + <code>
+email_verified</code>) before any account/session is created.
+
+</td>
+</tr>
 </table>
 </div>
 
@@ -1262,6 +1354,52 @@ docker compose up -d
 ```
 
 > `mvn spring-boot:run -Dspring.profiles.active=dev` — seeds `ACTIVE`, `LOCKED`, and `PENDING` test users locally.
+
+<br>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--                        GALLERY                                 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 align="center">🖼️ &nbsp; Gallery</h2>
+
+<p align="center"><i>Screenshots from the repo (kept here so the UI and flows are easy to scan).</i></p>
+
+<br>
+
+<div align="center">
+
+<img src="./images/img.png" width="92%" alt="Dragon of North screenshot 0" />
+
+<br><br>
+
+<img src="./images/img_1.png" width="92%" alt="Dragon of North screenshot 1" />
+
+<br><br>
+
+<img src="./images/img_2.png" width="92%" alt="Dragon of North screenshot 2" />
+
+<br><br>
+
+<img src="./images/img_3.png" width="92%" alt="Dragon of North screenshot 3" />
+
+<br><br>
+
+<img src="./images/img_4.png" width="92%" alt="Dragon of North screenshot 4" />
+
+<br><br>
+
+<img src="./images/img_5.png" width="92%" alt="Dragon of North screenshot 5" />
+
+<br><br>
+
+<img src="./images/img_6.png" width="92%" alt="Dragon of North screenshot 6" />
+
+<br><br>
+
+<img src="./images/img_7.png" width="92%" alt="Dragon of North screenshot 7" />
+
+</div>
 
 <br>
 
