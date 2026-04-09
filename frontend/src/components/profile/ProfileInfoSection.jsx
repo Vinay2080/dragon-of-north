@@ -72,7 +72,7 @@ const ProfileInfoSection = ({
             ) : (
                 <form className="space-y-4" onSubmit={onSubmit}>
                     <div>
-                        <label htmlFor="profile-username" className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300">Username</label>
+                        <label htmlFor="profile-username" className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Username</label>
                         <AuthInput
                             id="profile-username"
                             value={profileForm.username}
@@ -86,7 +86,7 @@ const ProfileInfoSection = ({
                     </div>
 
                     <div>
-                        <label htmlFor="profile-display-name" className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300">Display name</label>
+                        <label htmlFor="profile-display-name" className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Display name</label>
                         <AuthInput
                             id="profile-display-name"
                             value={profileForm.displayName}
@@ -99,7 +99,7 @@ const ProfileInfoSection = ({
                     </div>
 
                     <div>
-                        <label htmlFor="profile-bio" className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300">Bio</label>
+                        <label htmlFor="profile-bio" className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Bio</label>
                         <AuthInput
                             id="profile-bio"
                             value={profileForm.bio}

@@ -246,7 +246,7 @@ const SecuritySection = ({authProvider}) => {
                 />
 
                 <div>
-                    <label htmlFor="currentPassword" className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300">Current password</label>
+                    <label htmlFor="currentPassword" className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Current password</label>
                     <PasswordInput
                         id="currentPassword"
                         name="currentPassword"
@@ -261,7 +261,7 @@ const SecuritySection = ({authProvider}) => {
                 </div>
 
                 <div>
-                    <label htmlFor="newPassword" className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300">New password</label>
+                    <label htmlFor="newPassword" className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">New password</label>
                     <PasswordInput
                         id="newPassword"
                         name="newPassword"
@@ -276,7 +276,7 @@ const SecuritySection = ({authProvider}) => {
                 </div>
 
                 <div>
-                    <label htmlFor="confirmPassword" className="mb-2 block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300">Confirm password</label>
+                    <label htmlFor="confirmPassword" className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Confirm password</label>
                     <PasswordInput
                         id="confirmPassword"
                         name="confirmPassword"
