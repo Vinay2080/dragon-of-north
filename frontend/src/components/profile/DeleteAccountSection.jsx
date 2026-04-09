@@ -69,7 +69,7 @@ const DeleteAccountSection = () => {
                     onClick={() => setIsConfirmOpen(true)}
                     disabled={isDeleting}
                     variant="danger"
-                    className="mt-4 h-10 rounded-lg"
+                    className="mt-4 h-11 w-full rounded-lg sm:w-auto"
                 >
                     {isDeleting ? (
                         <span className="flex items-center justify-center gap-2">

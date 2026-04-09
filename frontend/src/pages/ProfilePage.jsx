@@ -283,7 +283,7 @@ const ProfilePage = () => {
 
     return (
         <div
-            className="mx-auto w-full max-w-6xl space-y-6 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_32%),linear-gradient(180deg,rgba(248,250,252,0.96),rgba(248,250,252,1))] px-4 py-6 dark:bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.10),transparent_28%),linear-gradient(180deg,#0B1220,#0F172A)] sm:px-6 lg:px-8">
+            className="mx-auto w-full max-w-6xl space-y-6 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_32%),linear-gradient(180deg,rgba(248,250,252,0.96),rgba(248,250,252,1))] px-3 py-5 dark:bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.10),transparent_28%),linear-gradient(180deg,#0B1220,#0F172A)] sm:px-6 sm:py-6 lg:px-8">
             <ProfileHeader
                 avatarSrc={avatarSrc}
                 displayName={profileForm.displayName || user?.displayName || 'User'}
@@ -317,7 +317,7 @@ const ProfilePage = () => {
             </div>
 
             <section
-                className="group rounded-3xl border border-slate-200/80 bg-[rgba(255,255,255,0.86)] p-6 shadow-[0_18px_36px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_rgba(20,184,166,0.12)] dark:border-slate-800/80 dark:bg-[rgba(11,18,32,0.92)]">
+                className="group rounded-3xl border border-slate-200/80 bg-[rgba(255,255,255,0.86)] p-4 shadow-[0_18px_36px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_rgba(20,184,166,0.12)] dark:border-slate-800/80 dark:bg-[rgba(11,18,32,0.92)] sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Session summary / activity</h2>
@@ -338,7 +338,7 @@ const ProfilePage = () => {
                     type="button"
                     variant="secondary"
                     onClick={() => navigate('/sessions')}
-                    className="mt-4 h-11 rounded-2xl"
+                    className="mt-4 h-11 w-full rounded-2xl sm:w-auto"
                 >
                     View all sessions
                 </Button>

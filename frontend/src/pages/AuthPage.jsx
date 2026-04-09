@@ -198,7 +198,9 @@ const AuthPage = () => {
 
     const handleLocalLogin = async (event) => {
         event.preventDefault();
-        if (!password || isGoogleRedirecting) return;
+        const submittedPassword =
+            event.currentTarget.elements.namedItem('password')?.value ?? password;
+        if (!submittedPassword || isGoogleRedirecting || authState.isLoading) return;
 
         if (!normalizedEmail) {
             toast.error('Email is required');
@@ -216,7 +218,7 @@ const AuthPage = () => {
             API_CONFIG.ENDPOINTS.LOGIN,
             {
                 identifier: normalizedEmail,
-                password,
+                password: submittedPassword,
                 device_id: getDeviceId(),
             }
         );
@@ -251,6 +253,14 @@ const AuthPage = () => {
         login({identifier: normalizedEmail});
         navigateAfterAuthSuccess('/');
     };
+
+    const handlePasswordValueChange = useCallback((event) => {
+        const nextPassword = event.target.value;
+        setPassword(nextPassword);
+        setPasswordError('');
+    }, []);
+
+    const isPasswordSubmitDisabled = loading || authState.isLoading || isGoogleRedirecting || !password;
 
     //  CLEAN GOOGLE SUCCESS HANDLER
     const handleGoogleSuccess = (data) => {
@@ -388,22 +398,26 @@ const AuthPage = () => {
                     <form onSubmit={handleLocalLogin} className="auth-form-stack">
                         <label className="auth-label block">Password</label>
                         <PasswordInput
+                            name="password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={handlePasswordValueChange}
+                            onInput={handlePasswordValueChange}
                             placeholder="Enter your password"
                             hasError={Boolean(passwordError)}
                             required
+                            autoComplete="current-password"
                             disabled={loading || isGoogleRedirecting || authState.isLoading}
                         />
                         <ValidationError errors={passwordError ? [passwordError] : []}/>
                         <AuthButton
-                            disabled={loading || !password || isGoogleRedirecting}
+                            type="submit"
+                            disabled={isPasswordSubmitDisabled}
                             loading={loading}
                         >
                             Login with password
                         </AuthButton>
                         <p className="auth-helper text-right">
-                            <Link to="/forgot-password" className="auth-link">Forgot password?</Link>
+                            <Link to="/forgot-password" className="auth-link">Forgot Password?</Link>
                         </p>
                     </form>
                 )}

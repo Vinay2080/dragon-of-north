@@ -26,8 +26,8 @@ const ProfileInfoSection = ({
 
     return (
         <section
-            className="group rounded-3xl border border-slate-200/80 bg-[rgba(255,255,255,0.88)] p-6 shadow-[0_20px_40px_rgba(15,23,42,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_48px_rgba(20,184,166,0.14)] dark:border-slate-800/80 dark:bg-[rgba(11,18,32,0.94)]">
-            <div className="mb-6 flex items-start justify-between gap-4">
+            className="group rounded-3xl border border-slate-200/80 bg-[rgba(255,255,255,0.88)] p-4 shadow-[0_20px_40px_rgba(15,23,42,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_48px_rgba(20,184,166,0.14)] dark:border-slate-800/80 dark:bg-[rgba(11,18,32,0.94)] sm:p-6">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-500/20 ring-1 ring-teal-300/30 dark:from-teal-500/15 dark:to-cyan-500/15 dark:ring-teal-400/20">
                         <svg className="h-5 w-5 text-teal-700 dark:text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,12 +39,12 @@ const ProfileInfoSection = ({
                         <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Manage your public profile details.</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                     <Button
                         type="button"
                         onClick={onOpenAvatarUpload}
                         variant="secondary"
-                        className="h-10 rounded-lg px-3 text-xs"
+                        className="h-11 w-full rounded-lg px-3 text-sm sm:w-auto"
                     >
                         Change avatar
                     </Button>
@@ -53,7 +53,7 @@ const ProfileInfoSection = ({
                             type="button"
                             onClick={onEdit}
                             variant="primary"
-                            className="h-10 rounded-lg px-3 text-xs"
+                            className="h-11 w-full rounded-lg px-3 text-sm sm:w-auto"
                         >
                             Edit profile
                         </Button>
@@ -72,8 +72,9 @@ const ProfileInfoSection = ({
             ) : (
                 <form className="space-y-4" onSubmit={onSubmit}>
                     <div>
-                        <label className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Username</label>
+                        <label htmlFor="profile-username" className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Username</label>
                         <AuthInput
+                            id="profile-username"
                             value={profileForm.username}
                             onChange={(event) => onFieldChange('username', event.target.value)}
                             hasError={Boolean(profileErrors.username.length)}
@@ -85,8 +86,9 @@ const ProfileInfoSection = ({
                     </div>
 
                     <div>
-                        <label className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Display name</label>
+                        <label htmlFor="profile-display-name" className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Display name</label>
                         <AuthInput
+                            id="profile-display-name"
                             value={profileForm.displayName}
                             onChange={(event) => onFieldChange('displayName', event.target.value)}
                             hasError={Boolean(profileErrors.displayName.length)}
@@ -97,8 +99,9 @@ const ProfileInfoSection = ({
                     </div>
 
                     <div>
-                        <label className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Bio</label>
+                        <label htmlFor="profile-bio" className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Bio</label>
                         <AuthInput
+                            id="profile-bio"
                             value={profileForm.bio}
                             onChange={(event) => onFieldChange('bio', event.target.value)}
                             hasError={Boolean(profileErrors.bio.length)}
@@ -108,12 +111,12 @@ const ProfileInfoSection = ({
                         <ValidationError errors={profileErrors.bio}/>
                     </div>
 
-                    <div className="flex items-center gap-2 pt-2">
+                    <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center">
                         <Button
                             type="submit"
                             disabled={!hasChanges || isSubmitting}
                             variant="primary"
-                            className="h-10 rounded-lg"
+                            className="h-11 w-full rounded-lg sm:w-auto"
                         >
                             {isSubmitting ? (
                                 <span className="btn-loading-indicator">
@@ -126,7 +129,7 @@ const ProfileInfoSection = ({
                             type="button"
                             onClick={onCancel}
                             variant="secondary"
-                            className="h-10 rounded-lg"
+                            className="h-11 w-full rounded-lg sm:w-auto"
                         >
                             Cancel
                         </Button>
@@ -138,4 +141,3 @@ const ProfileInfoSection = ({
 };
 
 export default ProfileInfoSection;
-
