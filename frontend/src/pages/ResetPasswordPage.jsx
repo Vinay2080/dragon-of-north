@@ -5,6 +5,7 @@ import {apiService} from '../services/apiService';
 import {useToast} from '../hooks/useToast';
 import AuthCardLayout from '../components/auth/AuthCardLayout';
 import AuthInput from '../components/auth/AuthInput';
+import PasswordInput from '../components/auth/PasswordInput';
 import AuthButton from '../components/auth/AuthButton';
 
 const ResetPasswordPage = () => {
@@ -61,8 +62,14 @@ const ResetPasswordPage = () => {
                 <AuthInput type="text" value={otp}
                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                            placeholder="OTP code" required/>
-                <AuthInput type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                           placeholder="New password" required/>
+                <PasswordInput
+                    name="newPassword"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="New password"
+                    autoComplete="new-password"
+                    required
+                />
                 <AuthButton type="submit"
                             disabled={loading || !otp || !newPassword}>{loading ? 'Resetting...' : 'Reset Password'}</AuthButton>
             </form>
