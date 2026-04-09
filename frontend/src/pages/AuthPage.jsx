@@ -255,10 +255,17 @@ const AuthPage = () => {
     const handlePasswordValueChange = useCallback((event) => {
         const nextPassword = event.target.value;
         setPassword(nextPassword);
-        if (passwordError) {
+        setPasswordError('');
+    }, []);
+
+    const handlePasswordPaste = useCallback((event) => {
+        const input = event.currentTarget;
+        requestAnimationFrame(() => {
+            const pastedValue = input.value;
+            setPassword(pastedValue);
             setPasswordError('');
-        }
-    }, [passwordError]);
+        });
+    }, []);
 
     const isPasswordSubmitDisabled = loading || authState.isLoading || isGoogleRedirecting || !password;
 
@@ -400,7 +407,7 @@ const AuthPage = () => {
                         <PasswordInput
                             value={password}
                             onChange={handlePasswordValueChange}
-                            onInput={handlePasswordValueChange}
+                            onPaste={handlePasswordPaste}
                             placeholder="Enter your password"
                             hasError={Boolean(passwordError)}
                             required

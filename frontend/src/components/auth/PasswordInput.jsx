@@ -11,7 +11,6 @@ import React, {useState} from 'react';
 const PasswordInput = ({
                            value,
                            onChange,
-                           onInput,
                            onPaste,
                            placeholder = 'Enter your password',
                            hasError = false,
@@ -29,7 +28,6 @@ const PasswordInput = ({
                 type={showPassword ? 'text' : 'password'}
                 value={value}
                 onChange={onChange}
-                onInput={onInput}
                 onPaste={onPaste}
                 placeholder={placeholder}
                 disabled={disabled}
