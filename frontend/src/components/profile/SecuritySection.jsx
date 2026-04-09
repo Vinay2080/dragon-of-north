@@ -196,7 +196,7 @@ const SecuritySection = ({authProvider}) => {
 
     return (
         <section
-            className="group rounded-3xl border border-slate-200/80 bg-[rgba(255,255,255,0.88)] p-6 shadow-[0_20px_40px_rgba(15,23,42,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_48px_rgba(59,130,246,0.12)] dark:border-slate-800/80 dark:bg-[rgba(11,18,32,0.94)]">
+            className="group rounded-3xl border border-slate-200/80 bg-[rgba(255,255,255,0.88)] p-4 shadow-[0_20px_40px_rgba(15,23,42,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_48px_rgba(59,130,246,0.12)] dark:border-slate-800/80 dark:bg-[rgba(11,18,32,0.94)] sm:p-6">
             <div className="mb-6 space-y-3">
                 <div className="flex items-start gap-3">
                     <div className={`mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg border shadow-sm ${
@@ -246,7 +246,7 @@ const SecuritySection = ({authProvider}) => {
                 />
 
                 <div>
-                    <label className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Current password</label>
+                    <label htmlFor="currentPassword" className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Current password</label>
                     <PasswordInput
                         id="currentPassword"
                         name="currentPassword"
@@ -261,7 +261,7 @@ const SecuritySection = ({authProvider}) => {
                 </div>
 
                 <div>
-                    <label className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">New password</label>
+                    <label htmlFor="newPassword" className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">New password</label>
                     <PasswordInput
                         id="newPassword"
                         name="newPassword"
@@ -276,7 +276,7 @@ const SecuritySection = ({authProvider}) => {
                 </div>
 
                 <div>
-                    <label className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Confirm password</label>
+                    <label htmlFor="confirmPassword" className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-700 dark:text-slate-300 mb-2">Confirm password</label>
                     <PasswordInput
                         id="confirmPassword"
                         name="confirmPassword"
@@ -294,7 +294,7 @@ const SecuritySection = ({authProvider}) => {
                     <AuthButton
                         type="submit"
                         disabled={isSubmitting}
-                        className="h-10 rounded-lg border-0 bg-gradient-to-br from-teal-500 to-teal-600 px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(20,184,166,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(20,184,166,0.36)] focus:outline-none focus:ring-2 focus:ring-teal-400/40 disabled:cursor-not-allowed disabled:opacity-50 dark:from-teal-600 dark:to-teal-700"
+                        className="h-11 w-full rounded-lg border-0 bg-gradient-to-br from-teal-500 to-teal-600 px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(20,184,166,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(20,184,166,0.36)] focus:outline-none focus:ring-2 focus:ring-teal-400/40 disabled:cursor-not-allowed disabled:opacity-50 dark:from-teal-600 dark:to-teal-700 sm:w-auto"
                     >
                     {isSubmitting ? (
                         <span className="btn-loading-indicator">
@@ -313,4 +313,3 @@ const SecuritySection = ({authProvider}) => {
 };
 
 export default SecuritySection;
-
