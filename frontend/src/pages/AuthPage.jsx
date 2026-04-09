@@ -198,7 +198,9 @@ const AuthPage = () => {
 
     const handleLocalLogin = async (event) => {
         event.preventDefault();
-        if (!password || isGoogleRedirecting || authState.isLoading) return;
+        const submittedPassword =
+            event.currentTarget.elements.namedItem('password')?.value ?? password;
+        if (!submittedPassword || isGoogleRedirecting || authState.isLoading) return;
 
         if (!normalizedEmail) {
             toast.error('Email is required');
@@ -216,7 +218,7 @@ const AuthPage = () => {
             API_CONFIG.ENDPOINTS.LOGIN,
             {
                 identifier: normalizedEmail,
-                password,
+                password: submittedPassword,
                 device_id: getDeviceId(),
             }
         );
@@ -256,15 +258,6 @@ const AuthPage = () => {
         const nextPassword = event.target.value;
         setPassword(nextPassword);
         setPasswordError('');
-    }, []);
-
-    const handlePasswordPaste = useCallback((event) => {
-        const input = event.currentTarget;
-        requestAnimationFrame(() => {
-            const pastedValue = input.value;
-            setPassword(pastedValue);
-            setPasswordError('');
-        });
     }, []);
 
     const isPasswordSubmitDisabled = loading || authState.isLoading || isGoogleRedirecting || !password;
@@ -405,9 +398,10 @@ const AuthPage = () => {
                     <form onSubmit={handleLocalLogin} className="auth-form-stack">
                         <label className="auth-label block">Password</label>
                         <PasswordInput
+                            name="password"
                             value={password}
                             onChange={handlePasswordValueChange}
-                            onPaste={handlePasswordPaste}
+                            onInput={handlePasswordValueChange}
                             placeholder="Enter your password"
                             hasError={Boolean(passwordError)}
                             required
@@ -423,7 +417,7 @@ const AuthPage = () => {
                             Login with password
                         </AuthButton>
                         <p className="auth-helper text-right">
-                            <Link to="/forgot-password" className="auth-link">Forgot password?</Link>
+                            <Link to="/forgot-password" className="auth-link">Forgot Password?</Link>
                         </p>
                     </form>
                 )}
