@@ -11,7 +11,6 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordResetCo
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
-import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -61,7 +60,6 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final PasswordEncoder passwordEncoder;
     private final AuditEventLogger auditEventLogger;
     private final UserStateValidator userStateValidator;
-    private final ProfileService profileService;
 
     @Value("${app.security.cookie.secure:false}")
     private boolean cookieSecure;
@@ -182,7 +180,6 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     public void deleteAccount(HttpServletResponse response, AuthRequestContext context) {
         AppUser appUser = findAuthenticatedUser();
         userStateValidator.validate(appUser, UserLifecycleOperation.ACCOUNT_DELETION);
-        profileService.deleteProfileImage(appUser.getId());
         appUser.setAppUserStatus(AppUserStatus.DELETED);
         appUserRepository.save(appUser);
         sessionService.revokeAllSessionsByUserId(appUser.getId());

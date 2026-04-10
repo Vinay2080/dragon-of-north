@@ -353,7 +353,7 @@ class AuthCommonServiceImplTest {
 
         assertEquals(DELETED, user.getAppUserStatus());
         verify(userStateValidator).validate(user, UserLifecycleOperation.ACCOUNT_DELETION);
-        verify(profileService).deleteProfileImage(userId);
+        verify(profileService, never()).deleteProfileImage(any());
         verify(appUserRepository).save(user);
         verify(sessionService).revokeAllSessionsByUserId(userId);
     }
