@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import {ReactNode} from 'react';
 
 interface IconProps {
     size?: number;
@@ -33,6 +33,9 @@ export const Menu = (props: IconProps) => <IconBase {...props}><path d="M3 12h18
 export const X = (props: IconProps) => <IconBase {...props}><path d="M18 6L6 18M6 6l12 12"/></IconBase>;
 export const Home = (props: IconProps) => <IconBase {...props}><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></IconBase>;
 export const ChevronDown = (props: IconProps) => <IconBase {...props}><path d="m6 9 6 6 6-6"/></IconBase>;
+export const ChevronRight = (props: IconProps) => <IconBase {...props}>
+    <path d="m9 18 6-6-6-6"/>
+</IconBase>;
 export const BookOpen = (props: IconProps) => <IconBase {...props}><path d="M2 7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><path d="M22 7a2 2 0 0 0-2-2h-6a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2z"/></IconBase>;
 export const Zap = (props: IconProps) => <IconBase {...props}><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></IconBase>;
 export const Lock = (props: IconProps) => <IconBase {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></IconBase>;

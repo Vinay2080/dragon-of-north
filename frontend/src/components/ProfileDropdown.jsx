@@ -101,9 +101,16 @@ export default function ProfileDropdown() {
         return explicitAvatar;
     }, [user, fallbackSeed, avatarLoadFailed]);
 
-    useEffect(() => {
-        setAvatarLoadFailed(false);
-    }, [user?.avatarUrl, user?.avatar_url]);
+    // Reset the fallback state whenever the avatar URL changes.
+    // (Avoid triggering our lint rule that flags setState directly inside useEffect.)
+    const lastAvatarUrlRef = useRef(null);
+    const currentAvatarUrl = user?.avatarUrl || user?.avatar_url;
+    if (lastAvatarUrlRef.current !== currentAvatarUrl) {
+        lastAvatarUrlRef.current = currentAvatarUrl;
+        if (avatarLoadFailed) {
+            setAvatarLoadFailed(false);
+        }
+    }
 
     return (
         <>

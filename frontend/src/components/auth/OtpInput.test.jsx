@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import OtpInput from './OtpInput';
 
 describe('OtpInput', () => {

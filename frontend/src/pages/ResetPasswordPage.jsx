@@ -37,9 +37,12 @@ const ResetPasswordPage = () => {
 
     // Optional UX: if the user changes the new password after typing confirm password,
     // clear the confirmation so they re-confirm the latest value.
-    useEffect(() => {
-        setConfirmPassword('');
-    }, [newPassword]);
+    const handleNewPasswordChange = (value) => {
+        setNewPassword(value);
+        if (confirmPassword) {
+            setConfirmPassword('');
+        }
+    };
 
     const handleResendOtp = async () => {
         if (resendLoading || !canResend) return;
@@ -135,7 +138,7 @@ const ResetPasswordPage = () => {
                 <PasswordInput
                     name="newPassword"
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={(e) => handleNewPasswordChange(e.target.value)}
                     placeholder="New password"
                     autoComplete="new-password"
                     required

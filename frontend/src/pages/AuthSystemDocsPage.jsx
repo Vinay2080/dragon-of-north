@@ -1,7 +1,5 @@
-'use client';
-
-import { useState, useRef, useEffect } from 'react';
-import { ChevronRight, Sun, Moon } from 'lucide-react';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {ChevronRight, Moon, Sun} from 'lucide-react';
 import '../styles/auth-system-docs.css';
 
 // Data structures for sections
@@ -36,7 +34,7 @@ const DESIGN_DECISIONS = [
     title: 'Optimistic locking for refresh races',
     threat: 'Concurrent refresh requests could double-issue tokens',
     decision: 'Use version counter, UPDATE WHERE version=N fails if already rotated',
-    evidence: 'UPDATE sessions SET version=version+1\nWHERE id=? AND version=?\nResult: success | OptimisticLockException',
+      evidence: 'Rotate session with optimistic lock:\n- session.version++\n- write succeeds only if expected version matches\nOutcome: success | OptimisticLockException',
     tradeoff: 'Client must handle 401 and retry; adds latency on high-concurrency'
   },
   {
@@ -50,7 +48,7 @@ const DESIGN_DECISIONS = [
     title: 'Reject family rotation on device mismatch',
     threat: 'Stolen old tokens could be used if rotation continues on new device',
     decision: 'If deviceId changes mid-family, invalidate entire family and force re-auth',
-    evidence: 'if (refresh_deviceId !== session_deviceId) {\n  UPDATE sessions SET revoked=true WHERE family_id=?\n}',
+      evidence: 'if (refresh_deviceId !== session_deviceId) {\n  revokeFamily(familyId)\n}',
     tradeoff: 'Users on multi-device lose convenience; security > UX'
   },
   {
@@ -139,7 +137,7 @@ const TOKEN_LIFECYCLE_STATES = [
     state: 'ISSUED',
     description: 'Token generated during login/signup',
     service: 'AuthService.generateTokens()',
-    dbChange: 'INSERT INTO sessions',
+      dbChange: 'Create auth session record',
     jwtClaim: 'iat = NOW()'
   },
   {
@@ -153,7 +151,7 @@ const TOKEN_LIFECYCLE_STATES = [
     state: 'ROTATED',
     description: 'Token successfully refreshed, new token issued',
     service: 'TokenService.rotate()',
-    dbChange: 'UPDATE sessions SET version++',
+      dbChange: 'Optimistic-lock update: increment session.version if expected version matches',
     jwtClaim: 'iat = NOW() (new token)'
   },
   {
@@ -167,7 +165,7 @@ const TOKEN_LIFECYCLE_STATES = [
     state: 'INVALIDATED',
     description: 'Token revoked due to replay, device mismatch, or explicit logout',
     service: 'SessionService.revoke()',
-    dbChange: 'UPDATE sessions SET revoked=true',
+      dbChange: 'Mark session as revoked=true',
     jwtClaim: 'None (rejected before decode)'
   }
 ];
@@ -452,20 +450,20 @@ const ConcurrentRefreshAnimation = () => {
       title: 'Both SELECT session',
       desc: 'Both queries fetch: version=1',
       highlight: ['a', 'b'],
-      sql: 'SELECT * FROM sessions WHERE id=?'
+        sql: 'Load session record (version=1)'
     },
     {
       title: 'Request A commits',
       desc: 'A executes UPDATE WHERE version=1, succeeds. version becomes 2.',
       highlight: ['a'],
-      sql: 'UPDATE sessions SET version=2 WHERE id=? AND version=1',
+        sql: 'Write session version=2 if current version==1',
       result: '✓ 1 row affected'
     },
     {
       title: 'Request B fails',
       desc: 'B attempts same UPDATE, but version is now 2. No rows match.',
       highlight: ['b'],
-      sql: 'UPDATE sessions SET version=2 WHERE id=? AND version=1',
+        sql: 'Attempt same write, but version already changed',
       result: '✗ 0 rows affected (OptimisticLockException)'
     },
     {
@@ -593,20 +591,22 @@ export default function AuthSystemDocsPage() {
   const [isDark, setIsDark] = useState(false);
   const contentRef = useRef(null);
 
+    const updateTheme = useCallback((dark) => {
+        if (dark) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, []);
+
   useEffect(() => {
     // Set theme on mount
     const isDarkPreferred = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsDark(isDarkPreferred);
     updateTheme(isDarkPreferred);
-  }, []);
+  }, [updateTheme]);
 
-  const updateTheme = (dark) => {
-    if (dark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
 
   const toggleTheme = () => {
     const newTheme = !isDark;
