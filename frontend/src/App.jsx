@@ -22,6 +22,7 @@ import SecurityDemoPage from './pages/SecurityDemoPage';
 import DeploymentDocsPage from './pages/DeploymentDocsPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import IdentifierFlowPage from './pages/IdentifierFlowPage';
+import AuthSystemDocsPage from './pages/AuthSystemDocsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import {useRouteDocumentTitle} from './hooks/useDocumentTitle';
@@ -58,6 +59,7 @@ const AppShell = () => {
                     <Route path="/architecture" element={<ArchitectureDocsPage/>}/>
                     <Route path="/security-demo" element={<SecurityDemoPage/>}/>
                     <Route path="/identifier-flow" element={<IdentifierFlowPage/>}/>
+                    <Route path="/auth-system" element={<AuthSystemDocsPage/>}/>
                     <Route path="/deployment" element={<DeploymentDocsPage/>}/>
                     <Route path="/privacy" element={<PrivacyPolicyPage/>}/>
                     <Route path="/terms" element={<TermsOfServicePage/>}/>
