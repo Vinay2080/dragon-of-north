@@ -2044,6 +2044,8 @@ a:hover {
         line-height: 1.25;
         box-sizing: border-box;
         font-weight: 500;
+        /* Prevent label clipping under different font metrics (prod vs dev). */
+        padding-block: 2px;
     }
 
     .auth-oauth-button-target > div,
@@ -2051,6 +2053,11 @@ a:hover {
         width: 100% !important;
         max-width: 100%;
         overflow: visible !important;
+    }
+
+    /* Google-rendered button sometimes applies a tight height; let it expand to fit. */
+    .auth-oauth-button-target iframe {
+        min-height: 48px;
     }
 
     .auth-oauth-caption {

@@ -27,6 +27,18 @@ const ResetPasswordPage = () => {
     const passwordsMatch = newPassword === confirmPassword;
     const showPasswordMismatchError = !isConfirmDisabled && Boolean(confirmPassword) && !passwordsMatch;
 
+    // Real-time password requirements (derived from current password value — NOT stored in state)
+    const validations = {
+        length: newPassword.length >= 8,
+        uppercase: /[A-Z]/.test(newPassword),
+        lowercase: /[a-z]/.test(newPassword),
+        number: /[0-9]/.test(newPassword),
+        special: /[^A-Za-z0-9]/.test(newPassword),
+    };
+
+    const isPasswordValid = Object.values(validations).every(Boolean);
+    const showPasswordRequirementsError = Boolean(newPassword) && !isPasswordValid;
+
     useEffect(() => {
         if (resendTimer <= 0) return;
         const interval = setInterval(() => {
@@ -140,6 +152,98 @@ const ResetPasswordPage = () => {
                     autoComplete="new-password"
                     required
                 />
+
+                {/* Password requirements: ALWAYS visible and placed directly below the new password input */}
+                <div
+                    className="mt-2 rounded-lg border bg-slate-100 p-3 text-slate-800 dark:border-slate-700/60 dark:bg-slate-900/60 dark:text-slate-200"
+                    aria-live="polite"
+                >
+                    <ul className="space-y-1 text-sm text-slate-700 dark:text-slate-400">
+                        <li className="flex items-center gap-2">
+                            <span
+                                className={
+                                    validations.length
+                                        ? 'text-green-600 dark:text-green-400'
+                                        : 'text-slate-500 dark:text-slate-400'
+                                }
+                                aria-hidden="true"
+                            >
+                                {validations.length ? '✔' : '✖'}
+                            </span>
+                            <span className={validations.length ? 'text-slate-900 dark:text-slate-200' : ''}>
+                                At least 8 characters
+                            </span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <span
+                                className={
+                                    validations.uppercase
+                                        ? 'text-green-600 dark:text-green-400'
+                                        : 'text-slate-500 dark:text-slate-400'
+                                }
+                                aria-hidden="true"
+                            >
+                                {validations.uppercase ? '✔' : '✖'}
+                            </span>
+                            <span className={validations.uppercase ? 'text-slate-900 dark:text-slate-200' : ''}>
+                                At least one uppercase letter (A-Z)
+                            </span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <span
+                                className={
+                                    validations.lowercase
+                                        ? 'text-green-600 dark:text-green-400'
+                                        : 'text-slate-500 dark:text-slate-400'
+                                }
+                                aria-hidden="true"
+                            >
+                                {validations.lowercase ? '✔' : '✖'}
+                            </span>
+                            <span className={validations.lowercase ? 'text-slate-900 dark:text-slate-200' : ''}>
+                                At least one lowercase letter (a-z)
+                            </span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <span
+                                className={
+                                    validations.number
+                                        ? 'text-green-600 dark:text-green-400'
+                                        : 'text-slate-500 dark:text-slate-400'
+                                }
+                                aria-hidden="true"
+                            >
+                                {validations.number ? '✔' : '✖'}
+                            </span>
+                            <span className={validations.number ? 'text-slate-900 dark:text-slate-200' : ''}>
+                                At least one number (0-9)
+                            </span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <span
+                                className={
+                                    validations.special
+                                        ? 'text-green-600 dark:text-green-400'
+                                        : 'text-slate-500 dark:text-slate-400'
+                                }
+                                aria-hidden="true"
+                            >
+                                {validations.special ? '✔' : '✖'}
+                            </span>
+                            <span className={validations.special ? 'text-slate-900 dark:text-slate-200' : ''}>
+                                At least one special character (!@#$%^&*)
+                            </span>
+                        </li>
+                    </ul>
+
+                    {/* Reserve space to avoid layout shift when showing/hiding the message */}
+                    <div className="min-h-[20px] pt-2">
+                        {showPasswordRequirementsError ? (
+                            <p className="text-center text-sm text-red-600 dark:text-red-400">Password does not meet
+                                requirements</p>
+                        ) : null}
+                    </div>
+                </div>
 
                 <PasswordInput
                     name="confirmPassword"

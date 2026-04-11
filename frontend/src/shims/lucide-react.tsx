@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import {ReactNode} from 'react';
 
 interface IconProps {
     size?: number;
@@ -45,4 +45,55 @@ export const Trash2 = (props: IconProps) => <IconBase {...props}>
     <path d="M19 6l-1 14H6L5 6"/>
     <path d="M10 11v6M14 11v6"/>
 </IconBase>;
+
+// Additional icons used by page-level UX (kept minimal and inline)
+export const Copy = (props: IconProps) => (
+    <IconBase {...props}>
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+    </IconBase>
+);
+
+export const Check = (props: IconProps) => (
+    <IconBase {...props}>
+        <path d="M20 6 9 17l-5-5"/>
+    </IconBase>
+);
+
+export const CheckCircle = (props: IconProps) => (
+    <IconBase {...props}>
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M9 12l2 2 4-4"/>
+    </IconBase>
+);
+
+export const ChevronRight = (props: IconProps) => (
+    <IconBase {...props}>
+        <path d="m9 18 6-6-6-6"/>
+    </IconBase>
+);
+
+export const Info = (props: IconProps) => (
+    <IconBase {...props}>
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 16v-4"/>
+        <path d="M12 8h.01"/>
+    </IconBase>
+);
+
+export const AlertTriangle = (props: IconProps) => (
+    <IconBase {...props}>
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <path d="M12 9v4"/>
+        <path d="M12 17h.01"/>
+    </IconBase>
+);
+
+export const AlertCircle = (props: IconProps) => (
+    <IconBase {...props}>
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 8v4"/>
+        <path d="M12 16h.01"/>
+    </IconBase>
+);
 
