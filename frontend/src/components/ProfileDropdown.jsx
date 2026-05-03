@@ -1,13 +1,9 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {useTheme} from '../context/ThemeContext';
 import {useAuth} from '../context/authUtils';
 import * as Icons from '../shims/lucide-react';
 
-const {Monitor, Moon, Sun, User, X} = Icons;
-
-const THEME_SEQUENCE = ['light', 'dark', 'system'];
-const SUBMENU_CLOSE_DELAY_MS = 150;
+const {User, X} = Icons;
 
 const resolveUserSeed = (user) => {
     const seedSource = user?.username || user?.displayName || user?.identifier || 'user';
@@ -29,60 +25,25 @@ const buildDicebearAvatarUrl = (seed) => {
 };
 
 export default function ProfileDropdown() {
-    const {setTheme} = useTheme();
     const {isAuthenticated, logout, user} = useAuth();
     const [isOpen, setIsOpen] = useState(false);
-    const [isThemeSubmenuOpen, setIsThemeSubmenuOpen] = useState(false);
     const ref = useRef(null);
-    const themeTriggerRef = useRef(null);
-    const firstThemeItemRef = useRef(null);
-    const closeSubmenuTimerRef = useRef(null);
     const navigate = useNavigate();
-    const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
-
-    const clearSubmenuCloseTimer = () => {
-        if (closeSubmenuTimerRef.current) {
-            clearTimeout(closeSubmenuTimerRef.current);
-            closeSubmenuTimerRef.current = null;
-        }
-    };
-
-    const openThemeSubmenu = () => {
-        clearSubmenuCloseTimer();
-        setIsThemeSubmenuOpen(true);
-    };
-
-    const closeThemeSubmenuNow = () => {
-        clearSubmenuCloseTimer();
-        setIsThemeSubmenuOpen(false);
-    };
-
-    const scheduleThemeSubmenuClose = () => {
-        clearSubmenuCloseTimer();
-        closeSubmenuTimerRef.current = setTimeout(() => {
-            setIsThemeSubmenuOpen(false);
-            closeSubmenuTimerRef.current = null;
-        }, SUBMENU_CLOSE_DELAY_MS);
-    };
+    const [failedAvatarUrl, setFailedAvatarUrl] = useState(null);
 
     useEffect(() => {
         const onDocClick = (e) => {
             if (!ref.current) return;
             if (!ref.current.contains(e.target)) {
                 setIsOpen(false);
-                clearSubmenuCloseTimer();
-                setIsThemeSubmenuOpen(false);
             }
         };
         document.addEventListener('mousedown', onDocClick);
         return () => document.removeEventListener('mousedown', onDocClick);
     }, []);
 
-    useEffect(() => () => clearSubmenuCloseTimer(), []);
-
     const doLogout = async () => {
         setIsOpen(false);
-        closeThemeSubmenuNow();
         try {
             await logout();
             navigate('/');
@@ -95,15 +56,11 @@ export default function ProfileDropdown() {
 
     const avatarSrc = useMemo(() => {
         const explicitAvatar = user?.avatarUrl || user?.avatar_url;
-        if (avatarLoadFailed || !explicitAvatar) {
+        if (!explicitAvatar || failedAvatarUrl === explicitAvatar) {
             return buildDicebearAvatarUrl(fallbackSeed);
         }
         return explicitAvatar;
-    }, [user, fallbackSeed, avatarLoadFailed]);
-
-    useEffect(() => {
-        setAvatarLoadFailed(false);
-    }, [user?.avatarUrl, user?.avatar_url]);
+    }, [user, fallbackSeed, failedAvatarUrl]);
 
     return (
         <>
@@ -111,9 +68,6 @@ export default function ProfileDropdown() {
                 <button
                     type="button"
                     onClick={() => {
-                        if (isOpen) {
-                            closeThemeSubmenuNow();
-                        }
                         setIsOpen((v) => !v);
                     }}
                     className="dashboard-avatar-btn"
@@ -126,7 +80,12 @@ export default function ProfileDropdown() {
                         alt="User avatar"
                         className="dashboard-avatar"
                         referrerPolicy="no-referrer"
-                        onError={() => setAvatarLoadFailed(true)}
+                        onError={() => {
+                            const explicitAvatar = user?.avatarUrl || user?.avatar_url;
+                            if (explicitAvatar) {
+                                setFailedAvatarUrl(explicitAvatar);
+                            }
+                        }}
                     />
                 </button>
 
@@ -137,98 +96,19 @@ export default function ProfileDropdown() {
                     onKeyDown={(event) => {
                         if (event.key === 'Escape') {
                             setIsOpen(false);
-                            closeThemeSubmenuNow();
                         }
                     }}
                 >
                     <li className="p-2">
                         <ul className="flex flex-col gap-1">
-                            <li
-                                className="submenu-anchor"
-                                onMouseEnter={openThemeSubmenu}
-                                onMouseLeave={scheduleThemeSubmenuClose}
-                            >
-                                <button
-                                    ref={themeTriggerRef}
-                                    type="button"
-                                    className={`menu-item w-full text-left ${isThemeSubmenuOpen ? 'menu-item--active' : ''}`}
-                                    aria-haspopup="menu"
-                                    aria-expanded={isThemeSubmenuOpen}
-                                    onClick={() => setIsThemeSubmenuOpen((prev) => !prev)}
-                                    onFocus={openThemeSubmenu}
-                                    onKeyDown={(event) => {
-                                        if (event.key === 'ArrowRight') {
-                                            event.preventDefault();
-                                            openThemeSubmenu();
-                                            firstThemeItemRef.current?.focus();
-                                        }
-                                        if (event.key === 'ArrowLeft') {
-                                            event.preventDefault();
-                                            closeThemeSubmenuNow();
-                                        }
-                                    }}
-                                >
-                                    <span>Theme</span>
-                                    <span
-                                        className={`arrow transition-transform duration-200 ${isThemeSubmenuOpen ? 'rotate-180' : ''}`}>›</span>
-                                </button>
-
-                                {/* Hover bridge keeps the submenu open when the cursor moves diagonally */}
-                                <div
-                                    className={`submenu-bridge submenu-bridge--left ${isThemeSubmenuOpen ? 'is-active' : ''}`}
-                                    onMouseEnter={openThemeSubmenu}
-                                    onMouseLeave={scheduleThemeSubmenuClose}
-                                    aria-hidden
-                                />
-
-                                <ul
-                                    className={`submenu-panel submenu-panel--left ${isThemeSubmenuOpen ? 'is-open' : ''}`}
-                                    role="menu"
-                                    aria-label="Theme selection"
-                                    onMouseEnter={openThemeSubmenu}
-                                    onMouseLeave={scheduleThemeSubmenuClose}
-                                >
-                                    {THEME_SEQUENCE.map((t) => {
-                                        const Icon = t === 'light' ? Sun : t === 'dark' ? Moon : Monitor;
-                                        return (
-                                            <li key={t} role="none">
-                                                <button
-                                                    ref={t === THEME_SEQUENCE[0] ? firstThemeItemRef : undefined}
-                                                    type="button"
-                                                    role="menuitem"
-                                                    onClick={() => {
-                                                        setTheme(t);
-                                                        setIsOpen(false);
-                                                        closeThemeSubmenuNow();
-                                                    }}
-                                                    className="submenu-item"
-                                                    onKeyDown={(event) => {
-                                                        if (event.key === 'ArrowLeft') {
-                                                            event.preventDefault();
-                                                            closeThemeSubmenuNow();
-                                                            themeTriggerRef.current?.focus();
-                                                        }
-                                                    }}
-                                                >
-                                                    <Icon size={14}/>
-                                                    <span className="capitalize">{t}</span>
-                                                </button>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            </li>
-
                             {!isAuthenticated ? (
                                 <li>
                                     <button
                                         type="button"
                                         onClick={() => {
                                             setIsOpen(false);
-                                            closeThemeSubmenuNow();
                                             navigate('/login');
                                         }}
-                                        onMouseEnter={closeThemeSubmenuNow}
                                         className="menu-item w-full text-left"
                                         role="menuitem"
                                     >
@@ -242,10 +122,8 @@ export default function ProfileDropdown() {
                                             type="button"
                                             onClick={() => {
                                                 setIsOpen(false);
-                                                closeThemeSubmenuNow();
                                                 navigate('/profile');
                                             }}
-                                            onMouseEnter={closeThemeSubmenuNow}
                                             className="menu-item w-full text-left flex items-center gap-2"
                                             role="menuitem"
                                         >
@@ -258,7 +136,6 @@ export default function ProfileDropdown() {
                                         <button
                                             type="button"
                                             onClick={doLogout}
-                                            onMouseEnter={closeThemeSubmenuNow}
                                             className="menu-item w-full text-left flex items-center gap-2"
                                             role="menuitem"
                                         >

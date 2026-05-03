@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {API_CONFIG} from '../config';
 import {apiService} from '../services/apiService';
@@ -38,7 +38,9 @@ const OTP_SESSION_KEYS = {
     FLOW: 'otpFlow',
 };
 
-const AuthPage = () => {
+const PREFILL_EMAIL_STORAGE_KEY = 'loginPrefillEmail';
+
+const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
     useDocumentTitle('Login');
     const navigate = useNavigate();
     const location = useLocation();
@@ -46,13 +48,20 @@ const AuthPage = () => {
     const {login, isAuthenticated, isLoading} = useAuth();
     const authState = useAuthState();
 
-    const [email, setEmail] = useState('');
+    const normalizedInitialPrefill = (prefilledEmail || '').trim().toLowerCase();
+
+    const [email, setEmail] = useState(normalizedInitialPrefill);
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState(AUTH_STEP.EMAIL_ENTRY);
+    const [isEmailLocked, setIsEmailLocked] = useState(Boolean(normalizedInitialPrefill));
+    const [step, setStep] = useState(
+        normalizedInitialPrefill ? AUTH_STEP.PASSWORD_LOGIN : AUTH_STEP.EMAIL_ENTRY
+    );
     const [passwordError, setPasswordError] = useState('');
     const [isGoogleRedirecting, setIsGoogleRedirecting] = useState(false);
     const [showAuthError, setShowAuthError] = useState(false);
+
+    const passwordInputRef = useRef(null);
 
     const normalizedEmail = useMemo(
         () => email.trim().toLowerCase(),
@@ -86,6 +95,17 @@ const AuthPage = () => {
         setPassword('');
         setPasswordError('');
         setIsGoogleRedirecting(false);
+    };
+
+    const handleChangeEmail = () => {
+        setIsEmailLocked(false);
+        setEmail('');
+        setPassword('');
+        setPasswordError('');
+        setShowAuthError(false);
+        authState.setIdle();
+        onClearPrefilledEmail?.();
+        resetFlow();
     };
 
     const moveToStepFromProviders = ({exists, providers = []}) => {
@@ -250,6 +270,11 @@ const AuthPage = () => {
         }
 
         authState.setSuccess('Welcome back!');
+
+        // Don’t keep the post-signup email hint around once auth succeeds.
+        sessionStorage.removeItem(PREFILL_EMAIL_STORAGE_KEY);
+        onClearPrefilledEmail?.();
+
         login({identifier: normalizedEmail});
         navigateAfterAuthSuccess('/');
     };
@@ -281,6 +306,9 @@ const AuthPage = () => {
 
         // Keep an identifier hint so the auth bootstrap can hydrate user info after browser reopened.
         localStorage.setItem('auth_identifier_hint', resolvedIdentifier);
+
+        sessionStorage.removeItem(PREFILL_EMAIL_STORAGE_KEY);
+        onClearPrefilledEmail?.();
 
         login({
             identifier: resolvedIdentifier,
@@ -334,6 +362,12 @@ const AuthPage = () => {
         step === AUTH_STEP.PASSWORD_LOGIN ||
         step === AUTH_STEP.LOCAL_AND_GOOGLE;
 
+    useEffect(() => {
+        if (!isPasswordStep) return;
+        // Focus the actual <input> (PasswordInput is wrapped).
+        passwordInputRef.current?.focus();
+    }, [isPasswordStep]);
+
     const isSignupStep =
         step === AUTH_STEP.SIGNUP_CREATE_PASSWORD ||
         step === AUTH_STEP.GOOGLE_SIGNUP;
@@ -351,7 +385,7 @@ const AuthPage = () => {
 
             <AuthCardLayout
                 title="Welcome back"
-                subtitle="Use your email to continue."
+                subtitle={isEmailLocked && normalizedEmail ? 'Enter your password to continue.' : 'Use your email to continue.'}
             >
                 {showAuthError && (
                     <div className="mb-4">
@@ -369,35 +403,53 @@ const AuthPage = () => {
                     </div>
                 )}
 
-                <form onSubmit={checkEmail} className="auth-form-stack">
-                    <label className="auth-label">Email</label>
-                    <AuthInput
-                        type="email"
-                        value={email}
-                        onChange={(e) => {
-                            setEmail(e.target.value);
-                            if (step !== AUTH_STEP.EMAIL_ENTRY) {
-                                resetFlow();
-                            }
-                        }}
-                        placeholder="you@example.com"
-                        disabled={loading || authState.isLoading}
-                    />
-                    {step === AUTH_STEP.EMAIL_ENTRY && (
-                        <AuthButton
-                            type="submit"
-                            disabled={loading || isGoogleRedirecting || authState.isLoading}
-                            loading={loading}
+                {isEmailLocked && normalizedEmail ? (
+                    <div
+                        className="mb-4 flex items-center justify-between gap-3 rounded-md border border-neutral-800 bg-neutral-950/40 px-3 py-2">
+                        <p className="text-sm text-muted-foreground">
+                            Logging in as{' '}
+                            <span className="font-medium text-white">{normalizedEmail}</span>
+                        </p>
+                        <button
+                            type="button"
+                            onClick={handleChangeEmail}
+                            className="auth-link text-sm"
                         >
-                            Continue with Email
-                        </AuthButton>
-                    )}
-                </form>
+                            Change Email
+                        </button>
+                    </div>
+                ) : (
+                    <form onSubmit={checkEmail} className="auth-form-stack">
+                        <label className="auth-label">Email</label>
+                        <AuthInput
+                            type="email"
+                            value={email}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                if (step !== AUTH_STEP.EMAIL_ENTRY) {
+                                    resetFlow();
+                                }
+                            }}
+                            placeholder="you@example.com"
+                            disabled={loading || authState.isLoading}
+                        />
+                        {step === AUTH_STEP.EMAIL_ENTRY && (
+                            <AuthButton
+                                type="submit"
+                                disabled={loading || isGoogleRedirecting || authState.isLoading}
+                                loading={loading}
+                            >
+                                Continue with Email
+                            </AuthButton>
+                        )}
+                    </form>
+                )}
 
                 {isPasswordStep && (
                     <form onSubmit={handleLocalLogin} className="auth-form-stack">
                         <label className="auth-label block">Password</label>
                         <PasswordInput
+                            inputRef={passwordInputRef}
                             name="password"
                             value={password}
                             onChange={handlePasswordValueChange}

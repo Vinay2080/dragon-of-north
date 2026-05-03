@@ -49,9 +49,6 @@ const ResetPasswordPage = () => {
 
     // Optional UX: if the user changes the new password after typing confirm password,
     // clear the confirmation so they re-confirm the latest value.
-    useEffect(() => {
-        setConfirmPassword('');
-    }, [newPassword]);
 
     const handleResendOtp = async () => {
         if (resendLoading || !canResend) return;
@@ -111,7 +108,13 @@ const ResetPasswordPage = () => {
         }
 
         toast.success('Password reset successful. Please log in.');
-        navigate('/login', {state: {identifier}});
+
+        if (identifierType === 'EMAIL') {
+            sessionStorage.setItem('loginPrefillEmail', identifier);
+            navigate('/login', {state: {email: identifier}});
+        } else {
+            navigate('/login', {state: {identifier}});
+        }
         setLoading(false);
     };
 
@@ -147,7 +150,12 @@ const ResetPasswordPage = () => {
                 <PasswordInput
                     name="newPassword"
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={(e) => {
+                        setNewPassword(e.target.value);
+                        if (confirmPassword) {
+                            setConfirmPassword('');
+                        }
+                    }}
                     placeholder="New password"
                     autoComplete="new-password"
                     required

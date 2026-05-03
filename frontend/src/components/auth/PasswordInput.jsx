@@ -9,6 +9,7 @@ import React, {useState} from 'react';
  * - No layout shift on toggle
  */
 const PasswordInput = ({
+                           inputRef,
                             value,
                             onChange,
                             onInput,
@@ -26,6 +27,7 @@ const PasswordInput = ({
         <div className="password-input-wrapper">
             <input
                 {...props}
+                ref={inputRef}
                 type={showPassword ? 'text' : 'password'}
                 value={value}
                 onChange={onChange}

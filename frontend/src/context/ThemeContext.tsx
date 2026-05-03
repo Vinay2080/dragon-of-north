@@ -7,7 +7,8 @@ type ThemeContextValue = {
     setTheme: (theme: ThemeMode) => void;
 };
 
-const THEME_STORAGE_KEY = 'don-theme';
+const THEME_STORAGE_KEY = 'theme';
+const LEGACY_THEME_STORAGE_KEY = 'don-theme';
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
@@ -35,11 +36,16 @@ const applyThemeToDocument = (isDark: boolean) => {
 export const ThemeProvider = ({children}) => {
     const [theme, setTheme] = useState<ThemeMode>(() => {
         const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-        return isThemeMode(savedTheme) ? savedTheme : 'system';
+        if (isThemeMode(savedTheme)) return savedTheme;
+
+        // Backwards compatibility: older builds stored this under "don-theme".
+        const legacyTheme = localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
+        return isThemeMode(legacyTheme) ? legacyTheme : 'system';
     });
 
     useEffect(() => {
         localStorage.setItem(THEME_STORAGE_KEY, theme);
+        localStorage.setItem(LEGACY_THEME_STORAGE_KEY, theme);
         applyThemeToDocument(resolveIsDark(theme));
     }, [theme]);
 

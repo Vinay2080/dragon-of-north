@@ -1631,6 +1631,49 @@ a:hover {
         box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
     }
 
+    /* ── AUTOFILL / PASSWORD MANAGER HARDENING ─────────────────────
+       Chromium-based browsers (Chrome/Edge) will apply `:-webkit-autofill`
+       when a password manager fills/selects a password (often perceived as
+       paste). That built-in style can force a light/yellow background.
+
+       We lock the theme surface via an inset box-shadow “paint” and explicit
+       text fill color so validation states never flip the background.
+    */
+    .light .auth-input:-webkit-autofill,
+    .light .auth-input:-webkit-autofill:hover,
+    .light .auth-input:-webkit-autofill:focus,
+    .light .auth-input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+        box-shadow: 0 0 0 1000px #ffffff inset !important;
+        -webkit-text-fill-color: #0f172a !important;
+        caret-color: #0f172a;
+        transition: background-color 9999s ease-in-out 0s;
+    }
+
+    .dark .auth-input:-webkit-autofill,
+    .dark .auth-input:-webkit-autofill:hover,
+    .dark .auth-input:-webkit-autofill:focus,
+    .dark .auth-input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.85) inset !important;
+        box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.85) inset !important;
+        -webkit-text-fill-color: #e2e8f0 !important;
+        caret-color: #e2e8f0;
+        transition: background-color 9999s ease-in-out 0s;
+    }
+
+    /* Firefox / standards track pseudo-class */
+    .light .auth-input:autofill {
+        box-shadow: 0 0 0 1000px #ffffff inset !important;
+        -webkit-text-fill-color: #0f172a !important;
+        caret-color: #0f172a;
+    }
+
+    .dark .auth-input:autofill {
+        box-shadow: 0 0 0 1000px rgba(2, 6, 23, 0.85) inset !important;
+        -webkit-text-fill-color: #e2e8f0 !important;
+        caret-color: #e2e8f0;
+    }
+
     .input-group {
         display: flex;
         align-items: center;
@@ -2285,7 +2328,6 @@ a:hover {
     .auth-input.error {
         border-color: #ef4444;
         box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
-        background: #ffffff;
     }
 
     .auth-input:focus.error {
