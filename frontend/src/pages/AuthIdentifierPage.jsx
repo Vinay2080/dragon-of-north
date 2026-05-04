@@ -30,7 +30,8 @@ const AuthIdentifierPage = () => {
         if (!isLoading && isAuthenticated) navigate('/sessions', {replace: true});
     }, [isAuthenticated, isLoading, navigate]);
 
-    const handleQuickLogin = (user) => navigate('/login', {state: {identifier: user.identifier, password: user.password}});
+    // Never pass/store passwords in the navigation state. Quick login should still require user password entry.
+    const handleQuickLogin = (user) => navigate('/login', {state: {email: user.identifier}});
 
     const handleIdentifierChange = (value) => {
         setIdentifier(value);
@@ -96,7 +97,11 @@ const AuthIdentifierPage = () => {
             setBlockedMessage('Your account is blocked. Please contact support.');
         } else if (status === 'ACTIVE' || status === 'CREATED' || status === 'VERIFIED') {
             if (emailVerified || status === 'VERIFIED') {
-                navigate('/login', {state: {identifier: processedIdentifier}});
+                if (identifierType === 'EMAIL') {
+                    navigate('/login', {state: {email: processedIdentifier}});
+                } else {
+                    navigate('/login', {state: {identifier: processedIdentifier}});
+                }
             } else {
                 // Existing but unverified account: request SIGNUP OTP before allowing completion.
                 const otpEndpoint = identifierType === 'EMAIL' ? API_CONFIG.ENDPOINTS.EMAIL_OTP_REQUEST : API_CONFIG.ENDPOINTS.PHONE_OTP_REQUEST;

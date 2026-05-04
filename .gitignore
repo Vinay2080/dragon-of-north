@@ -41,3 +41,6 @@ effective-pom.xml
 
 load_tests/.env
 load_tests/auth-cookie-utils.js
+
+out
+conference

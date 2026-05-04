@@ -1,32 +1,14 @@
 import {AnimatePresence, motion} from 'framer-motion';
-import {Menu, Monitor, Moon, Shield, Sun, X} from '../shims/lucide-react';
+import {Menu, Shield, X} from '../shims/lucide-react';
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {useTheme} from '../context/ThemeContext';
 import {useAuth} from '../context/authUtils';
 import ProfileDropdown from './ProfileDropdown';
-
-type ThemeMode = 'light' | 'dark' | 'system';
-
-const THEME_SEQUENCE: ThemeMode[] = ['light', 'dark', 'system'];
-
-const themeIcon = {
-    light: Sun,
-    dark: Moon,
-    system: Monitor,
-} as const;
-
-const themeLabel = {
-    light: 'Light',
-    dark: 'Dark',
-    system: 'System',
-} as const;
+import ThemeSwitcherPopover from './ThemeSwitcherPopover';
 
 const Navbar = () => {
-    const {setTheme} = useTheme();
     const {isAuthenticated, logout} = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isThemeOpen, setIsThemeOpen] = useState(false);
     const navigate = useNavigate();
 
     // Scroll state management
@@ -90,18 +72,22 @@ const Navbar = () => {
                 <span>Dragon of North</span>
             </button>
 
-            <div className="hidden md:flex items-center gap-3">
-                <ProfileDropdown/>
-            </div>
+            <div className="flex items-center gap-2">
+                <ThemeSwitcherPopover/>
 
-            <button
-                type="button"
-                onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background/70 text-foreground md:hidden"
-                aria-label="Toggle mobile menu"
-            >
-                {isMobileMenuOpen ? <X size={18}/> : <Menu size={18}/>}
-            </button>
+                <div className="hidden md:flex items-center gap-3">
+                    <ProfileDropdown/>
+                </div>
+
+                <button
+                    type="button"
+                    onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background/70 text-foreground md:hidden"
+                    aria-label="Toggle mobile menu"
+                >
+                    {isMobileMenuOpen ? <X size={18}/> : <Menu size={18}/>}
+                </button>
+            </div>
 
             <AnimatePresence>
                 {isMobileMenuOpen && (
@@ -118,37 +104,6 @@ const Navbar = () => {
                     >
                         <div className="flex flex-col gap-2">
                             <div className="p-2 flex flex-col gap-1">
-                                <div className="relative">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsThemeOpen((v) => !v)}
-                                        className="flex items-center justify-between w-full px-4 py-2 rounded-md hover:bg-muted"
-                                    >
-                                        <span>Theme</span>
-                                        <span>▸</span>
-                                    </button>
-
-                                    <div className={`mt-1 ${isThemeOpen ? '' : 'hidden'}`}>
-                                        {THEME_SEQUENCE.map((t) => {
-                                            const Icon = themeIcon[t];
-                                            return (
-                                                <button
-                                                    key={t}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setTheme(t);
-                                                        setIsThemeOpen(false);
-                                                        setIsMobileMenuOpen(false);
-                                                    }}
-                                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm rounded-md hover:bg-muted"
-                                                >
-                                                    <Icon size={14}/>
-                                                    <span>{themeLabel[t]}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
 
                                 {!isAuthenticated ? (
                                     <button

@@ -95,6 +95,14 @@ const OtpPage = () => {
                 ? 'Email verified successfully. Please log in.'
                 : 'Account verification completed. Please log in.'
         );
+
+        if (identifierType === 'EMAIL') {
+            sessionStorage.setItem('loginPrefillEmail', identifier);
+            navigate('/login', {state: {email: identifier}});
+            return;
+        }
+
+        // Fallback (non-email identifier flows): keep legacy identifier shape.
         navigate('/login', {state: {identifier}});
     };
 

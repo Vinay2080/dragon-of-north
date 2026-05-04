@@ -2,6 +2,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Outlet, useLocation, useNavigate} from 'react-router-dom';
 import * as Icons from '../shims/lucide-react';
 import ProfileDropdown from './ProfileDropdown';
+import ThemeSwitcherPopover from './ThemeSwitcherPopover';
 import CascadingMenu from './CascadingMenu';
 import ScrollToTopButton from './ScrollToTopButton';
 
@@ -341,6 +342,8 @@ const AppLayout = () => {
                                 }}
                                 className="flex-shrink-0"
                             />
+
+                            <ThemeSwitcherPopover/>
 
                             <div className="dashboard-profile">
                                 <ProfileDropdown/>
