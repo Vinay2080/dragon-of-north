@@ -533,4 +533,92 @@ public interface AuthenticationApi {
             @Parameter(hidden = true) HttpServletRequest request,
             @Parameter(hidden = true) HttpServletResponse response
     );
+
+    @Operation(
+            summary = "Request passwordless login",
+            description = "Sends a passwordless login link to the supplied email address. The success response is intentionally generic so account existence is not disclosed."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Passwordless link request accepted",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "passwordlessRequestAccepted",
+                                    value = """
+                                            {
+                                              "message": "Passwordless login link sent if the email is registered",
+                                              "api_response_status": "success",
+                                              "time": "2026-04-04T06:45:00Z"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Request validation failed")
+    })
+    ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> requestPasswordlessLogin(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Email address that should receive a passwordless login link.",
+                    content = @Content(
+                            examples = @ExampleObject(
+                                    name = "passwordlessRequest",
+                                    value = """
+                                            {
+                                              "email": "intern.candidate@example.com"
+                                            }
+                                            """
+                            )
+                    )
+            )
+            RequestPasswordlessLoginDto passwordlessLoginDto
+    );
+
+    @Operation(
+            summary = "Verify passwordless login",
+            description = "Validates the passwordless token, creates a session for the supplied device identifier, and sets HTTP-only authentication cookies."
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Passwordless login successful",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "passwordlessVerifySuccess",
+                                    value = """
+                                            {
+                                              "message": "Passwordless login successful",
+                                              "api_response_status": "success",
+                                              "time": "2026-04-04T06:45:00Z"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Token, device identifier, or request payload is invalid"),
+            @ApiResponse(responseCode = "401", description = "Passwordless token is expired or invalid")
+    })
+    ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> verifyPasswordlessLogin(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Passwordless token and device identifier.",
+                    content = @Content(
+                            examples = @ExampleObject(
+                                    name = "passwordlessVerifyRequest",
+                                    value = """
+                                            {
+                                              "token": "eyJhbGciOi...",
+                                              "device_id": "web-chrome-macos"
+                                            }
+                                            """
+                            )
+                    )
+            )
+            VerifyPasswordlessLoginDto verifyPasswordlessLoginDto,
+            @Parameter(hidden = true) HttpServletRequest request,
+            @Parameter(hidden = true) HttpServletResponse response
+    );
 }

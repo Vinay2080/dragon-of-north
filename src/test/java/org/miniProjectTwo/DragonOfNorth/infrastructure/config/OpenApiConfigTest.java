@@ -2,7 +2,6 @@ package org.miniProjectTwo.DragonOfNorth.infrastructure.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import org.junit.jupiter.api.Test;
-import org.miniProjectTwo.DragonOfNorth.infrastructure.config.OpenApiConfig;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -15,7 +14,7 @@ class OpenApiConfigTest {
         OpenAPI openAPI = openApiConfig.customOpenAPI();
 
         assertNotNull(openAPI);
-        assertEquals("Dragon of North Authentication API", openAPI.getInfo().getTitle());
+        assertEquals("Dragon of North API", openAPI.getInfo().getTitle());
         assertEquals("v1", openAPI.getInfo().getVersion());
 
         assertFalse(openAPI.getServers().isEmpty());

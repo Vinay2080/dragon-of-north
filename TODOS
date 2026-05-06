@@ -1,0 +1,7 @@
+1. Update Swagger
+2. Update CORS, CSRF, JwtFilter
+3. Update Tests
+4. Update .env
+5. Update frontend
+6. Update README
+7. Update Dockerfile for tests.

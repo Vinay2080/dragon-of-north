@@ -42,6 +42,7 @@ public enum ErrorCode {
     USER_REACTIVATION_REQUIRED("USER_004", "Account is deleted. Complete verification to reactivate", HttpStatus.FORBIDDEN),
     USER_BLOCKED("USER_005", "Account is blocked", HttpStatus.LOCKED),
     USER_ALREADY_ACTIVE("USER_006", "User is already active", HttpStatus.CONFLICT),
+    USER_INACTIVE("USER_007", "User account is not active", HttpStatus.UNAUTHORIZED),
 
     INVALID_INPUT("VAL_001", "invalid input", HttpStatus.BAD_REQUEST),
     EMAIL_NOT_VERIFIED("VAL_002", "email not verified", HttpStatus.UNAUTHORIZED),

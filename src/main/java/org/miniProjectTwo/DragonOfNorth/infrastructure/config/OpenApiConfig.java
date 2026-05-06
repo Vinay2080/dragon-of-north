@@ -27,9 +27,9 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Dragon of North Authentication API")
+                        .title("Dragon of North API")
                         .version("v1")
-                        .description("REST API for identifier-based authentication, OTP verification, session management, " +
+                        .description("REST API for authentication (local + OAuth + passwordless), OTP verification, session management, profile management, " +
                                 "JWT cookie refresh, and Redis-backed rate limiting.")
                         .contact(new Contact()
                                 .name("Dragon of North")

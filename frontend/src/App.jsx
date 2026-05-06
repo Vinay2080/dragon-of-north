@@ -21,11 +21,13 @@ import ArchitectureDocsPage from './pages/ArchitectureDocsPage';
 import SecurityDemoPage from './pages/SecurityDemoPage';
 import DeploymentDocsPage from './pages/DeploymentDocsPage';
 import OAuthCallbackPage from './pages/OAuthCallbackPage';
+import PasswordlessVerifyPage from './pages/PasswordlessVerifyPage.jsx';
 import IdentifierFlowPage from './pages/IdentifierFlowPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import {useRouteDocumentTitle} from './hooks/useDocumentTitle';
 import ProfilePage from './pages/ProfilePage.jsx';
+import HomeDocsPage from './pages/HomeDocsPage.jsx';
 import {clearAuthClientState} from './services/authSession';
 
 const AppShell = () => {
@@ -64,9 +66,12 @@ const AppShell = () => {
                     <Route path="/signup" element={<SignupPage/>}/>
                     <Route path="/otp" element={<OtpPage/>}/>
                     <Route path="/login" element={<LoginPage/>}/>
+                    <Route path="/passwordless/verify" element={<PasswordlessVerifyPage/>}/>
+                    <Route path="/login/passwordless/verify" element={<PasswordlessVerifyPage/>}/>
                     <Route path="/auth/callback" element={<OAuthCallbackPage/>}/>
                     <Route path="/forgot-password" element={<ForgotPasswordRequestPage/>}/>
                     <Route path="/reset-password" element={<ResetPasswordPage/>}/>
+                    <Route path="/home" element={<ProtectedRoute><HomeDocsPage/></ProtectedRoute>}/>
                     <Route path="/sessions" element={<ProtectedRoute><SessionsPage/></ProtectedRoute>}/>
                     <Route path="/profile" element={<ProtectedRoute><ProfilePage/></ProtectedRoute>}/>
                 </Route>

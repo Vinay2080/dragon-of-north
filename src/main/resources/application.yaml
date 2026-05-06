@@ -68,6 +68,10 @@ auth:
     max-failed-attempts: ${auth_login_max_failed_attempts}
     block-duration-minutes: ${auth_login_block_duration_minutes}
 
+  passwordless:
+    ttl-minutes: ${auth_passwordless_ttl_minutes}
+    frontend-base-url: ${auth_passwordless_frontend_base_url}
+
 aws:
   region: ${aws_region}
   ses:
