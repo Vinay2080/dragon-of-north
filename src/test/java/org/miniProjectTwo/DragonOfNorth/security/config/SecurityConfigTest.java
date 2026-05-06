@@ -70,6 +70,7 @@ class SecurityConfigTest {
                 "/api/v1/auth/password/forgot/request",
                 "/api/v1/auth/password/forgot/reset",
                 "/api/v1/auth/passwordless/**",
+                "/api/v1/auth/login/passwordless/**",
                 "/api/v1/otp/**",
                 "/swagger-ui/**",
                 "/v3/api-docs/**",

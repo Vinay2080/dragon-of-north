@@ -143,7 +143,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     // http request is not currently being used.
     @Override
-    @PostMapping("/passwordless/request")
+    @PostMapping({"/passwordless/request", "/login/passwordless/request"})
     public ResponseEntity<ApiResponse<?>> requestPasswordlessLogin(
             @RequestBody @Valid RequestPasswordlessLoginDto passwordlessLoginDto) {
         authCommonServices.requestPasswordlessLogin(passwordlessLoginDto.email());
@@ -151,8 +151,8 @@ public class AuthenticationController implements AuthenticationApi {
     }
 
     @Override
-    @PostMapping("/passwordless/verify")
-    public ResponseEntity<ApiResponse<?>> VerifyPasswordlessLogin(
+    @PostMapping({"/passwordless/verify", "/login/passwordless/verify"})
+    public ResponseEntity<ApiResponse<?>> verifyPasswordlessLogin(
             @RequestBody @Valid VerifyPasswordlessLoginDto verifyPasswordlessLoginDto,
             HttpServletRequest request,
             HttpServletResponse response) {

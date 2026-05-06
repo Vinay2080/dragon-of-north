@@ -17,6 +17,7 @@ import {useAuth} from '../context/authUtils';
 import {useDocumentTitle} from '../hooks/useDocumentTitle';
 import {persistPostLoginRedirect, resolvePostLoginRedirectPath} from '../utils/postLoginRedirect';
 import {handleAuthResponse} from '../utils/authResponseHandler';
+import {requestPasswordlessLogin} from '../services/passwordlessAuthService';
 
 const AUTH_STEP = {
     EMAIL_ENTRY: 'EMAIL_ENTRY',
@@ -60,6 +61,9 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
     const [passwordError, setPasswordError] = useState('');
     const [isGoogleRedirecting, setIsGoogleRedirecting] = useState(false);
     const [showAuthError, setShowAuthError] = useState(false);
+    const [passwordlessLoading, setPasswordlessLoading] = useState(false);
+    const [passwordlessMessage, setPasswordlessMessage] = useState('');
+    const [passwordlessError, setPasswordlessError] = useState('');
 
     const passwordInputRef = useRef(null);
 
@@ -103,6 +107,8 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
         setPassword('');
         setPasswordError('');
         setShowAuthError(false);
+        setPasswordlessMessage('');
+        setPasswordlessError('');
         authState.setIdle();
         onClearPrefilledEmail?.();
         resetFlow();
@@ -286,6 +292,30 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
     }, []);
 
     const isPasswordSubmitDisabled = loading || authState.isLoading || isGoogleRedirecting || !password;
+    const canRequestPasswordless = Boolean(normalizedEmail) && !loading && !authState.isLoading && !isGoogleRedirecting;
+
+    const handlePasswordlessRequest = async () => {
+        if (!canRequestPasswordless || passwordlessLoading) return;
+
+        setPasswordlessLoading(true);
+        setPasswordlessMessage('');
+        setPasswordlessError('');
+
+        const result = await requestPasswordlessLogin(normalizedEmail);
+
+        setPasswordlessLoading(false);
+
+        if (apiService.isErrorResponse(result) || result?.api_response_status !== 'success') {
+            const fallbackMessage = result?.message || result?.backendMessage || 'Unable to send magic login link. Please try again.';
+            console.warn('Passwordless login request failed:', result);
+            setPasswordlessError(fallbackMessage);
+            toast.error(fallbackMessage);
+            return;
+        }
+
+        setPasswordlessMessage('Magic login link sent to your email');
+        toast.success('Magic login link sent to your email');
+    };
 
     //  CLEAN GOOGLE SUCCESS HANDLER
     const handleGoogleSuccess = (data) => {
@@ -429,6 +459,8 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
                                 if (step !== AUTH_STEP.EMAIL_ENTRY) {
                                     resetFlow();
                                 }
+                                setPasswordlessMessage('');
+                                setPasswordlessError('');
                             }}
                             placeholder="you@example.com"
                             disabled={loading || authState.isLoading}
@@ -468,10 +500,53 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
                         >
                             Login with password
                         </AuthButton>
+                        <button
+                            type="button"
+                            className="auth-secondary-btn"
+                            disabled={!canRequestPasswordless || passwordlessLoading}
+                            onClick={handlePasswordlessRequest}
+                        >
+                            {passwordlessLoading ? (
+                                <span className="btn-loading-indicator">
+                                    <span className="spinner spinner-sm"></span>
+                                    <span>Sending link...</span>
+                                </span>
+                            ) : 'Login without password'}
+                        </button>
+                        {passwordlessMessage && (
+                            <p className="auth-success-note" role="status">{passwordlessMessage}</p>
+                        )}
+                        {passwordlessError && (
+                            <p className="auth-error-note" role="alert">{passwordlessError}</p>
+                        )}
                         <p className="auth-helper text-right">
                             <Link to="/forgot-password" className="auth-link">Forgot Password?</Link>
                         </p>
                     </form>
+                )}
+
+                {step === AUTH_STEP.GOOGLE_ONLY && normalizedEmail && (
+                    <div className="auth-form-stack">
+                        <button
+                            type="button"
+                            className="auth-secondary-btn"
+                            disabled={!canRequestPasswordless || passwordlessLoading}
+                            onClick={handlePasswordlessRequest}
+                        >
+                            {passwordlessLoading ? (
+                                <span className="btn-loading-indicator">
+                                    <span className="spinner spinner-sm"></span>
+                                    <span>Sending link...</span>
+                                </span>
+                            ) : 'Login without password'}
+                        </button>
+                        {passwordlessMessage && (
+                            <p className="auth-success-note" role="status">{passwordlessMessage}</p>
+                        )}
+                        {passwordlessError && (
+                            <p className="auth-error-note" role="alert">{passwordlessError}</p>
+                        )}
+                    </div>
                 )}
 
             {showGoogle && (

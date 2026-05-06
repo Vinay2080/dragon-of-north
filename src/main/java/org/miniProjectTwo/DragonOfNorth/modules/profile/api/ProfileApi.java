@@ -1,8 +1,10 @@
 package org.miniProjectTwo.DragonOfNorth.modules.profile.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -10,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.dto.UpdateProfileRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.dto.response.GetProfileResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.dto.response.ProfileImageResponse;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "Profile", description = "Read and update the authenticated user's profile.")
@@ -80,11 +83,15 @@ public interface ProfileApi {
             @ApiResponse(responseCode = "404", description = "Profile or user not found")
     })
     org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<ProfileImageResponse> uploadProfileImage(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            @Parameter(
+                    description = "Profile image file uploaded as a multipart/form-data part named 'file'.",
                     required = true,
-                    description = "Multipart file to upload as the profile image."
+                    content = @Content(
+                            mediaType = "application/octet-stream",
+                            schema = @Schema(type = "string", format = "binary")
+                    )
             )
-            MultipartFile file
+            @RequestPart("file") MultipartFile file
     );
 
     @Operation(

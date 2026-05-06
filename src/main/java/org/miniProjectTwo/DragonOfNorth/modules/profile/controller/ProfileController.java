@@ -48,7 +48,7 @@ public class ProfileController implements ProfileApi {
     @Override
     @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<ProfileImageResponse> uploadProfileImage(
-            @RequestParam("file") MultipartFile file) {
+            @RequestPart("file") MultipartFile file) {
         UUID userId = resolveCurrentUserId();
         Profile profile = profileService.updateProfileImage(userId, file);
         return ApiResponse.success(toImageResponse(profile));

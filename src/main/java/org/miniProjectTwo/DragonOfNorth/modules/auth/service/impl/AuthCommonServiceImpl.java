@@ -26,7 +26,6 @@ import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
 import org.miniProjectTwo.DragonOfNorth.shared.util.TokenHasher;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -72,7 +71,6 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final TokenHasher tokenHasher;
     private final StringRedisTemplate redisTemplate;
     private final PasswordlessLoginEmailSender passwordlessLoginEmailSender;
-    private final Environment environment;
 
     @Value("${auth.passwordless.ttl-minutes:10}")
     private long passwordlessTtlMinutes;
@@ -211,9 +209,6 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
         appUserRepository.findByEmail(email).ifPresent(
                 appUser -> {
-                    if (appUser.getAppUserStatus() != AppUserStatus.ACTIVE) {
-                        throw new BusinessException(ErrorCode.USER_INACTIVE, "User account is not active");
-                    }
                     userStateValidator.validate(appUser, UserLifecycleOperation.PASSWORDLESS_LOGIN_REQUEST);
 
                     String token = createToken();
