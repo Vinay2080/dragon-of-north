@@ -10,10 +10,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.*;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Authentication", description = "Identifier-based sign-up, login, password, logout, and token refresh endpoints.")
 public interface AuthenticationApi {
@@ -533,4 +535,13 @@ public interface AuthenticationApi {
             @Parameter(hidden = true) HttpServletRequest request,
             @Parameter(hidden = true) HttpServletResponse response
     );
+
+    ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> requestPasswordlessLogin(
+            RequestPasswordlessLoginDto passwordlessLoginDto
+    );
+
+    ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> VerifyPasswordlessLogin(
+            @RequestBody @Valid VerifyPasswordlessLoginDto verifyPasswordlessLoginDto,
+            @Parameter(hidden = true) HttpServletRequest request,
+            @Parameter(hidden = true) HttpServletResponse response);
 }

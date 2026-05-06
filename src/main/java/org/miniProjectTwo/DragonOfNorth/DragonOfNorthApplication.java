@@ -16,5 +16,7 @@ public class DragonOfNorthApplication {
         TimeZone.setDefault(TimeZone.getTimeZone("Asia/Kolkata"));
         SpringApplication.run(DragonOfNorthApplication.class, args);
     }
-
+    //todo cleanup code add modularity for service classes.
+    //todo find out why we are using ip address as base link for frontend.
+    //todo update env before pushing to prod.
 }

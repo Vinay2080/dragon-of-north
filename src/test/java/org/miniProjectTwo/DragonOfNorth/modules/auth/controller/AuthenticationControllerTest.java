@@ -197,5 +197,44 @@ class AuthenticationControllerTest {
         verify(authCommonServices).deleteAccount(any(), any(AuthRequestContext.class));
     }
 
+    @Test
+    void verifyPasswordlessLogin_shouldAcceptTokenAndDeviceIdFromJsonBody() throws Exception {
+        String payload = """
+                {
+                  "token": "raw-token",
+                  "device_id": "device-1"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/auth/passwordless/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"));
+
+        verify(authCommonServices).verifyPasswordlessLogin(
+                eq("raw-token"),
+                argThat(context -> "device-1".equals(context.deviceId())),
+                any()
+        );
+    }
+
+    @Test
+    void verifyPasswordlessLogin_shouldReturnBadRequest_whenDeviceIdMissing() throws Exception {
+        String payload = """
+                {
+                  "token": "raw-token"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/auth/passwordless/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.apiResponseStatus").value("failed"))
+                .andExpect(jsonPath("$.data.code").value("VAL_001"));
+
+        verify(authCommonServices, never()).verifyPasswordlessLogin(anyString(), any(), any());
+    }
 
 }

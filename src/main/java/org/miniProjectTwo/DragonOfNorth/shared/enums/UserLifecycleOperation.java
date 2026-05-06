@@ -18,7 +18,9 @@ public enum UserLifecycleOperation {
     SESSION_REVOKE_CURRENT(true),
     SESSION_REVOKE_BY_ID(true),
     SESSION_REVOKE_OTHERS(true),
-    SESSION_ROTATE_REFRESH(true);
+    SESSION_ROTATE_REFRESH(true),
+    PASSWORDLESS_LOGIN_REQUEST(true),
+    PASSWORDLESS_LOGIN_VERIFY(true);
 
     private final boolean activeAllowed;
 

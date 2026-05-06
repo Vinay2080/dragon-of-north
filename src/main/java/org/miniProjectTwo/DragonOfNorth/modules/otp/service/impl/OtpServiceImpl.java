@@ -98,9 +98,7 @@ public class OtpServiceImpl implements OtpService {
             otpTokenRepository.invalidateActiveTokens(normalizedIdentifier, otpType, otpPurpose);
 
             String otp = generateOtp();
-            if (environment.matchesProfiles("dev")) {
-                log.info("Generated OTP for {} {}: {}", otpType, normalizedIdentifier, otp);
-            }
+
             String hash = BCrypt.hashpw(otp, BCrypt.gensalt());
 
             OtpToken otpToken = new OtpToken(normalizedIdentifier, otpType, hash, ttlMinutes, otpPurpose);

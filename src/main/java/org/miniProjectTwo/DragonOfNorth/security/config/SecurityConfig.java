@@ -58,6 +58,7 @@ public class SecurityConfig {
             "/api/v1/auth/oauth/google/signup",
             "/api/v1/auth/password/forgot/request",
             "/api/v1/auth/password/forgot/reset",
+            "/api/v1/auth/passwordless/**",
             "/api/v1/otp/**",
 
             //swagger ui and OpenAPI documentation
@@ -82,7 +83,8 @@ public class SecurityConfig {
             "/api/v1/auth/jwt/refresh",
             "/api/v1/auth/oauth/**",
             "/api/v1/auth/password/forgot/**",
-            "/api/v1/otp/**"
+            "/api/v1/otp/**",
+            "/api/v1/auth/passwordless/**"
     };
 
     private final CorsConfigurationSource corsConfigurationSource;

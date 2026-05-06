@@ -24,7 +24,10 @@ import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
+import org.miniProjectTwo.DragonOfNorth.shared.util.TokenHasher;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -34,6 +37,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+import java.time.Duration;
+import java.util.Base64;
 import java.util.Set;
 import java.util.UUID;
 
@@ -49,6 +55,9 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
 @Slf4j
 public class AuthCommonServiceImpl implements AuthCommonServices {
 
+    private static final String PASSWORDLESS_TOKEN_KEY_PREFIX = "auth:passwordless:token:";
+    private static final String PASSWORDLESS_USER_KEY_PREFIX = "auth:passwordless:user:";
+
     private final AuthenticationManager authenticationManager;
     private final JwtServices jwtServices;
     private final RoleRepository roleRepository;
@@ -60,6 +69,16 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final PasswordEncoder passwordEncoder;
     private final AuditEventLogger auditEventLogger;
     private final UserStateValidator userStateValidator;
+    private final TokenHasher tokenHasher;
+    private final StringRedisTemplate redisTemplate;
+    private final PasswordlessLoginEmailSender passwordlessLoginEmailSender;
+    private final Environment environment;
+
+    @Value("${auth.passwordless.ttl-minutes:10}")
+    private long passwordlessTtlMinutes;
+
+    @Value("${auth.passwordless.frontend-base-url}")
+    private String passwordlessFrontendBaseUrl;
 
     @Value("${app.security.cookie.secure:false}")
     private boolean cookieSecure;
@@ -187,6 +206,89 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         recordAccountDeletionSuccess(appUser.getId(), context);
     }
 
+    @Override
+    public void requestPasswordlessLogin(String email) {
+
+        appUserRepository.findByEmail(email).ifPresent(
+                appUser -> {
+                    if (appUser.getAppUserStatus() != AppUserStatus.ACTIVE) {
+                        throw new BusinessException(ErrorCode.USER_INACTIVE, "User account is not active");
+                    }
+                    userStateValidator.validate(appUser, UserLifecycleOperation.PASSWORDLESS_LOGIN_REQUEST);
+
+                    String token = createToken();
+                    String tokenHash = tokenHasher.hashToken(token);
+
+                    storePasswordlessToken(appUser.getId(), tokenHash);
+                    String link = buildPasswordlessLoginLink(token);
+                    passwordlessLoginEmailSender.send(appUser.getEmail(), link, passwordlessTtlMinutes);
+                });
+    }
+
+    @Override
+    public void verifyPasswordlessLogin(String token, AuthRequestContext context, HttpServletResponse response) {
+        AppUser appUser = verifyPasswordlessToken(token);
+        userStateValidator.validate(appUser, UserLifecycleOperation.PASSWORDLESS_LOGIN_VERIFY);
+//        ensurePasswordlessProvider(appUser);
+        ensureIdentifierVerified(appUser, appUser.getEmail());
+
+        LoginTokens loginTokens = generateLoginTokens(appUser);
+        persistLoginSession(appUser, loginTokens.refreshToken(), context);
+        writeAuthCookies(response, loginTokens);
+
+        recordLoginSuccess(appUser.getId(), context);
+    }
+//
+//    private void ensurePasswordlessProvider(AppUser appUser) {
+//        if (!userAuthProviderRepository.existsByUserIdAndProvider(appUser.getId(), Provider.PASSWORDLESS)) {
+//            throw new BusinessException(ErrorCode.AUTHENTICATION_FAILED, "Account not registered for passwordless login");
+//        }
+//    }
+
+    private AppUser verifyPasswordlessToken(String token) {
+        String tokenHash = tokenHasher.hashToken(token);
+        String tokenKey = PASSWORDLESS_TOKEN_KEY_PREFIX + tokenHash;
+
+        String userIdStr = redisTemplate.opsForValue().get(tokenKey);
+        if (userIdStr == null) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Invalid or expired token");
+        }
+
+        redisTemplate.delete(tokenKey);
+        redisTemplate.delete(PASSWORDLESS_USER_KEY_PREFIX + userIdStr);
+        return appUserRepository.findById(UUID.fromString(userIdStr))
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private String createToken() {
+        SecureRandom random = new SecureRandom();
+        byte[] bytes = new byte[32];
+        random.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private void storePasswordlessToken(UUID userId, String tokenHash) {
+        String tokenKey = PASSWORDLESS_TOKEN_KEY_PREFIX + tokenHash;
+        String userKey = PASSWORDLESS_USER_KEY_PREFIX + userId;
+
+        // Ensure only one active passwordless token per user (latest wins).
+        String previousTokenHash = redisTemplate.opsForValue().get(userKey);
+        if (previousTokenHash != null && !previousTokenHash.isBlank()) {
+            redisTemplate.delete(PASSWORDLESS_TOKEN_KEY_PREFIX + previousTokenHash);
+        }
+
+        Duration ttl = Duration.ofMinutes(passwordlessTtlMinutes);
+        redisTemplate.opsForValue().set(tokenKey, userId.toString(), ttl);
+        redisTemplate.opsForValue().set(userKey, tokenHash, ttl);
+    }
+
+    private String buildPasswordlessLoginLink(String token) {
+        String baseUrl = passwordlessFrontendBaseUrl.endsWith("/")
+                ? passwordlessFrontendBaseUrl.substring(0, passwordlessFrontendBaseUrl.length() - 1)
+                : passwordlessFrontendBaseUrl;
+        return String.format("%s/login/passwordless/verify?token=%s", baseUrl, token);
+    }
+
     private void recordAccountDeletionSuccess(UUID userId, AuthRequestContext context) {
         meterRegistry.counter("auth.account_delete.success").increment();
         auditEventLogger.log("auth.account_delete", userId, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
@@ -258,9 +360,9 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         String normalizedIdentifier = IdentifierNormalizer.normalize(identifier, identifierType);
         return identifierType == IdentifierType.EMAIL
                 ? appUserRepository.findByEmail(normalizedIdentifier)
-                   .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND))
+                  .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND))
                 : appUserRepository.findByPhone(normalizedIdentifier)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+                  .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
     private void ensureLocalPasswordResetAllowed(AppUser appUser) {

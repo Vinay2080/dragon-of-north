@@ -25,9 +25,13 @@ import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
+import org.miniProjectTwo.DragonOfNorth.shared.util.TokenHasher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.env.Environment;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -87,6 +91,21 @@ class AuthCommonServiceImplTest {
 
     @Mock
     private ProfileService profileService;
+
+    @Mock
+    private TokenHasher tokenHasher;
+
+    @Mock
+    private StringRedisTemplate redisTemplate;
+
+    @Mock
+    private ValueOperations<String, String> valueOperations;
+
+    @Mock
+    private PasswordlessLoginEmailSender passwordlessLoginEmailSender;
+
+    @Mock
+    private Environment environment;
 
     @AfterEach
     void clearSecurityContext() {
@@ -381,5 +400,40 @@ class AuthCommonServiceImplTest {
         verify(appUserRepository, never()).save(any());
         verify(sessionService, never()).revokeAllSessionsByUserId(any());
         verify(profileService, never()).deleteProfileImage(any());
+    }
+
+    @Test
+    void verifyPasswordlessLogin_shouldHashRawTokenBeforeRedisLookupAndConsumeToken() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+        user.setEmail("user@example.com");
+        user.setEmailVerified(true);
+        user.setRoles(Set.of());
+
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        Counter successCounter = mock(Counter.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+
+        String rawToken = "raw-passwordless-token";
+        String tokenHash = "hashed-passwordless-token";
+        String tokenKey = "auth:passwordless:token:" + tokenHash;
+        String userKey = "auth:passwordless:user:" + userId;
+
+        when(tokenHasher.hashToken(rawToken)).thenReturn(tokenHash);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get(tokenKey)).thenReturn(userId.toString());
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(jwtServices.generateAccessToken(userId, user.getRoles())).thenReturn("access");
+        when(jwtServices.generateRefreshToken(userId)).thenReturn("refresh");
+        when(meterRegistry.counter(anyString())).thenReturn(successCounter);
+
+        authCommonService.verifyPasswordlessLogin(rawToken, context, response);
+
+        verify(valueOperations).get(tokenKey);
+        verify(redisTemplate).delete(tokenKey);
+        verify(redisTemplate).delete(userKey);
+        verify(sessionService).createSession(user, "refresh", "127.0.0.1", "device-1", "JUnit");
+        verify(auditEventLogger).log("auth.login", userId, "device-1", "127.0.0.1", "success", null, "req-1");
     }
 }

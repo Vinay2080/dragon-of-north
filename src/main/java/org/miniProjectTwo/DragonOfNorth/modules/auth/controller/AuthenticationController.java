@@ -140,6 +140,29 @@ public class AuthenticationController implements AuthenticationApi {
         authCommonServices.deleteAccount(response, context);
         return ResponseEntity.ok(successMessage("account deleted successfully"));
     }
+
+    // http request is not currently being used.
+    @Override
+    @PostMapping("/passwordless/request")
+    public ResponseEntity<ApiResponse<?>> requestPasswordlessLogin(
+            @RequestBody @Valid RequestPasswordlessLoginDto passwordlessLoginDto) {
+        authCommonServices.requestPasswordlessLogin(passwordlessLoginDto.email());
+        return ResponseEntity.ok(successMessage("Passwordless login link sent if the email is registered"));
+    }
+
+    @Override
+    @PostMapping("/passwordless/verify")
+    public ResponseEntity<ApiResponse<?>> VerifyPasswordlessLogin(
+            @RequestBody @Valid VerifyPasswordlessLoginDto verifyPasswordlessLoginDto,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+        AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, verifyPasswordlessLoginDto.deviceId());
+        authCommonServices.verifyPasswordlessLogin(verifyPasswordlessLoginDto.token(), context, response);
+        return ResponseEntity.ok(successMessage("Passwordless login successful"));
+    }
+
+
     private String extractRefreshToken(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {

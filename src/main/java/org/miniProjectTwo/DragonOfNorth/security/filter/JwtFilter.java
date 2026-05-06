@@ -17,12 +17,16 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
+
+import static org.miniProjectTwo.DragonOfNorth.security.config.SecurityConfig.public_urls;
 
 
 /**
@@ -55,32 +59,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private final JwtServices jwtServices;
 
     private final static String ROLES = "roles";
-
-
-    private static final List<String> SWAGGER_PATH = List.of(
-            "/swagger-ui",
-            "/v3/api-docs",
-            "/swagger-ui.html"
-    );
-
-
-    private static final List<String> PUBLIC_PATH = List.of(
-            "/api/v1/auth/identifier/status",
-            "/api/v1/auth/identifier/sign-up",
-            "/api/v1/auth/identifier/sign-up/complete",
-            "/api/v1/auth/identifier/login",
-            "/api/v1/auth/identifier/logout",
-            "/api/v1/auth/jwt/refresh",
-            "/api/v1/auth/oauth/google",
-            "/api/v1/auth/oauth/google/signup",
-            "/api/v1/auth/password/forgot/request",
-            "/api/v1/auth/password/forgot/reset",
-            "/api/v1/otp"
-    );
-
-    private boolean isPublic(String path) {
-        return PUBLIC_PATH.stream().anyMatch(path::startsWith);
-    }
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
     @Override
     public void doFilterInternal(
@@ -92,7 +71,7 @@ public class JwtFilter extends OncePerRequestFilter {
         final String path = request.getServletPath();
 
         // Public endpoints do not require JWT
-        if (isPublic(path) || isSwagger(path)) {
+        if (isPublic(path)) {
             log.debug("Skipping JWT filter for public path: {}", path);
             filterChain.doFilter(request, response);
             return;
@@ -179,7 +158,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     }
 
-    private boolean isSwagger(String path) {
-        return SWAGGER_PATH.stream().anyMatch(path::startsWith);
+    private boolean isPublic(String path) {
+        return Stream.of(public_urls).anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
     }
 }

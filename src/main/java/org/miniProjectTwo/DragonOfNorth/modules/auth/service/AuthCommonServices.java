@@ -2,6 +2,8 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.service;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordChangeRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordResetConfirmRequest;
@@ -58,4 +60,9 @@ public interface AuthCommonServices {
      * Soft deletes the authenticated account, revokes sessions, and clears auth cookies.
      */
     void deleteAccount(HttpServletResponse response, AuthRequestContext context);
+
+    void requestPasswordlessLogin(@NotBlank @Email String email);
+
+    void verifyPasswordlessLogin(String token, AuthRequestContext context, HttpServletResponse response);
+
 }
