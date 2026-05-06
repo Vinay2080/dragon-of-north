@@ -2039,6 +2039,51 @@ a:hover {
         transform: translateY(0);
     }
 
+    .auth-secondary-btn {
+        @apply w-full rounded-[14px] px-4 py-[0.86rem] text-sm font-semibold transition duration-200;
+        min-height: 48px;
+        line-height: 1.25;
+        box-sizing: border-box;
+        font-family: var(--font-sans), sans-serif;
+        color: var(--don-text-primary);
+        background: color-mix(in srgb, var(--don-bg-surface) 88%, var(--don-accent) 12%);
+        border: 1px solid var(--don-border-default);
+        cursor: pointer;
+    }
+
+    .auth-secondary-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        border-color: var(--don-accent-border);
+        background: color-mix(in srgb, var(--don-bg-surface) 78%, var(--don-accent) 22%);
+    }
+
+    .auth-secondary-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: translateY(0);
+    }
+
+    .auth-success-note,
+    .auth-error-note {
+        margin: 0;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .auth-success-note {
+        color: var(--don-success);
+        background: var(--don-success-dim);
+        border: 1px solid color-mix(in srgb, var(--don-success) 45%, transparent);
+    }
+
+    .auth-error-note {
+        color: var(--don-danger);
+        background: var(--don-danger-dim);
+        border: 1px solid color-mix(in srgb, var(--don-danger) 45%, transparent);
+    }
+
     .auth-oauth-wrap {
         @apply flex w-full flex-col items-stretch gap-3;
     }
