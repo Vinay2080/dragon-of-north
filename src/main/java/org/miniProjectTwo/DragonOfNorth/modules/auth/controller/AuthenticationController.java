@@ -141,7 +141,6 @@ public class AuthenticationController implements AuthenticationApi {
         return ResponseEntity.ok(successMessage("account deleted successfully"));
     }
 
-    // http request is not currently being used.
     @Override
     @PostMapping({"/passwordless/request", "/login/passwordless/request"})
     public ResponseEntity<ApiResponse<?>> requestPasswordlessLogin(

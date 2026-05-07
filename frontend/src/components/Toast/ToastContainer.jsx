@@ -6,9 +6,7 @@ const ToastContainer = () => {
     const {toasts, removeToast} = useToast();
 
     return (
-        <div
-            className="pointer-events-none fixed left-1/2 top-6 z-[120] flex -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm flex-col gap-3"
-            aria-live="polite" aria-label="Notifications">
+        <div className="toast-container" aria-live="polite" aria-label="Notifications">
             {toasts.map(toast => (
                 <div key={toast.id} className="pointer-events-auto">
                     <Toast

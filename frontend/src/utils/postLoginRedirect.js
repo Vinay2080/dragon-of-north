@@ -9,6 +9,19 @@ const isSafeInternalPath = (value) => {
     return trimmed.startsWith('/') && !trimmed.startsWith('//');
 };
 
+const toInternalPath = (location) => {
+    if (!location) {
+        return null;
+    }
+
+    const pathname = location.pathname;
+    if (!isSafeInternalPath(pathname)) {
+        return null;
+    }
+
+    return `${pathname}${location.search || ''}${location.hash || ''}`;
+};
+
 export const persistPostLoginRedirect = (path) => {
     if (!isSafeInternalPath(path)) {
         return;
@@ -29,7 +42,7 @@ export const consumePostLoginRedirect = () => {
 };
 
 export const resolvePostLoginRedirectPath = ({location, defaultPath = '/'} = {}) => {
-    const statePath = location?.state?.from?.pathname;
+    const statePath = toInternalPath(location?.state?.from);
     if (isSafeInternalPath(statePath)) {
         localStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
         return statePath;

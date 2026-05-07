@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {AlertCircle, Loader} from 'react-feather';
 import AuthCardLayout from '../components/auth/AuthCardLayout';
@@ -6,6 +6,7 @@ import {useAuth} from '../context/authUtils';
 import {useDocumentTitle} from '../hooks/useDocumentTitle';
 import {verifyPasswordlessLogin} from '../services/passwordlessAuthService';
 import {apiService} from '../services/apiService';
+import {resolvePostLoginRedirectPath} from '../utils/postLoginRedirect';
 
 const VERIFY_STATE = {
     LOADING: 'LOADING',
@@ -19,18 +20,21 @@ const PasswordlessVerifyPage = () => {
     const navigate = useNavigate();
     const {login} = useAuth();
     const handledRef = useRef(false);
-    const [state, setState] = useState(VERIFY_STATE.LOADING);
+
+    const token = useMemo(
+        () => new URLSearchParams(location.search).get('token')?.trim(),
+        [location.search]
+    );
+
+    const [state, setState] = useState(() => (
+        token ? VERIFY_STATE.LOADING : VERIFY_STATE.FAILED
+    ));
 
     useEffect(() => {
         if (handledRef.current) return;
         handledRef.current = true;
 
-        const token = new URLSearchParams(location.search).get('token')?.trim();
-
-        if (!token) {
-            setState(VERIFY_STATE.FAILED);
-            return;
-        }
+        if (!token) return;
 
         window.history.replaceState(null, '', '/passwordless/verify');
 
@@ -44,17 +48,21 @@ const PasswordlessVerifyPage = () => {
             }
 
             login();
-            navigate('/home', {replace: true});
+            const redirectPath = resolvePostLoginRedirectPath({
+                location,
+                defaultPath: '/',
+            });
+            navigate(redirectPath, {replace: true});
         };
 
         void completeVerification();
-    }, [location.search, login, navigate]);
+    }, [location, login, navigate, token]);
 
     if (state === VERIFY_STATE.FAILED) {
         return (
             <AuthCardLayout
-                title="Magic link expired or invalid"
-                subtitle="Request a new login link to continue."
+                title="Sign-in link expired or invalid"
+                subtitle="Request a new sign-in link to continue."
             >
                 <div className="auth-section flex flex-col items-center gap-4 text-center">
                     <div className="rounded-full bg-red-500/10 p-3">
@@ -65,7 +73,7 @@ const PasswordlessVerifyPage = () => {
                         className="auth-primary-btn"
                         onClick={() => navigate('/login', {replace: true})}
                     >
-                        Request new login link
+                        Request new sign-in link
                     </button>
                 </div>
             </AuthCardLayout>
@@ -75,7 +83,7 @@ const PasswordlessVerifyPage = () => {
     return (
         <AuthCardLayout
             title="Completing sign-in"
-            subtitle="Verifying your magic login link..."
+            subtitle="Verifying your sign-in link..."
         >
             <div className="auth-section flex items-center gap-3">
                 <Loader size={20} className="animate-spin text-violet-400"/>

@@ -10,7 +10,6 @@ import SessionsPage from './pages/SessionsPage';
 import ForgotPasswordRequestPage from './pages/ForgotPasswordRequestPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import {ToastProvider} from './context/ToastContext.jsx';
-import ToastContainer from './components/Toast/ToastContainer';
 import NetworkStatus from './components/NetworkStatus/NetworkStatus';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import {useSessionTimeout} from './hooks/useSessionTimeout';
@@ -51,7 +50,6 @@ const AppShell = () => {
 
     return (
         <>
-            <ToastContainer/>
             <NetworkStatus/>
             <Routes>
                 <Route element={<AppLayout/>}>

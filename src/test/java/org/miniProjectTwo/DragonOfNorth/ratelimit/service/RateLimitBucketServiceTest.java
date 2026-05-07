@@ -6,7 +6,6 @@ import io.github.bucket4j.distributed.BucketProxy;
 import io.github.bucket4j.distributed.proxy.ProxyManager;
 import org.junit.jupiter.api.Test;
 import org.miniProjectTwo.DragonOfNorth.infrastructure.config.RateLimitProperties;
-import org.miniProjectTwo.DragonOfNorth.ratelimit.service.RateLimitBucketService;
 import org.miniProjectTwo.DragonOfNorth.ratelimit.service.impl.RateLimitBucketServiceImpl;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RateLimitType;
 
@@ -57,7 +56,8 @@ class RateLimitBucketServiceTest {
         properties.setRules(Map.of(
                 "signup", rule(),
                 "login", rule(),
-                "otp", rule()
+                "otp", rule(),
+                "passwordless", rule()
         ));
 
         RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
@@ -84,7 +84,8 @@ class RateLimitBucketServiceTest {
         properties.setRules(Map.of(
                 "signup", rule(),
                 "login", rule(),
-                "otp", rule()
+                "otp", rule(),
+                "passwordless", rule()
         ));
 
         RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
@@ -119,7 +120,8 @@ class RateLimitBucketServiceTest {
         properties.setRules(Map.of(
                 "signup", rule(),
                 "login", rule(),
-                "otp", rule()
+                "otp", rule(),
+                "passwordless", rule()
         ));
 
         RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
@@ -146,7 +148,8 @@ class RateLimitBucketServiceTest {
         properties.setRules(Map.of(
                 "signup", rule(),
                 "login", rule(),
-                "otp", rule()
+                "otp", rule(),
+                "passwordless", rule()
         ));
 
         RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);

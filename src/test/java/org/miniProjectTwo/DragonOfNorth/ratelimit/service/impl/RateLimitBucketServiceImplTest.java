@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.infrastructure.config.RateLimitProperties;
 import org.miniProjectTwo.DragonOfNorth.ratelimit.service.RateLimitBucketService;
-import org.miniProjectTwo.DragonOfNorth.ratelimit.service.impl.RateLimitBucketServiceImpl;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RateLimitType;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -44,10 +43,16 @@ class RateLimitBucketServiceImplTest {
         loginRule.setRefillTokens(10);
         loginRule.setRefillMinutes(15);
 
+        RateLimitProperties.LimitRule passwordlessRule = new RateLimitProperties.LimitRule();
+        passwordlessRule.setCapacity(5);
+        passwordlessRule.setRefillTokens(1);
+        passwordlessRule.setRefillMinutes(10);
+
         when(properties.getRules()).thenReturn(Map.of(
                 "otp", otpRule,
                 "signup", signupRule,
-                "login", loginRule
+                "login", loginRule,
+                "passwordless", passwordlessRule
         ));
 
         // act & assert
@@ -74,10 +79,16 @@ class RateLimitBucketServiceImplTest {
         loginRule.setRefillTokens(10);
         loginRule.setRefillMinutes(15);
 
+        RateLimitProperties.LimitRule passwordlessRule = new RateLimitProperties.LimitRule();
+        passwordlessRule.setCapacity(5);
+        passwordlessRule.setRefillTokens(1);
+        passwordlessRule.setRefillMinutes(10);
+
         when(properties.getRules()).thenReturn(Map.of(
                 "otp", otpRule,
                 "signup", signupRule,
-                "login", loginRule
+                "login", loginRule,
+                "passwordless", passwordlessRule
         ));
         rateLimitBucketService.initializeConfigurations();
 
@@ -108,10 +119,16 @@ class RateLimitBucketServiceImplTest {
         loginRule.setRefillTokens(10);
         loginRule.setRefillMinutes(15);
 
+        RateLimitProperties.LimitRule passwordlessRule = new RateLimitProperties.LimitRule();
+        passwordlessRule.setCapacity(5);
+        passwordlessRule.setRefillTokens(1);
+        passwordlessRule.setRefillMinutes(10);
+
         when(properties.getRules()).thenReturn(Map.of(
                 "otp", otpRule,
                 "signup", signupRule,
-                "login", loginRule
+                "login", loginRule,
+                "passwordless", passwordlessRule
         ));
         rateLimitBucketService.initializeConfigurations();
 
@@ -140,10 +157,16 @@ class RateLimitBucketServiceImplTest {
         loginRule.setRefillTokens(10);
         loginRule.setRefillMinutes(15);
 
+        RateLimitProperties.LimitRule passwordlessRule = new RateLimitProperties.LimitRule();
+        passwordlessRule.setCapacity(5);
+        passwordlessRule.setRefillTokens(1);
+        passwordlessRule.setRefillMinutes(10);
+
         when(properties.getRules()).thenReturn(Map.of(
                 "otp", otpRule,
                 "signup", signupRule,
-                "login", loginRule
+                "login", loginRule,
+                "passwordless", passwordlessRule
         ));
         rateLimitBucketService.initializeConfigurations();
 

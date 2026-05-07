@@ -15,5 +15,6 @@ import org.miniProjectTwo.DragonOfNorth.infrastructure.config.RateLimitPropertie
 public enum RateLimitType {
     SIGNUP,
     LOGIN,
-    OTP
+    OTP,
+    PASSWORDLESS
 }

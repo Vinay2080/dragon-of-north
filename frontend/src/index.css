@@ -1297,14 +1297,134 @@ a:hover {
 
     /* ── TOAST ──────────────────────────────────── */
     .toast-container {
-        @apply fixed top-6 left-1/2 -translate-x-1/2 z-[120] flex flex-col gap-3 pointer-events-none;
+        position: fixed;
+        z-index: 120;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: calc(100% - 2rem);
+        max-width: 24rem; /* ~ max-w-sm */
+        top: calc(env(safe-area-inset-top, 0px) + var(--dashboard-topbar-offset, var(--s4)) + var(--s2));
+        left: calc(
+                var(--dashboard-content-left, 0px) +
+                (100% - var(--dashboard-content-left, 0px)) / 2
+        );
+        transform: translateX(-50%);
+        transition: left 240ms ease;
     }
 
     .toast {
+        --toast-accent: var(--don-info);
+        --toast-accent-strong: var(--don-info);
+        --toast-bg: rgba(15, 15, 25, 0.72);
+        --toast-fg: rgba(255, 255, 255, 0.95);
+        --toast-fg-muted: rgba(255, 255, 255, 0.82);
+        --toast-border-width: 1px;
+
         @apply w-full max-w-sm pointer-events-auto rounded-xl;
         opacity: 0;
         transform: translateY(-16px) scale(0.94);
         transition: opacity 0.25s cubic-bezier(0.4, 0.0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
+
+        background: var(--toast-bg);
+        color: var(--toast-fg);
+        border: 1px solid color-mix(in srgb, var(--toast-accent) 30%, transparent);
+        box-shadow: 0 10px 34px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.06);
+        isolation: isolate;
+    }
+
+    [data-theme="light"] .toast {
+        --toast-bg: rgba(255, 255, 255, 0.92);
+        --toast-fg: rgba(15, 23, 42, 0.96);
+        --toast-fg-muted: rgba(15, 23, 42, 0.74);
+        box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        border-color: color-mix(in srgb, var(--toast-accent) 26%, rgba(0, 0, 0, 0.08));
+    }
+
+    .toast.success {
+        --toast-accent: var(--don-success);
+        --toast-accent-strong: var(--don-success);
+    }
+
+    .toast.error {
+        --toast-accent: var(--don-danger);
+        --toast-accent-strong: var(--don-danger);
+    }
+
+    .toast.warning {
+        --toast-accent: var(--don-warning);
+        --toast-accent-strong: var(--don-warning);
+    }
+
+    .toast.info {
+        --toast-accent: var(--don-info);
+        --toast-accent-strong: var(--don-info);
+    }
+
+    /* Vibrant rotating border ring */
+    .toast::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        padding: var(--toast-border-width);
+        border-radius: inherit;
+        background: conic-gradient(
+                from 0deg,
+                color-mix(in srgb, var(--toast-accent) 0%, transparent),
+                color-mix(in srgb, var(--toast-accent) 95%, white 5%),
+                color-mix(in srgb, var(--toast-accent) 0%, transparent),
+                color-mix(in srgb, var(--toast-accent) 90%, white 10%),
+                color-mix(in srgb, var(--toast-accent) 0%, transparent)
+        );
+        opacity: 0.9;
+        pointer-events: none;
+        z-index: 0;
+        transform: rotate(0turn);
+        animation: toast-border-rotate 6s linear infinite;
+
+        /* mask to border only */
+        -webkit-mask: linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+    }
+
+    [data-theme="light"] .toast::before {
+        opacity: 0.95;
+    }
+
+    .toast::after {
+        content: "";
+        position: absolute;
+        inset: -18px;
+        border-radius: inherit;
+        background: radial-gradient(
+                circle at 30% 15%,
+                color-mix(in srgb, var(--toast-accent) 35%, transparent),
+                transparent 60%
+        );
+        filter: blur(10px);
+        opacity: 0.55;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .toast > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    @keyframes toast-border-rotate {
+        to {
+            transform: rotate(1turn);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .toast::before {
+            animation: none;
+        }
     }
 
     .toast.toast-enter {
@@ -1317,6 +1437,7 @@ a:hover {
 
     .toast-progress-track {
         @apply h-0.5 w-full overflow-hidden;
+        background: color-mix(in srgb, var(--toast-fg) 10%, transparent);
     }
 
     .toast-progress-bar {
@@ -1357,8 +1478,8 @@ a:hover {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(255, 255, 255, 0.08);
-        color: rgba(255, 255, 255, 0.7);
+        background: color-mix(in srgb, var(--toast-fg) 10%, transparent);
+        color: color-mix(in srgb, var(--toast-fg) 72%, transparent);
         border: none;
         border-radius: 6px;
         cursor: pointer;
@@ -1366,8 +1487,8 @@ a:hover {
     }
 
     .toast-close-btn:hover {
-        background: rgba(255, 255, 255, 0.15);
-        color: rgba(255, 255, 255, 1);
+        background: color-mix(in srgb, var(--toast-fg) 16%, transparent);
+        color: var(--toast-fg);
     }
 
     .toast-close-btn svg {
@@ -1375,11 +1496,16 @@ a:hover {
     }
 
     .toast-title {
-        color: rgba(255, 255, 255, 1);
+        color: var(--toast-fg);
     }
 
     .toast-body {
-        color: rgba(255, 255, 255, 0.8);
+        color: var(--toast-fg-muted);
+    }
+
+    .toast-icon {
+        color: var(--toast-accent-strong);
+        filter: drop-shadow(0 0 8px color-mix(in srgb, var(--toast-accent) 55%, transparent));
     }
 
     .toast-meta {
@@ -2041,6 +2167,10 @@ a:hover {
 
     .auth-secondary-btn {
         @apply w-full rounded-[14px] px-4 py-[0.86rem] text-sm font-semibold transition duration-200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
         min-height: 48px;
         line-height: 1.25;
         box-sizing: border-box;
@@ -2070,6 +2200,7 @@ a:hover {
         padding: 10px 12px;
         font-size: 13px;
         line-height: 1.4;
+        text-align: center;
     }
 
     .auth-success-note {
@@ -2539,6 +2670,7 @@ a:hover {
         --sidebar-collapsed-width: 64px;
         --sidebar-expanded-width: 232px;
         --sidebar-width: var(--sidebar-collapsed-width);
+        --dashboard-content-left: 0px;
         position: relative;
         min-height: 100vh;
         width: 100%;
@@ -3317,6 +3449,10 @@ a:hover {
     }
 
     @media (min-width: 768px) {
+        .dashboard-layout {
+            --dashboard-content-left: var(--sidebar-width);
+        }
+
         .auth-shell {
             @apply py-10;
         }

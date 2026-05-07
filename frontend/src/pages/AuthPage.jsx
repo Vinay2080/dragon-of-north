@@ -15,6 +15,7 @@ import AuthDivider from '../components/auth/AuthDivider';
 import {getDeviceId} from '../utils/device';
 import {useAuth} from '../context/authUtils';
 import {useDocumentTitle} from '../hooks/useDocumentTitle';
+import {useCooldown} from '../hooks/useCooldown';
 import {persistPostLoginRedirect, resolvePostLoginRedirectPath} from '../utils/postLoginRedirect';
 import {handleAuthResponse} from '../utils/authResponseHandler';
 import {requestPasswordlessLogin} from '../services/passwordlessAuthService';
@@ -66,11 +67,26 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
     const [passwordlessError, setPasswordlessError] = useState('');
 
     const passwordInputRef = useRef(null);
+    const passwordlessRequestInFlightRef = useRef(false);
 
     const normalizedEmail = useMemo(
         () => email.trim().toLowerCase(),
         [email]
     );
+
+    const passwordlessCooldownStorageKey = useMemo(() => {
+        if (!normalizedEmail) return null;
+        return `passwordless_request_cooldown:${normalizedEmail}`;
+    }, [normalizedEmail]);
+
+    const {
+        isCoolingDown: isPasswordlessCoolingDown,
+        secondsRemaining: passwordlessCooldownSeconds,
+        startCooldown: startPasswordlessCooldown,
+    } = useCooldown({
+        storageKey: passwordlessCooldownStorageKey,
+        cooldownMs: 30_000,
+    });
 
     const navigateAfterAuthSuccess = useCallback((defaultPath = '/') => {
         const redirectPath = resolvePostLoginRedirectPath({
@@ -82,7 +98,10 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
     }, [location, navigate]);
 
     useEffect(() => {
-        const intendedPath = location.state?.from?.pathname;
+        const from = location.state?.from;
+        const intendedPath = from?.pathname
+            ? `${from.pathname}${from.search || ''}${from.hash || ''}`
+            : null;
         if (intendedPath) {
             persistPostLoginRedirect(intendedPath);
         }
@@ -292,29 +311,41 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
     }, []);
 
     const isPasswordSubmitDisabled = loading || authState.isLoading || isGoogleRedirecting || !password;
-    const canRequestPasswordless = Boolean(normalizedEmail) && !loading && !authState.isLoading && !isGoogleRedirecting;
+    const canRequestPasswordless = Boolean(normalizedEmail)
+        && !loading
+        && !authState.isLoading
+        && !isGoogleRedirecting
+        && !isPasswordlessCoolingDown;
 
     const handlePasswordlessRequest = async () => {
+        // Protect against rapid double-clicks before React state disables the button.
+        if (passwordlessRequestInFlightRef.current) return;
         if (!canRequestPasswordless || passwordlessLoading) return;
+
+        passwordlessRequestInFlightRef.current = true;
+        startPasswordlessCooldown();
 
         setPasswordlessLoading(true);
         setPasswordlessMessage('');
         setPasswordlessError('');
 
-        const result = await requestPasswordlessLogin(normalizedEmail);
+        try {
+            const result = await requestPasswordlessLogin(normalizedEmail);
 
-        setPasswordlessLoading(false);
+            if (apiService.isErrorResponse(result) || result?.api_response_status !== 'success') {
+                const fallbackMessage = result?.message || result?.backendMessage || 'Unable to send sign-in link. Please try again.';
+                console.warn('Passwordless login request failed:', result);
+                setPasswordlessError(fallbackMessage);
+                toast.error(fallbackMessage);
+                return;
+            }
 
-        if (apiService.isErrorResponse(result) || result?.api_response_status !== 'success') {
-            const fallbackMessage = result?.message || result?.backendMessage || 'Unable to send magic login link. Please try again.';
-            console.warn('Passwordless login request failed:', result);
-            setPasswordlessError(fallbackMessage);
-            toast.error(fallbackMessage);
-            return;
+            setPasswordlessMessage('Sign-in link sent. Check your email to continue.');
+            toast.success('Sign-in link sent. Check your email to continue.');
+        } finally {
+            passwordlessRequestInFlightRef.current = false;
+            setPasswordlessLoading(false);
         }
-
-        setPasswordlessMessage('Magic login link sent to your email');
-        toast.success('Magic login link sent to your email');
     };
 
     //  CLEAN GOOGLE SUCCESS HANDLER
@@ -509,9 +540,13 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
                             {passwordlessLoading ? (
                                 <span className="btn-loading-indicator">
                                     <span className="spinner spinner-sm"></span>
-                                    <span>Sending link...</span>
+                                    <span>Sending sign-in link...</span>
                                 </span>
-                            ) : 'Login without password'}
+                            ) : (
+                                isPasswordlessCoolingDown
+                                    ? `Resend link in ${passwordlessCooldownSeconds}s`
+                                    : 'Email me a sign-in link'
+                            )}
                         </button>
                         {passwordlessMessage && (
                             <p className="auth-success-note" role="status">{passwordlessMessage}</p>
@@ -536,9 +571,13 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
                             {passwordlessLoading ? (
                                 <span className="btn-loading-indicator">
                                     <span className="spinner spinner-sm"></span>
-                                    <span>Sending link...</span>
+                                    <span>Sending sign-in link...</span>
                                 </span>
-                            ) : 'Login without password'}
+                            ) : (
+                                isPasswordlessCoolingDown
+                                    ? `Resend link in ${passwordlessCooldownSeconds}s`
+                                    : 'Email me a sign-in link'
+                            )}
                         </button>
                         {passwordlessMessage && (
                             <p className="auth-success-note" role="status">{passwordlessMessage}</p>

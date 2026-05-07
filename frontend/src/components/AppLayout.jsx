@@ -5,6 +5,7 @@ import ProfileDropdown from './ProfileDropdown';
 import ThemeSwitcherPopover from './ThemeSwitcherPopover';
 import CascadingMenu from './CascadingMenu';
 import ScrollToTopButton from './ScrollToTopButton';
+import ToastContainer from './Toast/ToastContainer';
 
 const SIDEBAR_EXPANDED_KEY = 'don-dashboard-sidebar-expanded';
 const SCROLL_DIRECTION_THRESHOLD = 7;
@@ -315,6 +316,7 @@ const AppLayout = () => {
                 </aside>
 
                 <div className="dashboard-content">
+                    <ToastContainer/>
                     <header
                         className={`dashboard-topbar header ${isTopbarVisible ? 'visible' : 'hidden'} ${isTopbarShrunk ? 'shrunk' : 'expanded'} ${topbarScaleY > 1 ? 'stretching' : ''}`}
                         style={{'--topbar-scale-y': topbarScaleY}}
