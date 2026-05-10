@@ -1,0 +1,183 @@
+{
+  "root_group": {
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "csrf: valid status": {
+        "path": "::csrf: valid status",
+        "id": "6a3d14dc64ba29ae1dbe1241dbb49910",
+        "passes": 765,
+        "fails": 0,
+        "name": "csrf: valid status"
+      },
+      "csrf: not server error": {
+        "name": "csrf: not server error",
+        "path": "::csrf: not server error",
+        "id": "ebfb41ea4d2f5b82038d3135670eb05e",
+        "passes": 765,
+        "fails": 0
+      },
+      "csrf: token present (cookie or body)": {
+        "passes": 765,
+        "fails": 0,
+        "name": "csrf: token present (cookie or body)",
+        "path": "::csrf: token present (cookie or body)",
+        "id": "8be60d13ad746e144f5b0765a4f33d75"
+      },
+      "csrf returned expected status": {
+        "fails": 0,
+        "name": "csrf returned expected status",
+        "path": "::csrf returned expected status",
+        "id": "e3ad930b27241c88966afeafef988411",
+        "passes": 765
+      },
+      "csrf not server error": {
+        "fails": 0,
+        "name": "csrf not server error",
+        "path": "::csrf not server error",
+        "id": "194ba8d4420463cdda799651681d4530",
+        "passes": 765
+      }
+    },
+    "name": ""
+  },
+  "metrics": {
+    "vus": {
+      "max": 15,
+      "value": 2,
+      "min": 1
+    },
+    "http_reqs": {
+      "count": 765,
+      "rate": 12.707895586129084
+    },
+    "csrf_latency": {
+      "avg": 365.7225939869286,
+      "min": 294.238,
+      "med": 308.2328,
+      "max": 2096.899,
+      "p(90)": 412.38938,
+      "p(95)": 862.4441799999978,
+      "thresholds": {
+        "p(95)<5000": false,
+        "avg<3000": false
+      }
+    },
+    "data_received": {
+      "count": 593409,
+      "rate": 9857.489688718004
+    },
+    "http_req_receiving": {
+      "p(90)": 0.6929400000000003,
+      "p(95)": 1.00806,
+      "avg": 0.15242039215686273,
+      "min": 0,
+      "med": 0,
+      "max": 1.7145
+    },
+    "data_sent": {
+      "count": 135570,
+      "rate": 2252.0384374006794
+    },
+    "http_req_connecting": {
+      "max": 419.1624,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 6.647756862745099,
+      "min": 0,
+      "med": 0
+    },
+    "http_req_failed": {
+      "passes": 0,
+      "fails": 765,
+      "value": 0
+    },
+    "csrf_success_rate": {
+      "passes": 765,
+      "fails": 0,
+      "thresholds": {
+        "rate>0.95": false
+      },
+      "value": 1
+    },
+    "http_req_sending": {
+      "p(95)": 0,
+      "avg": 0.003485228758169935,
+      "min": 0,
+      "med": 0,
+      "max": 0.6166,
+      "p(90)": 0
+    },
+    "http_req_duration": {
+      "med": 308.2328,
+      "max": 2096.899,
+      "p(90)": 412.38938,
+      "p(95)": 862.4441799999978,
+      "avg": 365.7225939869286,
+      "min": 294.238
+    },
+    "http_req_waiting": {
+      "max": 2096.899,
+      "p(90)": 412.38938,
+      "p(95)": 861.8852199999977,
+      "avg": 365.566688366013,
+      "min": 294.238,
+      "med": 308.0463
+    },
+    "http_req_tls_handshaking": {
+      "p(95)": 0,
+      "avg": 6.29661137254902,
+      "min": 0,
+      "med": 0,
+      "max": 404.0858,
+      "p(90)": 0
+    },
+    "iteration_duration": {
+      "avg": 783.9392941176476,
+      "min": 500.3924,
+      "med": 750.5164,
+      "max": 2447.068,
+      "p(90)": 933.9291400000001,
+      "p(95)": 1380.3480799999995
+    },
+    "iterations": {
+      "count": 765,
+      "rate": 12.707895586129084
+    },
+    "vus_max": {
+      "max": 15,
+      "value": 15,
+      "min": 15
+    },
+    "http_req_duration{expected_response:true}": {
+      "min": 294.238,
+      "med": 308.2328,
+      "max": 2096.899,
+      "p(90)": 412.38938,
+      "p(95)": 862.4441799999978,
+      "avg": 365.7225939869286
+    },
+    "http_req_blocked": {
+      "min": 0,
+      "med": 0,
+      "max": 1437.4295,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 14.008035816993464
+    },
+    "checks": {
+      "passes": 3825,
+      "fails": 0,
+      "value": 1
+    },
+    "csrf_token_present_rate": {
+      "passes": 765,
+      "fails": 0,
+      "thresholds": {
+        "rate>0.90": false
+      },
+      "value": 1
+    }
+  }
+}

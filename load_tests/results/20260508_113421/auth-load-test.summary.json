@@ -1,0 +1,179 @@
+{
+  "root_group": {
+    "groups": {},
+    "checks": {
+      "login: received response": {
+        "id": "5791c0765a73525f301b59fb57eceb6d",
+        "passes": 2455,
+        "fails": 0,
+        "name": "login: received response",
+        "path": "::login: received response"
+      },
+      "login: valid status (200/401/429)": {
+        "name": "login: valid status (200/401/429)",
+        "path": "::login: valid status (200/401/429)",
+        "id": "abb8e95bc82b0a1fe1a4ecc3274d7bd7",
+        "passes": 2455,
+        "fails": 0
+      },
+      "login: latency under threshold": {
+        "path": "::login: latency under threshold",
+        "id": "d1621de24c6f6362207e2f5f874c62c5",
+        "passes": 2455,
+        "fails": 0,
+        "name": "login: latency under threshold"
+      },
+      "login: not server error": {
+        "passes": 2455,
+        "fails": 0,
+        "name": "login: not server error",
+        "path": "::login: not server error",
+        "id": "42efdde444f2aa13c670edebb4f8dcf8"
+      }
+    },
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "metrics": {
+    "data_received": {
+      "count": 2188690,
+      "rate": 20841.02764460254
+    },
+    "login_success_rate": {
+      "passes": 0,
+      "fails": 2455,
+      "value": 0
+    },
+    "data_sent": {
+      "count": 780541,
+      "rate": 7432.426044229978
+    },
+    "http_req_receiving": {
+      "avg": 0.1352600407331975,
+      "min": 0,
+      "med": 0,
+      "max": 2.3714,
+      "p(90)": 0.5639599999999999,
+      "p(95)": 0.917219999999999
+    },
+    "login_invalid_cred_rate": {
+      "passes": 10,
+      "fails": 2445,
+      "value": 0.004073319755600814
+    },
+    "login_server_error_rate": {
+      "passes": 0,
+      "fails": 2455,
+      "value": 0
+    },
+    "iteration_duration": {
+      "avg": 836.6713508350299,
+      "min": 600.1717,
+      "med": 822.4088,
+      "max": 3617.8169,
+      "p(90)": 984.70374,
+      "p(95)": 1008.9315799999998
+    },
+    "login_latency": {
+      "max": 2377.9743,
+      "p(90)": 337.5090599999999,
+      "p(95)": 378.1596799999999,
+      "avg": 326.6295720977596,
+      "min": 293.2076,
+      "med": 304.848,
+      "thresholds": {
+        "p(95)<5000": false,
+        "avg<3000": false
+      }
+    },
+    "vus": {
+      "value": 1,
+      "min": 1,
+      "max": 30
+    },
+    "http_req_waiting": {
+      "max": 2377.9743,
+      "p(90)": 337.5090599999999,
+      "p(95)": 378.1596799999999,
+      "avg": 326.49341511201624,
+      "min": 293.2076,
+      "med": 304.733
+    },
+    "http_reqs": {
+      "rate": 23.376870578976114,
+      "count": 2455
+    },
+    "http_req_blocked": {
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 8.800303747454176,
+      "min": 0,
+      "med": 0,
+      "max": 2722.6061
+    },
+    "http_req_tls_handshaking": {
+      "p(95)": 0,
+      "avg": 4.823346272912424,
+      "min": 0,
+      "med": 0,
+      "max": 2382.8044,
+      "p(90)": 0
+    },
+    "http_req_sending": {
+      "med": 0,
+      "max": 0.6404,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0.0008969450101832994,
+      "min": 0
+    },
+    "iterations": {
+      "rate": 23.376870578976114,
+      "count": 2455
+    },
+    "http_req_failed": {
+      "passes": 2455,
+      "fails": 0,
+      "value": 1
+    },
+    "login_rate_limited_rate": {
+      "passes": 2445,
+      "fails": 10,
+      "value": 0.9959266802443992
+    },
+    "http_req_duration": {
+      "med": 304.848,
+      "max": 2377.9743,
+      "p(90)": 337.5090599999999,
+      "p(95)": 378.1596799999999,
+      "avg": 326.6295720977596,
+      "min": 293.2076,
+      "thresholds": {
+        "p(95)<5000": false
+      }
+    },
+    "checks": {
+      "fails": 0,
+      "passes": 9820,
+      "value": 1
+    },
+    "vus_max": {
+      "value": 30,
+      "min": 30,
+      "max": 30
+    },
+    "http_req_connecting": {
+      "avg": 3.971629042769858,
+      "min": 0,
+      "med": 0,
+      "max": 423.0547,
+      "p(90)": 0,
+      "p(95)": 0
+    }
+  },
+  "setup_data": {
+    "identifier": "user2@example.com",
+    "password": "password123A!"
+  }
+}

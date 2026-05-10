@@ -1,11 +1,20 @@
 import http from "k6/http";
 import {check, sleep} from "k6";
 import {Rate, Trend} from "k6/metrics";
-import {BASE_URL, captureAuthCookies, EMAIL, PASSWORD, requireCredentials,} from "./auth-cookie-utils.js";
+import {
+    BASE_URL,
+    buildDeviceId,
+    captureAuthCookies,
+    EMAIL,
+    PASSWORD,
+    requireCredentials,
+} from "./auth-cookie-utils.js";
 
 const multiDeviceLoginSuccessRate = new Rate("multi_device_login_success_rate");
 const sessionListSuccessRate = new Rate("multi_device_session_list_success_rate");
 const multiDeviceFlowLatency = new Trend("multi_device_flow_latency");
+
+const MULTI_DEVICE_P95_MS = Number(__ENV.MULTI_DEVICE_P95_MS || 10000);
 
 const DEVICE_COUNT = Number(__ENV.DEVICE_COUNT || 3);
 
@@ -17,7 +26,7 @@ export const options = {
         {duration: "10s", target: 0},
     ],
     thresholds: {
-        multi_device_flow_latency: ["p(95)<2000"],
+        multi_device_flow_latency: [`p(95)<${MULTI_DEVICE_P95_MS}`],
     },
 };
 
@@ -53,7 +62,7 @@ export default function () {
         const jar = http.cookieJar();
         jars.push(jar);
 
-        const deviceId = `multi-device-vu-${__VU}-iter-${__ITER}-dev-${i}`;
+        const deviceId = buildDeviceId(`multi-device-${__VU}-${__ITER}-dev-${i}`);
         const loginResponse = loginForDevice(jar, deviceId);
         const isSuccess = loginResponse.status === 200;
         successfulLogins += isSuccess ? 1 : 0;

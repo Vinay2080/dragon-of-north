@@ -1,0 +1,97 @@
+﻿
+         /\      Grafana   /ΓÇ╛ΓÇ╛/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ΓÇ╛ΓÇ╛\ 
+  /          \   |   (  |  (ΓÇ╛)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\auth-load-test.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 30 max VUs, 2m15s max duration (incl. graceful stop):
+              * default: Up to 30 looping VUs for 1m45s over 5 stages (gracefulRampDown: 30s, gracefulStop: 30s)
+
+time="2026-05-08T10:59:33+05:30" level=info msg="ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù" source=console
+time="2026-05-08T10:59:33+05:30" level=info msg="Γòæ   AUTHENTICATION LOAD TEST                             Γòæ" source=console
+time="2026-05-08T10:59:33+05:30" level=info msg="ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú" source=console
+time="2026-05-08T10:59:33+05:30" level=info msg="  Target: https://dragon-api.duckdns.org/api/v1/auth/identifier/login" source=console
+time="2026-05-08T10:59:33+05:30" level=info msg="  Max VUs: 30  |  Duration: ~105 seconds" source=console
+time="2026-05-08T10:59:33+05:30" level=info msg="  Expected: 200 (success), 401 (invalid), 429 (rate limit)" source=console
+time="2026-05-08T10:59:33+05:30" level=info msg="ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥" source=console
+
+running (0m01.0s), 01/30 VUs, 0 complete and 0 interrupted iterations
+default   [   1% ] 01/30 VUs  0m01.0s/1m45.0s
+
+running (0m02.0s), 02/30 VUs, 0 complete and 0 interrupted iterations
+default   [   2% ] 02/30 VUs  0m02.0s/1m45.0s
+
+running (0m03.0s), 02/30 VUs, 1 complete and 0 interrupted iterations
+default   [   3% ] 02/30 VUs  0m03.0s/1m45.0s
+
+running (0m04.0s), 03/30 VUs, 4 complete and 0 interrupted iterations
+default   [   4% ] 03/30 VUs  0m04.0s/1m45.0s
+
+running (0m05.0s), 03/30 VUs, 8 complete and 0 interrupted iterations
+default   [   5% ] 03/30 VUs  0m05.0s/1m45.0s
+
+running (0m06.0s), 04/30 VUs, 11 complete and 0 interrupted iterations
+default   [   6% ] 04/30 VUs  0m06.0s/1m45.0s
+
+running (0m07.0s), 05/30 VUs, 15 complete and 0 interrupted iterations
+default   [   7% ] 05/30 VUs  0m07.0s/1m45.0s
+
+running (0m08.0s), 05/30 VUs, 20 complete and 0 interrupted iterations
+default   [   8% ] 05/30 VUs  0m08.0s/1m45.0s
+
+running (0m09.0s), 06/30 VUs, 25 complete and 0 interrupted iterations
+default   [   9% ] 06/30 VUs  0m09.0s/1m45.0s
+
+running (0m10.0s), 06/30 VUs, 29 complete and 0 interrupted iterations
+default   [  10% ] 06/30 VUs  0m10.0s/1m45.0s
+
+running (0m11.0s), 07/30 VUs, 35 complete and 0 interrupted iterations
+default   [  10% ] 07/30 VUs  0m11.0s/1m45.0s
+
+running (0m12.0s), 08/30 VUs, 42 complete and 0 interrupted iterations
+default   [  11% ] 08/30 VUs  0m12.0s/1m45.0s
+
+running (0m13.0s), 08/30 VUs, 51 complete and 0 interrupted iterations
+default   [  12% ] 08/30 VUs  0m13.0s/1m45.0s
+
+running (0m14.0s), 09/30 VUs, 62 complete and 0 interrupted iterations
+default   [  13% ] 09/30 VUs  0m14.0s/1m45.0s
+
+running (0m15.0s), 09/30 VUs, 70 complete and 0 interrupted iterations
+default   [  14% ] 09/30 VUs  0m15.0s/1m45.0s
+
+running (0m16.0s), 10/30 VUs, 79 complete and 0 interrupted iterations
+default   [  15% ] 10/30 VUs  0m16.0s/1m45.0s
+
+running (0m17.0s), 11/30 VUs, 91 complete and 0 interrupted iterations
+default   [  16% ] 11/30 VUs  0m17.0s/1m45.0s
+
+running (0m18.0s), 12/30 VUs, 104 complete and 0 interrupted iterations
+default   [  17% ] 12/30 VUs  0m18.0s/1m45.0s
+
+running (0m19.0s), 13/30 VUs, 116 complete and 0 interrupted iterations
+default   [  18% ] 13/30 VUs  0m19.0s/1m45.0s
+
+running (0m20.0s), 13/30 VUs, 130 complete and 0 interrupted iterations
+default   [  19% ] 13/30 VUs  0m20.0s/1m45.0s
+
+running (0m21.0s), 14/30 VUs, 142 complete and 0 interrupted iterations
+default   [  20% ] 14/30 VUs  0m21.0s/1m45.0s
+
+running (0m22.0s), 15/30 VUs, 158 complete and 0 interrupted iterations
+default   [  21% ] 15/30 VUs  0m22.0s/1m45.0s
+
+running (0m23.0s), 16/30 VUs, 170 complete and 0 interrupted iterations
+default   [  22% ] 16/30 VUs  0m23.0s/1m45.0s
+
+running (0m24.0s), 17/30 VUs, 189 complete and 0 interrupted iterations
+default   [  23% ] 17/30 VUs  0m24.0s/1m45.0s
+
+running (0m25.0s), 17/30 VUs, 207 complete and 0 interrupted iterations
+default   [  24% ] 17/30 VUs  0m25.0s/1m45.0s

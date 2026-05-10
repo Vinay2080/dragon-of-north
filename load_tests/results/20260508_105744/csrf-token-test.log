@@ -1,0 +1,58 @@
+﻿
+         /\      Grafana   /ΓÇ╛ΓÇ╛/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ΓÇ╛ΓÇ╛\ 
+  /          \   |   (  |  (ΓÇ╛)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\csrf-token-test.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 15 max VUs, 1m30s max duration (incl. graceful stop):
+              * default: Up to 15 looping VUs for 1m0s over 4 stages (gracefulRampDown: 30s, gracefulStop: 30s)
+
+time="2026-05-08T10:59:20+05:30" level=info msg="ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù" source=console
+time="2026-05-08T10:59:20+05:30" level=info msg="Γòæ   CSRF TOKEN TEST                                     Γòæ" source=console
+time="2026-05-08T10:59:20+05:30" level=info msg="ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú" source=console
+time="2026-05-08T10:59:20+05:30" level=info msg="  Target: https://dragon-api.duckdns.org/api/v1/auth/csrf" source=console
+time="2026-05-08T10:59:20+05:30" level=info msg="  Max VUs: 15  |  Duration: ~60 seconds" source=console
+time="2026-05-08T10:59:20+05:30" level=info msg="ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥" source=console
+time="2026-05-08T10:59:20+05:30" level=warning msg="Error from API server" error="listen tcp 127.0.0.1:6565: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted."
+
+running (0m01.0s), 01/15 VUs, 0 complete and 0 interrupted iterations
+default   [   2% ] 01/15 VUs  0m01.0s/1m00.0s
+
+running (0m02.0s), 01/15 VUs, 1 complete and 0 interrupted iterations
+default   [   3% ] 01/15 VUs  0m02.0s/1m00.0s
+
+running (0m03.0s), 02/15 VUs, 3 complete and 0 interrupted iterations
+default   [   5% ] 02/15 VUs  0m03.0s/1m00.0s
+
+running (0m04.0s), 02/15 VUs, 5 complete and 0 interrupted iterations
+default   [   7% ] 02/15 VUs  0m04.0s/1m00.0s
+
+running (0m05.0s), 02/15 VUs, 8 complete and 0 interrupted iterations
+default   [   8% ] 02/15 VUs  0m05.0s/1m00.0s
+
+running (0m06.0s), 03/15 VUs, 10 complete and 0 interrupted iterations
+default   [  10% ] 03/15 VUs  0m06.0s/1m00.0s
+
+running (0m07.0s), 03/15 VUs, 14 complete and 0 interrupted iterations
+default   [  12% ] 03/15 VUs  0m07.0s/1m00.0s
+
+running (0m08.0s), 04/15 VUs, 18 complete and 0 interrupted iterations
+default   [  13% ] 04/15 VUs  0m08.0s/1m00.0s
+
+running (0m09.0s), 04/15 VUs, 24 complete and 0 interrupted iterations
+default   [  15% ] 04/15 VUs  0m09.0s/1m00.0s
+
+running (0m10.0s), 04/15 VUs, 28 complete and 0 interrupted iterations
+default   [  17% ] 04/15 VUs  0m10.0s/1m00.0s
+
+running (0m11.0s), 05/15 VUs, 35 complete and 0 interrupted iterations
+default   [  18% ] 05/15 VUs  0m11.0s/1m00.0s
+
+running (0m12.0s), 05/15 VUs, 42 complete and 0 interrupted iterations
+default   [  20% ] 05/15 VUs  0m12.0s/1m00.0s

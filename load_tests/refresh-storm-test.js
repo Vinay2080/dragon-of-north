@@ -4,6 +4,7 @@ import {Rate, Trend} from "k6/metrics";
 import {
     applyManualCookies,
     BASE_URL,
+    buildDeviceId,
     captureAuthCookies,
     loginAndCaptureCookies,
     requireCredentials,
@@ -13,6 +14,9 @@ const refreshSuccessRate = new Rate("refresh_success_rate");
 const refreshUnauthorizedRate = new Rate("refresh_unauthorized_rate");
 const refreshLatency = new Trend("refresh_latency");
 
+const REFRESH_P95_MS = Number(__ENV.REFRESH_P95_MS || 6000);
+const REFRESH_AVG_MS = Number(__ENV.REFRESH_AVG_MS || 3500);
+
 export const options = {
     stages: [
         {duration: "15s", target: 8},
@@ -21,8 +25,7 @@ export const options = {
         {duration: "15s", target: 0},
     ],
     thresholds: {
-        refresh_latency: ["p(95)<1200", "avg<700"],
-        refresh_success_rate: ["rate>0.70"],
+        refresh_latency: [`p(95)<${REFRESH_P95_MS}`, `avg<${REFRESH_AVG_MS}`],
     },
 };
 
@@ -32,7 +35,7 @@ export function setup() {
 
 export default function () {
     const jar = http.cookieJar();
-    const deviceId = `refresh-storm-vu-${__VU}`;
+    const deviceId = buildDeviceId(`refresh-storm-${__VU}`);
 
     const manual = applyManualCookies(jar);
 

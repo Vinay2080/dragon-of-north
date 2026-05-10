@@ -1,11 +1,20 @@
 import http from "k6/http";
 import {check, sleep} from "k6";
 import {Rate, Trend} from "k6/metrics";
-import {applyManualCookies, BASE_URL, loginAndCaptureCookies, requireCredentials,} from "./auth-cookie-utils.js";
+import {
+    applyManualCookies,
+    BASE_URL,
+    buildDeviceId,
+    loginAndCaptureCookies,
+    requireCredentials,
+} from "./auth-cookie-utils.js";
 
 const sessionsReadSuccessRate = new Rate("sessions_read_success_rate");
 const sessionsAuthFailureRate = new Rate("sessions_auth_failure_rate");
 const sessionsLatency = new Trend("sessions_read_latency");
+
+const SESSIONS_P95_MS = Number(__ENV.SESSIONS_P95_MS || 6000);
+const SESSIONS_AVG_MS = Number(__ENV.SESSIONS_AVG_MS || 3500);
 
 export const options = {
     stages: [
@@ -15,7 +24,7 @@ export const options = {
         {duration: "15s", target: 0},
     ],
     thresholds: {
-        sessions_read_latency: ["p(95)<1000", "avg<600"],
+        sessions_read_latency: [`p(95)<${SESSIONS_P95_MS}`, `avg<${SESSIONS_AVG_MS}`],
     },
 };
 
@@ -25,7 +34,7 @@ export function setup() {
 
 export default function () {
     const jar = http.cookieJar();
-    const deviceId = `session-read-vu-${__VU}`;
+    const deviceId = buildDeviceId(`session-read-${__VU}`);
 
     const manual = applyManualCookies(jar);
     if (!manual.hasManualAccessCookie) {

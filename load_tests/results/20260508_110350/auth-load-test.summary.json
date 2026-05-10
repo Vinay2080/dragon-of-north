@@ -1,0 +1,179 @@
+{
+  "root_group": {
+    "checks": {
+      "login: received response": {
+        "name": "login: received response",
+        "path": "::login: received response",
+        "id": "5791c0765a73525f301b59fb57eceb6d",
+        "passes": 2437,
+        "fails": 0
+      },
+      "login: valid status (200/401/429)": {
+        "path": "::login: valid status (200/401/429)",
+        "id": "abb8e95bc82b0a1fe1a4ecc3274d7bd7",
+        "passes": 2437,
+        "fails": 0,
+        "name": "login: valid status (200/401/429)"
+      },
+      "login: latency under threshold": {
+        "id": "d1621de24c6f6362207e2f5f874c62c5",
+        "passes": 2436,
+        "fails": 1,
+        "name": "login: latency under threshold",
+        "path": "::login: latency under threshold"
+      },
+      "login: not server error": {
+        "path": "::login: not server error",
+        "id": "42efdde444f2aa13c670edebb4f8dcf8",
+        "passes": 2437,
+        "fails": 0,
+        "name": "login: not server error"
+      }
+    },
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {}
+  },
+  "metrics": {
+    "vus": {
+      "value": 1,
+      "min": 1,
+      "max": 30
+    },
+    "http_req_sending": {
+      "min": 0,
+      "med": 0,
+      "max": 1.2331,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0.0027847763643824375
+    },
+    "data_sent": {
+      "count": 802098,
+      "rate": 7615.211525963265
+    },
+    "vus_max": {
+      "min": 30,
+      "max": 30,
+      "value": 30
+    },
+    "http_req_connecting": {
+      "min": 0,
+      "med": 0,
+      "max": 328.0178,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 3.765844275748872
+    },
+    "http_req_waiting": {
+      "p(95)": 326.8452599999998,
+      "avg": 337.1885892901113,
+      "min": 293.4301,
+      "med": 305.3773,
+      "max": 5650.9718,
+      "p(90)": 314.40004
+    },
+    "checks": {
+      "fails": 1,
+      "passes": 9747,
+      "value": 0.9998974148543291
+    },
+    "data_received": {
+      "count": 2173614,
+      "rate": 20636.543646530867
+    },
+    "login_success_rate": {
+      "fails": 2437,
+      "passes": 0,
+      "value": 0
+    },
+    "http_req_receiving": {
+      "p(95)": 0.9949199999999999,
+      "avg": 0.15709277800574484,
+      "min": 0,
+      "med": 0,
+      "max": 2.1995,
+      "p(90)": 0.6336400000000001
+    },
+    "http_req_failed": {
+      "passes": 2437,
+      "fails": 0,
+      "value": 1
+    },
+    "iteration_duration": {
+      "avg": 848.3225406237175,
+      "min": 598.2773,
+      "med": 822.54,
+      "max": 5953.1426,
+      "p(90)": 982.66754,
+      "p(95)": 1005.5678599999998
+    },
+    "http_req_duration": {
+      "avg": 337.34846684448166,
+      "min": 293.4301,
+      "med": 305.5636,
+      "max": 5650.9718,
+      "p(90)": 314.67718,
+      "p(95)": 326.8452599999998,
+      "thresholds": {
+        "p(95)<5000": false
+      }
+    },
+    "http_req_tls_handshaking": {
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 3.8275608535084116,
+      "min": 0,
+      "med": 0,
+      "max": 351.414
+    },
+    "http_req_blocked": {
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 7.819171563397621,
+      "min": 0,
+      "med": 0,
+      "max": 1151.6278
+    },
+    "iterations": {
+      "count": 2437,
+      "rate": 23.13716090648833
+    },
+    "http_reqs": {
+      "rate": 23.13716090648833,
+      "count": 2437
+    },
+    "login_invalid_cred_rate": {
+      "passes": 3,
+      "fails": 2434,
+      "value": 0.0012310217480508822
+    },
+    "login_server_error_rate": {
+      "fails": 2437,
+      "passes": 0,
+      "value": 0
+    },
+    "login_rate_limited_rate": {
+      "passes": 2434,
+      "fails": 3,
+      "value": 0.9987689782519491
+    },
+    "login_latency": {
+      "max": 5650.9718,
+      "p(90)": 314.67718,
+      "p(95)": 326.8452599999998,
+      "avg": 337.34846684448166,
+      "min": 293.4301,
+      "med": 305.5636,
+      "thresholds": {
+        "p(95)<5000": false,
+        "avg<3000": false
+      }
+    }
+  },
+  "setup_data": {
+    "password": "your-password",
+    "identifier": "your.email@example.com"
+  }
+}

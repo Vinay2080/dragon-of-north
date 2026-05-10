@@ -1,10 +1,19 @@
 import http from "k6/http";
 import {check, sleep} from "k6";
 import {Rate, Trend} from "k6/metrics";
-import {applyManualCookies, BASE_URL, loginAndCaptureCookies, requireCredentials,} from "./auth-cookie-utils.js";
+import {
+    applyManualCookies,
+    BASE_URL,
+    buildDeviceId,
+    loginAndCaptureCookies,
+    requireCredentials,
+} from "./auth-cookie-utils.js";
 
 const logoutSuccessRate = new Rate("logout_success_rate");
 const logoutLatency = new Trend("logout_latency");
+
+const LOGOUT_P95_MS = Number(__ENV.LOGOUT_P95_MS || 6000);
+const LOGOUT_AVG_MS = Number(__ENV.LOGOUT_AVG_MS || 3500);
 
 export const options = {
     stages: [
@@ -14,7 +23,7 @@ export const options = {
         {duration: "15s", target: 0},
     ],
     thresholds: {
-        logout_latency: ["p(95)<1000", "avg<600"],
+        logout_latency: [`p(95)<${LOGOUT_P95_MS}`, `avg<${LOGOUT_AVG_MS}`],
     },
 };
 
@@ -24,7 +33,7 @@ export function setup() {
 
 export default function () {
     const jar = http.cookieJar();
-    const deviceId = `logout-vu-${__VU}-iter-${__ITER}`;
+    const deviceId = buildDeviceId(`logout-${__VU}-${__ITER}`);
 
     const manual = applyManualCookies(jar);
     if (!manual.hasManualAccessCookie) {

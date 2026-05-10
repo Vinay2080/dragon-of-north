@@ -1,0 +1,8 @@
+﻿Dragon of North - k6 load test run
+Timestamp: 08-05-2026 10:43:52
+BASE_URL: https://dragon-api.duckdns.org
+
+NOTE: If EMAIL/PASSWORD are not configured, auth-required tests will likely produce 401/403 or skip early.
+
+====================================================================
+TEST: health-stability-test.js

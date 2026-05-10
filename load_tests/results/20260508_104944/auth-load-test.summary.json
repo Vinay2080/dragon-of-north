@@ -1,0 +1,179 @@
+{
+  "metrics": {
+    "login_latency": {
+      "avg": 315.8081073911312,
+      "min": 293.3273,
+      "med": 304.7118,
+      "max": 1263.3539,
+      "p(90)": 313.6238,
+      "p(95)": 327.58540000000005,
+      "thresholds": {
+        "p(95)<5000": false,
+        "avg<3000": false
+      }
+    },
+    "http_req_connecting": {
+      "avg": 4.249232760687175,
+      "min": 0,
+      "med": 0,
+      "max": 1305.3582,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "login_rate_limited_rate": {
+      "passes": 2503,
+      "fails": 0,
+      "value": 1
+    },
+    "http_req_duration": {
+      "med": 304.7118,
+      "max": 1263.3539,
+      "p(90)": 313.6238,
+      "p(95)": 327.58540000000005,
+      "avg": 315.8081073911312,
+      "min": 293.3273,
+      "thresholds": {
+        "p(95)<5000": false
+      }
+    },
+    "data_sent": {
+      "count": 822623,
+      "rate": 7811.011663952738
+    },
+    "checks": {
+      "passes": 10012,
+      "fails": 0,
+      "value": 1
+    },
+    "login_success_rate": {
+      "passes": 0,
+      "fails": 2503,
+      "value": 0
+    },
+    "iterations": {
+      "count": 2503,
+      "rate": 23.766612646222757
+    },
+    "data_received": {
+      "count": 2229257,
+      "rate": 21167.35421809053
+    },
+    "http_req_tls_handshaking": {
+      "p(95)": 0,
+      "avg": 3.73743543747503,
+      "min": 0,
+      "med": 0,
+      "max": 386.542,
+      "p(90)": 0
+    },
+    "http_req_failed": {
+      "fails": 0,
+      "passes": 2503,
+      "value": 1
+    },
+    "vus": {
+      "min": 1,
+      "max": 30,
+      "value": 1
+    },
+    "http_req_blocked": {
+      "med": 0,
+      "max": 1608.4718,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 8.000578825409507,
+      "min": 0
+    },
+    "http_reqs": {
+      "count": 2503,
+      "rate": 23.766612646222757
+    },
+    "http_req_sending": {
+      "max": 0.6369,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0.0015586096683979224,
+      "min": 0,
+      "med": 0
+    },
+    "http_req_waiting": {
+      "min": 293.3273,
+      "med": 304.5923,
+      "max": 1263.3539,
+      "p(90)": 313.6238,
+      "p(95)": 327.58540000000005,
+      "avg": 315.66918989213025
+    },
+    "iteration_duration": {
+      "avg": 821.8971001997611,
+      "min": 598.022,
+      "med": 811.7806,
+      "max": 2272.3011,
+      "p(90)": 977.4560799999999,
+      "p(95)": 998.62257
+    },
+    "http_req_receiving": {
+      "med": 0,
+      "max": 2.2854,
+      "p(90)": 0.5661800000000002,
+      "p(95)": 0.9109200000000001,
+      "avg": 0.13735888933280074,
+      "min": 0
+    },
+    "login_invalid_cred_rate": {
+      "passes": 0,
+      "fails": 2503,
+      "value": 0
+    },
+    "login_server_error_rate": {
+      "passes": 0,
+      "fails": 2503,
+      "value": 0
+    },
+    "vus_max": {
+      "value": 30,
+      "min": 30,
+      "max": 30
+    }
+  },
+  "setup_data": {
+    "identifier": "your.email@example.com",
+    "password": "your-password"
+  },
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "login: received response": {
+        "fails": 0,
+        "name": "login: received response",
+        "path": "::login: received response",
+        "id": "5791c0765a73525f301b59fb57eceb6d",
+        "passes": 2503
+      },
+      "login: valid status (200/401/429)": {
+        "fails": 0,
+        "name": "login: valid status (200/401/429)",
+        "path": "::login: valid status (200/401/429)",
+        "id": "abb8e95bc82b0a1fe1a4ecc3274d7bd7",
+        "passes": 2503
+      },
+      "login: latency under threshold": {
+        "name": "login: latency under threshold",
+        "path": "::login: latency under threshold",
+        "id": "d1621de24c6f6362207e2f5f874c62c5",
+        "passes": 2503,
+        "fails": 0
+      },
+      "login: not server error": {
+        "id": "42efdde444f2aa13c670edebb4f8dcf8",
+        "passes": 2503,
+        "fails": 0,
+        "name": "login: not server error",
+        "path": "::login: not server error"
+      }
+    }
+  }
+}

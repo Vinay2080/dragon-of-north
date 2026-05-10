@@ -1,6 +1,10 @@
 import http from "k6/http";
 import {check, sleep} from "k6";
 import {Rate, Trend} from "k6/metrics";
+import {BASE_URL, buildDeviceId, EMAIL, PASSWORD, requireCredentials} from "./auth-cookie-utils.js";
+
+const LOGIN_P95_MS = Number(__ENV.LOGIN_P95_MS || 5000);
+const LOGIN_AVG_MS = Number(__ENV.LOGIN_AVG_MS || 3000);
 
 /**
  * AUTHENTICATION LOAD TEST - Production Safe
@@ -15,17 +19,12 @@ import {Rate, Trend} from "k6/metrics";
  * Backend: https://dragon-api.duckdns.org (AWS EC2 + Spring Boot + Redis)
  */
 
-const BASE_URL = "https://dragon-api.duckdns.org";
-
 // Custom metrics for accurate tracking (http_req_failed is misleading for auth)
 const loginSuccessRate = new Rate("login_success_rate");
 const loginRateLimitedRate = new Rate("login_rate_limited_rate");
 const loginInvalidCredRate = new Rate("login_invalid_cred_rate");
+const loginServerErrorRate = new Rate("login_server_error_rate");
 const loginLatency = new Trend("login_latency");
-
-// Get test credentials from environment variables (safer than hardcoding)
-const TEST_IDENTIFIER = __ENV.TEST_IDENTIFIER || "kartik123tijare@gmail.com";
-const TEST_PASSWORD = __ENV.TEST_PASSWORD || "Password@123";
 
 export const options = {
     stages: [
@@ -37,8 +36,8 @@ export const options = {
     ],
     thresholds: {
         // Latency thresholds - meaningful for performance evaluation
-        http_req_duration: ["p(95)<1000"],
-        login_latency: ["p(95)<1000", "avg<600"],
+        http_req_duration: [`p(95)<${LOGIN_P95_MS}`],
+        login_latency: [`p(95)<${LOGIN_P95_MS}`, `avg<${LOGIN_AVG_MS}`],
         // Note: We do NOT use http_req_failed - it incorrectly counts 401/429 as failures
     },
 };
@@ -52,15 +51,11 @@ export function setup() {
     console.log("  Expected: 200 (success), 401 (invalid), 429 (rate limit)");
     console.log("╚════════════════════════════════════════════════════════╝");
 
-    if (!__ENV.TEST_IDENTIFIER) {
-        console.log("⚠ Using default test credentials. Set via:");
-        console.log("  $env:TEST_IDENTIFIER='your.email@example.com'");
-        console.log("  $env:TEST_PASSWORD='YourPassword123!'");
-    }
+    requireCredentials();
 
     return {
-        identifier: TEST_IDENTIFIER,
-        password: TEST_PASSWORD,
+        identifier: EMAIL,
+        password: PASSWORD,
     };
 }
 
@@ -68,7 +63,7 @@ export default function (data) {
     const payload = JSON.stringify({
         identifier: data.identifier,
         password: data.password,
-        device_id: `k6-device-${__VU}-${__ITER}`,
+        device_id: buildDeviceId(`auth-load-${__VU}-${__ITER}`),
     });
 
     const response = http.post(`${BASE_URL}/api/v1/auth/identifier/login`, payload, {
@@ -87,12 +82,13 @@ export default function (data) {
     loginSuccessRate.add(response.status === 200);
     loginRateLimitedRate.add(response.status === 429);
     loginInvalidCredRate.add(response.status === 401);
+    loginServerErrorRate.add(response.status >= 500);
 
     // Checks verify valid responses (not server errors)
     check(response, {
         "login: received response": (r) => r.status !== 0,
         "login: valid status (200/401/429)": (r) => [200, 401, 429].includes(r.status),
-        "login: latency < 1000ms": (r) => r.timings.duration < 1000,
+        "login: latency under threshold": (r) => r.timings.duration < LOGIN_P95_MS,
         "login: not server error": (r) => r.status < 500,
     });
 

@@ -13,32 +13,54 @@ All tests are configured with:
 
 ## Run Commands
 
+### Environment variables (Windows PowerShell)
+
+```powershell
+$env:BASE_URL="https://dragon-api.duckdns.org"   # or your local/staging URL
+$env:EMAIL="your.email@example.com"             # required for auth-required tests
+$env:PASSWORD="your-password"
+```
+
+Optional (if you want to skip login and simulate an already-authenticated browser session):
+
+```powershell
+$env:ACCESS_COOKIE="<access_token_cookie_value>"
+$env:REFRESH_COOKIE="<refresh_token_cookie_value>"
+```
+
+If your target environment uses a self-signed/untrusted TLS certificate, add:
+
+```powershell
+$env:K6_INSECURE_SKIP_TLS_VERIFY="true"
+```
+
 ### 1. Health Endpoint Stability Test
 
-```bash
-cd "C:\Users\shaki\IdeaProjects\dragon-of-north\load_test"
-k6 run health-stability-test.js
+```powershell
+cd "C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests"
+k6 run .\health-stability-test.js
 ```
 
 ### 2. Authentication Load Test
 
-```bash
-cd "C:\Users\shaki\IdeaProjects\dragon-of-north\load_test"
-k6 run auth-load-test.js
+```powershell
+cd "C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests"
+k6 run .\auth-load-test.js
 ```
 
 ### 3. Protected Endpoint Concurrency Test
 
 ```powershell
-# Windows PowerShell - Set token first
-$env:ACCESS_TOKEN="your_access_token_here"
-k6 run protected-concurrency-test.js
-```
+cd "C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests"
 
-```bash
-# Linux/Mac - Set token first
-export ACCESS_TOKEN="your_access_token_here"
-k6 run protected-concurrency-test.js
+# Option A (recommended): run with EMAIL/PASSWORD and let each VU login once
+$env:EMAIL="your.email@example.com"
+$env:PASSWORD="your-password"
+k6 run .\protected-concurrency-test.js
+
+# Option B: run with a manually copied cookie value (no login calls)
+# $env:ACCESS_COOKIE="<access_token_cookie_value>"
+# k6 run .\protected-concurrency-test.js
 ```
 
 ---
@@ -196,9 +218,9 @@ These scripts model full browser-style auth flow using cookies from `Set-Cookie`
 
 ### Required environment variables
 
-```bash
-export EMAIL="your.email@example.com"
-export PASSWORD="your-password"
+```powershell
+$env:EMAIL="your.email@example.com"
+$env:PASSWORD="your-password"
 ```
 
 ### Run
@@ -209,6 +231,12 @@ k6 run refresh-storm-test.js
 k6 run session-read-test.js
 k6 run logout-test.js
 k6 run multi-device-session-test.js
+k6 run csrf-token-test.js
+k6 run profile-read-test.js
+
+# optional (mutating; requires CSRF; disabled by default)
+# $env:ENABLE_MUTATIONS="1"
+# k6 run profile-patch-idempotent-test.js
 ```
 
 ### Optional manual cookie simulation

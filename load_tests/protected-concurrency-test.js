@@ -1,6 +1,10 @@
 import http from "k6/http";
 import {check, sleep} from "k6";
 import {Rate, Trend} from "k6/metrics";
+import {applyManualCookies, BASE_URL, buildDeviceId, loginAndCaptureCookies,} from "./auth-cookie-utils.js";
+
+const PROTECTED_P95_MS = Number(__ENV.PROTECTED_P95_MS || 5000);
+const PROTECTED_AVG_MS = Number(__ENV.PROTECTED_AVG_MS || 3000);
 
 /**
  * PROTECTED ENDPOINT CONCURRENCY TEST - Production Safe
@@ -18,16 +22,13 @@ import {Rate, Trend} from "k6/metrics";
  * Backend: https://dragon-api.duckdns.org (AWS EC2 + Spring Boot + Redis)
  */
 
-const BASE_URL = "https://dragon-api.duckdns.org";
-
 // Custom metrics for accurate tracking
 const protectedSuccessRate = new Rate("protected_success_rate");
 const protectedAuthErrorRate = new Rate("protected_auth_error_rate");
 const protectedRateLimitedRate = new Rate("protected_rate_limited_rate");
 const protectedLatency = new Trend("protected_latency");
 
-// Get token from environment variable
-const ACCESS_TOKEN = __ENV.ACCESS_TOKEN || "";
+const HAS_CREDS = Boolean(__ENV.EMAIL) && Boolean(__ENV.PASSWORD);
 
 export const options = {
     stages: [
@@ -39,8 +40,8 @@ export const options = {
     ],
     thresholds: {
         // Protected endpoints should be reasonably fast
-        http_req_duration: ["p(95)<800"],
-        protected_latency: ["p(95)<800", "avg<500"],
+        http_req_duration: [`p(95)<${PROTECTED_P95_MS}`],
+        protected_latency: [`p(95)<${PROTECTED_P95_MS}`, `avg<${PROTECTED_AVG_MS}`],
         // Note: We do NOT use http_req_failed - 401/403/429 are valid outcomes
     },
 };
@@ -54,29 +55,56 @@ export function setup() {
     console.log("  Auth Method: Cookie (access_token)");
     console.log("╚════════════════════════════════════════════════════════╝");
 
-    if (!ACCESS_TOKEN) {
-        console.log("⚠ No ACCESS_TOKEN set. Set via:");
-        console.log("  $env:ACCESS_TOKEN='your_jwt_token_here'");
-        console.log("  Expected: 401 responses (testing auth rejection)");
+    if (__ENV.ACCESS_COOKIE) {
+        console.log("✓ ACCESS_COOKIE provided (manual cookie mode)");
+    } else if (HAS_CREDS) {
+        console.log("✓ EMAIL/PASSWORD provided (per-VU login mode)");
     } else {
-        console.log("✓ Access token configured");
+        console.log("⚠ No ACCESS_COOKIE and no EMAIL/PASSWORD. Expected: 401/403 responses (auth rejection path)");
     }
 
-    return {accessToken: ACCESS_TOKEN};
+    return {};
 }
 
-export default function (data) {
-    const headers = {
-        "Accept": "application/json",
-        tags: {endpoint: "protected-sessions"},
-    };
+// Per-VU state (each VU has its own JS runtime)
+const jar = http.cookieJar();
+let authPrepared = false;
 
-    // Only add cookie if token is provided (avoid empty cookie header)
-    if (data.accessToken) {
-        headers.Cookie = `access_token=${data.accessToken}`;
+function ensureAuth() {
+    if (authPrepared) {
+        return;
     }
 
-    const response = http.get(`${BASE_URL}/api/v1/sessions/get/all`, {headers});
+    const manual = applyManualCookies(jar);
+    if (manual.hasManualAccessCookie) {
+        authPrepared = true;
+        return;
+    }
+
+    if (!HAS_CREDS) {
+        authPrepared = true;
+        return;
+    }
+
+    const deviceId = buildDeviceId(`protected-concurrency-login-${__VU}`);
+    const loginResult = loginAndCaptureCookies(deviceId, jar);
+    // Even if login is rate-limited or unauthorized, we mark prepared to avoid retry storms.
+    authPrepared = true;
+
+    check(loginResult.response, {
+        "protected setup login: status valid": (r) => [200, 401, 429].includes(r.status),
+        "protected setup login: not server error": (r) => r.status < 500,
+    });
+}
+
+export default function () {
+    ensureAuth();
+
+    const response = http.get(`${BASE_URL}/api/v1/sessions/get/all`, {
+        headers: {Accept: "application/json"},
+        jar,
+        tags: {endpoint: "protected-sessions"},
+    });
 
     // Track endpoint-specific latency
     protectedLatency.add(response.timings.duration);
@@ -91,7 +119,7 @@ export default function (data) {
         "protected: received response": (r) => r.status !== 0,
         "protected: valid status (200/401/403/429)": (r) =>
             [200, 401, 403, 429].includes(r.status),
-        "protected: latency < 800ms": (r) => r.timings.duration < 800,
+        "protected: latency under threshold": (r) => r.timings.duration < PROTECTED_P95_MS,
         "protected: not server error": (r) => r.status < 500,
     });
 

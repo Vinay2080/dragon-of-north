@@ -1,0 +1,55 @@
+﻿Dragon of North - k6 load test run
+Timestamp: 08-05-2026 10:57:44
+BASE_URL: https://dragon-api.duckdns.org
+
+NOTE: If EMAIL/PASSWORD are not configured, auth-required tests will likely produce 401/403 or skip early.
+
+====================================================================
+TEST: health-stability-test.js
+Exit code: 0
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_105744\health-stability-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_105744\health-stability-test.summary.json
+Key metrics:
+  Requests:      3784
+  Throughput:    39.69 req/s
+  Latency p95:   316.42 ms
+  Latency p99:   n/a ms
+  Checks pass:   100.00%
+  http_req_failed: 0.00%
+  health_latency p95: 316.42 ms
+
+====================================================================
+TEST: csrf-token-test.js
+Exit code: -1
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_105744\csrf-token-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_105744\csrf-token-test.summary.json
+No summary export produced.
+====================================================================
+TEST: auth-load-test.js
+Exit code: -1
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_105744\auth-load-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_105744\auth-load-test.summary.json
+No summary export produced.
+====================================================================
+TEST: login-load-test.js
+Exit code: 0
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_105744\login-load-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_105744\login-load-test.summary.json
+Key metrics:
+  Requests:      1221
+  Throughput:    10.14 req/s
+  Latency p95:   312.08 ms
+  Latency p99:   n/a ms
+  Checks pass:   69.42%
+  http_req_failed: 100.00%
+  login_latency p95: 312.08 ms
+  login_success_rate: 0.00%
+
+====================================================================
+TEST: refresh-storm-test.js
+Exit code: -1
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_105744\refresh-storm-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_105744\refresh-storm-test.summary.json
+No summary export produced.
+====================================================================
+TEST: session-read-test.js

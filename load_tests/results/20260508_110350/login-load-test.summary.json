@@ -1,0 +1,155 @@
+{
+  "metrics": {
+    "http_req_connecting": {
+      "min": 0,
+      "med": 0,
+      "max": 1381.8091,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 9.0930329441201
+    },
+    "checks": {
+      "passes": 3594,
+      "fails": 3,
+      "value": 0.9991659716430359
+    },
+    "iterations": {
+      "count": 1199,
+      "rate": 9.931208268021281
+    },
+    "http_reqs": {
+      "count": 1199,
+      "rate": 9.931208268021281
+    },
+    "http_req_sending": {
+      "med": 0,
+      "max": 0.5674,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0.0027202668890742286,
+      "min": 0
+    },
+    "http_req_duration": {
+      "p(90)": 360.61992000000004,
+      "p(95)": 872.22924,
+      "avg": 356.03881693077574,
+      "min": 293.4373,
+      "med": 307.846,
+      "max": 4982.6505
+    },
+    "http_req_tls_handshaking": {
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 12.088252210175149,
+      "min": 0,
+      "med": 0,
+      "max": 2547.0736
+    },
+    "http_req_waiting": {
+      "max": 4982.6505,
+      "p(90)": 360.50896000000006,
+      "p(95)": 872.22924,
+      "avg": 355.8968828190156,
+      "min": 293.2075,
+      "med": 307.6462
+    },
+    "http_req_failed": {
+      "passes": 1199,
+      "fails": 0,
+      "value": 1
+    },
+    "data_sent": {
+      "rate": 3415.838669640454,
+      "count": 412396
+    },
+    "login_success_rate": {
+      "passes": 0,
+      "fails": 1199,
+      "value": 0
+    },
+    "login_latency": {
+      "avg": 356.03881693077574,
+      "min": 293.4373,
+      "med": 307.846,
+      "max": 4982.6505,
+      "p(90)": 360.61992000000004,
+      "p(95)": 872.22924,
+      "thresholds": {
+        "p(95)<6000": false,
+        "avg<3500": false
+      }
+    },
+    "vus": {
+      "max": 25,
+      "value": 1,
+      "min": 1
+    },
+    "vus_max": {
+      "value": 25,
+      "min": 25,
+      "max": 25
+    },
+    "http_req_blocked": {
+      "min": 0,
+      "med": 0,
+      "max": 3928.8827,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 21.581666555462892
+    },
+    "data_received": {
+      "count": 1111023,
+      "rate": 9202.502755264228
+    },
+    "login_cookie_capture_rate": {
+      "passes": 0,
+      "fails": 1199,
+      "value": 0
+    },
+    "http_req_receiving": {
+      "avg": 0.13921384487072574,
+      "min": 0,
+      "med": 0,
+      "max": 2.5107,
+      "p(90)": 0.57142,
+      "p(95)": 0.8779699999999998
+    },
+    "iteration_duration": {
+      "avg": 1646.1381890742277,
+      "min": 801.934,
+      "med": 1639.8961,
+      "max": 6161.3328,
+      "p(90)": 2223.12672,
+      "p(95)": 2301.4565399999997
+    }
+  },
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "login status is valid": {
+        "fails": 0,
+        "name": "login status is valid",
+        "path": "::login status is valid",
+        "id": "03da99b167498c7da149bec6ca9f47ab",
+        "passes": 1199
+      },
+      "login is not server error": {
+        "id": "1dfe3d9b797946625d92d5ec5f867932",
+        "passes": 1199,
+        "fails": 0,
+        "name": "login is not server error",
+        "path": "::login is not server error"
+      },
+      "login latency < 1500ms": {
+        "path": "::login latency < 1500ms",
+        "id": "4f40584d38c171806db99d6ff3cb1744",
+        "passes": 1196,
+        "fails": 3,
+        "name": "login latency < 1500ms"
+      }
+    }
+  }
+}

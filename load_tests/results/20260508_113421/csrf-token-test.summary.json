@@ -1,0 +1,183 @@
+{
+  "metrics": {
+    "http_req_failed": {
+      "passes": 10,
+      "fails": 764,
+      "value": 0.012919896640826873
+    },
+    "csrf_latency": {
+      "avg": 354.3141378552972,
+      "min": 0,
+      "med": 313.6239,
+      "max": 3771.601,
+      "p(90)": 390.96898,
+      "p(95)": 445.1881849999992,
+      "thresholds": {
+        "p(95)<5000": false,
+        "avg<3000": false
+      }
+    },
+    "csrf_token_present_rate": {
+      "passes": 764,
+      "fails": 10,
+      "thresholds": {
+        "rate>0.90": false
+      },
+      "value": 0.9870801033591732
+    },
+    "checks": {
+      "passes": 3850,
+      "fails": 20,
+      "value": 0.9948320413436692
+    },
+    "iteration_duration": {
+      "avg": 776.2981114987089,
+      "min": 203.7711,
+      "med": 737.6311000000001,
+      "max": 4349.92,
+      "p(90)": 922.02953,
+      "p(95)": 1230.6237049999988
+    },
+    "data_received": {
+      "count": 592710,
+      "rate": 9768.689284570111
+    },
+    "csrf_success_rate": {
+      "passes": 764,
+      "fails": 10,
+      "thresholds": {
+        "rate>0.95": false
+      },
+      "value": 0.9870801033591732
+    },
+    "http_req_receiving": {
+      "med": 0,
+      "max": 2.2079,
+      "p(90)": 0.5991000000000002,
+      "p(95)": 0.8614799999999992,
+      "avg": 0.1430509043927647,
+      "min": 0
+    },
+    "vus_max": {
+      "value": 15,
+      "min": 15,
+      "max": 15
+    },
+    "http_req_waiting": {
+      "avg": 354.16588204134365,
+      "min": 0,
+      "med": 313.33820000000003,
+      "max": 3771.601,
+      "p(90)": 390.96898,
+      "p(95)": 444.97307499999926
+    },
+    "http_req_duration": {
+      "min": 0,
+      "med": 313.6239,
+      "max": 3771.601,
+      "p(90)": 390.96898,
+      "p(95)": 445.1881849999992,
+      "avg": 354.3141378552972
+    },
+    "http_req_connecting": {
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 6.155444961240311,
+      "min": 0,
+      "med": 0,
+      "max": 386.5578
+    },
+    "http_req_sending": {
+      "med": 0,
+      "max": 0.7664,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0.005204909560723515,
+      "min": 0
+    },
+    "http_req_duration{expected_response:true}": {
+      "max": 3771.601,
+      "p(90)": 391.49691,
+      "p(95)": 449.7447350000002,
+      "avg": 358.951757460733,
+      "min": 292.572,
+      "med": 314.2239
+    },
+    "data_sent": {
+      "count": 130750,
+      "rate": 2154.9427611438005
+    },
+    "iterations": {
+      "count": 774,
+      "rate": 12.756601890059668
+    },
+    "http_reqs": {
+      "count": 774,
+      "rate": 12.756601890059668
+    },
+    "http_req_tls_handshaking": {
+      "med": 0,
+      "max": 2577.2358,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 14.196394702842378,
+      "min": 0
+    },
+    "http_req_blocked": {
+      "p(95)": 0,
+      "avg": 20.362336175710592,
+      "min": 0,
+      "med": 0,
+      "max": 2956.5428,
+      "p(90)": 0
+    },
+    "vus": {
+      "value": 1,
+      "min": 1,
+      "max": 15
+    }
+  },
+  "root_group": {
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "csrf: valid status": {
+        "name": "csrf: valid status",
+        "path": "::csrf: valid status",
+        "id": "6a3d14dc64ba29ae1dbe1241dbb49910",
+        "passes": 764,
+        "fails": 10
+      },
+      "csrf: not server error": {
+        "name": "csrf: not server error",
+        "path": "::csrf: not server error",
+        "id": "ebfb41ea4d2f5b82038d3135670eb05e",
+        "passes": 774,
+        "fails": 0
+      },
+      "csrf: token present (cookie or body)": {
+        "id": "8be60d13ad746e144f5b0765a4f33d75",
+        "passes": 774,
+        "fails": 0,
+        "name": "csrf: token present (cookie or body)",
+        "path": "::csrf: token present (cookie or body)"
+      },
+      "csrf returned expected status": {
+        "name": "csrf returned expected status",
+        "path": "::csrf returned expected status",
+        "id": "e3ad930b27241c88966afeafef988411",
+        "passes": 764,
+        "fails": 10
+      },
+      "csrf not server error": {
+        "name": "csrf not server error",
+        "path": "::csrf not server error",
+        "id": "194ba8d4420463cdda799651681d4530",
+        "passes": 774,
+        "fails": 0
+      }
+    },
+    "name": ""
+  }
+}

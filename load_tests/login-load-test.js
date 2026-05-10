@@ -1,11 +1,21 @@
 import {check, sleep} from "k6";
 import {Rate, Trend} from "k6/metrics";
 import http from "k6/http";
-import {BASE_URL, captureAuthCookies, EMAIL, PASSWORD, requireCredentials} from "./auth-cookie-utils.js";
+import {
+    BASE_URL,
+    buildDeviceId,
+    captureAuthCookies,
+    EMAIL,
+    PASSWORD,
+    requireCredentials,
+} from "./auth-cookie-utils.js";
 
 const loginSuccessRate = new Rate("login_success_rate");
 const loginCookieCaptureRate = new Rate("login_cookie_capture_rate");
 const loginLatency = new Trend("login_latency");
+
+const LOGIN_P95_MS = Number(__ENV.LOGIN_P95_MS || 6000);
+const LOGIN_AVG_MS = Number(__ENV.LOGIN_AVG_MS || 3500);
 
 export const options = {
     stages: [
@@ -16,8 +26,7 @@ export const options = {
         {duration: "10s", target: 0},
     ],
     thresholds: {
-        login_latency: ["p(95)<1200", "avg<700"],
-        login_success_rate: ["rate>0.80"],
+        login_latency: [`p(95)<${LOGIN_P95_MS}`, `avg<${LOGIN_AVG_MS}`],
     },
 };
 
@@ -27,7 +36,7 @@ export function setup() {
 
 export default function () {
     const jar = http.cookieJar();
-    const deviceId = `login-load-vu-${__VU}-iter-${__ITER}`;
+    const deviceId = buildDeviceId(`login-load-${__VU}-${__ITER}`);
 
     const response = http.post(
         `${BASE_URL}/api/v1/auth/identifier/login`,

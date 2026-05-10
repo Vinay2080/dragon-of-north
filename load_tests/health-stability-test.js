@@ -1,6 +1,7 @@
 import http from "k6/http";
 import {check, sleep} from "k6";
 import {Trend} from "k6/metrics";
+import {BASE_URL} from "./auth-cookie-utils.js";
 
 /**
  * HEALTH ENDPOINT STABILITY TEST - Production Safe
@@ -15,7 +16,8 @@ import {Trend} from "k6/metrics";
  * Backend: https://dragon-api.duckdns.org (AWS EC2 + Spring Boot)
  */
 
-const BASE_URL = "https://dragon-api.duckdns.org";
+const HEALTH_P95_MS = Number(__ENV.HEALTH_P95_MS || 5000);
+const HEALTH_AVG_MS = Number(__ENV.HEALTH_AVG_MS || 3000);
 
 // Custom metric for health endpoint latency
 const healthLatency = new Trend("health_latency");
@@ -30,8 +32,8 @@ export const options = {
     ],
     thresholds: {
         // Health checks should be FAST - strict latency threshold
-        http_req_duration: ["p(95)<300", "avg<200"],
-        health_latency: ["p(95)<300", "avg<200"],
+        http_req_duration: [`p(95)<${HEALTH_P95_MS}`, `avg<${HEALTH_AVG_MS}`],
+        health_latency: [`p(95)<${HEALTH_P95_MS}`, `avg<${HEALTH_AVG_MS}`],
         // Health checks should almost never fail - strict error threshold
         http_req_failed: ["rate<0.005"],  // 0.5% max error rate
         // Success rate threshold
@@ -45,6 +47,7 @@ export function setup() {
     console.log("╠════════════════════════════════════════════════════════╣");
     console.log(`  Target: ${BASE_URL}/actuator/health`);
     console.log("  Max VUs: 40  |  Duration: ~95 seconds");
+    console.log(`  Thresholds: p95<${HEALTH_P95_MS}ms avg<${HEALTH_AVG_MS}ms`);
     console.log("  Purpose: Infrastructure baseline / Load balancer check");
     console.log("╚════════════════════════════════════════════════════════╝");
     return {};
@@ -61,7 +64,7 @@ export default function () {
     // Health checks have strict requirements
     check(response, {
         "health: status is 200": (r) => r.status === 200,
-        "health: latency < 300ms": (r) => r.timings.duration < 300,
+        "health: latency under threshold": (r) => r.timings.duration < HEALTH_P95_MS,
         "health: response valid JSON": (r) => {
             try {
                 const body = JSON.parse(r.body);

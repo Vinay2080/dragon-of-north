@@ -1,0 +1,138 @@
+{
+  "metrics": {
+    "vus_max": {
+      "value": 20,
+      "min": 20,
+      "max": 20
+    },
+    "data_received": {
+      "count": 843187,
+      "rate": 9908.858065284248
+    },
+    "refresh_latency": {
+      "med": 0,
+      "max": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0,
+      "min": 0,
+      "thresholds": {
+        "p(95)<6000": false,
+        "avg<3500": false
+      }
+    },
+    "http_req_receiving": {
+      "med": 0,
+      "max": 1.9639,
+      "p(90)": 0.6083600000000005,
+      "p(95)": 1.00528,
+      "avg": 0.15345469613259669,
+      "min": 0
+    },
+    "http_req_waiting": {
+      "avg": 309.8397767955805,
+      "min": 295.3319,
+      "med": 304.4576,
+      "max": 1419.4857,
+      "p(90)": 313.78656,
+      "p(95)": 321.95318
+    },
+    "iterations": {
+      "rate": 10.635264240414338,
+      "count": 905
+    },
+    "http_req_tls_handshaking": {
+      "avg": 6.9172965745856345,
+      "min": 0,
+      "med": 0,
+      "max": 407.7366,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "vus": {
+      "value": 2,
+      "min": 1,
+      "max": 20
+    },
+    "data_sent": {
+      "count": 313338,
+      "rate": 3682.2457752076775
+    },
+    "http_req_connecting": {
+      "min": 0,
+      "med": 0,
+      "max": 333.1704,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 6.803310607734806
+    },
+    "http_req_sending": {
+      "min": 0,
+      "med": 0,
+      "max": 1.1305,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 0.0031591160220994477
+    },
+    "iteration_duration": {
+      "med": 1305.2863,
+      "max": 3534.3317,
+      "p(90)": 1316.2242800000001,
+      "p(95)": 1333.51532,
+      "avg": 1325.5715139226495,
+      "min": 1296.1879
+    },
+    "http_reqs": {
+      "count": 905,
+      "rate": 10.635264240414338
+    },
+    "http_req_blocked": {
+      "min": 0,
+      "med": 0,
+      "max": 1846.0557,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 15.091552154696133
+    },
+    "http_req_failed": {
+      "passes": 905,
+      "fails": 0,
+      "value": 1
+    },
+    "checks": {
+      "fails": 0,
+      "passes": 1810,
+      "value": 1
+    },
+    "http_req_duration": {
+      "p(90)": 314.12304,
+      "p(95)": 321.97728,
+      "avg": 309.99639060773484,
+      "min": 295.911,
+      "med": 304.5674,
+      "max": 1419.9263
+    }
+  },
+  "root_group": {
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "login returned a non-server-error status": {
+        "name": "login returned a non-server-error status",
+        "path": "::login returned a non-server-error status",
+        "id": "21ed3ac2fbcd1ac6d8331e88bf782097",
+        "passes": 905,
+        "fails": 0
+      },
+      "login produced expected status": {
+        "fails": 0,
+        "name": "login produced expected status",
+        "path": "::login produced expected status",
+        "id": "72fabc145d5a1dc29ccb16ced6e76312",
+        "passes": 905
+      }
+    },
+    "name": "",
+    "path": ""
+  }
+}

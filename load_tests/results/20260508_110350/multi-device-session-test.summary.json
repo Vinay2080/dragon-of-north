@@ -1,0 +1,170 @@
+{
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "device 0 login status valid": {
+        "id": "75be00ae2ac0c2dee42aaaf9a590ae61",
+        "passes": 128,
+        "fails": 0,
+        "name": "device 0 login status valid",
+        "path": "::device 0 login status valid"
+      },
+      "device 0 login not server error": {
+        "name": "device 0 login not server error",
+        "path": "::device 0 login not server error",
+        "id": "a9acffaeff3c9fad7c56d3aac9ccce16",
+        "passes": 128,
+        "fails": 0
+      },
+      "device 1 login status valid": {
+        "name": "device 1 login status valid",
+        "path": "::device 1 login status valid",
+        "id": "b975bc8453534209fcd5c049117f8d1e",
+        "passes": 128,
+        "fails": 0
+      },
+      "device 1 login not server error": {
+        "id": "d1ebd4f14295fa52abfe6ca2e19cadc6",
+        "passes": 128,
+        "fails": 0,
+        "name": "device 1 login not server error",
+        "path": "::device 1 login not server error"
+      },
+      "device 2 login status valid": {
+        "name": "device 2 login status valid",
+        "path": "::device 2 login status valid",
+        "id": "d9164aae8bd0fc16ec44ef6822e3946b",
+        "passes": 128,
+        "fails": 0
+      },
+      "device 2 login not server error": {
+        "name": "device 2 login not server error",
+        "path": "::device 2 login not server error",
+        "id": "f00b153ecae2eb62fd2146546258bda3",
+        "passes": 128,
+        "fails": 0
+      }
+    }
+  },
+  "metrics": {
+    "iterations": {
+      "count": 128,
+      "rate": 1.5669941131018252
+    },
+    "vus": {
+      "value": 3,
+      "min": 1,
+      "max": 8
+    },
+    "iteration_duration": {
+      "med": 3354.0057500000003,
+      "max": 8357.7679,
+      "p(90)": 4000.18012,
+      "p(95)": 4307.964389999999,
+      "avg": 3526.0963593749993,
+      "min": 2815.9581
+    },
+    "http_req_duration": {
+      "max": 5197.6689,
+      "p(90)": 410.18842,
+      "p(95)": 864.7920049999975,
+      "avg": 379.7774835937501,
+      "min": 294.8958,
+      "med": 322.83335
+    },
+    "http_req_waiting": {
+      "max": 5197.6689,
+      "p(90)": 410.18842,
+      "p(95)": 864.3777999999975,
+      "avg": 379.65451484375006,
+      "min": 294.8958,
+      "med": 322.51435000000004
+    },
+    "data_received": {
+      "count": 355806,
+      "rate": 4355.827401611781
+    },
+    "http_req_sending": {
+      "p(95)": 0,
+      "avg": 0.0015119791666666667,
+      "min": 0,
+      "med": 0,
+      "max": 0.5806,
+      "p(90)": 0
+    },
+    "multi_device_login_success_rate": {
+      "passes": 0,
+      "fails": 384,
+      "value": 0
+    },
+    "multi_device_flow_latency": {
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "max": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "thresholds": {
+        "p(95)<10000": false
+      }
+    },
+    "http_req_blocked": {
+      "avg": 27.408860677083336,
+      "min": 0,
+      "med": 0,
+      "max": 3899.5335,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "http_req_receiving": {
+      "max": 1.5795,
+      "p(90)": 0.53189,
+      "p(95)": 0.832839999999998,
+      "avg": 0.12145677083333332,
+      "min": 0,
+      "med": 0
+    },
+    "data_sent": {
+      "count": 131536,
+      "rate": 1610.2823254762632
+    },
+    "http_req_failed": {
+      "passes": 384,
+      "fails": 0,
+      "value": 1
+    },
+    "http_req_connecting": {
+      "med": 0,
+      "max": 1314.4576,
+      "p(90)": 0,
+      "p(95)": 0,
+      "avg": 9.738277604166667,
+      "min": 0
+    },
+    "http_req_tls_handshaking": {
+      "avg": 16.375796614583333,
+      "min": 0,
+      "med": 0,
+      "max": 2585.0759,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "vus_max": {
+      "max": 8,
+      "value": 8,
+      "min": 8
+    },
+    "http_reqs": {
+      "count": 384,
+      "rate": 4.700982339305476
+    },
+    "checks": {
+      "passes": 768,
+      "fails": 0,
+      "value": 1
+    }
+  }
+}

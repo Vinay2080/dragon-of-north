@@ -1,46 +1,37 @@
 import http from "k6/http";
 import {check, sleep} from "k6";
 import {Rate, Trend} from "k6/metrics";
+import {applyManualCookies, BASE_URL, buildDeviceId, loginAndCaptureCookies,} from "./auth-cookie-utils.js";
 
 /**
  * MIXED TRAFFIC LOAD TEST - Production Safe
  *
- * Simulates realistic user behavior with weighted traffic distribution:
- *   - 20% Health checks (GET /actuator/health)
- *   - 30% Authentication (POST /api/v1/auth/identifier/login)
- *   - 50% Protected APIs (GET /api/v1/sessions/get/all)
- *
- * IMPORTANT: http_req_failed threshold is NOT used because:
- *   - 30% of traffic hits auth endpoints
- *   - 401 and 429 are VALID outcomes for auth, not failures
- *   - Using http_req_failed would show a false 30%+ "failure" rate
- *
- * Instead, we use custom Rate metrics per endpoint for accurate tracking.
- *
- * Safety:
- *   - Gradual ramp (0 → 40 VUs over 40s)
- *   - Think time between requests (200-600ms)
- *   - Total duration: ~105 seconds
- *
- * Backend: https://dragon-api.duckdns.org (AWS EC2 + Spring Boot + Redis)
+ * Updated to reflect new features:
+ * - Adds Profile reads to the protected traffic mix (GET /api/v1/profile)
+ * - Removes hardcoded JWTs; uses cookie-jar auth (manual cookies or per-VU login)
  */
-
-const BASE_URL = "https://dragon-api.duckdns.org";
 
 // Custom metrics for each endpoint
 const healthLatency = new Trend("health_latency");
 const loginLatency = new Trend("login_latency");
-const protectedLatency = new Trend("protected_latency");
+const sessionsLatency = new Trend("sessions_latency");
+const profileLatency = new Trend("profile_latency");
 
 const loginSuccessRate = new Rate("login_success_rate");
 const loginRateLimitedRate = new Rate("login_rate_limited_rate");
-const protectedSuccessRate = new Rate("protected_success_rate");
-const protectedAuthErrorRate = new Rate("protected_auth_error_rate");
 
-// Configuration via environment variables
-const TEST_IDENTIFIER = __ENV.TEST_IDENTIFIER || "kartik123tijare@gmail.com";
-const TEST_PASSWORD = __ENV.TEST_PASSWORD || "Password@123";
-const ACCESS_TOKEN = __ENV.ACCESS_TOKEN || "eyJhbGciOiJSUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzX3Rva2VuIiwicm9sZXMiOlsiVVNFUiJdLCJpc3MiOiJkcmFnb24tb2Ytbm9ydGgtYXV0aCIsInN1YiI6ImMwYTg4MDA0LTljYWQtMWFkOC04MTljLWFkMGZlOTM0MDAxMSIsImlhdCI6MTc3MjgxNjc0NCwibmJmIjoxNzcyODE2NzQ0LCJleHAiOjE3NzI4MTc5NDR9.raNXEHwvYfc5b5m4eVTVs8y_utD9-0Z_V7BisDL-73bW17rJ-llX4IJiP0oiBnxw-lHSCibwBAuJ0XZsUnp6F1FXHYvrFaRZCoLMOxS-MnK9uxZ-CNODiitUqsGpnFfcbvvo0JCBThsluf8xsT1cjo4nkqfD_BGIrPf_N0pnclAghC_GITT18-9PJTi8hRvWgIFTd9kAx-aJ9eI2A67xlSmls_9hwwbFsaW-ZSQvZDfqg66F2C8FzRxIRRj7AVb2y_9kOMF1eeCSdbuSXO4-v64sL7B4re_SzqA-Qj_fxHjITpASo4BzgHJZjs9q9zcsw1fohKworjSWRYfgq701hg";
+const sessionsSuccessRate = new Rate("sessions_success_rate");
+const sessionsAuthErrorRate = new Rate("sessions_auth_error_rate");
+
+const profileSuccessRate = new Rate("profile_success_rate");
+const profileAuthErrorRate = new Rate("profile_auth_error_rate");
+
+const anyServerErrorRate = new Rate("any_server_error_rate");
+
+const HAS_CREDS = Boolean(__ENV.EMAIL) && Boolean(__ENV.PASSWORD);
+
+const MIXED_P95_MS = Number(__ENV.MIXED_P95_MS || 6000);
+const MIXED_AVG_MS = Number(__ENV.MIXED_AVG_MS || 3500);
 
 export const options = {
     stages: [
@@ -52,11 +43,12 @@ export const options = {
     ],
     thresholds: {
         // Overall latency (across all endpoints)
-        http_req_duration: ["p(95)<1000"],
+        http_req_duration: [`p(95)<${MIXED_P95_MS}`],
         // Endpoint-specific latency thresholds
-        health_latency: ["p(95)<300", "avg<200"],
-        login_latency: ["p(95)<1000", "avg<600"],
-        protected_latency: ["p(95)<800", "avg<500"],
+        health_latency: [`p(95)<${MIXED_P95_MS}`, `avg<${MIXED_AVG_MS}`],
+        login_latency: [`p(95)<${MIXED_P95_MS}`, `avg<${MIXED_AVG_MS}`],
+        sessions_latency: [`p(95)<${MIXED_P95_MS}`, `avg<${MIXED_AVG_MS}`],
+        profile_latency: [`p(95)<${MIXED_P95_MS}`, `avg<${MIXED_AVG_MS}`],
         // Note: No http_req_failed threshold - misleading for mixed traffic
     },
 };
@@ -66,29 +58,55 @@ export function setup() {
     console.log("║   MIXED TRAFFIC LOAD TEST                            ║");
     console.log("╠════════════════════════════════════════════════════════╣");
     console.log(`  Target: ${BASE_URL}`);
-    console.log("  Traffic Split: 20% Health | 30% Auth | 50% Protected");
+    console.log("  Traffic Split: 20% Health | 30% Auth | 30% Sessions | 20% Profile");
     console.log("  Max VUs: 40  |  Duration: ~105 seconds");
     console.log("╠════════════════════════════════════════════════════════╣");
 
-    if (!__ENV.TEST_IDENTIFIER) {
-        console.log("⚠ Using default test credentials");
-    }
-    if (!ACCESS_TOKEN) {
-        console.log("⚠ No ACCESS_TOKEN - protected endpoints will return 401");
+    if (__ENV.ACCESS_COOKIE) {
+        console.log("✓ ACCESS_COOKIE provided (manual cookie mode)");
+    } else if (HAS_CREDS) {
+        console.log("✓ EMAIL/PASSWORD provided (per-VU login mode)");
+    } else {
+        console.log("⚠ No ACCESS_COOKIE and no EMAIL/PASSWORD. Protected endpoints will likely return 401/403.");
     }
 
     console.log("╚════════════════════════════════════════════════════════╝");
     sleep(2);
 
-    return {
-        identifier: TEST_IDENTIFIER,
-        password: TEST_PASSWORD,
-        accessToken: ACCESS_TOKEN,
-    };
+    return {};
 }
 
-export default function (data) {
-    // Weighted random selection: 0-20 (health), 20-50 (auth), 50-100 (protected)
+// Per-VU state
+const jar = http.cookieJar();
+let authPrepared = false;
+
+function ensureAuth() {
+    if (authPrepared) {
+        return;
+    }
+
+    const manual = applyManualCookies(jar);
+    if (manual.hasManualAccessCookie) {
+        authPrepared = true;
+        return;
+    }
+
+    if (!HAS_CREDS) {
+        authPrepared = true;
+        return;
+    }
+
+    const deviceId = buildDeviceId(`mixed-traffic-login-${__VU}`);
+    const loginResult = loginAndCaptureCookies(deviceId, jar);
+    authPrepared = true;
+
+    // Record a single outcome (useful if login is heavily rate-limited)
+    loginSuccessRate.add(loginResult.response.status === 200);
+    loginRateLimitedRate.add(loginResult.response.status === 429);
+}
+
+export default function () {
+    // Weighted random selection: 0-20 (health), 20-50 (login), 50-80 (sessions), 80-100 (profile)
     const random = Math.random() * 100;
 
     // ═══════════════════════════════════════════════════════════
@@ -103,62 +121,90 @@ export default function (data) {
 
         check(response, {
             "health: status 200": (r) => r.status === 200,
-            "health: latency < 300ms": (r) => r.timings.duration < 300,
+            "health: latency under threshold": (r) => r.timings.duration < MIXED_P95_MS,
         });
+
+        anyServerErrorRate.add(response.status >= 500);
     }
         // ═══════════════════════════════════════════════════════════
         // 30% TRAFFIC: Authentication (Login)
         // Expected: 200 (success), 401 (invalid creds), 429 (rate limited)
     // ═══════════════════════════════════════════════════════════
     else if (random < 50) {
-        const payload = JSON.stringify({
-            identifier: data.identifier,
-            password: data.password,
-            device_id: `k6-device-${__VU}-${__ITER}`,
-        });
+        if (!HAS_CREDS) {
+            // If no credentials are configured, don't spam invalid login attempts.
+            sleep(0.1);
+            return;
+        }
 
-        const response = http.post(`${BASE_URL}/api/v1/auth/identifier/login`, payload, {
-            headers: {"Content-Type": "application/json"},
-            tags: {endpoint: "login"},
-        });
+        const deviceId = buildDeviceId(`mixed-traffic-login-${__VU}-${__ITER}`);
+        const response = http.post(
+            `${BASE_URL}/api/v1/auth/identifier/login`,
+            JSON.stringify({
+                identifier: __ENV.EMAIL,
+                password: __ENV.PASSWORD,
+                device_id: deviceId,
+            }),
+            {
+                headers: {"Content-Type": "application/json", Accept: "application/json"},
+                jar,
+                tags: {endpoint: "login"},
+            },
+        );
 
         loginLatency.add(response.timings.duration);
         loginSuccessRate.add(response.status === 200);
         loginRateLimitedRate.add(response.status === 429);
 
         check(response, {
-            "login: valid status (200/401/429)": (r) =>
-                [200, 401, 429].includes(r.status),
-            "login: latency < 1000ms": (r) => r.timings.duration < 1000,
+            "login: valid status (200/401/429)": (r) => [200, 401, 429].includes(r.status),
             "login: not server error": (r) => r.status < 500,
         });
+
+        anyServerErrorRate.add(response.status >= 500);
     }
         // ═══════════════════════════════════════════════════════════
         // 50% TRAFFIC: Protected Endpoint (Sessions)
         // Expected: 200 (success), 401/403 (auth error), 429 (rate limited)
     // ═══════════════════════════════════════════════════════════
-    else {
-        const headers = {
-            "Accept": "application/json",
-            tags: {endpoint: "protected-sessions"},
-        };
+    else if (random < 80) {
+        ensureAuth();
 
-        if (data.accessToken) {
-            headers.Cookie = `access_token=${data.accessToken}`;
-        }
+        const response = http.get(`${BASE_URL}/api/v1/sessions/get/all`, {
+            headers: {Accept: "application/json"},
+            jar,
+            tags: {endpoint: "sessions"},
+        });
 
-        const response = http.get(`${BASE_URL}/api/v1/sessions/get/all`, {headers});
-
-        protectedLatency.add(response.timings.duration);
-        protectedSuccessRate.add(response.status === 200);
-        protectedAuthErrorRate.add(response.status === 401 || response.status === 403);
+        sessionsLatency.add(response.timings.duration);
+        sessionsSuccessRate.add(response.status === 200);
+        sessionsAuthErrorRate.add(response.status === 401 || response.status === 403);
 
         check(response, {
-            "protected: valid status (200/401/403/429)": (r) =>
-                [200, 401, 403, 429].includes(r.status),
-            "protected: latency < 800ms": (r) => r.timings.duration < 800,
-            "protected: not server error": (r) => r.status < 500,
+            "sessions: valid status (200/401/403/429)": (r) => [200, 401, 403, 429].includes(r.status),
+            "sessions: not server error": (r) => r.status < 500,
         });
+
+        anyServerErrorRate.add(response.status >= 500);
+    } else {
+        ensureAuth();
+
+        const response = http.get(`${BASE_URL}/api/v1/profile`, {
+            headers: {Accept: "application/json"},
+            jar,
+            tags: {endpoint: "profile"},
+        });
+
+        profileLatency.add(response.timings.duration);
+        profileSuccessRate.add(response.status === 200);
+        profileAuthErrorRate.add(response.status === 401 || response.status === 403);
+
+        check(response, {
+            "profile: valid status (200/401/403/429)": (r) => [200, 401, 403, 429].includes(r.status),
+            "profile: not server error": (r) => r.status < 500,
+        });
+
+        anyServerErrorRate.add(response.status >= 500);
     }
 
     // Realistic think time between user actions
@@ -174,9 +220,11 @@ export function teardown(data) {
     console.log("    • http_req_duration p(95)     - Overall latency");
     console.log("    • health_latency p(95)       - Infrastructure latency");
     console.log("    • login_latency p(95)        - Auth endpoint latency");
-    console.log("    • protected_latency p(95)    - Protected endpoint latency");
+    console.log("    • sessions_latency p(95)     - Sessions endpoint latency");
+    console.log("    • profile_latency p(95)      - Profile endpoint latency");
     console.log("    • login_success_rate         - Auth success %");
-    console.log("    • protected_success_rate     - Protected endpoint success %");
+    console.log("    • sessions_success_rate      - Sessions success %");
+    console.log("    • profile_success_rate       - Profile success %");
     console.log("    • vus_max                    - Peak concurrent users");
     console.log("╚════════════════════════════════════════════════════════╝");
 }

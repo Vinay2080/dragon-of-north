@@ -1,0 +1,153 @@
+﻿Dragon of North - k6 load test run
+Timestamp: 08-05-2026 10:44:17
+BASE_URL: https://dragon-api.duckdns.org
+
+NOTE: If EMAIL/PASSWORD are not configured, auth-required tests will likely produce 401/403 or skip early.
+
+====================================================================
+TEST: health-stability-test.js
+Exit code: 0
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\health-stability-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\health-stability-test.summary.json
+Key metrics:
+  Requests:      n/a
+  Throughput:    n/a req/s
+  Latency p95:   n/a ms
+  Latency p99:   n/a ms
+  Checks pass:   0.00%
+  http_req_failed: 0.00%
+
+====================================================================
+TEST: csrf-token-test.js
+Exit code: 0
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\csrf-token-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\csrf-token-test.summary.json
+Key metrics:
+  Requests:      n/a
+  Throughput:    n/a req/s
+  Latency p95:   n/a ms
+  Latency p99:   n/a ms
+  Checks pass:   0.00%
+  http_req_failed: 0.00%
+
+====================================================================
+TEST: auth-load-test.js
+Exit code: 0
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\auth-load-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\auth-load-test.summary.json
+Key metrics:
+  Requests:      n/a
+  Throughput:    n/a req/s
+  Latency p95:   n/a ms
+  Latency p99:   n/a ms
+  Checks pass:   0.00%
+  http_req_failed: 0.00%
+
+====================================================================
+TEST: login-load-test.js
+Exit code: 0
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\login-load-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\login-load-test.summary.json
+Key metrics:
+  Requests:      n/a
+  Throughput:    n/a req/s
+  Latency p95:   n/a ms
+  Latency p99:   n/a ms
+  Checks pass:   0.00%
+  http_req_failed: 0.00%
+
+====================================================================
+TEST: refresh-storm-test.js
+Exit code: 0
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\refresh-storm-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\refresh-storm-test.summary.json
+Key metrics:
+  Requests:      n/a
+  Throughput:    n/a req/s
+  Latency p95:   n/a ms
+  Latency p99:   n/a ms
+  Checks pass:   0.00%
+  http_req_failed: 0.00%
+
+====================================================================
+TEST: session-read-test.js
+Exit code: 0
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\session-read-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\session-read-test.summary.json
+Key metrics:
+  Requests:      n/a
+  Throughput:    n/a req/s
+  Latency p95:   n/a ms
+  Latency p99:   n/a ms
+  Checks pass:   0.00%
+  http_req_failed: 0.00%
+
+====================================================================
+TEST: profile-read-test.js
+Exit code: 0
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\profile-read-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\profile-read-test.summary.json
+Key metrics:
+  Requests:      n/a
+  Throughput:    n/a req/s
+  Latency p95:   n/a ms
+  Latency p99:   n/a ms
+  Checks pass:   0.00%
+  http_req_failed: 0.00%
+
+====================================================================
+TEST: logout-test.js
+Exit code: 0
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\logout-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\logout-test.summary.json
+Key metrics:
+  Requests:      n/a
+  Throughput:    n/a req/s
+  Latency p95:   n/a ms
+  Latency p99:   n/a ms
+  Checks pass:   0.00%
+  http_req_failed: 0.00%
+
+====================================================================
+TEST: protected-concurrency-test.js
+Exit code: 107
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\protected-concurrency-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\protected-concurrency-test.summary.json
+No summary export produced.
+====================================================================
+TEST: multi-device-session-test.js
+Exit code: 0
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\multi-device-session-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\multi-device-session-test.summary.json
+Key metrics:
+  Requests:      n/a
+  Throughput:    n/a req/s
+  Latency p95:   n/a ms
+  Latency p99:   n/a ms
+  Checks pass:   0.00%
+  http_req_failed: 0.00%
+
+====================================================================
+TEST: mixed-traffic-test.js
+Exit code: 107
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\mixed-traffic-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\mixed-traffic-test.summary.json
+No summary export produced.
+====================================================================
+TEST: profile-patch-idempotent-test.js
+Exit code: 0
+Raw log:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\profile-patch-idempotent-test.log
+Summary:   C:\Users\shaki\IdeaProjects\dragon-of-north\load_tests\results\20260508_104417\profile-patch-idempotent-test.summary.json
+Key metrics:
+  Requests:      n/a
+  Throughput:    n/a req/s
+  Latency p95:   n/a ms
+  Latency p99:   n/a ms
+  Checks pass:   0.00%
+  http_req_failed: 0.00%
+
+====================================================================
+Conclusions (quick guidance):
+- Use p95/p99 latency and throughput for headline numbers.
+- For auth-heavy tests, prefer custom success/ratelimit rates over http_req_failed.
+- If profile/session endpoints show high auth error rates, confirm cookies are being set/sent and the account has access.
