@@ -5,3 +5,9 @@
 5. Update frontend
 6. Update README
 7. Update Dockerfile for tests.
+8. Update logs.
+
+TOTP todos: 1. Send code to user before enabling TOTP.
+2. after enabling TOTP, enable via email too if required.
+3. Before every crucial operations like password change, email change, disable TOTP, enable TOTP, send code to user and ask for code before performing the operation.
+4. Add option to disable TOTP via email if required.

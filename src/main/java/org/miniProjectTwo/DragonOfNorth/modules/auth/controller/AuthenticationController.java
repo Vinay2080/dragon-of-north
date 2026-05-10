@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.api.AuthenticationApi;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.*;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
@@ -170,6 +171,16 @@ public class AuthenticationController implements AuthenticationApi {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, deviceIdRequest.deviceId());
         MfaSetupResponse mfaSetupResponse = authCommonServices.requestMfaSetup(context);
         return ResponseEntity.ok(success(mfaSetupResponse));
+    }
+
+    @Override
+    @PostMapping("/enable/mfa/confirm")
+    public ResponseEntity<ApiResponse<MfaSetupConfirmResponse>> confirmMfaSetup(
+            HttpServletRequest request,
+            @RequestBody @Valid MfaSetupConfirmRequest mfaSetupConfirmRequest) {
+        AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, mfaSetupConfirmRequest.deviceId());
+        MfaSetupConfirmResponse codes = authCommonServices.confirmMfaSetup(context, mfaSetupConfirmRequest.code());
+        return ResponseEntity.ok(success(codes));
     }
 
     private String extractRefreshToken(HttpServletRequest request) {

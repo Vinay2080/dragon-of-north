@@ -21,7 +21,8 @@ public enum UserLifecycleOperation {
     SESSION_ROTATE_REFRESH(true),
     PASSWORDLESS_LOGIN_REQUEST(true),
     PASSWORDLESS_LOGIN_VERIFY(true),
-    MFA_SETUP_REQUEST(true);
+    MFA_SETUP_REQUEST(true),
+    MFA_SETUP_CONFIRM(true);
 
     private final boolean activeAllowed;
 

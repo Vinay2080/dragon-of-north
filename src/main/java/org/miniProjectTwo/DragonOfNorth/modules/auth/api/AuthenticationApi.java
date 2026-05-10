@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.*;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -639,4 +641,22 @@ public interface AuthenticationApi {
                     )
             )
             @Parameter(hidden = true) HttpServletRequest request, DeviceIdRequest deviceIdRequest);
+
+    ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<MfaSetupConfirmResponse>> confirmMfaSetup(
+            @RequestBody(
+                    required = true,
+                    description = "MFA token from the authenticator app and the device identifier used in the setup request.",
+                    content = @Content(
+                            examples = @ExampleObject(
+                                    name = "mfaSetupConfirmRequest",
+                                    value = """
+                                            {
+                                              "device_id": "web-chrome-macos",
+                                              "otp": "123456"
+                                            }
+                                            """
+                            )
+                    )
+            )
+            @Parameter(hidden = true) HttpServletRequest request, MfaSetupConfirmRequest mfaSetupConfirmRequest);
 }

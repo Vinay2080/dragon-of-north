@@ -34,6 +34,14 @@ public enum ErrorCode {
     WEAK_PASSWORD("AUTH_010", "Password must be at least 8 characters with letters and numbers", HttpStatus.BAD_REQUEST),
     SAME_PASSWORD("AUTH_011", "New password must be different from current password", HttpStatus.BAD_REQUEST),
     MFA_ALREADY_ENABLED("AUTH_012", "MFA is already enabled", HttpStatus.CONFLICT),
+    MFA_SETUP_EXPIRED("AUTH_013", "MFA setup session has expired. Please request again.", HttpStatus.BAD_REQUEST),
+    MFA_REQUIRED("AUTH_014", "MFA is required for this operation", HttpStatus.FORBIDDEN),
+    MFA_INVALID_CODE("AUTH_015", "Invalid MFA code", HttpStatus.BAD_REQUEST),
+    MFA_SETUP_REQUEST_LIMIT("AUTH_016", "Too many MFA setup requests. Please try again later", HttpStatus.TOO_MANY_REQUESTS),
+    MFA_SETUP_REQUEST_FAILED("AUTH_017", "MFA setup request failed", HttpStatus.INTERNAL_SERVER_ERROR),
+    MFA_SETUP_CONFIRM_FAILED("AUTH_018", "MFA setup confirmation failed", HttpStatus.INTERNAL_SERVER_ERROR),
+    MFA_SETUP_NOT_FOUND("AUTH_019", "MFA setup not found", HttpStatus.NOT_FOUND),
+    MFA_SETUP_EXPIRED_OR_USED("AUTH_020", "MFA setup has expired or already been used", HttpStatus.BAD_REQUEST),
 
     ROLE_NOT_FOUND("ROL_009", "role %s not found", HttpStatus.NOT_FOUND),
 
