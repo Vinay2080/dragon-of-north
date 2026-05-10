@@ -33,6 +33,7 @@ public enum ErrorCode {
     INVALID_CURRENT_PASSWORD("AUTH_009", "Current password is incorrect", HttpStatus.BAD_REQUEST),
     WEAK_PASSWORD("AUTH_010", "Password must be at least 8 characters with letters and numbers", HttpStatus.BAD_REQUEST),
     SAME_PASSWORD("AUTH_011", "New password must be different from current password", HttpStatus.BAD_REQUEST),
+    MFA_ALREADY_ENABLED("AUTH_012", "MFA is already enabled", HttpStatus.CONFLICT),
 
     ROLE_NOT_FOUND("ROL_009", "role %s not found", HttpStatus.NOT_FOUND),
 

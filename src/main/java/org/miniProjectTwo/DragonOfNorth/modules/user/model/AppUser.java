@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.modules.user.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,6 +13,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.model.BaseEntity;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -65,40 +67,54 @@ public class AppUser extends BaseEntity {
      * Current lifecycle status of the account.
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, columnDefinition = "user_status")
     private AppUserStatus appUserStatus = ACTIVE;
 
     /**
      * Whether the email identifier has been verified.
      */
-    @Column(nullable = false)
+    @Column(nullable = false, name = "is_email_verified")
     private boolean isEmailVerified = false;
 
     /**
      * Whether the phone identifier has been verified.
      */
-    @Column(nullable = false)
+    @Column(nullable = false, name = "is_phone_number_verified")
     private boolean isPhoneNumberVerified = false;
 
     /**
      * Consecutive failed login attempts used by lockout logic.
      */
-    @Column(nullable = false)
+    @Column(name = "failed_login_attempts", nullable = false)
     private int failedLoginAttempts = 0;
 
-    @Column(nullable = false)
+    @Column(name = "account_locked", nullable = false)
     private boolean accountLocked = false;
 
     /**
      * Timestamp when the account was locked.
      */
+    @Column(name = "locked_at")
     private LocalDateTime lockedAt;
-
 
     /**
      * Timestamp of the most recent successful login.
      */
+    @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
+
+    @NotNull
+    @Column(name = "mfa_enabled")
+    private boolean mfaEnabled = false;
+
+    @Column(name = "mfa_secret_encrypted")
+    private String mfaSecretEncrypted;
+
+    @Column(name = "mfa_recovery_codes_encrypted")
+    private String mfaRecoveryCodesEncrypted;
+
+    @Column(name = "mfa_enabled_at")
+    private Instant mfaEnabledAt;
 
     /**
      * Checks whether at least one role is assigned.

@@ -1,5 +1,10 @@
 package org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl;
 
+import dev.samstevens.totp.exceptions.QrGenerationException;
+import dev.samstevens.totp.qr.QrData;
+import dev.samstevens.totp.qr.QrGenerator;
+import dev.samstevens.totp.qr.ZxingPngQrGenerator;
+import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -8,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordChangeRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordResetConfirmRequest;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
@@ -42,6 +48,7 @@ import java.util.Base64;
 import java.util.Set;
 import java.util.UUID;
 
+import static dev.samstevens.totp.code.HashingAlgorithm.SHA256;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
 
 /**
@@ -56,6 +63,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
     private static final String PASSWORDLESS_TOKEN_KEY_PREFIX = "auth:passwordless:token:";
     private static final String PASSWORDLESS_USER_KEY_PREFIX = "auth:passwordless:user:";
+    private static final String MFA_SETUP_KEY_PREFIX = "auth:mfa:setup";
 
     private final AuthenticationManager authenticationManager;
     private final JwtServices jwtServices;
@@ -233,12 +241,51 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
         recordLoginSuccess(appUser.getId(), context);
     }
-//
-//    private void ensurePasswordlessProvider(AppUser appUser) {
-//        if (!userAuthProviderRepository.existsByUserIdAndProvider(appUser.getId(), Provider.PASSWORDLESS)) {
-//            throw new BusinessException(ErrorCode.AUTHENTICATION_FAILED, "Account not registered for passwordless login");
-//        }
-//    }
+
+    @Override
+    public MfaSetupResponse requestMfaSetup(AuthRequestContext context) {
+        AppUser appUser = findAuthenticatedUser();
+        userStateValidator.validate(appUser, UserLifecycleOperation.MFA_SETUP_REQUEST);
+
+        if (appUser.isMfaEnabled()) {
+            throw new BusinessException(ErrorCode.MFA_ALREADY_ENABLED, "MFA is already enabled for this account");
+        }
+
+        String secret = new DefaultSecretGenerator().generate();
+
+        storeTemporaryMfaSecret(appUser.getId(), secret);
+
+        String qrCode = generateQrCode(secret, appUser);
+        return new MfaSetupResponse(secret, qrCode);
+
+    }
+
+    private void storeTemporaryMfaSecret(UUID id, String secret) {
+        redisTemplate.opsForValue().set(MFA_SETUP_KEY_PREFIX + id,
+                secret, Duration.ofMinutes(5));
+    }
+
+    private String generateQrCode(String secret, AppUser appUser) {
+
+        QrData qrData = new QrData.Builder()
+                .label("Dragon-of-North:" + appUser.getEmail())
+                .secret(secret)
+                .issuer("Dragon-of-North")
+                .algorithm(SHA256)
+                .digits(6)
+                .period(30)
+                .build();
+        QrGenerator qrGenerator = new ZxingPngQrGenerator();
+
+        try {
+            byte[] imageData = qrGenerator.generate(qrData);
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(imageData);
+
+        } catch (QrGenerationException e) {
+            log.error("Error generating QR code: {}", e.getMessage());
+        }
+        return null;
+    }
 
     private AppUser verifyPasswordlessToken(String token) {
         String tokenHash = tokenHasher.hashToken(token);

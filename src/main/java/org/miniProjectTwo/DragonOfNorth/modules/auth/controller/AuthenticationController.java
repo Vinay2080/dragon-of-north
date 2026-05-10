@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.api.AuthenticationApi;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.*;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
@@ -161,6 +162,15 @@ public class AuthenticationController implements AuthenticationApi {
         return ResponseEntity.ok(successMessage("Passwordless login successful"));
     }
 
+    @PostMapping("/enable/mfa/request")
+    @Override
+    public ResponseEntity<ApiResponse<MfaSetupResponse>> requestMfaSetup(
+            HttpServletRequest request,
+            @RequestBody @Valid DeviceIdRequest deviceIdRequest) {
+        AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, deviceIdRequest.deviceId());
+        MfaSetupResponse mfaSetupResponse = authCommonServices.requestMfaSetup(context);
+        return ResponseEntity.ok(success(mfaSetupResponse));
+    }
 
     private String extractRefreshToken(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();

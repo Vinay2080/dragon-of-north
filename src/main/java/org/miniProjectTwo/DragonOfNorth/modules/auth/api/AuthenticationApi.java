@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.*;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
 
@@ -621,4 +622,21 @@ public interface AuthenticationApi {
             @Parameter(hidden = true) HttpServletRequest request,
             @Parameter(hidden = true) HttpServletResponse response
     );
+
+    ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<MfaSetupResponse>> requestMfaSetup(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "Device identifier for the MFA setup session context.",
+                    content = @Content(
+                            examples = @ExampleObject(
+                                    name = "mfaSetupRequest",
+                                    value = """
+                                            {
+                                              "device_id": "web-chrome-macos"
+                                            }
+                                            """
+                            )
+                    )
+            )
+            @Parameter(hidden = true) HttpServletRequest request, DeviceIdRequest deviceIdRequest);
 }
