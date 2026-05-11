@@ -18,6 +18,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupRespon
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
 
+@SuppressWarnings("unused")
 @Tag(name = "Authentication", description = "Identifier-based sign-up, login, password, logout, and token refresh endpoints.")
 public interface AuthenticationApi {
 
@@ -613,7 +614,7 @@ public interface AuthenticationApi {
                                     name = "passwordlessVerifyRequest",
                                     value = """
                                             {
-                                              "token": "eyJhbGciOi...",
+                                              "token": "eyJobGciOi...",
                                               "device_id": "web-chrome-macos"
                                             }
                                             """
@@ -625,38 +626,102 @@ public interface AuthenticationApi {
             @Parameter(hidden = true) HttpServletResponse response
     );
 
+
+    @Operation(
+            summary = "Request MFA (TOTP) setup",
+            description = "Generates a temporary TOTP secret for the authenticated user and returns the secret plus a QR-code image payload that can be scanned by an authenticator app (Google Authenticator, Authy, etc.)."
+    )
+    @SecurityRequirement(name = "accessTokenCookie")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "MFA setup secret issued",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "mfaSetupResponse",
+                                    value = """
+                                            {
+                                              "apiResponseStatus": "success",
+                                              "data": {
+                                                "mfaSecret": "JBOSSWS3DPEHPK3PXP",
+                                                "mfaQrCode": "data:image/png;base64,iVBORw0KGgo..."
+                                              },
+                                              "time": "2026-04-04T06:45:00Z"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Request validation failed"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated"),
+            @ApiResponse(responseCode = "409", description = "MFA is already enabled")
+    })
     ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<MfaSetupResponse>> requestMfaSetup(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            @Parameter(hidden = true) HttpServletRequest request,
+            @RequestBody(
                     required = true,
-                    description = "Device identifier for the MFA setup session context.",
+                    description = "Device identifier for the MFA setup session context. Accepts both 'deviceId' and 'device_id'.",
                     content = @Content(
                             examples = @ExampleObject(
                                     name = "mfaSetupRequest",
                                     value = """
                                             {
-                                              "device_id": "web-chrome-macos"
+                                              "deviceId": "web-chrome-macos"
                                             }
                                             """
                             )
                     )
             )
-            @Parameter(hidden = true) HttpServletRequest request, DeviceIdRequest deviceIdRequest);
+            DeviceIdRequest deviceIdRequest
+    );
 
+    @Operation(
+            summary = "Confirm MFA (TOTP) setup",
+            description = "Validates the 6-digit authenticator code against the temporary secret and enables MFA for the authenticated user. Returns recovery codes that should be stored securely."
+    )
+    @SecurityRequirement(name = "accessTokenCookie")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "MFA enabled",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "mfaSetupConfirmResponse",
+                                    value = """
+                                            {
+                                              "apiResponseStatus": "success",
+                                              "data": {
+                                                "backupCodes": ["ABCD-EFGH", "IJKL-MNOP"]
+                                              },
+                                              "time": "2026-04-04T06:45:00Z"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Request validation failed or code is invalid"),
+            @ApiResponse(responseCode = "401", description = "Not authenticated"),
+            @ApiResponse(responseCode = "409", description = "MFA is already enabled or setup session expired")
+    })
     ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<MfaSetupConfirmResponse>> confirmMfaSetup(
+            @Parameter(hidden = true) HttpServletRequest request,
             @RequestBody(
                     required = true,
-                    description = "MFA token from the authenticator app and the device identifier used in the setup request.",
+                    description = "Authenticator code and device identifier. Accepts 'code' (recommended) or 'otp' as an alias; and accepts 'deviceId' or 'device_id'.",
                     content = @Content(
                             examples = @ExampleObject(
                                     name = "mfaSetupConfirmRequest",
                                     value = """
                                             {
-                                              "device_id": "web-chrome-macos",
-                                              "otp": "123456"
+                                              "deviceId": "web-chrome-macos",
+                                              "code": "123456"
                                             }
                                             """
                             )
                     )
             )
-            @Parameter(hidden = true) HttpServletRequest request, MfaSetupConfirmRequest mfaSetupConfirmRequest);
+            MfaSetupConfirmRequest mfaSetupConfirmRequest
+    );
 }

@@ -1,5 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
@@ -9,6 +11,8 @@ import jakarta.validation.constraints.NotBlank;
 @Schema(name = "DeviceIdRequest", description = "Request payload containing the client device identifier for session-scoped operations.")
 public record DeviceIdRequest(
         @NotBlank
+        @JsonProperty("deviceId")
+        @JsonAlias("device_id")
         @Schema(description = "Client-generated device id used to bind refresh/session actions.", example = "web-chrome-macos")
         String deviceId) {
 }

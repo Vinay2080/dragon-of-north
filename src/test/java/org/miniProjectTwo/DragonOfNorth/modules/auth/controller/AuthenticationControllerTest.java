@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.*;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
@@ -257,6 +259,114 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.data.code").value("VAL_001"));
 
         verify(authCommonServices, never()).verifyPasswordlessLogin(anyString(), any(), any());
+    }
+
+    @Test
+    void requestMfaSetup_shouldReturnOk_whenRequestIsValid() throws Exception {
+        // arrange
+        DeviceIdRequest request = new DeviceIdRequest("device-1");
+        when(authCommonServices.requestMfaSetup(any(AuthRequestContext.class)))
+                .thenReturn(new MfaSetupResponse("secret-123", "data:image/png;base64,AAAA"));
+
+        // act + assert
+        mockMvc.perform(post("/api/v1/auth/enable/mfa/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"))
+                .andExpect(jsonPath("$.data.mfaSecret").value("secret-123"))
+                .andExpect(jsonPath("$.data.mfaQrCode").value("data:image/png;base64,AAAA"));
+
+        verify(authCommonServices).requestMfaSetup(argThat(context -> "device-1".equals(context.deviceId())));
+    }
+
+    @Test
+    void requestMfaSetup_shouldAcceptSnakeCaseDeviceId() throws Exception {
+        // arrange
+        when(authCommonServices.requestMfaSetup(any(AuthRequestContext.class)))
+                .thenReturn(new MfaSetupResponse("secret-123", "data:image/png;base64,AAAA"));
+
+        String payload = """
+                {
+                  "device_id": "device-1"
+                }
+                """;
+
+        // act + assert
+        mockMvc.perform(post("/api/v1/auth/enable/mfa/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"));
+
+        verify(authCommonServices).requestMfaSetup(argThat(context -> "device-1".equals(context.deviceId())));
+    }
+
+    @Test
+    void confirmMfaSetup_shouldReturnOk_whenRequestIsValid() throws Exception {
+        // arrange
+        MfaSetupConfirmRequest request = new MfaSetupConfirmRequest("123456", "device-1");
+        when(authCommonServices.confirmMfaSetup(any(AuthRequestContext.class), eq("123456")))
+                .thenReturn(new MfaSetupConfirmResponse(new String[]{"code-1", "code-2"}));
+
+        // act + assert
+        mockMvc.perform(post("/api/v1/auth/enable/mfa/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"))
+                .andExpect(jsonPath("$.data.backupCodes[0]").value("code-1"))
+                .andExpect(jsonPath("$.data.backupCodes[1]").value("code-2"));
+
+        verify(authCommonServices).confirmMfaSetup(
+                argThat(context -> "device-1".equals(context.deviceId())),
+                eq("123456")
+        );
+    }
+
+    @Test
+    void confirmMfaSetup_shouldAcceptOtpAliasAndSnakeCaseDeviceId() throws Exception {
+        // arrange
+        when(authCommonServices.confirmMfaSetup(any(AuthRequestContext.class), eq("123456")))
+                .thenReturn(new MfaSetupConfirmResponse(new String[]{"code-1"}));
+
+        String payload = """
+                {
+                  "otp": "123456",
+                  "device_id": "device-1"
+                }
+                """;
+
+        // act + assert
+        mockMvc.perform(post("/api/v1/auth/enable/mfa/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"))
+                .andExpect(jsonPath("$.data.backupCodes[0]").value("code-1"));
+
+        verify(authCommonServices).confirmMfaSetup(
+                argThat(context -> "device-1".equals(context.deviceId())),
+                eq("123456")
+        );
+    }
+
+    @Test
+    void confirmMfaSetup_shouldReturnBadRequest_whenDeviceIdMissing() throws Exception {
+        String payload = """
+                {
+                  "code": "123456"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/auth/enable/mfa/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.apiResponseStatus").value("failed"))
+                .andExpect(jsonPath("$.data.code").value("VAL_001"));
+
+        verify(authCommonServices, never()).confirmMfaSetup(any(AuthRequestContext.class), anyString());
     }
 
 }
