@@ -11,6 +11,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupRespon
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.MfaServices;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
@@ -50,6 +51,9 @@ class AuthenticationControllerTest {
 
     @Mock
     private AuthCommonServices authCommonServices;
+
+    @Mock
+    private MfaServices mfaServices;
 
     @BeforeEach
     void setUp() {
@@ -265,7 +269,7 @@ class AuthenticationControllerTest {
     void requestMfaSetup_shouldReturnOk_whenRequestIsValid() throws Exception {
         // arrange
         DeviceIdRequest request = new DeviceIdRequest("device-1");
-        when(authCommonServices.requestMfaSetup(any(AuthRequestContext.class)))
+        when(mfaServices.requestMfaSetup(any(AuthRequestContext.class)))
                 .thenReturn(new MfaSetupResponse("secret-123", "data:image/png;base64,AAAA"));
 
         // act + assert
@@ -277,13 +281,13 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.data.mfaSecret").value("secret-123"))
                 .andExpect(jsonPath("$.data.mfaQrCode").value("data:image/png;base64,AAAA"));
 
-        verify(authCommonServices).requestMfaSetup(argThat(context -> "device-1".equals(context.deviceId())));
+        verify(mfaServices).requestMfaSetup(argThat(context -> "device-1".equals(context.deviceId())));
     }
 
     @Test
     void requestMfaSetup_shouldAcceptSnakeCaseDeviceId() throws Exception {
         // arrange
-        when(authCommonServices.requestMfaSetup(any(AuthRequestContext.class)))
+        when(mfaServices.requestMfaSetup(any(AuthRequestContext.class)))
                 .thenReturn(new MfaSetupResponse("secret-123", "data:image/png;base64,AAAA"));
 
         String payload = """
@@ -299,14 +303,14 @@ class AuthenticationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"));
 
-        verify(authCommonServices).requestMfaSetup(argThat(context -> "device-1".equals(context.deviceId())));
+        verify(mfaServices).requestMfaSetup(argThat(context -> "device-1".equals(context.deviceId())));
     }
 
     @Test
     void confirmMfaSetup_shouldReturnOk_whenRequestIsValid() throws Exception {
         // arrange
         MfaSetupConfirmRequest request = new MfaSetupConfirmRequest("123456", "device-1");
-        when(authCommonServices.confirmMfaSetup(any(AuthRequestContext.class), eq("123456")))
+        when(mfaServices.confirmMfaSetup(any(AuthRequestContext.class), eq("123456")))
                 .thenReturn(new MfaSetupConfirmResponse(new String[]{"code-1", "code-2"}));
 
         // act + assert
@@ -318,7 +322,7 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.data.backupCodes[0]").value("code-1"))
                 .andExpect(jsonPath("$.data.backupCodes[1]").value("code-2"));
 
-        verify(authCommonServices).confirmMfaSetup(
+        verify(mfaServices).confirmMfaSetup(
                 argThat(context -> "device-1".equals(context.deviceId())),
                 eq("123456")
         );
@@ -327,7 +331,7 @@ class AuthenticationControllerTest {
     @Test
     void confirmMfaSetup_shouldAcceptOtpAliasAndSnakeCaseDeviceId() throws Exception {
         // arrange
-        when(authCommonServices.confirmMfaSetup(any(AuthRequestContext.class), eq("123456")))
+        when(mfaServices.confirmMfaSetup(any(AuthRequestContext.class), eq("123456")))
                 .thenReturn(new MfaSetupConfirmResponse(new String[]{"code-1"}));
 
         String payload = """
@@ -345,7 +349,7 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"))
                 .andExpect(jsonPath("$.data.backupCodes[0]").value("code-1"));
 
-        verify(authCommonServices).confirmMfaSetup(
+        verify(mfaServices).confirmMfaSetup(
                 argThat(context -> "device-1".equals(context.deviceId())),
                 eq("123456")
         );
@@ -366,7 +370,7 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.apiResponseStatus").value("failed"))
                 .andExpect(jsonPath("$.data.code").value("VAL_001"));
 
-        verify(authCommonServices, never()).confirmMfaSetup(any(AuthRequestContext.class), anyString());
+        verify(mfaServices, never()).confirmMfaSetup(any(AuthRequestContext.class), anyString());
     }
 
 }

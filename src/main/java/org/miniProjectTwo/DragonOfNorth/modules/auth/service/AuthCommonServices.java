@@ -4,13 +4,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import org.hibernate.validator.constraints.Length;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordChangeRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordResetConfirmRequest;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
@@ -69,7 +65,4 @@ public interface AuthCommonServices {
 
     void verifyPasswordlessLogin(String token, AuthRequestContext context, HttpServletResponse response);
 
-    MfaSetupResponse requestMfaSetup(AuthRequestContext context);
-
-    MfaSetupConfirmResponse confirmMfaSetup(AuthRequestContext context, @NotNull @Length String code);
 }

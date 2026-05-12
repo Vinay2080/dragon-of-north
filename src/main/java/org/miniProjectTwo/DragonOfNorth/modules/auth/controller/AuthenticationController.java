@@ -13,6 +13,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupRespon
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.MfaServices;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     private final AuthenticationServiceResolver resolver;
     private final AuthCommonServices authCommonServices;
+    private final MfaServices mfaServices;
 
     @Override
     @GetMapping("/csrf")
@@ -169,7 +171,7 @@ public class AuthenticationController implements AuthenticationApi {
             HttpServletRequest request,
             @RequestBody @Valid DeviceIdRequest deviceIdRequest) {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, deviceIdRequest.deviceId());
-        MfaSetupResponse mfaSetupResponse = authCommonServices.requestMfaSetup(context);
+        MfaSetupResponse mfaSetupResponse = mfaServices.requestMfaSetup(context);
         return ResponseEntity.ok(success(mfaSetupResponse));
     }
 
@@ -179,7 +181,7 @@ public class AuthenticationController implements AuthenticationApi {
             HttpServletRequest request,
             @RequestBody @Valid MfaSetupConfirmRequest mfaSetupConfirmRequest) {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, mfaSetupConfirmRequest.deviceId());
-        MfaSetupConfirmResponse codes = authCommonServices.confirmMfaSetup(context, mfaSetupConfirmRequest.code());
+        MfaSetupConfirmResponse codes = mfaServices.confirmMfaSetup(context, mfaSetupConfirmRequest.code());
         return ResponseEntity.ok(success(codes));
     }
 
