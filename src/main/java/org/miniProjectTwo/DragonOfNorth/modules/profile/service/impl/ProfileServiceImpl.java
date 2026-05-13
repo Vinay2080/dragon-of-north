@@ -48,22 +48,12 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public void createProfile(UUID userId, OAuthUserInfo userInfo) {
-        AppUser appUser = appUserRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        AppUser appUser = fetchAppUser(userId);
+        ensureProfileDoesNotExist(userId, appUser);
 
-        if (profileRepository.existsByAppUserId(userId)) {
-            throw new BusinessException(ErrorCode.PROFILE_ALREADY_EXISTS, "Profile already exists for user: " + appUser.getEmail());
-        }
         Profile profile = new Profile();
         profile.setAppUser(appUser);
-        if (userInfo != null) {
-            profile.setDisplayName(userInfo.name());
-            applyGoogleAvatar(profile, userInfo.picture());
-            profile.setUsername(generateUniqueUsername(userInfo.name()));
-        } else {
-            profile.setDisplayName(appUser.getEmail());
-            profile.setUsername(generateUniqueUsername(appUser.getEmail()));
-        }
+        applyInitialProfileData(profile, appUser, userInfo);
         profileRepository.save(profile);
     }
 
@@ -77,25 +67,16 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     @Transactional
     public void syncGoogleAvatar(UUID userId, OAuthUserInfo userInfo) {
-        if (userInfo == null) {
-            return;
-        }
-
-        String googleAvatar = normalizeAvatarUrl(userInfo.picture());
+        String googleAvatar = normalizeGoogleAvatar(userInfo);
         if (googleAvatar == null) {
             return;
         }
 
         Profile profile = getOrCreateProfile(userId);
-        AvatarSource source = profile.getAvatarSource() == null ? AvatarSource.NONE : profile.getAvatarSource();
-
-        if (source == AvatarSource.USER_DEFINED) {
+        if (!shouldSyncGoogleAvatar(profile)) {
             return;
         }
 
-        if (source == AvatarSource.GOOGLE && profile.getAvatarExternalUrl() != null) {
-            return;
-        }
         applyGoogleAvatar(profile, googleAvatar);
     }
 
@@ -103,20 +84,11 @@ public class ProfileServiceImpl implements ProfileService {
     @Transactional
     public Profile updateProfile(String bio, String avatarUrl, String displayName, String username) {
         AppUser appUser = findAuthenticatedUser(UserLifecycleOperation.PROFILE_UPDATE);
-        UUID userId = appUser.getId();
-        Profile profile = getOrCreateProfile(userId);
+        Profile profile = getOrCreateProfile(appUser.getId());
 
-        if (username != null && !username.equalsIgnoreCase(profile.getUsername())) {
-            if (profileRepository.existsByUsernameIgnoreCase(username)) {
-                throw new BusinessException(ErrorCode.USERNAME_ALREADY_TAKEN, "Username is already taken: " + username);
-            }
-            profile.setUsername(username);
-        }
-
+        updateUsernameIfNeeded(profile, username);
         updateIfNotNull(bio, profile::setBio);
-        if (avatarUrl != null) {
-            applyUserAvatarUpdate(profile, avatarUrl);
-        }
+        applyAvatarUrlIfProvided(profile, avatarUrl);
         updateIfNotNull(displayName, profile::setDisplayName);
         return profile;
     }
@@ -131,7 +103,7 @@ public class ProfileServiceImpl implements ProfileService {
     public Profile updateProfileImage(UUID userId, MultipartFile multipartFile) {
         validateImageFile(multipartFile);
 
-        AppUser appUser = appUserRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        AppUser appUser = fetchAppUser(userId);
         userStateValidator.validate(appUser, UserLifecycleOperation.PROFILE_UPDATE);
 
         Profile profile = getOrCreateProfile(userId);
@@ -145,10 +117,7 @@ public class ProfileServiceImpl implements ProfileService {
             throw new BusinessException(ErrorCode.INVALID_INPUT, "Failed to upload image to Cloudinary");
         }
 
-        profile.setAvatarPublicId(publicId);
-        profile.setAvatarUrl(imageUrl);
-        profile.setAvatarExternalUrl(null);
-        profile.setAvatarSource(AvatarSource.USER_DEFINED);
+        applyUploadedAvatar(profile, imageUrl, publicId);
         return profileRepository.save(profile);
     }
 
@@ -164,6 +133,50 @@ public class ProfileServiceImpl implements ProfileService {
         });
     }
 
+    private void validateImageFile(MultipartFile file) {
+        validateFilePresence(file);
+        validateFileSize(file);
+        validateFilename(file.getOriginalFilename());
+        validateContentType(file.getContentType());
+    }
+
+    private void applyUploadedAvatar(Profile profile, String imageUrl, String publicId) {
+        profile.setAvatarPublicId(publicId);
+        profile.setAvatarUrl(imageUrl);
+        profile.setAvatarExternalUrl(null);
+        profile.setAvatarSource(AvatarSource.USER_DEFINED);
+    }
+
+    private void validateFilePresence(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "No file uploaded");
+        }
+    }
+
+    private void validateFileSize(MultipartFile file) {
+        if (file.getSize() > MAX_IMAGE_SIZE) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "File size exceeds limit of 2MB");
+        }
+    }
+
+    private void validateFilename(String originalFilename) {
+        if (originalFilename == null) {
+            return;
+        }
+        String normalizedFilename = originalFilename.trim();
+        if (normalizedFilename.contains("\\") || normalizedFilename.contains("/")
+                || normalizedFilename.contains("\"") || normalizedFilename.contains("..")) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid file format: unsupported filename");
+        }
+    }
+
+    private void validateContentType(String contentType) {
+        String normalizedContentType = contentType == null ? "" : contentType.trim().toLowerCase().split(";")[0];
+        if (!ALLOWED_IMAGE_TYPES.contains(normalizedContentType)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Unsupported file type: " + contentType);
+        }
+    }
+
     private AppUser findAuthenticatedUser(UserLifecycleOperation operation) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -171,10 +184,27 @@ public class ProfileServiceImpl implements ProfileService {
         }
 
         UUID userId = resolveUserId(authentication);
-        AppUser appUser = appUserRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        AppUser appUser = fetchAppUser(userId);
         userStateValidator.validate(appUser, operation);
         return appUser;
+    }
+
+    private void updateUsernameIfNeeded(Profile profile, String username) {
+        if (username == null || username.equalsIgnoreCase(profile.getUsername())) {
+            return;
+        }
+
+        if (profileRepository.existsByUsernameIgnoreCase(username)) {
+            throw new BusinessException(ErrorCode.USERNAME_ALREADY_TAKEN, "Username is already taken: " + username);
+        }
+        profile.setUsername(username);
+    }
+
+    private void applyAvatarUrlIfProvided(Profile profile, String avatarUrl) {
+        if (avatarUrl == null) {
+            return;
+        }
+        applyUserAvatarUpdate(profile, avatarUrl);
     }
 
     private Profile getOrCreateProfile(UUID userId) {
@@ -250,28 +280,43 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
-    private void validateImageFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "No file uploaded");
+    private String normalizeGoogleAvatar(OAuthUserInfo userInfo) {
+        if (userInfo == null) {
+            return null;
         }
-        if (file.getSize() > MAX_IMAGE_SIZE) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "File size exceeds limit of 2MB");
+        return normalizeAvatarUrl(userInfo.picture());
+    }
+
+    private boolean shouldSyncGoogleAvatar(Profile profile) {
+        AvatarSource source = profile.getAvatarSource() == null ? AvatarSource.NONE : profile.getAvatarSource();
+        if (source == AvatarSource.USER_DEFINED) {
+            return false;
         }
 
-        String originalFilename = file.getOriginalFilename();
-        if (originalFilename != null) {
-            String normalizedFilename = originalFilename.trim();
-            if (normalizedFilename.contains("\\") || normalizedFilename.contains("/")
-                    || normalizedFilename.contains("\"") || normalizedFilename.contains("..")) {
-                throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid file format: unsupported filename");
-            }
+        return !(source == AvatarSource.GOOGLE && profile.getAvatarExternalUrl() != null);
+    }
+
+    private AppUser fetchAppUser(UUID userId) {
+        return appUserRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private void ensureProfileDoesNotExist(UUID userId, AppUser appUser) {
+        if (profileRepository.existsByAppUserId(userId)) {
+            throw new BusinessException(ErrorCode.PROFILE_ALREADY_EXISTS, "Profile already exists for user: " + appUser.getEmail());
+        }
+    }
+
+    private void applyInitialProfileData(Profile profile, AppUser appUser, OAuthUserInfo userInfo) {
+        if (userInfo != null) {
+            profile.setDisplayName(userInfo.name());
+            applyGoogleAvatar(profile, userInfo.picture());
+            profile.setUsername(generateUniqueUsername(userInfo.name()));
+            return;
         }
 
-        String contentType = file.getContentType();
-        String normalizedContentType = contentType == null ? "" : contentType.trim().toLowerCase().split(";")[0];
-        if (normalizedContentType == null || !ALLOWED_IMAGE_TYPES.contains(normalizedContentType)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "Unsupported file type: " + contentType);
-        }
+        profile.setDisplayName(appUser.getEmail());
+        profile.setUsername(generateUniqueUsername(appUser.getEmail()));
     }
 
     //todo:uploader.uplaodisthrowingerror
@@ -367,3 +412,4 @@ public class ProfileServiceImpl implements ProfileService {
         profile.setAvatarSource(AvatarSource.USER_DEFINED);
     }
 }
+
