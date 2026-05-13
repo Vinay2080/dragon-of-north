@@ -9,6 +9,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderReposi
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.PasswordService;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
@@ -22,7 +23,6 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.UserLifecycleOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,7 +48,7 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
 public class EmailAuthenticationServiceImpl implements AuthenticationService {
 
     private final AppUserRepository appUserRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordService passwordService;
     private final UserAuthProviderRepository userAuthProviderRepository;
     private final AuthCommonServices authCommonServices;
     private final MeterRegistry meterRegistry;
@@ -172,7 +172,7 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
         String normalizedIdentifier = IdentifierNormalizer.normalizeEmail(request.identifier());
         AppUser user = new AppUser();
         user.setEmail(normalizedIdentifier);
-        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setPassword(passwordService.encodePassword(request.password()));
         user.setAppUserStatus(PENDING_VERIFICATION);
         user.setEmailVerified(false);
         return user;
@@ -210,7 +210,7 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
                     appUser.getAppUserStatus().name());
         }
 
-        appUser.setPassword(passwordEncoder.encode(request.password()));
+        appUser.setPassword(passwordService.encodePassword(request.password()));
         appUser.setEmailVerified(false);
         appUser.setAppUserStatus(PENDING_VERIFICATION);
         persistLocalProviderIfMissing(appUser);

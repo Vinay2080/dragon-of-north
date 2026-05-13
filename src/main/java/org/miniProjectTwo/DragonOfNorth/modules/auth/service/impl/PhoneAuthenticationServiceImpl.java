@@ -9,6 +9,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderReposi
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.PasswordService;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
@@ -21,7 +22,6 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.UserLifecycleOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,7 +46,7 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
 public class PhoneAuthenticationServiceImpl implements AuthenticationService {
 
     private final AppUserRepository appUserRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordService passwordService;
     private final UserAuthProviderRepository userAuthProviderRepository;
     private final AuthCommonServices authCommonServices;
     private final MeterRegistry meterRegistry;
@@ -150,7 +150,7 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
         String normalizedIdentifier = IdentifierNormalizer.normalizePhone(request.identifier());
         AppUser appUser = new AppUser();
         appUser.setPhone(normalizedIdentifier);
-        appUser.setPassword(passwordEncoder.encode(request.password()));
+        appUser.setPassword(passwordService.encodePassword(request.password()));
         appUser.setAppUserStatus(ACTIVE);
         return appUser;
     }
@@ -187,7 +187,7 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
                     appUser.getAppUserStatus().name());
         }
 
-        appUser.setPassword(passwordEncoder.encode(request.password()));
+        appUser.setPassword(passwordService.encodePassword(request.password()));
         appUser.setPhoneNumberVerified(false);
         persistLocalProviderIfMissing(appUser);
         AppUser savedUser = appUserRepository.save(appUser);

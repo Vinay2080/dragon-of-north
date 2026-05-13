@@ -1,0 +1,11 @@
+package org.miniProjectTwo.DragonOfNorth.modules.auth.service;
+
+import jakarta.servlet.http.HttpServletResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+
+public interface PasswordlessLoginService {
+
+    void requestPasswordlessLogin(String email);
+
+    void verifyPasswordlessLogin(String token, AuthRequestContext context, HttpServletResponse response);
+}

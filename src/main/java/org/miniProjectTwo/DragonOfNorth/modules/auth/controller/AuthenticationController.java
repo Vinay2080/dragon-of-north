@@ -11,9 +11,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusF
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.MfaServices;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.*;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +29,9 @@ public class AuthenticationController implements AuthenticationApi {
 
     private final AuthenticationServiceResolver resolver;
     private final AuthCommonServices authCommonServices;
-    private final MfaServices mfaServices;
+    private final PasswordService passwordService;
+    private final MfaService mfaService;
+    private final PasswordlessLoginService passwordlessLoginService;
 
     @Override
     @GetMapping("/csrf")
@@ -99,7 +99,7 @@ public class AuthenticationController implements AuthenticationApi {
     public ResponseEntity<ApiResponse<?>> requestPasswordResetOtp(
             @RequestBody @Valid PasswordResetRequestOtpRequest request
     ) {
-        authCommonServices.requestPasswordResetOtp(request.identifier(), request.identifierType());
+        passwordService.requestPasswordResetOtp(request.identifier(), request.identifierType());
         return ResponseEntity.ok(successMessage("If an account exists, you’ll receive reset instructions."));
     }
 
@@ -108,7 +108,7 @@ public class AuthenticationController implements AuthenticationApi {
     public ResponseEntity<ApiResponse<?>> resetPassword(
             @RequestBody @Valid PasswordResetConfirmRequest request
     ) {
-        authCommonServices.resetPassword(request);
+        passwordService.resetPassword(request);
         return ResponseEntity.ok(successMessage("password reset successful"));
     }
 
@@ -129,7 +129,7 @@ public class AuthenticationController implements AuthenticationApi {
     public ResponseEntity<ApiResponse<?>> changePassword(
             @RequestBody @Valid PasswordChangeRequest request
     ) {
-        authCommonServices.changePassword(request);
+        passwordService.changePassword(request);
         return ResponseEntity.ok(successMessage("password change successful"));
     }
 
@@ -149,7 +149,7 @@ public class AuthenticationController implements AuthenticationApi {
     @PostMapping({"/passwordless/request", "/login/passwordless/request"})
     public ResponseEntity<ApiResponse<?>> requestPasswordlessLogin(
             @RequestBody @Valid RequestPasswordlessLoginDto passwordlessLoginDto) {
-        authCommonServices.requestPasswordlessLogin(passwordlessLoginDto.email());
+        passwordlessLoginService.requestPasswordlessLogin(passwordlessLoginDto.email());
         return ResponseEntity.ok(successMessage("Passwordless login link sent if the email is registered"));
     }
 
@@ -161,7 +161,7 @@ public class AuthenticationController implements AuthenticationApi {
             HttpServletResponse response) {
 
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, verifyPasswordlessLoginDto.deviceId());
-        authCommonServices.verifyPasswordlessLogin(verifyPasswordlessLoginDto.token(), context, response);
+        passwordlessLoginService.verifyPasswordlessLogin(verifyPasswordlessLoginDto.token(), context, response);
         return ResponseEntity.ok(successMessage("Passwordless login successful"));
     }
 
@@ -171,7 +171,7 @@ public class AuthenticationController implements AuthenticationApi {
             HttpServletRequest request,
             @RequestBody @Valid DeviceIdRequest deviceIdRequest) {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, deviceIdRequest.deviceId());
-        MfaSetupResponse mfaSetupResponse = mfaServices.requestMfaSetup(context);
+        MfaSetupResponse mfaSetupResponse = mfaService.requestMfaSetup(context);
         return ResponseEntity.ok(success(mfaSetupResponse));
     }
 
@@ -181,7 +181,7 @@ public class AuthenticationController implements AuthenticationApi {
             HttpServletRequest request,
             @RequestBody @Valid MfaSetupConfirmRequest mfaSetupConfirmRequest) {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, mfaSetupConfirmRequest.deviceId());
-        MfaSetupConfirmResponse codes = mfaServices.confirmMfaSetup(context, mfaSetupConfirmRequest.code());
+        MfaSetupConfirmResponse codes = mfaService.confirmMfaSetup(context, mfaSetupConfirmRequest.code());
         return ResponseEntity.ok(success(codes));
     }
 

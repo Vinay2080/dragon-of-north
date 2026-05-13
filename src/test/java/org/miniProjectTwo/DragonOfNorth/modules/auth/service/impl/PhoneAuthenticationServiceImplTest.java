@@ -9,6 +9,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusF
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.PasswordService;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
@@ -23,7 +24,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.util.List;
@@ -43,7 +43,7 @@ class PhoneAuthenticationServiceImplTest {
     private AppUserRepository appUserRepository;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private PasswordService passwordService;
 
     @Mock
     private AuthCommonServices authCommonServices;
@@ -149,7 +149,7 @@ class PhoneAuthenticationServiceImplTest {
         appUser.setAppUserStatus(ACTIVE);
         appUser.setId(java.util.UUID.randomUUID());
 
-        when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
+        when(passwordService.encodePassword(request.password())).thenReturn("encodedPassword");
         when(appUserRepository.save(any(AppUser.class))).thenReturn(appUser);
         when(appUserRepository.findByPhone(request.identifier())).thenReturn(Optional.of(appUser));
         when(appUserRepository.findByPhoneForUpdate(request.identifier())).thenReturn(Optional.empty());
@@ -163,7 +163,7 @@ class PhoneAuthenticationServiceImplTest {
         assertEquals(ACTIVE, response.appUserStatus(), "user status should be ACTIVE");
 
         //verify
-        verify(passwordEncoder).encode(request.password());
+        verify(passwordService).encodePassword(request.password());
 
         // user ArgumentCaptor when the data/Object that is passed needs to be varified.
         // the object is created in the current method.

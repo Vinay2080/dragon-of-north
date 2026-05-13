@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.GoogleTokenVerifierService;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
@@ -51,7 +52,7 @@ class OAuthServiceImplTest {
     @Mock
     private RoleRepository roleRepository;
     @Mock
-    private AuthCommonServiceImpl authCommonServiceImpl;
+    private AuthCommonServices authCommonServices;
     @Mock
     private ProfileService profileService;
     @Mock
@@ -89,8 +90,8 @@ class OAuthServiceImplTest {
         when(appUserRepository.save(any(AppUser.class))).thenReturn(newUser);
         when(jwtServices.generateAccessToken(eq(newUser.getId()), anySet())).thenReturn("access");
         when(jwtServices.generateRefreshToken(newUser.getId())).thenReturn("refresh");
-        doNothing().when(authCommonServiceImpl).setAccessToken(any(HttpServletResponse.class), anyString());
-        doNothing().when(authCommonServiceImpl).setRefreshToken(any(HttpServletResponse.class), anyString());
+        doNothing().when(authCommonServices).setAccessToken(any(HttpServletResponse.class), anyString());
+        doNothing().when(authCommonServices).setRefreshToken(any(HttpServletResponse.class), anyString());
 
         oAuthService.authenticatedWithGoogle("token", "device-1", null, request, response);
 
@@ -99,8 +100,8 @@ class OAuthServiceImplTest {
         verify(profileService).ensureProfileExists(newUser.getId(), userInfo);
         verify(profileService).syncGoogleAvatar(newUser.getId(), userInfo);
         verify(sessionService).createSession(eq(newUser), eq("refresh"), any(), eq("device-1"), any());
-        verify(authCommonServiceImpl).setAccessToken(response, "access");
-        verify(authCommonServiceImpl).setRefreshToken(response, "refresh");
+        verify(authCommonServices).setAccessToken(response, "access");
+        verify(authCommonServices).setRefreshToken(response, "refresh");
     }
 
     @Test
@@ -125,8 +126,8 @@ class OAuthServiceImplTest {
         when(userAuthProviderRepository.existsByUserIdAndProvider(existingUser.getId(), Provider.GOOGLE)).thenReturn(false);
         when(jwtServices.generateAccessToken(eq(existingUser.getId()), anySet())).thenReturn("access");
         when(jwtServices.generateRefreshToken(existingUser.getId())).thenReturn("refresh");
-        doNothing().when(authCommonServiceImpl).setAccessToken(any(HttpServletResponse.class), anyString());
-        doNothing().when(authCommonServiceImpl).setRefreshToken(any(HttpServletResponse.class), anyString());
+        doNothing().when(authCommonServices).setAccessToken(any(HttpServletResponse.class), anyString());
+        doNothing().when(authCommonServices).setRefreshToken(any(HttpServletResponse.class), anyString());
 
         oAuthService.authenticatedWithGoogle("token", "device-2", "existing@example.com", request, response);
 
@@ -135,8 +136,8 @@ class OAuthServiceImplTest {
         verify(userStateValidator, times(2)).validate(existingUser, UserLifecycleOperation.GOOGLE_LOGIN);
         verify(profileService, never()).ensureProfileExists(any(UUID.class), any());
         verify(profileService).syncGoogleAvatar(existingUser.getId(), userInfo);
-        verify(authCommonServiceImpl).setAccessToken(response, "access");
-        verify(authCommonServiceImpl).setRefreshToken(response, "refresh");
+        verify(authCommonServices).setAccessToken(response, "access");
+        verify(authCommonServices).setRefreshToken(response, "refresh");
 
         UserAuthProvider provider = authProviderCaptor.getValue();
         assertEquals(Provider.GOOGLE, provider.getProvider());

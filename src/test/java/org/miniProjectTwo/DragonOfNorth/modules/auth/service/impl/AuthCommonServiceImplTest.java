@@ -7,9 +7,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordChangeRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
-import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
@@ -25,19 +23,14 @@ import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
-import org.miniProjectTwo.DragonOfNorth.shared.util.TokenHasher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.env.Environment;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -69,9 +62,6 @@ class AuthCommonServiceImplTest {
     private SessionService sessionService;
 
     @Mock
-    private OtpService otpService;
-
-    @Mock
     private MeterRegistry meterRegistry;
 
     @Mock
@@ -81,9 +71,6 @@ class AuthCommonServiceImplTest {
     private UserAuthProviderRepository userAuthProviderRepository;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @Mock
     private AuditEventLogger auditEventLogger;
 
     @Mock
@@ -91,21 +78,6 @@ class AuthCommonServiceImplTest {
 
     @Mock
     private ProfileService profileService;
-
-    @Mock
-    private TokenHasher tokenHasher;
-
-    @Mock
-    private StringRedisTemplate redisTemplate;
-
-    @Mock
-    private ValueOperations<String, String> valueOperations;
-
-    @Mock
-    private PasswordlessLoginEmailSender passwordlessLoginEmailSender;
-
-    @Mock
-    private Environment environment;
 
     @AfterEach
     void clearSecurityContext() {
@@ -237,77 +209,6 @@ class AuthCommonServiceImplTest {
         ));
     }
 
-    @Test
-    void changePassword_shouldRejectGoogleOnlyAccounts() {
-        UUID userId = UUID.randomUUID();
-        AppUser user = new AppUser();
-        user.setId(userId);
-        user.setPassword("encoded-password");
-
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, Set.of()));
-        SecurityContextHolder.setContext(context);
-
-        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(userAuthProviderRepository.existsByUserIdAndProvider(userId, Provider.LOCAL)).thenReturn(false);
-
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> authCommonService.changePassword(new PasswordChangeRequest("Old@12345", "New@12345")));
-
-        assertEquals(ErrorCode.PASSWORD_CHANGE_NOT_ALLOWED, exception.getErrorCode());
-        assertEquals("Password change not allowed for Google accounts", exception.getMessage());
-        verify(passwordEncoder, never()).matches(anyString(), anyString());
-        verify(appUserRepository, never()).save(any());
-        verify(sessionService, never()).revokeAllSessionsByUserId(any());
-    }
-
-    @Test
-    void changePassword_shouldRejectIncorrectCurrentPassword() {
-        UUID userId = UUID.randomUUID();
-        AppUser user = new AppUser();
-        user.setId(userId);
-        user.setPassword("encoded-password");
-
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, Set.of()));
-        SecurityContextHolder.setContext(context);
-
-        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(userAuthProviderRepository.existsByUserIdAndProvider(userId, Provider.LOCAL)).thenReturn(true);
-        when(passwordEncoder.matches("Wrong@123", "encoded-password")).thenReturn(false);
-
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> authCommonService.changePassword(new PasswordChangeRequest("Wrong@123", "New@12345")));
-
-        assertEquals(ErrorCode.INVALID_CURRENT_PASSWORD, exception.getErrorCode());
-        assertEquals("Current password is incorrect", exception.getMessage());
-        verify(appUserRepository, never()).save(any());
-        verify(sessionService, never()).revokeAllSessionsByUserId(any());
-    }
-
-    @Test
-    void changePassword_shouldRejectSamePasswordAsCurrentPassword() {
-        UUID userId = UUID.randomUUID();
-        AppUser user = new AppUser();
-        user.setId(userId);
-        user.setPassword("encoded-password");
-
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, Set.of()));
-        SecurityContextHolder.setContext(context);
-
-        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(userAuthProviderRepository.existsByUserIdAndProvider(userId, Provider.LOCAL)).thenReturn(true);
-        when(passwordEncoder.matches("Same@1234", "encoded-password")).thenReturn(true);
-
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> authCommonService.changePassword(new PasswordChangeRequest("Same@1234", "Same@1234")));
-
-        assertEquals(ErrorCode.SAME_PASSWORD, exception.getErrorCode());
-        assertEquals("New password must be different from current password", exception.getMessage());
-        verify(appUserRepository, never()).save(any());
-        verify(sessionService, never()).revokeAllSessionsByUserId(any());
-    }
 
     @Test
     void refreshToken_shouldValidateUserStateBeforeRotation() {
@@ -402,38 +303,4 @@ class AuthCommonServiceImplTest {
         verify(profileService, never()).deleteProfileImage(any());
     }
 
-    @Test
-    void verifyPasswordlessLogin_shouldHashRawTokenBeforeRedisLookupAndConsumeToken() {
-        UUID userId = UUID.randomUUID();
-        AppUser user = new AppUser();
-        user.setId(userId);
-        user.setEmail("user@example.com");
-        user.setEmailVerified(true);
-        user.setRoles(Set.of());
-
-        HttpServletResponse response = mock(HttpServletResponse.class);
-        Counter successCounter = mock(Counter.class);
-        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
-
-        String rawToken = "raw-passwordless-token";
-        String tokenHash = "hashed-passwordless-token";
-        String tokenKey = "auth:passwordless:token:" + tokenHash;
-        String userKey = "auth:passwordless:user:" + userId;
-
-        when(tokenHasher.hashToken(rawToken)).thenReturn(tokenHash);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get(tokenKey)).thenReturn(userId.toString());
-        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(jwtServices.generateAccessToken(userId, user.getRoles())).thenReturn("access");
-        when(jwtServices.generateRefreshToken(userId)).thenReturn("refresh");
-        when(meterRegistry.counter(anyString())).thenReturn(successCounter);
-
-        authCommonService.verifyPasswordlessLogin(rawToken, context, response);
-
-        verify(valueOperations).get(tokenKey);
-        verify(redisTemplate).delete(tokenKey);
-        verify(redisTemplate).delete(userKey);
-        verify(sessionService).createSession(user, "refresh", "127.0.0.1", "device-1", "JUnit");
-        verify(auditEventLogger).log("auth.login", userId, "device-1", "127.0.0.1", "success", null, "req-1");
-    }
 }

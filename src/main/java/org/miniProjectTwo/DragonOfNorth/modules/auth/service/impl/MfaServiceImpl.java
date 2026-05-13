@@ -20,7 +20,8 @@ import org.hibernate.validator.constraints.Length;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.MfaServices;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.MfaService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
@@ -41,10 +42,10 @@ import static dev.samstevens.totp.code.HashingAlgorithm.SHA1;
 @RequiredArgsConstructor
 @Slf4j
 
-public class MfaServiceImpl implements MfaServices {
+public class MfaServiceImpl implements MfaService {
     private static final String MFA_SETUP_KEY_PREFIX = "auth:mfa:setup";
 
-    private final AuthCommonServiceImpl authCommonServicesImpl;
+    private final AuthCommonServices authCommonServices;
     private final UserStateValidator userStateValidator;
     private final MeterRegistry meterRegistry;
     private final AppUserRepository appUserRepository;
@@ -53,7 +54,7 @@ public class MfaServiceImpl implements MfaServices {
 
     @Override
     public MfaSetupResponse requestMfaSetup(AuthRequestContext context) {
-        AppUser appUser = authCommonServicesImpl.findAuthenticatedUser();
+        AppUser appUser = authCommonServices.findAuthenticatedUser();
         userStateValidator.validate(appUser, UserLifecycleOperation.MFA_SETUP_REQUEST);
 
         if (appUser.isMfaEnabled()) {
@@ -72,7 +73,7 @@ public class MfaServiceImpl implements MfaServices {
 
     @Override
     public MfaSetupConfirmResponse confirmMfaSetup(AuthRequestContext context, @NotNull @Length String code) {
-        AppUser appUser = authCommonServicesImpl.findAuthenticatedUser();
+        AppUser appUser = authCommonServices.findAuthenticatedUser();
         userStateValidator.validate(appUser, UserLifecycleOperation.MFA_SETUP_CONFIRM);
 
         if (appUser.isMfaEnabled()) {

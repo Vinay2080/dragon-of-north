@@ -9,9 +9,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusF
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.MfaServices;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.*;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
@@ -53,7 +51,13 @@ class AuthenticationControllerTest {
     private AuthCommonServices authCommonServices;
 
     @Mock
-    private MfaServices mfaServices;
+    private PasswordService passwordService;
+
+    @Mock
+    private MfaService mfaService;
+
+    @Mock
+    private PasswordlessLoginService passwordlessLoginService;
 
     @BeforeEach
     void setUp() {
@@ -116,7 +120,7 @@ class AuthenticationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"));
 
-        verify(authCommonServices).requestPasswordResetOtp("test@example.com", IdentifierType.EMAIL);
+        verify(passwordService).requestPasswordResetOtp("test@example.com", IdentifierType.EMAIL);
     }
 
     @Test
@@ -134,7 +138,7 @@ class AuthenticationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"));
 
-        verify(authCommonServices).resetPassword(request);
+        verify(passwordService).resetPassword(request);
     }
 
     @Test
@@ -152,7 +156,7 @@ class AuthenticationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"));
 
-        verify(authCommonServices).changePassword(new PasswordChangeRequest("OldPass@123", "NewPass@123"));
+        verify(passwordService).changePassword(new PasswordChangeRequest("OldPass@123", "NewPass@123"));
     }
 
     @Test
@@ -170,7 +174,7 @@ class AuthenticationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"));
 
-        verify(authCommonServices).changePassword(new PasswordChangeRequest("OldPass@123", "NewPass@123"));
+        verify(passwordService).changePassword(new PasswordChangeRequest("OldPass@123", "NewPass@123"));
     }
 
     @Test
@@ -218,7 +222,7 @@ class AuthenticationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"));
 
-        verify(authCommonServices).verifyPasswordlessLogin(
+        verify(passwordlessLoginService).verifyPasswordlessLogin(
                 eq("raw-token"),
                 argThat(context -> "device-1".equals(context.deviceId())),
                 any()
@@ -240,7 +244,7 @@ class AuthenticationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"));
 
-        verify(authCommonServices).verifyPasswordlessLogin(
+        verify(passwordlessLoginService).verifyPasswordlessLogin(
                 eq("raw-token"),
                 argThat(context -> "device-1".equals(context.deviceId())),
                 any()
@@ -262,14 +266,14 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.apiResponseStatus").value("failed"))
                 .andExpect(jsonPath("$.data.code").value("VAL_001"));
 
-        verify(authCommonServices, never()).verifyPasswordlessLogin(anyString(), any(), any());
+        verify(passwordlessLoginService, never()).verifyPasswordlessLogin(anyString(), any(), any());
     }
 
     @Test
     void requestMfaSetup_shouldReturnOk_whenRequestIsValid() throws Exception {
         // arrange
         DeviceIdRequest request = new DeviceIdRequest("device-1");
-        when(mfaServices.requestMfaSetup(any(AuthRequestContext.class)))
+        when(mfaService.requestMfaSetup(any(AuthRequestContext.class)))
                 .thenReturn(new MfaSetupResponse("secret-123", "data:image/png;base64,AAAA"));
 
         // act + assert
@@ -281,13 +285,13 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.data.mfaSecret").value("secret-123"))
                 .andExpect(jsonPath("$.data.mfaQrCode").value("data:image/png;base64,AAAA"));
 
-        verify(mfaServices).requestMfaSetup(argThat(context -> "device-1".equals(context.deviceId())));
+        verify(mfaService).requestMfaSetup(argThat(context -> "device-1".equals(context.deviceId())));
     }
 
     @Test
     void requestMfaSetup_shouldAcceptSnakeCaseDeviceId() throws Exception {
         // arrange
-        when(mfaServices.requestMfaSetup(any(AuthRequestContext.class)))
+        when(mfaService.requestMfaSetup(any(AuthRequestContext.class)))
                 .thenReturn(new MfaSetupResponse("secret-123", "data:image/png;base64,AAAA"));
 
         String payload = """
@@ -303,14 +307,14 @@ class AuthenticationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"));
 
-        verify(mfaServices).requestMfaSetup(argThat(context -> "device-1".equals(context.deviceId())));
+        verify(mfaService).requestMfaSetup(argThat(context -> "device-1".equals(context.deviceId())));
     }
 
     @Test
     void confirmMfaSetup_shouldReturnOk_whenRequestIsValid() throws Exception {
         // arrange
         MfaSetupConfirmRequest request = new MfaSetupConfirmRequest("123456", "device-1");
-        when(mfaServices.confirmMfaSetup(any(AuthRequestContext.class), eq("123456")))
+        when(mfaService.confirmMfaSetup(any(AuthRequestContext.class), eq("123456")))
                 .thenReturn(new MfaSetupConfirmResponse(new String[]{"code-1", "code-2"}));
 
         // act + assert
@@ -322,7 +326,7 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.data.backupCodes[0]").value("code-1"))
                 .andExpect(jsonPath("$.data.backupCodes[1]").value("code-2"));
 
-        verify(mfaServices).confirmMfaSetup(
+        verify(mfaService).confirmMfaSetup(
                 argThat(context -> "device-1".equals(context.deviceId())),
                 eq("123456")
         );
@@ -331,7 +335,7 @@ class AuthenticationControllerTest {
     @Test
     void confirmMfaSetup_shouldAcceptOtpAliasAndSnakeCaseDeviceId() throws Exception {
         // arrange
-        when(mfaServices.confirmMfaSetup(any(AuthRequestContext.class), eq("123456")))
+        when(mfaService.confirmMfaSetup(any(AuthRequestContext.class), eq("123456")))
                 .thenReturn(new MfaSetupConfirmResponse(new String[]{"code-1"}));
 
         String payload = """
@@ -349,7 +353,7 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"))
                 .andExpect(jsonPath("$.data.backupCodes[0]").value("code-1"));
 
-        verify(mfaServices).confirmMfaSetup(
+        verify(mfaService).confirmMfaSetup(
                 argThat(context -> "device-1".equals(context.deviceId())),
                 eq("123456")
         );
@@ -370,7 +374,7 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.apiResponseStatus").value("failed"))
                 .andExpect(jsonPath("$.data.code").value("VAL_001"));
 
-        verify(mfaServices, never()).confirmMfaSetup(any(AuthRequestContext.class), anyString());
+        verify(mfaService, never()).confirmMfaSetup(any(AuthRequestContext.class), anyString());
     }
 
 }

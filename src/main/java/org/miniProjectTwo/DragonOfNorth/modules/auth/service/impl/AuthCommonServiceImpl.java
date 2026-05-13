@@ -6,11 +6,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordChangeRequest;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordResetConfirmRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
-import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -18,27 +15,24 @@ import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.security.service.impl.JwtServicesImpl;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.*;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.UserLifecycleOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
-import org.miniProjectTwo.DragonOfNorth.shared.util.TokenHasher;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
-import java.time.Duration;
-import java.util.Base64;
 import java.util.Set;
 import java.util.UUID;
 
@@ -54,30 +48,15 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
 @Slf4j
 public class AuthCommonServiceImpl implements AuthCommonServices {
 
-    private static final String PASSWORDLESS_TOKEN_KEY_PREFIX = "auth:passwordless:token:";
-    private static final String PASSWORDLESS_USER_KEY_PREFIX = "auth:passwordless:user:";
-
     private final AuthenticationManager authenticationManager;
     private final JwtServices jwtServices;
     private final RoleRepository roleRepository;
     private final SessionService sessionService;
-    private final OtpService otpService;
     private final MeterRegistry meterRegistry;
     private final AppUserRepository appUserRepository;
     private final UserAuthProviderRepository userAuthProviderRepository;
-    private final PasswordEncoder passwordEncoder;
     private final AuditEventLogger auditEventLogger;
     private final UserStateValidator userStateValidator;
-    private final TokenHasher tokenHasher;
-    private final StringRedisTemplate redisTemplate;
-    private final PasswordlessLoginEmailSender passwordlessLoginEmailSender;
-
-    @Value("${auth.passwordless.ttl-minutes:10}")
-    private long passwordlessTtlMinutes;
-
-    @Value("${auth.passwordless.frontend-base-url}")
-    private String passwordlessFrontendBaseUrl;
-
     @Value("${app.security.cookie.secure:false}")
     private boolean cookieSecure;
 
@@ -155,44 +134,6 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     }
 
     @Override
-    public void requestPasswordResetOtp(String identifier, IdentifierType identifierType) {
-        AppUser user = findLocalUserForPasswordReset(identifier, identifierType);
-        userStateValidator.validate(user, UserLifecycleOperation.PASSWORD_RESET_REQUEST);
-        createPasswordResetOtp(identifier, identifierType);
-        recordPasswordResetRequestSuccess(user.getId(), identifierType);
-    }
-
-    @Override
-    @Transactional
-    public void resetPassword(PasswordResetConfirmRequest request) {
-        verifyPasswordResetOtp(request);
-
-        AppUser appUser = findUserByIdentifier(request.identifier(), request.identifierType());
-        userStateValidator.validate(appUser, UserLifecycleOperation.PASSWORD_RESET_CONFIRM);
-        ensureLocalPasswordResetAllowed(appUser);
-        updatePassword(appUser, request.newPassword());
-        sessionService.revokeAllSessionsByUserId(appUser.getId());
-
-        recordPasswordResetSuccess(appUser.getId(), request.identifierType());
-    }
-
-    @Override
-    @Transactional
-    public void changePassword(PasswordChangeRequest request) {
-        AppUser appUser = findAuthenticatedUser();
-
-        userStateValidator.validate(appUser, UserLifecycleOperation.PASSWORD_CHANGE);
-        ensureLocalPasswordChangeAllowed(appUser);
-        ensureOldPasswordMatches(request.oldPassword(), appUser);
-        ensureNewPasswordIsDifferent(request.oldPassword(), request.newPassword());
-        updatePassword(appUser, request.newPassword());
-        appUserRepository.save(appUser);
-        sessionService.revokeAllSessionsByUserId(appUser.getId());
-
-        recordPasswordChangeSuccess(appUser.getId());
-    }
-
-    @Override
     @Transactional
     public void deleteAccount(HttpServletResponse response, AuthRequestContext context) {
         AppUser appUser = findAuthenticatedUser();
@@ -203,87 +144,12 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         clearAuthCookies(response);
         recordAccountDeletionSuccess(appUser.getId(), context);
     }
-
-    @Override
-    public void requestPasswordlessLogin(String email) {
-
-        appUserRepository.findByEmail(email).ifPresent(
-                appUser -> {
-                    userStateValidator.validate(appUser, UserLifecycleOperation.PASSWORDLESS_LOGIN_REQUEST);
-
-                    String token = createToken();
-                    String tokenHash = tokenHasher.hashToken(token);
-
-                    storePasswordlessToken(appUser.getId(), tokenHash);
-                    String link = buildPasswordlessLoginLink(token);
-                    passwordlessLoginEmailSender.send(appUser.getEmail(), link, passwordlessTtlMinutes);
-                });
-    }
-
-    @Override
-    public void verifyPasswordlessLogin(String token, AuthRequestContext context, HttpServletResponse response) {
-        AppUser appUser = verifyPasswordlessToken(token);
-        userStateValidator.validate(appUser, UserLifecycleOperation.PASSWORDLESS_LOGIN_VERIFY);
-//        ensurePasswordlessProvider(appUser);
-        ensureIdentifierVerified(appUser, appUser.getEmail());
-
-        LoginTokens loginTokens = generateLoginTokens(appUser);
-        persistLoginSession(appUser, loginTokens.refreshToken(), context);
-        writeAuthCookies(response, loginTokens);
-
-        recordLoginSuccess(appUser.getId(), context);
-    }
-
-
-    private AppUser verifyPasswordlessToken(String token) {
-        String tokenHash = tokenHasher.hashToken(token);
-        String tokenKey = PASSWORDLESS_TOKEN_KEY_PREFIX + tokenHash;
-
-        String userIdStr = redisTemplate.opsForValue().get(tokenKey);
-        if (userIdStr == null) {
-            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Invalid or expired token");
-        }
-
-        redisTemplate.delete(tokenKey);
-        redisTemplate.delete(PASSWORDLESS_USER_KEY_PREFIX + userIdStr);
-        return appUserRepository.findById(UUID.fromString(userIdStr))
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-    }
-
-    private String createToken() {
-        SecureRandom random = new SecureRandom();
-        byte[] bytes = new byte[32];
-        random.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    }
-
-    private void storePasswordlessToken(UUID userId, String tokenHash) {
-        String tokenKey = PASSWORDLESS_TOKEN_KEY_PREFIX + tokenHash;
-        String userKey = PASSWORDLESS_USER_KEY_PREFIX + userId;
-
-        // Ensure only one active passwordless token per user (latest wins).
-        String previousTokenHash = redisTemplate.opsForValue().get(userKey);
-        if (previousTokenHash != null && !previousTokenHash.isBlank()) {
-            redisTemplate.delete(PASSWORDLESS_TOKEN_KEY_PREFIX + previousTokenHash);
-        }
-
-        Duration ttl = Duration.ofMinutes(passwordlessTtlMinutes);
-        redisTemplate.opsForValue().set(tokenKey, userId.toString(), ttl);
-        redisTemplate.opsForValue().set(userKey, tokenHash, ttl);
-    }
-
-    private String buildPasswordlessLoginLink(String token) {
-        String baseUrl = passwordlessFrontendBaseUrl.endsWith("/")
-                ? passwordlessFrontendBaseUrl.substring(0, passwordlessFrontendBaseUrl.length() - 1)
-                : passwordlessFrontendBaseUrl;
-        return String.format("%s/login/passwordless/verify?token=%s", baseUrl, token);
-    }
-
     private void recordAccountDeletionSuccess(UUID userId, AuthRequestContext context) {
         meterRegistry.counter("auth.account_delete.success").increment();
         auditEventLogger.log("auth.account_delete", userId, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
     }
 
+    @Override
     public AppUser findAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getPrincipal() == null) {
@@ -295,27 +161,13 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
-    private void ensureLocalPasswordChangeAllowed(AppUser appUser) {
-        if (!userAuthProviderRepository.existsByUserIdAndProvider(appUser.getId(), LOCAL)) {
-            throw new BusinessException(ErrorCode.PASSWORD_CHANGE_NOT_ALLOWED);
-        }
-    }
-
-    private void ensureOldPasswordMatches(String oldPassword, AppUser appUser) {
-        if (!passwordEncoder.matches(oldPassword, appUser.getPassword())) {
-            throw new BusinessException(ErrorCode.INVALID_CURRENT_PASSWORD, "Current password is incorrect");
-        }
-    }
-
-    private void ensureNewPasswordIsDifferent(String oldPassword, String newPassword) {
-        if (oldPassword != null && oldPassword.equals(newPassword)) {
-            throw new BusinessException(ErrorCode.SAME_PASSWORD, "New password must be different from current password");
-        }
-    }
-
-    private void recordPasswordChangeSuccess(UUID userId) {
-        meterRegistry.counter("auth.password_change.success").increment();
-        auditEventLogger.log("auth.password_change", userId, null, null, "success", null, null);
+    @Override
+    public void completeLogin(AppUser appUser, String identifier, HttpServletResponse response, AuthRequestContext context) {
+        ensureIdentifierVerified(appUser, identifier);
+        LoginTokens loginTokens = generateLoginTokens(appUser);
+        persistLoginSession(appUser, loginTokens.refreshToken(), context);
+        writeAuthCookies(response, loginTokens);
+        recordLoginSuccess(appUser.getId(), context);
     }
 
     private UUID resolveAuthenticatedUserId(Object principal) {
@@ -335,74 +187,6 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         }
     }
 
-    private void verifyPasswordResetOtp(PasswordResetConfirmRequest request) {
-        OtpVerificationStatus status = request.identifierType() == IdentifierType.EMAIL
-                ? otpService.verifyEmailOtp(request.identifier(), request.otp(), OtpPurpose.PASSWORD_RESET)
-                : otpService.verifyPhoneOtp(request.identifier(), request.otp(), OtpPurpose.PASSWORD_RESET);
-
-        if (!status.isSuccess()) {
-            recordPasswordResetFailure(status.getMessage());
-            throw new BusinessException(ErrorCode.INVALID_INPUT, status.getMessage());
-        }
-    }
-
-    private AppUser findUserByIdentifier(String identifier, IdentifierType identifierType) {
-        String normalizedIdentifier = IdentifierNormalizer.normalize(identifier, identifierType);
-        return identifierType == IdentifierType.EMAIL
-                ? appUserRepository.findByEmail(normalizedIdentifier)
-                  .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND))
-                : appUserRepository.findByPhone(normalizedIdentifier)
-                  .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-    }
-
-    private void ensureLocalPasswordResetAllowed(AppUser appUser) {
-        if (!userAuthProviderRepository.existsByUserIdAndProvider(appUser.getId(), LOCAL)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "Password reset is available only for password-based accounts.");
-        }
-    }
-
-    private void updatePassword(AppUser appUser, String newPassword) {
-        appUser.setPassword(passwordEncoder.encode(newPassword));
-    }
-
-    private void recordPasswordResetSuccess(UUID userId, IdentifierType identifierType) {
-        meterRegistry.counter("auth.password_reset.success").increment();
-        auditEventLogger.log("auth.password_reset.confirm", userId, null, null, "success", "identifier_type=" + identifierType, null);
-    }
-
-    private void recordPasswordResetFailure(String message) {
-        meterRegistry.counter("auth.password_reset.failure").increment();
-        auditEventLogger.log("auth.password_reset.confirm", null, null, null, "failure", message, null);
-    }
-
-    private AppUser findLocalUserForPasswordReset(String identifier, IdentifierType identifierType) {
-        AppUser user = findUserByIdentifierOrNull(identifier, identifierType);
-        if (user == null || !userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), LOCAL)) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "No user found with the provided identifier for password reset");
-        }
-        return user;
-    }
-
-    private void createPasswordResetOtp(String identifier, IdentifierType identifierType) {
-        String normalizedIdentifier = IdentifierNormalizer.normalize(identifier, identifierType);
-        if (identifierType == IdentifierType.EMAIL) {
-            otpService.createEmailOtp(normalizedIdentifier, OtpPurpose.PASSWORD_RESET);
-            return;
-        }
-        otpService.createPhoneOtp(normalizedIdentifier, OtpPurpose.PASSWORD_RESET);
-    }
-
-    private void recordPasswordResetRequestSuccess(UUID userId, IdentifierType identifierType) {
-        meterRegistry.counter("auth.password_reset.requested").increment();
-        auditEventLogger.log("auth.password_reset.request", userId, null, null, "success", "identifier_type=" + identifierType, null);
-    }
-
-    private AppUser findUserByIdentifierOrNull(String identifier, IdentifierType identifierType) {
-        String normalizedIdentifier = IdentifierNormalizer.normalize(identifier, identifierType);
-        return identifierType == IdentifierType.EMAIL
-                ? appUserRepository.findByEmail(normalizedIdentifier).orElse(null)
-                : appUserRepository.findByPhone(normalizedIdentifier).orElse(null);
-    }
 
     private void validateLogoutRequest(String refreshToken, AuthRequestContext context) {
         if (refreshToken == null || refreshToken.isEmpty()) {
@@ -507,7 +291,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         return appUserDetails.getAppUser();
     }
 
-    private void ensureIdentifierVerified(AppUser user, String identifier) {
+    public void ensureIdentifierVerified(AppUser user, String identifier) {
         if (identifier.contains("@") && !user.isEmailVerified()) {
             throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED, "Email not verified. Please verify your email before logging in.");
         }
@@ -525,22 +309,22 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
                 : IdentifierNormalizer.normalizePhone(identifier);
     }
 
-    private LoginTokens generateLoginTokens(AppUser appUser) {
+    public LoginTokens generateLoginTokens(AppUser appUser) {
         String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
         String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
         return new LoginTokens(accessToken, refreshToken);
     }
 
-    private void persistLoginSession(AppUser appUser, String refreshToken, AuthRequestContext context) {
+    public void persistLoginSession(AppUser appUser, String refreshToken, AuthRequestContext context) {
         sessionService.createSession(appUser, refreshToken, context.ipAddress(), context.deviceId(), context.userAgent());
     }
 
-    private void writeAuthCookies(HttpServletResponse response, LoginTokens loginTokens) {
+    public void writeAuthCookies(HttpServletResponse response, LoginTokens loginTokens) {
         setAccessToken(response, loginTokens.accessToken());
         setRefreshToken(response, loginTokens.refreshToken());
     }
 
-    private void recordLoginSuccess(UUID userId, AuthRequestContext context) {
+    public void recordLoginSuccess(UUID userId, AuthRequestContext context) {
         meterRegistry.counter("auth.login.success").increment();
         auditEventLogger.log("auth.login", userId, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
     }
@@ -590,7 +374,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         response.addCookie(refreshCookie);
     }
 
-    private record LoginTokens(String accessToken, String refreshToken) {
+    public record LoginTokens(String accessToken, String refreshToken) {
     }
 
     private record TokenRefreshData(UUID userId, String accessToken, String refreshToken) {

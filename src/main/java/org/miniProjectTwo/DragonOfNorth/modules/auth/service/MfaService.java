@@ -6,7 +6,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestCont
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
 
-public interface MfaServices {
+public interface MfaService {
 
     MfaSetupResponse requestMfaSetup(AuthRequestContext context);
 

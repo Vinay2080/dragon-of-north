@@ -1,15 +1,9 @@
 package org.miniProjectTwo.DragonOfNorth.modules.auth.service;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordChangeRequest;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordResetConfirmRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 
 /**
  * Shared authentication operations used across identifier strategies.
@@ -42,27 +36,27 @@ public interface AuthCommonServices {
     void logoutUser(String refreshToken, HttpServletResponse response, AuthRequestContext context);
 
     /**
-     * Starts password-reset OTP flow for the provided identifier.
-     */
-    void requestPasswordResetOtp(String identifier, IdentifierType identifierType);
-
-    /**
-     * Confirms password reset with OTP verification.
-     */
-    void resetPassword(PasswordResetConfirmRequest request);
-
-    /**
-     * Changes password for the authenticated user.
-     */
-    void changePassword(@Valid PasswordChangeRequest request);
-
-    /**
      * Soft deletes the authenticated account, revokes sessions, and clears auth cookies.
      */
     void deleteAccount(HttpServletResponse response, AuthRequestContext context);
 
-    void requestPasswordlessLogin(@NotBlank @Email String email);
+    /**
+     * Returns the currently authenticated user.
+     */
+    AppUser findAuthenticatedUser();
 
-    void verifyPasswordlessLogin(String token, AuthRequestContext context, HttpServletResponse response);
+    /**
+     * Ensures identifier verification and completes session+cookie login issuance.
+     */
+    void completeLogin(AppUser appUser, String identifier, HttpServletResponse response, AuthRequestContext context);
 
+    /**
+     * Writes the access-token cookie.
+     */
+    void setAccessToken(HttpServletResponse response, String token);
+
+    /**
+     * Writes the refresh-token cookie.
+     */
+    void setRefreshToken(HttpServletResponse response, String token);
 }

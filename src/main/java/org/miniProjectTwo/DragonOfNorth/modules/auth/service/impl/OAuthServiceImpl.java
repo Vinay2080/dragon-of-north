@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.GoogleTokenVerifierService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.OAuthService;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
@@ -41,7 +42,7 @@ public class OAuthServiceImpl implements OAuthService {
     private final AppUserRepository appUserRepository;
     private final UserAuthProviderRepository userAuthProviderRepository;
     private final RoleRepository roleRepository;
-    private final AuthCommonServiceImpl authCommonServiceImpl;
+    private final AuthCommonServices authCommonServices;
     private final ProfileService profileService;
     private final AuditEventLogger auditEventLogger;
     private final UserStateValidator userStateValidator;
@@ -183,8 +184,8 @@ public class OAuthServiceImpl implements OAuthService {
         String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
         String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
 
-        authCommonServiceImpl.setAccessToken(response, accessToken);
-        authCommonServiceImpl.setRefreshToken(response, refreshToken);
+        authCommonServices.setAccessToken(response, accessToken);
+        authCommonServices.setRefreshToken(response, refreshToken);
 
         sessionService.createSession(appUser, refreshToken, ipAddress, deviceId, userAgent);
     }

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
@@ -34,7 +35,7 @@ import static org.mockito.Mockito.*;
 class MfaServiceImplTest {
 
     @Mock
-    private AuthCommonServiceImpl authCommonServiceImpl;
+    private AuthCommonServices authCommonServices;
 
     @Mock
     private UserStateValidator userStateValidator;
@@ -69,7 +70,7 @@ class MfaServiceImplTest {
 
         AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
 
-        when(authCommonServiceImpl.findAuthenticatedUser()).thenReturn(user);
+        when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
         when(meterRegistry.counter("auth.mfa_setup.request.success")).thenReturn(counter);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
@@ -78,7 +79,7 @@ class MfaServiceImplTest {
         assertNotNull(response.mfaSecret());
         assertFalse(response.mfaSecret().isBlank());
         assertTrue(response.mfaQrCode().startsWith("data:image/png;base64,"));
-        verify(authCommonServiceImpl).findAuthenticatedUser();
+        verify(authCommonServices).findAuthenticatedUser();
         verify(userStateValidator).validate(user, UserLifecycleOperation.MFA_SETUP_REQUEST);
         verify(valueOperations).set(eq("auth:mfa:setup" + userId), eq(response.mfaSecret()), eq(Duration.ofMinutes(5)));
         verify(counter).increment();
@@ -95,13 +96,13 @@ class MfaServiceImplTest {
 
         AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
 
-        when(authCommonServiceImpl.findAuthenticatedUser()).thenReturn(user);
+        when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
 
         BusinessException exception = assertThrows(BusinessException.class, () -> mfaService.requestMfaSetup(context));
 
         assertEquals(ErrorCode.MFA_ALREADY_ENABLED, exception.getErrorCode());
         assertEquals("MFA is already enabled for this account", exception.getMessage());
-        verify(authCommonServiceImpl).findAuthenticatedUser();
+        verify(authCommonServices).findAuthenticatedUser();
         verify(userStateValidator).validate(user, UserLifecycleOperation.MFA_SETUP_REQUEST);
         verify(redisTemplate, never()).opsForValue();
         verify(meterRegistry, never()).counter(anyString());
@@ -119,7 +120,7 @@ class MfaServiceImplTest {
         long timeStep = Math.floorDiv(new SystemTimeProvider().getTime(), 30);
         String code = new DefaultCodeGenerator().generate(secret, timeStep);
 
-        when(authCommonServiceImpl.findAuthenticatedUser()).thenReturn(user);
+        when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get("auth:mfa:setup" + userId)).thenReturn(secret);
         when(meterRegistry.counter("auth.mfa_setup.confirm.success")).thenReturn(counter);
@@ -129,7 +130,7 @@ class MfaServiceImplTest {
 
         assertEquals(10, response.backupCodes().length);
         assertTrue(user.isMfaEnabled());
-        verify(authCommonServiceImpl).findAuthenticatedUser();
+        verify(authCommonServices).findAuthenticatedUser();
         verify(userStateValidator).validate(user, UserLifecycleOperation.MFA_SETUP_CONFIRM);
         verify(appUserRepository).save(user);
         verify(redisTemplate).delete("auth:mfa:setup" + userId);
@@ -148,7 +149,7 @@ class MfaServiceImplTest {
         AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
         String secret = new DefaultSecretGenerator().generate();
 
-        when(authCommonServiceImpl.findAuthenticatedUser()).thenReturn(user);
+        when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get("auth:mfa:setup" + userId)).thenReturn(secret);
 
@@ -157,7 +158,7 @@ class MfaServiceImplTest {
 
         assertEquals(ErrorCode.MFA_INVALID_CODE, exception.getErrorCode());
         assertEquals("Invalid MFA code", exception.getMessage());
-        verify(authCommonServiceImpl).findAuthenticatedUser();
+        verify(authCommonServices).findAuthenticatedUser();
         verify(userStateValidator).validate(user, UserLifecycleOperation.MFA_SETUP_CONFIRM);
         verify(appUserRepository, never()).save(any());
         verify(redisTemplate, never()).delete(anyString());

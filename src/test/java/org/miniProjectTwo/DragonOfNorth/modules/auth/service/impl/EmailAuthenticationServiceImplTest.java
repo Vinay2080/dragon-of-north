@@ -9,6 +9,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusF
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.PasswordService;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
@@ -24,7 +25,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.util.List;
@@ -49,7 +49,7 @@ class EmailAuthenticationServiceImplTest {
     private AppUserRepository appUserRepository;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private PasswordService passwordService;
 
     @Mock
     private AuthCommonServices authCommonServices;
@@ -144,7 +144,7 @@ class EmailAuthenticationServiceImplTest {
         appUser.setAppUserStatus(PENDING_VERIFICATION);
         appUser.setId(java.util.UUID.randomUUID());
 
-        when(passwordEncoder.encode(request.password())).thenReturn("encodedPassword");
+        when(passwordService.encodePassword(request.password())).thenReturn("encodedPassword");
         when(appUserRepository.save(any(AppUser.class))).thenReturn(appUser);
         when(appUserRepository.findByEmail("test@mockito.com")).thenReturn(Optional.of(appUser));
         when(appUserRepository.findByEmailForUpdate("test@mockito.com")).thenReturn(Optional.empty());
@@ -158,7 +158,7 @@ class EmailAuthenticationServiceImplTest {
         assertEquals(PENDING_VERIFICATION, response.appUserStatus(), "method should return status PENDING_VERIFICATION");
 
         //verify
-        verify(passwordEncoder).encode(request.password());
+        verify(passwordService).encodePassword(request.password());
         verify(appUserRepository).findByEmailForUpdate("test@mockito.com");
 
         ArgumentCaptor<AppUser> argumentCaptor = ArgumentCaptor.forClass(AppUser.class);
