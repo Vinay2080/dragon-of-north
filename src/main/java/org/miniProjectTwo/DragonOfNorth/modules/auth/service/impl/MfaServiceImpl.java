@@ -1,47 +1,36 @@
 package org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl;
 
-import dev.samstevens.totp.code.CodeGenerator;
-import dev.samstevens.totp.code.CodeVerifier;
-import dev.samstevens.totp.code.DefaultCodeGenerator;
-import dev.samstevens.totp.code.DefaultCodeVerifier;
-import dev.samstevens.totp.exceptions.QrGenerationException;
-import dev.samstevens.totp.qr.QrData;
-import dev.samstevens.totp.qr.QrGenerator;
-import dev.samstevens.totp.qr.ZxingPngQrGenerator;
-import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
-import dev.samstevens.totp.secret.DefaultSecretGenerator;
-import dev.samstevens.totp.time.SystemTimeProvider;
-import dev.samstevens.totp.time.TimeProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.Length;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserMfaSettings;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserMfaSettingsRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.MfaRecoveryCodeService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.MfaService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.TotpService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
+import org.miniProjectTwo.DragonOfNorth.shared.encryption.EncryptionService;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.UserLifecycleOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.Base64;
+import java.time.Instant;
 import java.util.UUID;
-
-import static dev.samstevens.totp.code.HashingAlgorithm.SHA1;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
-
 public class MfaServiceImpl implements MfaService {
     private static final String MFA_SETUP_KEY_PREFIX = "auth:mfa:setup";
 
@@ -51,6 +40,10 @@ public class MfaServiceImpl implements MfaService {
     private final AppUserRepository appUserRepository;
     private final AuditEventLogger auditEventLogger;
     private final StringRedisTemplate redisTemplate;
+    private final EncryptionService encryptionService;
+    private final UserMfaSettingsRepository userMfaSettingsRepository;
+    private final TotpService totpService;
+    private final MfaRecoveryCodeService recoveryCodeService;
 
     @Override
     public MfaSetupResponse requestMfaSetup(AuthRequestContext context) {
@@ -61,17 +54,17 @@ public class MfaServiceImpl implements MfaService {
             throw new BusinessException(ErrorCode.MFA_ALREADY_ENABLED, "MFA is already enabled for this account");
         }
 
-        String secret = new DefaultSecretGenerator().generate();
-
+        String secret = totpService.generateSecret();
         storeTemporaryMfaSecret(appUser.getId(), secret);
 
-        String qrCode = generateQrCode(secret, appUser);
+        String qrCode = totpService.generateQrCode(secret, appUser);
         recordMfaRequestSuccess(appUser.getId(), context);
         return new MfaSetupResponse(secret, qrCode);
 
     }
 
     @Override
+    @Transactional
     public MfaSetupConfirmResponse confirmMfaSetup(AuthRequestContext context, @NotNull @Length String code) {
         AppUser appUser = authCommonServices.findAuthenticatedUser();
         userStateValidator.validate(appUser, UserLifecycleOperation.MFA_SETUP_CONFIRM);
@@ -80,33 +73,73 @@ public class MfaServiceImpl implements MfaService {
             throw new BusinessException(ErrorCode.MFA_ALREADY_ENABLED, "MFA is already enabled for this account");
         }
 
-        String secret = redisTemplate.opsForValue().get(MFA_SETUP_KEY_PREFIX + appUser.getId());
-        if (secret == null) {
+        String encryptedSecret = redisTemplate.opsForValue().get(MFA_SETUP_KEY_PREFIX + appUser.getId());
+        if (encryptedSecret == null) {
             throw new BusinessException(ErrorCode.MFA_SETUP_EXPIRED, "MFA setup session has expired. Please request again.");
         }
 
-        isCodeValid(secret, code);
+        String secret = encryptionService.decrypt(encryptedSecret);
+        validateCode(secret, code);
 
+        Instant enabledAt = Instant.now();
+        UserMfaSettings mfaSettings = persistMfaSettings(appUser, encryptedSecret, enabledAt);
         appUser.setMfaEnabled(true);
+        appUser.setMfaEnabledAt(enabledAt);
+
         appUserRepository.save(appUser);
         redisTemplate.delete(MFA_SETUP_KEY_PREFIX + appUser.getId());
 
+        String[] recoveryCodes = recoveryCodeService.generateAndStoreRecoveryCodes(mfaSettings);
         recordMfaSetupConfirmSuccess(appUser.getId(), context);
-
-        String[] recoveryCodes = new RecoveryCodeGenerator().generateCodes(10);
-        //set recovery codes in db.
-        recordCodeGenerationSuccess(appUser.getId(), context);
         return new MfaSetupConfirmResponse(recoveryCodes);
     }
 
+    @Override
+    public boolean verifyMfaCode(AppUser appUser, @NotNull @Length String code) {
+        return verifyTotpCode(appUser, code) || verifyRecoveryCode(appUser, code);
+    }
 
-    private void isCodeValid(String secret, @NotNull @Length String code) {
-        TimeProvider timeProvider = new SystemTimeProvider();
-        CodeGenerator codeGenerator = new DefaultCodeGenerator();
-        CodeVerifier codeVerifier = new DefaultCodeVerifier(codeGenerator, timeProvider);
-        if (!codeVerifier.isValidCode(secret, code)) {
+    @Override
+    public boolean verifyTotpCode(AppUser appUser, @NotNull @Length String code) {
+        if (appUser == null || !appUser.isMfaEnabled()) {
+            return false;
+        }
+
+        String encryptedSecret = userMfaSettingsRepository.findByUserId(appUser.getId())
+                .map(UserMfaSettings::getTotpSecretEncrypted)
+                .orElse(null);
+        if (encryptedSecret == null || encryptedSecret.isBlank()) {
+            return false;
+        }
+
+        String secret = encryptionService.decrypt(encryptedSecret);
+        return totpService.isValidCode(secret, code);
+    }
+
+    @Override
+    public boolean verifyRecoveryCode(AppUser appUser, @NotNull @Length String code) {
+        if (appUser == null || !appUser.isMfaEnabled()) {
+            return false;
+        }
+
+        return userMfaSettingsRepository.findByUserId(appUser.getId())
+                .map(settings -> recoveryCodeService.verifyAndConsumeRecoveryCode(settings, code))
+                .orElse(false);
+    }
+
+    private void validateCode(String secret, @NotNull @Length String code) {
+        if (!totpService.isValidCode(secret, code)) {
             throw new BusinessException(ErrorCode.MFA_INVALID_CODE, "Invalid MFA code");
         }
+    }
+
+    private UserMfaSettings persistMfaSettings(AppUser appUser, String encryptedSecret, Instant enabledAt) {
+        UserMfaSettings settings = userMfaSettingsRepository.findByUserId(appUser.getId())
+                .orElseGet(UserMfaSettings::new);
+        settings.setUser(appUser);
+        settings.setTotpSecretEncrypted(encryptedSecret);
+        settings.setTotpEnabledAt(enabledAt);
+        return userMfaSettingsRepository.save(settings);
     }
 
     private void recordMfaSetupConfirmSuccess(UUID id, AuthRequestContext context) {
@@ -114,36 +147,8 @@ public class MfaServiceImpl implements MfaService {
         auditEventLogger.log("auth.mfa_setup.confirm", id, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
     }
 
-    private void recordCodeGenerationSuccess(UUID id, AuthRequestContext context) {
-        meterRegistry.counter("auth.mfa_setup.confirm.code_generation").increment();
-        auditEventLogger.log("auth.mfa_setup.confirm.code_generation", id, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
-    }
-
     private void storeTemporaryMfaSecret(UUID id, String secret) {
-        redisTemplate.opsForValue().set(MFA_SETUP_KEY_PREFIX + id,
-                secret, Duration.ofMinutes(5));
-    }
-
-    private String generateQrCode(String secret, AppUser appUser) {
-
-        QrData qrData = new QrData.Builder()
-                .label("Dragon-of-North:" + appUser.getEmail())
-                .secret(secret)
-                .issuer("Dragon-of-North")
-                .algorithm(SHA1)
-                .digits(6)
-                .period(30)
-                .build();
-        QrGenerator qrGenerator = new ZxingPngQrGenerator();
-
-        try {
-            byte[] imageData = qrGenerator.generate(qrData);
-            return "data:image/png;base64," + Base64.getEncoder().encodeToString(imageData);
-
-        } catch (QrGenerationException e) {
-            log.error("Error generating QR code: {}", e.getMessage());
-        }
-        return null;
+        redisTemplate.opsForValue().set(MFA_SETUP_KEY_PREFIX + id, encryptionService.encrypt(secret), Duration.ofMinutes(5));
     }
 
     private void recordMfaRequestSuccess(UUID id, AuthRequestContext context) {

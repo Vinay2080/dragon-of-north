@@ -44,12 +44,12 @@ public class AppUserDetailService implements UserDetailsService {
     @Override
     @NullMarked
     public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
-        String normalizedIdentifier = identifier != null && identifier.contains("@")
+        String normalizedIdentifier = identifier.contains("@")
                 ? IdentifierNormalizer.normalizeEmail(identifier)
                 : IdentifierNormalizer.normalizePhone(identifier);
         Optional<AppUser> appUser;
 
-        if (normalizedIdentifier != null && normalizedIdentifier.contains("@")) {
+        if (normalizedIdentifier.contains("@")) {
             appUser = repository.findByEmail(normalizedIdentifier);
         } else {
             appUser = repository.findByPhone(normalizedIdentifier);

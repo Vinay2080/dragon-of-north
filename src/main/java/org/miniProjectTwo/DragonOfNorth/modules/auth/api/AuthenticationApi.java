@@ -678,7 +678,7 @@ public interface AuthenticationApi {
 
     @Operation(
             summary = "Confirm MFA (TOTP) setup",
-            description = "Validates the 6-digit authenticator code against the temporary secret and enables MFA for the authenticated user. Returns recovery codes that should be stored securely."
+            description = "Validates the 6-digit authenticator code against the encrypted temporary setup secret, persists the encrypted TOTP secret, enables MFA, and returns one-time recovery codes. Only hashed recovery codes are stored."
     )
     @SecurityRequirement(name = "accessTokenCookie")
     @ApiResponses({

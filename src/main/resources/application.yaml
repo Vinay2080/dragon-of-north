@@ -46,6 +46,9 @@ app:
       same-site: ${cookie_same_site}
       secure: ${cookie_secure}
       domain: ${cookie_domain}
+  encryption:
+    active-key-id: ${app_encryption_active_key_id:}
+    master-key: ${app_encryption_master_key:}
 
 otp:
   length: ${otp_length}

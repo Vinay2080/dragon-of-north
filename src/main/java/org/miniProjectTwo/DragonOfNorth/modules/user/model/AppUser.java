@@ -107,12 +107,6 @@ public class AppUser extends BaseEntity {
     @Column(name = "mfa_enabled")
     private boolean mfaEnabled = false;
 
-    @Column(name = "mfa_secret_encrypted")
-    private String mfaSecretEncrypted;
-
-    @Column(name = "mfa_recovery_codes_encrypted")
-    private String mfaRecoveryCodesEncrypted;
-
     @Column(name = "mfa_enabled_at")
     private Instant mfaEnabledAt;
 

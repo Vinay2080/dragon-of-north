@@ -34,6 +34,16 @@
       "name": "auth.login.max-failed-attempts",
       "type": "java.lang.String",
       "description": "Description for auth.login.max-failed-attempts."
+    },
+    {
+      "name": "app.encryption.active-key-id",
+      "type": "java.lang.String",
+      "description": "Identifier for the active AES encryption key."
+    },
+    {
+      "name": "app.encryption.master-key",
+      "type": "java.lang.String",
+      "description": "Base64-encoded 32-byte AES-256 master key loaded from external configuration."
     }
   ]
 }

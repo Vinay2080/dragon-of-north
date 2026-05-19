@@ -11,3 +11,17 @@ TOTP todos: 1. Send code to user before enabling TOTP.
 2. after enabling TOTP, enable via email too if required.
 3. Before every crucial operations like password change, email change, disable TOTP, enable TOTP, send code to user and ask for code before performing the operation.
 4. Add option to disable TOTP via email if required.
+
+operation that should be protected by TOTP: we check the api that should require the TOTP
+1. account delete.
+2. login
+3. passwordless login
+4.google login
+5. revoke other sessions.
+6. disable TOTP.
+
+so workflow will be something like this:
+1. while login we check if TOTP is enabled or not.
+2. If enabled, popup to enter the code.
+3. If not, then login as usual.
+4. for that we will require a service method to verify the code.

@@ -16,7 +16,6 @@ import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -48,13 +47,10 @@ class OtpServiceTest {
     @Mock
     private AuditEventLogger auditEventLogger;
 
-    @Mock
-    private Environment environment;
-
     @BeforeEach
     void setUp() {
         lenient().when(meterRegistry.counter(anyString())).thenReturn(counter);
-        otpServiceImpl = new OtpServiceImpl(otpTokenRepository, emailOtpSender, phoneOtpSender, meterRegistry, auditEventLogger, environment);
+        otpServiceImpl = new OtpServiceImpl(otpTokenRepository, emailOtpSender, phoneOtpSender, meterRegistry, auditEventLogger);
         ReflectionTestUtils.setField(otpServiceImpl, "otpLength", 6);
         ReflectionTestUtils.setField(otpServiceImpl, "ttlMinutes", 5);
         ReflectionTestUtils.setField(otpServiceImpl, "maxAttempts", 3);
