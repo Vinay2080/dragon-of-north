@@ -19,7 +19,7 @@ import java.util.Objects;
 public class ChallengeStateAtomicRedisOps {
     private static final String LOCKOUT_PREFIX = "auth:mfa:lockout:";
 
-    private static final DefaultRedisScript<List> CLAIM_SCRIPT = new DefaultRedisScript<>("""
+    private static final DefaultRedisScript<List<Object>> CLAIM_SCRIPT = new DefaultRedisScript<>("""
             local challengeKey = KEYS[1]
             local lockKey = KEYS[2]
             local lockValue = ARGV[1]
@@ -44,7 +44,7 @@ public class ChallengeStateAtomicRedisOps {
             return {'ok', stateJson}
             """);
 
-    private static final DefaultRedisScript<List> FAIL_SCRIPT = new DefaultRedisScript<>("""
+    private static final DefaultRedisScript<List<Object>> FAIL_SCRIPT = new DefaultRedisScript<>("""
             local challengeKey = KEYS[1]
             local lockKey = KEYS[2]
             local lockValue = ARGV[1]
@@ -109,7 +109,7 @@ public class ChallengeStateAtomicRedisOps {
             throw new IllegalArgumentException("lockTtl must be positive");
         }
 
-        List<?> result = redisTemplate.execute(
+        List<Object> result = redisTemplate.execute(
                 CLAIM_SCRIPT,
                 List.of(
                         MfaChallengeRedisKeys.challengeKey(tokenId),
@@ -139,7 +139,7 @@ public class ChallengeStateAtomicRedisOps {
             throw new IllegalArgumentException("maxAttempts must be >= 1");
         }
 
-        List<?> result = redisTemplate.execute(
+        List<Object> result = redisTemplate.execute(
                 FAIL_SCRIPT,
                 List.of(
                         MfaChallengeRedisKeys.challengeKey(tokenId),
@@ -204,4 +204,3 @@ public class ChallengeStateAtomicRedisOps {
         NOT_OWNER
     }
 }
-
