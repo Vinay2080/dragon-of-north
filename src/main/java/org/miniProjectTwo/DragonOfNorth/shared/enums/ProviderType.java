@@ -1,14 +1,19 @@
 package org.miniProjectTwo.DragonOfNorth.shared.enums;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 /**
  * Supported MFA verification providers.
  *
- * <p>This enum is used for expressing which challenge methods are available for
- * a user during an MFA challenge, independent of how those methods are later
- * verified.</p>
+ * <p>Stable provider keys make future provider additions safe for serialization,
+ * persistence, and challenge orchestration.</p>
  */
+@Getter
+@RequiredArgsConstructor
 public enum ProviderType {
-    TOTP,
-    RECOVERY_CODE
-}
+    TOTP("totp"),
+    RECOVERY_CODE("recovery_code");
 
+    private final String key;
+}
