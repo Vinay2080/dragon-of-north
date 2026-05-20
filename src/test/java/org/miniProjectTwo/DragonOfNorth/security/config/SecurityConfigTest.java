@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.security.filter.CsrfCookieFilter;
 import org.miniProjectTwo.DragonOfNorth.security.filter.JwtFilter;
+import org.miniProjectTwo.DragonOfNorth.security.filter.SidLivenessFilter;
 import org.miniProjectTwo.DragonOfNorth.security.handler.RestAccessDeniedHandler;
 import org.miniProjectTwo.DragonOfNorth.security.handler.RestAuthenticationEntryPoint;
 import org.mockito.Mock;
@@ -30,6 +31,8 @@ class SecurityConfigTest {
 
     @Mock
     private CsrfCookieFilter csrfCookieFilter;
+    @Mock
+    private SidLivenessFilter sidLivenessFilter;
 
     @Mock
     private AuthenticationConfiguration authenticationConfiguration;
@@ -48,6 +51,7 @@ class SecurityConfigTest {
         securityConfig = new SecurityConfig(
                 corsConfigurationSource,
                 jwtFilter,
+                sidLivenessFilter,
                 csrfCookieFilter,
                 authenticationEntryPoint,
                 accessDeniedHandler

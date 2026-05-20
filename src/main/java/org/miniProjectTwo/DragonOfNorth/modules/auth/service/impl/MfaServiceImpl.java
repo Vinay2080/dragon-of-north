@@ -80,7 +80,7 @@ public class MfaServiceImpl implements MfaService {
             throw new BusinessException(ErrorCode.MFA_ALREADY_ENABLED, "MFA is already enabled for this account");
         }
 
-        String encryptedSecret = redisTemplate.opsForValue().get(MFA_SETUP_KEY_PREFIX + appUser.getId());
+        String encryptedSecret = redisTemplate.opsForValue().getAndDelete(MFA_SETUP_KEY_PREFIX + appUser.getId());
         if (encryptedSecret == null) {
             throw new BusinessException(ErrorCode.MFA_SETUP_EXPIRED, "MFA setup session has expired. Please request again.");
         }
@@ -94,8 +94,6 @@ public class MfaServiceImpl implements MfaService {
         appUser.setMfaEnabledAt(enabledAt);
 
         appUserRepository.save(appUser);
-        redisTemplate.delete(MFA_SETUP_KEY_PREFIX + appUser.getId());
-
         String[] recoveryCodes = recoveryCodeService.generateAndStoreRecoveryCodes(mfaSettings);
         recordMfaSetupConfirmSuccess(appUser.getId(), context);
         return new MfaSetupConfirmResponse(recoveryCodes);

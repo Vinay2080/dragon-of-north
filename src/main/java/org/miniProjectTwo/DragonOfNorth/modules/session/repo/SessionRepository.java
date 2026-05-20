@@ -22,6 +22,39 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
      */
     Optional<Session> findByRefreshTokenHashAndDeviceIdAndAppUser(String refreshTokenHash, String deviceId, AppUser appUser);
 
+    @Modifying
+    @Query("""
+            update Session s
+               set s.revoked = true
+             where s.appUser.id = :userId
+               and s.deviceId = :deviceId
+               and s.refreshTokenHash = :refreshTokenHash
+               and s.revoked = false
+               and s.deleted = false
+            """)
+    int revokeCurrentSessionIfActive(@Param("userId") UUID userId,
+                                     @Param("deviceId") String deviceId,
+                                     @Param("refreshTokenHash") String refreshTokenHash);
+
+    @Modifying
+    @Query("""
+            update Session s
+               set s.refreshTokenHash = :newRefreshTokenHash,
+                   s.lastUsedAt = :lastUsedAt
+             where s.appUser.id = :userId
+               and s.deviceId = :deviceId
+               and s.refreshTokenHash = :oldRefreshTokenHash
+               and s.revoked = false
+               and s.deleted = false
+               and s.expiryDate > :now
+            """)
+    int rotateRefreshTokenIfActive(@Param("userId") UUID userId,
+                                   @Param("deviceId") String deviceId,
+                                   @Param("oldRefreshTokenHash") String oldRefreshTokenHash,
+                                   @Param("newRefreshTokenHash") String newRefreshTokenHash,
+                                   @Param("lastUsedAt") Instant lastUsedAt,
+                                   @Param("now") Instant now);
+
     /**
      * Finds a session for the given user/device pair.
      */
@@ -69,4 +102,17 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
                 and s.revoked = false
             """)
     int revokeAllSessionsByUserId(UUID userId);
+
+    @Query("""
+            select count(s) > 0
+            from Session s
+            where s.id = :sessionId
+              and s.appUser.id = :userId
+              and s.revoked = false
+              and s.deleted = false
+              and s.expiryDate > :now
+            """)
+    boolean existsLiveSessionForUser(@Param("sessionId") UUID sessionId,
+                                     @Param("userId") UUID userId,
+                                     @Param("now") Instant now);
 }

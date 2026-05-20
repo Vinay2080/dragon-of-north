@@ -12,6 +12,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -60,14 +63,14 @@ class MfaRecoveryCodeServiceImplTest {
     void verifyAndConsumeRecoveryCode_shouldMarkMatchingCodeUsed() {
         String hash = passwordEncoder.encode("ABCD-EFGH");
         UserMfaRecoveryCode recoveryCode = new UserMfaRecoveryCode(mfaSettings, hash);
+        recoveryCode.setId(UUID.randomUUID());
 
         when(recoveryCodeRepository.findByMfaSettingsIdAndUsedFalseAndDeletedFalse(mfaSettings.getId()))
                 .thenReturn(List.of(recoveryCode));
+        when(recoveryCodeRepository.consumeIfUnused(eq(recoveryCode.getId()), any(Instant.class))).thenReturn(1);
 
         assertThat(recoveryCodeService.verifyAndConsumeRecoveryCode(mfaSettings, " abcd-efgh ")).isTrue();
-        assertThat(recoveryCode.isUsed()).isTrue();
-        assertThat(recoveryCode.getUsedAt()).isNotNull();
-        verify(recoveryCodeRepository).save(recoveryCode);
+        verify(recoveryCodeRepository).consumeIfUnused(eq(recoveryCode.getId()), any(Instant.class));
     }
 
     @Test
@@ -76,5 +79,48 @@ class MfaRecoveryCodeServiceImplTest {
                 .thenReturn(List.of());
 
         assertThat(recoveryCodeService.verifyAndConsumeRecoveryCode(mfaSettings, "ABCD-EFGH")).isFalse();
+    }
+
+    @Test
+    void verifyAndConsumeRecoveryCode_shouldAllowExactlyOneWinnerUnderConcurrency() throws Exception {
+        String hash = passwordEncoder.encode("ABCD-EFGH");
+        UserMfaRecoveryCode recoveryCode = new UserMfaRecoveryCode(mfaSettings, hash);
+        recoveryCode.setId(UUID.randomUUID());
+
+        when(recoveryCodeRepository.findByMfaSettingsIdAndUsedFalseAndDeletedFalse(mfaSettings.getId()))
+                .thenReturn(List.of(recoveryCode));
+
+        AtomicBoolean consumed = new AtomicBoolean(false);
+        when(recoveryCodeRepository.consumeIfUnused(eq(recoveryCode.getId()), any(Instant.class)))
+                .thenAnswer(invocation -> consumed.compareAndSet(false, true) ? 1 : 0);
+
+        int requestCount = 8;
+        ExecutorService pool = Executors.newFixedThreadPool(requestCount);
+        CountDownLatch ready = new CountDownLatch(requestCount);
+        CountDownLatch start = new CountDownLatch(1);
+        AtomicInteger successes = new AtomicInteger(0);
+
+        try {
+            List<Future<Boolean>> futures = java.util.stream.IntStream.range(0, requestCount)
+                    .mapToObj(i -> pool.submit(() -> {
+                        ready.countDown();
+                        assertThat(start.await(5, TimeUnit.SECONDS)).isTrue();
+                        return recoveryCodeService.verifyAndConsumeRecoveryCode(mfaSettings, "ABCD-EFGH");
+                    }))
+                    .toList();
+
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+
+            for (Future<Boolean> future : futures) {
+                if (future.get(5, TimeUnit.SECONDS)) {
+                    successes.incrementAndGet();
+                }
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertThat(successes.get()).isEqualTo(1);
     }
 }

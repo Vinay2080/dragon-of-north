@@ -7,6 +7,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.model.VerifyResult;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.service.MfaVerificationService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserMfaSettings;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserMfaSettingsRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
@@ -19,6 +21,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.encryption.EncryptionService;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.UserLifecycleOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -27,8 +30,12 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -72,6 +79,9 @@ class MfaServiceImplTest {
 
     @Mock
     private MfaRecoveryCodeService recoveryCodeService;
+
+    @Mock
+    private MfaVerificationService mfaVerificationService;
 
     @InjectMocks
     private MfaServiceImpl mfaService;
@@ -136,7 +146,7 @@ class MfaServiceImplTest {
 
         when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("auth:mfa:setup" + userId)).thenReturn("encrypted-setup-secret");
+        when(valueOperations.getAndDelete("auth:mfa:setup" + userId)).thenReturn("encrypted-setup-secret");
         when(encryptionService.decrypt("encrypted-setup-secret")).thenReturn("setup-secret");
         when(totpService.isValidCode("setup-secret", "123456")).thenReturn(true);
         when(userMfaSettingsRepository.findByUserId(userId)).thenReturn(Optional.empty());
@@ -158,7 +168,6 @@ class MfaServiceImplTest {
                         && settings.getTotpEnabledAt() != null
         ));
         verify(appUserRepository).save(user);
-        verify(redisTemplate).delete("auth:mfa:setup" + userId);
         verify(recoveryCodeService).generateAndStoreRecoveryCodes(any(UserMfaSettings.class));
         verify(counter).increment();
         verify(auditEventLogger).log("auth.mfa_setup.confirm", userId, "device-1", "127.0.0.1", "success", null, "req-1");
@@ -175,7 +184,7 @@ class MfaServiceImplTest {
 
         when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("auth:mfa:setup" + userId)).thenReturn("encrypted-setup-secret");
+        when(valueOperations.getAndDelete("auth:mfa:setup" + userId)).thenReturn("encrypted-setup-secret");
         when(encryptionService.decrypt("encrypted-setup-secret")).thenReturn("setup-secret");
         when(totpService.isValidCode("setup-secret", "000000")).thenReturn(false);
 
@@ -188,8 +197,57 @@ class MfaServiceImplTest {
         verify(userStateValidator).validate(user, UserLifecycleOperation.MFA_SETUP_CONFIRM);
         verify(appUserRepository, never()).save(any());
         verify(userMfaSettingsRepository, never()).save(any());
-        verify(redisTemplate, never()).delete(anyString());
         verify(meterRegistry, never()).counter(anyString());
+    }
+
+    @Test
+    void confirmMfaSetup_shouldAllowExactlyOneWinnerUnderConcurrentConsume() throws Exception {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+        user.setEmail("user@example.com");
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+
+        when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        AtomicBoolean consumed = new AtomicBoolean(false);
+        when(valueOperations.getAndDelete("auth:mfa:setup" + userId))
+                .thenAnswer(invocation -> consumed.compareAndSet(false, true) ? "encrypted-setup-secret" : null);
+        when(encryptionService.decrypt("encrypted-setup-secret")).thenReturn("setup-secret");
+        when(totpService.isValidCode("setup-secret", "123456")).thenReturn(true);
+        when(userMfaSettingsRepository.findByUserId(userId)).thenReturn(Optional.empty());
+        when(userMfaSettingsRepository.save(any(UserMfaSettings.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(recoveryCodeService.generateAndStoreRecoveryCodes(any(UserMfaSettings.class))).thenReturn(new String[]{"code-1"});
+        when(meterRegistry.counter("auth.mfa_setup.confirm.success")).thenReturn(counter);
+
+        int parallel = 6;
+        ExecutorService pool = Executors.newFixedThreadPool(parallel);
+        CountDownLatch ready = new CountDownLatch(parallel);
+        CountDownLatch start = new CountDownLatch(1);
+        AtomicInteger successes = new AtomicInteger(0);
+        try {
+            List<Future<Boolean>> futures = java.util.stream.IntStream.range(0, parallel)
+                    .mapToObj(i -> pool.submit(() -> {
+                        ready.countDown();
+                        start.await(5, TimeUnit.SECONDS);
+                        try {
+                            mfaService.confirmMfaSetup(context, "123456");
+                            return true;
+                        } catch (BusinessException ex) {
+                            return false;
+                        }
+                    }))
+                    .toList();
+            assertTrue(ready.await(5, TimeUnit.SECONDS));
+            start.countDown();
+            for (Future<Boolean> f : futures) {
+                if (f.get(5, TimeUnit.SECONDS)) successes.incrementAndGet();
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertEquals(1, successes.get());
     }
 
     @Test
@@ -202,9 +260,8 @@ class MfaServiceImplTest {
         UserMfaSettings settings = new UserMfaSettings();
         settings.setTotpSecretEncrypted("encrypted-persisted-secret");
 
-        when(userMfaSettingsRepository.findByUserId(userId)).thenReturn(Optional.of(settings));
-        when(encryptionService.decrypt("encrypted-persisted-secret")).thenReturn("persisted-secret");
-        when(totpService.isValidCode("persisted-secret", "123456")).thenReturn(true);
+        when(mfaVerificationService.verifyAtLogin(eq(user), eq(ProviderType.TOTP), eq("123456"), any()))
+                .thenReturn(VerifyResult.success(ProviderType.TOTP));
 
         assertTrue(mfaService.verifyTotpCode(user, "123456"));
     }
@@ -218,8 +275,8 @@ class MfaServiceImplTest {
 
         UserMfaSettings settings = new UserMfaSettings();
 
-        when(userMfaSettingsRepository.findByUserId(userId)).thenReturn(Optional.of(settings));
-        when(recoveryCodeService.verifyAndConsumeRecoveryCode(settings, "ABCD-EFGH")).thenReturn(true);
+        when(mfaVerificationService.verifyAtLogin(eq(user), eq(ProviderType.RECOVERY_CODE), eq("ABCD-EFGH"), any()))
+                .thenReturn(VerifyResult.success(ProviderType.RECOVERY_CODE));
 
         assertTrue(mfaService.verifyRecoveryCode(user, "ABCD-EFGH"));
     }
@@ -234,10 +291,10 @@ class MfaServiceImplTest {
         UserMfaSettings settings = new UserMfaSettings();
         settings.setTotpSecretEncrypted("encrypted-persisted-secret");
 
-        when(userMfaSettingsRepository.findByUserId(userId)).thenReturn(Optional.of(settings));
-        when(encryptionService.decrypt("encrypted-persisted-secret")).thenReturn("persisted-secret");
-        when(totpService.isValidCode("persisted-secret", "ABCD-EFGH")).thenReturn(false);
-        when(recoveryCodeService.verifyAndConsumeRecoveryCode(settings, "ABCD-EFGH")).thenReturn(true);
+        when(mfaVerificationService.verifyAtLogin(eq(user), eq(ProviderType.TOTP), eq("ABCD-EFGH"), any()))
+                .thenReturn(VerifyResult.failure(ProviderType.TOTP, "invalid_code"));
+        when(mfaVerificationService.verifyAtLogin(eq(user), eq(ProviderType.RECOVERY_CODE), eq("ABCD-EFGH"), any()))
+                .thenReturn(VerifyResult.success(ProviderType.RECOVERY_CODE));
 
         assertTrue(mfaService.verifyMfaCode(user, "ABCD-EFGH"));
     }

@@ -5,6 +5,5 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
 import java.util.UUID;
 
 public interface MfaChallengeProviderVerifier {
-    boolean verify(UUID userId, ProviderType providerType, String code);
+    ChallengeProviderVerification verify(UUID userId, ProviderType providerType, String code);
 }
-

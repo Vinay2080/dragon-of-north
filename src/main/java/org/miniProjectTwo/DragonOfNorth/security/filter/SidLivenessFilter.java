@@ -1,0 +1,82 @@
+package org.miniProjectTwo.DragonOfNorth.security.filter;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
+import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+@Slf4j
+@Component
+public class SidLivenessFilter extends OncePerRequestFilter {
+    private final SessionRepository sessionRepository;
+    private final SidEnforcementMode enforcementMode;
+    private final List<String> sensitivePatterns;
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+
+    public SidLivenessFilter(
+            SessionRepository sessionRepository,
+            @Value("${app.security.sid-enforcement.mode:disabled}") String enforcementMode,
+            @Value("${app.security.sid-enforcement.sensitive-patterns:/api/v1/session/**,/api/v1/auth/password/forgot/reset}") String sensitivePatterns
+    ) {
+        this.sessionRepository = sessionRepository;
+        this.enforcementMode = SidEnforcementMode.from(enforcementMode);
+        this.sensitivePatterns = List.of(sensitivePatterns.split(","));
+    }
+
+    @Override
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof SecurityPrincipal principal)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if (!shouldEnforce(request.getServletPath(), principal)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        UUID sessionId = principal.sessionId();
+        if (sessionId == null || principal.userId() == null) {
+            SecurityContextHolder.clearContext();
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        boolean live = sessionRepository.existsLiveSessionForUser(sessionId, principal.userId(), Instant.now());
+        if (!live) {
+            log.debug("SID liveness check failed for user={} sid={}", principal.userId(), sessionId);
+            SecurityContextHolder.clearContext();
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    private boolean shouldEnforce(String servletPath, SecurityPrincipal principal) {
+        return switch (enforcementMode) {
+            case DISABLED -> false;
+            case ALL_AUTHENTICATED -> true;
+            case MFA_ONLY -> principal.mfaVerified();
+            case SENSITIVE_ONLY -> sensitivePatterns.stream().map(String::trim)
+                    .filter(pattern -> !pattern.isBlank())
+                    .anyMatch(pattern -> PATH_MATCHER.match(pattern, servletPath));
+        };
+    }
+}
