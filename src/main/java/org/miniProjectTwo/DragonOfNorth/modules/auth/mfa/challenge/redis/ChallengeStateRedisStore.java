@@ -1,0 +1,41 @@
+package org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.redis;
+
+import lombok.RequiredArgsConstructor;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.ChallengeState;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.util.Optional;
+
+/**
+ * Redis-backed persistence for {@link ChallengeState}.
+ *
+ * <p>This component is intentionally not wired into the login flow yet.</p>
+ */
+@Component
+@RequiredArgsConstructor
+public class ChallengeStateRedisStore {
+    private final StringRedisTemplate redisTemplate;
+    private final ChallengeStateCodec codec;
+
+    public void save(String tokenId, ChallengeState state, Duration ttl) {
+        if (ttl == null || ttl.isNegative() || ttl.isZero()) {
+            throw new IllegalArgumentException("ttl must be positive");
+        }
+        redisTemplate.opsForValue().set(MfaChallengeRedisKeys.challengeKey(tokenId), codec.serialize(state), ttl);
+    }
+
+    public Optional<ChallengeState> find(String tokenId) {
+        String value = redisTemplate.opsForValue().get(MfaChallengeRedisKeys.challengeKey(tokenId));
+        if (value == null) {
+            return Optional.empty();
+        }
+        return Optional.of(codec.deserialize(value));
+    }
+
+    public void delete(String tokenId) {
+        redisTemplate.delete(MfaChallengeRedisKeys.challengeKey(tokenId));
+    }
+}
+
