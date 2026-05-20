@@ -3,14 +3,17 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.service.impl
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.config.MfaChallengeProperties;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.context.ChallengeRequestBinding;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.ChallengeState;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.MfaChallenge;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.VerificationResult;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.provider.MfaChallengeProviderVerifier;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.redis.ChallengeStateAtomicRedisOps;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.redis.ChallengeStateRedisStore;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.service.MfaChallengeService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.token.MfaChallengeTokenGenerator;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
-import org.miniProjectTwo.DragonOfNorth.shared.util.TokenHasher;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -21,12 +24,14 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class MfaChallengeServiceImpl implements MfaChallengeService {
-    private static final int MAX_USER_AGENT_LENGTH = 512;
+    private static final java.time.Duration CLAIM_LOCK_TTL = java.time.Duration.ofSeconds(5);
 
     private final MfaChallengeTokenGenerator tokenGenerator;
     private final ChallengeStateRedisStore store;
+    private final ChallengeStateAtomicRedisOps atomicOps;
+    private final ChallengeRequestBinding requestBinding;
+    private final MfaChallengeProviderVerifier providerVerifier;
     private final MfaChallengeProperties properties;
-    private final TokenHasher tokenHasher;
     private final AuditEventLogger auditEventLogger;
 
     @Override
@@ -51,9 +56,9 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
         ChallengeState state = new ChallengeState(
                 userId,
                 primaryAmr.trim(),
-                normalizeNullable(context.deviceId()),
-                ipPrefix(context.ipAddress()),
-                userAgentHash(context.userAgent()),
+                requestBinding.normalizeDeviceId(context.deviceId()),
+                requestBinding.ipPrefix(context.ipAddress()),
+                requestBinding.userAgentHash(context.userAgent()),
                 0,
                 createdAt,
                 expiresAt
@@ -69,6 +74,53 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
                 context.requestId());
 
         return new MfaChallenge(token, expiresAt, availableMethods);
+    }
+
+    @Override
+    public VerificationResult verifyAndConsume(String mfaToken,
+                                               ProviderType providerType,
+                                               String code,
+                                               AuthRequestContext context) {
+        if (mfaToken == null || mfaToken.isBlank()) throw new IllegalArgumentException("mfaToken must not be blank");
+        if (providerType == null) throw new IllegalArgumentException("providerType must not be null");
+        if (code == null || code.isBlank()) throw new IllegalArgumentException("code must not be blank");
+        if (context == null) throw new IllegalArgumentException("context must not be null");
+
+        String token = mfaToken.trim();
+        String lockValue = UUID.randomUUID().toString();
+        var claim = atomicOps.claim(token, lockValue, CLAIM_LOCK_TTL);
+        if (claim.status() != ChallengeStateAtomicRedisOps.ClaimStatus.OK || claim.stateJson() == null) {
+            auditEventLogger.log("auth.mfa.challenge.failed", null, context.deviceId(), context.ipAddress(), "failure", claim.status().name().toLowerCase(), context.requestId());
+            return new VerificationResult(null, null, false);
+        }
+
+        ChallengeState state = store.decode(claim.stateJson());
+        var bindings = requestBinding.fromContext(context);
+        if (!java.util.Objects.equals(state.deviceId(), bindings.deviceId())
+                || !java.util.Objects.equals(state.ipPrefix(), bindings.ipPrefix())
+                || !java.util.Objects.equals(state.userAgentHash(), bindings.userAgentHash())) {
+            var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
+            String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
+            auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", "context_mismatch", context.requestId());
+            return new VerificationResult(state.userId(), state.primaryAmr(), false);
+        }
+
+        boolean providerOk = providerVerifier.verify(state.userId(), providerType, code.trim());
+        if (!providerOk) {
+            var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
+            String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
+            auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", "invalid_code", context.requestId());
+            return new VerificationResult(state.userId(), state.primaryAmr(), false);
+        }
+
+        boolean consumed = atomicOps.consumeSuccess(token, lockValue);
+        if (!consumed) {
+            auditEventLogger.log("auth.mfa.challenge.failed", state.userId(), context.deviceId(), context.ipAddress(), "failure", "consume_race", context.requestId());
+            return new VerificationResult(state.userId(), state.primaryAmr(), false);
+        }
+
+        auditEventLogger.log("auth.mfa.challenge.verified", state.userId(), context.deviceId(), context.ipAddress(), "success", null, context.requestId());
+        return new VerificationResult(state.userId(), state.primaryAmr(), true);
     }
 
     @Override
@@ -102,50 +154,4 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
                 context.requestId());
     }
 
-    private String userAgentHash(String rawUserAgent) {
-        String normalized = normalizeNullable(rawUserAgent);
-        if (normalized == null) {
-            return null;
-        }
-        String truncated = normalized.length() > MAX_USER_AGENT_LENGTH
-                ? normalized.substring(0, MAX_USER_AGENT_LENGTH)
-                : normalized;
-        return tokenHasher.hashToken(truncated);
-    }
-
-    private String ipPrefix(String rawIpAddress) {
-        String ip = normalizeNullable(rawIpAddress);
-        if (ip == null) {
-            return null;
-        }
-
-        // Handle X-Forwarded-For with multiple values.
-        String first = ip.split(",", 2)[0].trim();
-        if (first.isBlank()) {
-            return null;
-        }
-
-        if (first.contains(":")) {
-            // IPv6-ish: keep the first 4 hextets (coarse prefix).
-            String[] parts = first.split(":", -1);
-            int keep = Math.min(4, parts.length);
-            return String.join(":", java.util.Arrays.copyOf(parts, keep));
-        }
-
-        // IPv4: keep the first 3 octets.
-        String[] parts = first.split("\\.", -1);
-        if (parts.length < 3) {
-            return first;
-        }
-        return parts[0] + "." + parts[1] + "." + parts[2];
-    }
-
-    private String normalizeNullable(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isBlank() ? null : trimmed;
-    }
 }
-

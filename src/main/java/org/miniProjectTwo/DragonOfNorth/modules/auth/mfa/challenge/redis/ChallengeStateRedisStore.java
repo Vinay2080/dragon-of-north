@@ -48,4 +48,8 @@ public class ChallengeStateRedisStore {
         Boolean deleted = redisTemplate.delete(MfaChallengeRedisKeys.challengeKey(tokenId));
         return Boolean.TRUE.equals(deleted);
     }
+
+    public ChallengeState decode(String payload) {
+        return codec.deserialize(payload);
+    }
 }

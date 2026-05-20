@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.service;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.ChallengeState;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.MfaChallenge;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.VerificationResult;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
 
 import java.util.List;
@@ -28,8 +29,15 @@ public interface MfaChallengeService {
     Optional<ChallengeState> peek(String mfaToken);
 
     /**
+     * Verifies and atomically consumes a one-time challenge.
+     */
+    VerificationResult verifyAndConsume(String mfaToken,
+                                        ProviderType providerType,
+                                        String code,
+                                        AuthRequestContext context);
+
+    /**
      * Invalidates the challenge token and deletes its Redis state.
      */
     void invalidate(String mfaToken, AuthRequestContext context);
 }
-
