@@ -7,6 +7,9 @@ import org.hibernate.validator.constraints.Length;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.model.MfaContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.model.VerifyResult;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.service.MfaVerificationService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserMfaSettings;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserMfaSettingsRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
@@ -29,6 +32,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType.RECOVERY_CODE;
+import static org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType.TOTP;
+
 @Service
 @RequiredArgsConstructor
 public class MfaServiceImpl implements MfaService {
@@ -44,6 +50,7 @@ public class MfaServiceImpl implements MfaService {
     private final UserMfaSettingsRepository userMfaSettingsRepository;
     private final TotpService totpService;
     private final MfaRecoveryCodeService recoveryCodeService;
+    private final MfaVerificationService mfaVerificationService;
 
     @Override
     public MfaSetupResponse requestMfaSetup(AuthRequestContext context) {
@@ -101,30 +108,22 @@ public class MfaServiceImpl implements MfaService {
 
     @Override
     public boolean verifyTotpCode(AppUser appUser, @NotNull @Length String code) {
-        if (appUser == null || !appUser.isMfaEnabled()) {
+        try {
+            VerifyResult result = mfaVerificationService.verifyAtLogin(appUser, TOTP, code, MfaContext.empty());
+            return result.success();
+        } catch (BusinessException ex) {
             return false;
         }
-
-        String encryptedSecret = userMfaSettingsRepository.findByUserId(appUser.getId())
-                .map(UserMfaSettings::getTotpSecretEncrypted)
-                .orElse(null);
-        if (encryptedSecret == null || encryptedSecret.isBlank()) {
-            return false;
-        }
-
-        String secret = encryptionService.decrypt(encryptedSecret);
-        return totpService.isValidCode(secret, code);
     }
 
     @Override
     public boolean verifyRecoveryCode(AppUser appUser, @NotNull @Length String code) {
-        if (appUser == null || !appUser.isMfaEnabled()) {
+        try {
+            VerifyResult result = mfaVerificationService.verifyAtLogin(appUser, RECOVERY_CODE, code, MfaContext.empty());
+            return result.success();
+        } catch (BusinessException ex) {
             return false;
         }
-
-        return userMfaSettingsRepository.findByUserId(appUser.getId())
-                .map(settings -> recoveryCodeService.verifyAndConsumeRecoveryCode(settings, code))
-                .orElse(false);
     }
 
     private void validateCode(String secret, @NotNull @Length String code) {
