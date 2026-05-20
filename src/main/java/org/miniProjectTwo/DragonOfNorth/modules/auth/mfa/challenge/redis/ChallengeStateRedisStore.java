@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.redis;
 
 import lombok.RequiredArgsConstructor;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.config.MfaChallengeProperties;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.ChallengeState;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -18,12 +19,17 @@ import java.util.Optional;
 public class ChallengeStateRedisStore {
     private final StringRedisTemplate redisTemplate;
     private final ChallengeStateCodec codec;
+    private final MfaChallengeProperties properties;
 
     public void save(String tokenId, ChallengeState state, Duration ttl) {
         if (ttl == null || ttl.isNegative() || ttl.isZero()) {
             throw new IllegalArgumentException("ttl must be positive");
         }
         redisTemplate.opsForValue().set(MfaChallengeRedisKeys.challengeKey(tokenId), codec.serialize(state), ttl);
+    }
+
+    public void save(String tokenId, ChallengeState state) {
+        save(tokenId, state, properties.getTtl());
     }
 
     public Optional<ChallengeState> find(String tokenId) {
@@ -38,4 +44,3 @@ public class ChallengeStateRedisStore {
         redisTemplate.delete(MfaChallengeRedisKeys.challengeKey(tokenId));
     }
 }
-
