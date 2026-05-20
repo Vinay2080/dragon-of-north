@@ -5,6 +5,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -66,11 +67,40 @@ class SessionServiceImplTest {
         when(tokenHasher.hashToken("refresh")).thenReturn("hash");
         when(sessionRepository.findByAppUserAndDeviceId(user, "device-1")).thenReturn(Optional.of(existing));
 
-        sessionService.createSession(user, "refresh", "127.0.0.1", "device-1", "ua");
+        user.setMfaEnabled(false);
+        SessionCreationSpec spec = SessionCreationSpec.fromAppUser(user, "pwd");
+
+        sessionService.createSession(user, "refresh", "127.0.0.1", "device-1", "ua", spec);
 
         verify(sessionRepository).delete(existing);
         verify(sessionRepository).flush();
-        verify(sessionRepository).save(any(Session.class));
+        verify(sessionRepository).save(argThat(session ->
+                !session.isMfaRequired()
+                        && session.getMfaVerifiedAt() != null
+                        && "pwd".equals(session.getPrimaryAmr())
+        ));
+    }
+
+    @Test
+    void createSession_shouldLeaveMfaUnverified_whenMfaRequired() {
+        ReflectionTestUtils.setField(sessionService, "refreshTokenDurationMs", 60000L);
+
+        AppUser user = new AppUser();
+        user.setId(UUID.randomUUID());
+        user.setMfaEnabled(true);
+
+        when(tokenHasher.hashToken("refresh")).thenReturn("hash");
+        when(sessionRepository.findByAppUserAndDeviceId(user, "device-1")).thenReturn(Optional.empty());
+        when(sessionRepository.save(any(Session.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        SessionCreationSpec spec = SessionCreationSpec.fromAppUser(user, "pwd");
+        sessionService.createSession(user, "refresh", "127.0.0.1", "device-1", "ua", spec);
+
+        verify(sessionRepository).save(argThat(session ->
+                session.isMfaRequired()
+                        && session.getMfaVerifiedAt() == null
+                        && "pwd".equals(session.getPrimaryAmr())
+        ));
     }
 
     @Test
@@ -134,10 +164,15 @@ class SessionServiceImplTest {
         when(tokenHasher.hashToken("new")).thenReturn("newHash");
         when(sessionRepository.rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class)))
                 .thenReturn(1);
+        Session rotated = new Session();
+        rotated.setAppUser(user);
+        rotated.setId(UUID.randomUUID());
+        when(sessionRepository.findByAppUserIdAndDeviceIdAndRefreshTokenHash(userId, "d1", "newHash"))
+                .thenReturn(Optional.of(rotated));
 
-        UUID actual = sessionService.validateAndRotateSession("old", "new", "d1");
+        Session actual = sessionService.validateAndRotateSession("old", "new", "d1");
 
-        assertEquals(userId, actual);
+        assertEquals(rotated, actual);
         verify(sessionRepository).rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class));
     }
 
@@ -230,7 +265,7 @@ class SessionServiceImplTest {
     }
 
     @Test
-    void validateAndRotateSession_shouldAllowExactlyOneWinnerUnderConcurrency() throws Exception {
+    void validateAndRotateSession_shouldAllowExactlyOneWinnerUnderConcurrency() {
         UUID userId = UUID.randomUUID();
         AppUser user = new AppUser();
         user.setId(userId);
@@ -243,22 +278,26 @@ class SessionServiceImplTest {
         AtomicBoolean cas = new AtomicBoolean(false);
         when(sessionRepository.rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class)))
                 .thenAnswer(invocation -> cas.compareAndSet(false, true) ? 1 : 0);
+        Session rotated = new Session();
+        rotated.setAppUser(user);
+        when(sessionRepository.findByAppUserIdAndDeviceIdAndRefreshTokenHash(userId, "d1", "newHash"))
+                .thenReturn(Optional.of(rotated));
 
-        int parallel = 8;
-        ExecutorService pool = Executors.newFixedThreadPool(parallel);
-        CountDownLatch ready = new CountDownLatch(parallel);
-        CountDownLatch start = new CountDownLatch(1);
-        AtomicInteger successCount = new AtomicInteger(0);
+        try (ExecutorService pool = Executors.newFixedThreadPool(8)) {
+            CountDownLatch ready = new CountDownLatch(8);
+            CountDownLatch start = new CountDownLatch(1);
+            AtomicInteger successCount = new AtomicInteger(0);
 
-        try {
-            List<Future<Boolean>> futures = java.util.stream.IntStream.range(0, parallel)
+            List<Future<Boolean>> futures = java.util.stream.IntStream.range(0, 8)
                     .mapToObj(i -> pool.submit(() -> {
                         ready.countDown();
-                        assertTrue(start.await(5, TimeUnit.SECONDS));
+                        if (!start.await(5, TimeUnit.SECONDS)) {
+                            return false;
+                        }
                         try {
                             sessionService.validateAndRotateSession("old", "new", "d1");
                             return true;
-                        } catch (BusinessException ex) {
+                        } catch (BusinessException e) {
                             return false;
                         }
                     }))
@@ -270,15 +309,16 @@ class SessionServiceImplTest {
             for (Future<Boolean> future : futures) {
                 if (future.get(5, TimeUnit.SECONDS)) successCount.incrementAndGet();
             }
-        } finally {
-            pool.shutdownNow();
-        }
 
-        assertEquals(1, successCount.get());
+            assertEquals(1, successCount.get());
+
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
-    void revokeCurrentSession_vs_refreshRotation_shouldBeDeterministicWhenRevokeWins() throws Exception {
+    void revokeCurrentSession_vs_refreshRotation_shouldBeDeterministicWhenRevokeWins() {
         UUID userId = UUID.randomUUID();
         AppUser user = new AppUser();
         user.setId(userId);
@@ -340,16 +380,17 @@ class SessionServiceImplTest {
         when(sessionRepository.rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class)))
                 .thenReturn(0);
 
-        int attempts = 6;
-        ExecutorService pool = Executors.newFixedThreadPool(attempts);
-        CountDownLatch ready = new CountDownLatch(attempts);
-        CountDownLatch start = new CountDownLatch(1);
-        AtomicInteger successCount = new AtomicInteger(0);
-        try {
-            List<Future<Boolean>> futures = java.util.stream.IntStream.range(0, attempts)
+        try (ExecutorService pool = Executors.newFixedThreadPool(6)) {
+            CountDownLatch ready = new CountDownLatch(6);
+            CountDownLatch start = new CountDownLatch(1);
+            AtomicInteger successCount = new AtomicInteger(0);
+
+            List<Future<Boolean>> futures = java.util.stream.IntStream.range(0, 6)
                     .mapToObj(i -> pool.submit(() -> {
                         ready.countDown();
-                        start.await(5, TimeUnit.SECONDS);
+                        if (!start.await(5, TimeUnit.SECONDS)) {
+                            return false;
+                        }
                         try {
                             sessionService.validateAndRotateSession("old", "new", "d1");
                             return true;
@@ -358,13 +399,13 @@ class SessionServiceImplTest {
                         }
                     }))
                     .toList();
+
             assertTrue(ready.await(5, TimeUnit.SECONDS));
             start.countDown();
+
             for (Future<Boolean> f : futures) if (f.get(5, TimeUnit.SECONDS)) successCount.incrementAndGet();
-        } finally {
-            pool.shutdownNow();
+            assertEquals(0, successCount.get());
         }
-        assertEquals(0, successCount.get());
     }
 
     @Test
@@ -380,8 +421,7 @@ class SessionServiceImplTest {
         when(sessionRepository.rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class)))
                 .thenReturn(0);
 
-        ExecutorService pool = Executors.newFixedThreadPool(4);
-        try {
+        try (ExecutorService pool = Executors.newFixedThreadPool(4)) {
             List<Future<Boolean>> futures = java.util.stream.IntStream.range(0, 4)
                     .mapToObj(i -> pool.submit(() -> {
                         try {
@@ -395,8 +435,6 @@ class SessionServiceImplTest {
             for (Future<Boolean> f : futures) {
                 assertFalse(f.get(5, TimeUnit.SECONDS));
             }
-        } finally {
-            pool.shutdownNow();
         }
     }
 }

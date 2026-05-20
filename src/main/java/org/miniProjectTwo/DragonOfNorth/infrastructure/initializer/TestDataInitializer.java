@@ -226,6 +226,9 @@ public class TestDataInitializer implements CommandLineRunner {
         session.setLastUsedAt(Instant.now());
         session.setExpiryDate(Instant.now().plusSeconds(7 * 24 * 60 * 60));
         session.setRevoked(false);
+        session.setMfaRequired(false);
+        session.setMfaVerifiedAt(Instant.now());
+        session.setPrimaryAmr("pwd");
 
         sessionRepository.save(session);
         createdSessions++;

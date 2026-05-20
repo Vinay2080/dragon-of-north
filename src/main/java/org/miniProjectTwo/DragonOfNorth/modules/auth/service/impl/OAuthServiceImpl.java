@@ -9,11 +9,14 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.GoogleTokenVerifierService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.OAuthService;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
+import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.*;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -39,6 +42,7 @@ public class OAuthServiceImpl implements OAuthService {
     private final GoogleTokenVerifierService tokenVerifierService;
     private final JwtServices jwtServices;
     private final SessionService sessionService;
+    private final SessionAccessTokenIssuer sessionAccessTokenIssuer;
     private final AppUserRepository appUserRepository;
     private final UserAuthProviderRepository userAuthProviderRepository;
     private final RoleRepository roleRepository;
@@ -181,13 +185,19 @@ public class OAuthServiceImpl implements OAuthService {
 
         updateLoginInfo(appUser);
 
-        String accessToken = jwtServices.generateAccessToken(appUser.getId(), appUser.getRoles());
         String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
+        Session session = sessionService.createSession(
+                appUser,
+                refreshToken,
+                ipAddress,
+                deviceId,
+                userAgent,
+                SessionCreationSpec.fromAppUser(appUser, "oauth")
+        );
+        String accessToken = sessionAccessTokenIssuer.mintAccessToken(session, appUser.getRoles());
 
         authCommonServices.setAccessToken(response, accessToken);
         authCommonServices.setRefreshToken(response, refreshToken);
-
-        sessionService.createSession(appUser, refreshToken, ipAddress, deviceId, userAgent);
     }
 
     private void recordOauthSuccess(String eventName, UUID userId, String deviceId, RequestMetadata metadata) {

@@ -1,6 +1,8 @@
 package org.miniProjectTwo.DragonOfNorth.modules.session.service;
 
 import org.miniProjectTwo.DragonOfNorth.modules.session.dto.response.SessionSummaryResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 
 import java.util.List;
@@ -12,9 +14,16 @@ import java.util.UUID;
 public interface SessionService {
 
     /**
-     * Creates or replaces the session for the given user/device pair.
+     * Creates or replaces the session for the given user/device pair using explicit MFA policy.
+     *
+     * @return the persisted session row (authoritative state for access-token claims)
      */
-    void createSession(AppUser appUser, String rawRefreshToken, String ipAddress, String deviceId, String userAgent);
+    Session createSession(AppUser appUser,
+                          String rawRefreshToken,
+                          String ipAddress,
+                          String deviceId,
+                          String userAgent,
+                          SessionCreationSpec creationSpec);
 
     /**
      * Revokes the current-device session for the provided refresh token.
@@ -37,9 +46,9 @@ public interface SessionService {
     int revokeAllOtherSessions(UUID userId, String currentDeviceId);
 
     /**
-     * Validates the old refresh token, rotates session token hash, and returns the user id.
+     * Validates the old refresh token, rotates session token hash, and returns the updated session row.
      */
-    UUID validateAndRotateSession(String oldRefreshToken, String newRefreshToken, String deviceId);
+    Session validateAndRotateSession(String oldRefreshToken, String newRefreshToken, String deviceId);
 
     /**
      * Revokes all active sessions for a user.

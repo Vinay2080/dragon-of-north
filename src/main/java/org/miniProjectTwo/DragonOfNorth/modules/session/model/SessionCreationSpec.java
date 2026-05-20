@@ -1,0 +1,41 @@
+package org.miniProjectTwo.DragonOfNorth.modules.session.model;
+
+import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
+
+import java.time.Instant;
+import java.util.Objects;
+
+/**
+ * Explicit MFA/session policy applied when a new device session row is created.
+ *
+ * <p>{@code mfaVerifiedAt} is set only when MFA is not required for this session.
+ * When MFA is required but not yet satisfied, it remains {@code null}.</p>
+ */
+public record SessionCreationSpec(
+        String primaryAmr,
+        boolean mfaRequired,
+        Instant mfaVerifiedAt
+) {
+    public SessionCreationSpec {
+        Objects.requireNonNull(primaryAmr, "primaryAmr must not be null");
+        if (primaryAmr.isBlank()) {
+            throw new IllegalArgumentException("primaryAmr must not be blank");
+        }
+        if (mfaRequired && mfaVerifiedAt != null) {
+            throw new IllegalArgumentException("mfaVerifiedAt must be null when mfaRequired is true");
+        }
+        if (!mfaRequired && mfaVerifiedAt == null) {
+            throw new IllegalArgumentException("mfaVerifiedAt must be set when mfaRequired is false");
+        }
+    }
+
+    /**
+     * Derives session MFA fields from the user's current MFA enrollment state.
+     */
+    public static SessionCreationSpec fromAppUser(AppUser appUser, String primaryAmr) {
+        Objects.requireNonNull(appUser, "appUser must not be null");
+        boolean mfaRequired = appUser.isMfaEnabled();
+        Instant mfaVerifiedAt = mfaRequired ? null : Instant.now();
+        return new SessionCreationSpec(primaryAmr, mfaRequired, mfaVerifiedAt);
+    }
+}

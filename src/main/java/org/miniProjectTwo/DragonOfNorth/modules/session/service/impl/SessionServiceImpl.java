@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.session.dto.response.SessionSummaryResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -46,7 +48,13 @@ public class SessionServiceImpl implements SessionService {
      */
     @Override
     @Transactional
-    public void createSession(AppUser appUser, String rawRefreshToken, String ipAddress, String deviceId, String userAgent) {
+    public Session createSession(AppUser appUser,
+                                 String rawRefreshToken,
+                                 String ipAddress,
+                                 String deviceId,
+                                 String userAgent,
+                                 SessionCreationSpec creationSpec) {
+        Objects.requireNonNull(creationSpec, "creationSpec must not be null");
         String tokenHash = tokenHasher.hashToken(rawRefreshToken);
 
         boolean replacedExisting = sessionRepository.findByAppUserAndDeviceId(appUser, deviceId)
@@ -65,12 +73,13 @@ public class SessionServiceImpl implements SessionService {
         session.setUserAgent(userAgent);
         session.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
         session.setLastUsedAt(Instant.now());
-        session.setMfaVerifiedAt(Instant.now());
-        session.setMfaRequired(appUser.isMfaEnabled());
-        session.setPrimaryAmr("pwd");
-        sessionRepository.save(session);
+        session.setMfaRequired(creationSpec.mfaRequired());
+        session.setMfaVerifiedAt(creationSpec.mfaVerifiedAt());
+        session.setPrimaryAmr(creationSpec.primaryAmr());
+        Session saved = sessionRepository.save(session);
         auditEventLogger.log("session.create", appUser.getId(), deviceId, ipAddress, "success",
-                "replaced_existing=" + replacedExisting, null);
+                "replaced_existing=" + replacedExisting + ",mfa_required=" + creationSpec.mfaRequired(), null);
+        return saved;
     }
 
 
@@ -166,7 +175,7 @@ public class SessionServiceImpl implements SessionService {
      */
     @Override
     @Transactional
-    public UUID validateAndRotateSession(String oldRefreshToken, String newRefreshToken, String deviceId) {
+    public Session validateAndRotateSession(String oldRefreshToken, String newRefreshToken, String deviceId) {
         UUID userId = jwtServices.extractUserId(oldRefreshToken);
         AppUser appUser = loadAndValidateUser(userId, UserLifecycleOperation.SESSION_ROTATE_REFRESH);
         String oldTokenHash = tokenHasher.hashToken(oldRefreshToken);
@@ -188,8 +197,8 @@ public class SessionServiceImpl implements SessionService {
 
         auditEventLogger.log("session.rotate", userId, deviceId, null, "success", null, null);
 
-        return appUser.getId();
-
+        return sessionRepository.findByAppUserIdAndDeviceIdAndRefreshTokenHash(appUser.getId(), deviceId, newTokenHash)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN, "Session not found after rotation"));
     }
 
     /**

@@ -22,6 +22,13 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
      */
     Optional<Session> findByRefreshTokenHashAndDeviceIdAndAppUser(String refreshTokenHash, String deviceId, AppUser appUser);
 
+    /**
+     * Finds an active session row after refresh rotation by user, device, and new token hash.
+     */
+    Optional<Session> findByAppUserIdAndDeviceIdAndRefreshTokenHash(UUID appUserId,
+                                                                    String deviceId,
+                                                                    String refreshTokenHash);
+
     @Modifying
     @Query("""
             update Session s

@@ -9,11 +9,14 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderReposi
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.GoogleTokenVerifierService;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
+import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.Provider;
@@ -59,6 +62,8 @@ class OAuthServiceImplTest {
     private AuditEventLogger auditEventLogger;
     @Mock
     private UserStateValidator userStateValidator;
+    @Mock
+    private SessionAccessTokenIssuer sessionAccessTokenIssuer;
 
     @InjectMocks
     private OAuthServiceImpl oAuthService;
@@ -88,8 +93,13 @@ class OAuthServiceImplTest {
         when(appUserRepository.findByEmailForUpdate("new@example.com")).thenReturn(Optional.empty());
         when(roleRepository.findByRoleName(RoleName.USER)).thenReturn(Optional.of(role));
         when(appUserRepository.save(any(AppUser.class))).thenReturn(newUser);
-        when(jwtServices.generateAccessToken(eq(newUser.getId()), anySet())).thenReturn("access");
         when(jwtServices.generateRefreshToken(newUser.getId())).thenReturn("refresh");
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setAppUser(newUser);
+        when(sessionService.createSession(eq(newUser), eq("refresh"), any(), eq("device-1"), any(), any(SessionCreationSpec.class)))
+                .thenReturn(session);
+        when(sessionAccessTokenIssuer.mintAccessToken(eq(session), anySet())).thenReturn("access");
         doNothing().when(authCommonServices).setAccessToken(any(HttpServletResponse.class), anyString());
         doNothing().when(authCommonServices).setRefreshToken(any(HttpServletResponse.class), anyString());
 
@@ -99,7 +109,9 @@ class OAuthServiceImplTest {
         verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
         verify(profileService).ensureProfileExists(newUser.getId(), userInfo);
         verify(profileService).syncGoogleAvatar(newUser.getId(), userInfo);
-        verify(sessionService).createSession(eq(newUser), eq("refresh"), any(), eq("device-1"), any());
+        verify(sessionService).createSession(eq(newUser), eq("refresh"), any(), eq("device-1"), any(), any(SessionCreationSpec.class));
+        verify(sessionAccessTokenIssuer).mintAccessToken(eq(session), anySet());
+        verify(jwtServices, never()).generateAccessToken(any(), anySet());
         verify(authCommonServices).setAccessToken(response, "access");
         verify(authCommonServices).setRefreshToken(response, "refresh");
     }
@@ -124,8 +136,13 @@ class OAuthServiceImplTest {
         when(userAuthProviderRepository.findByProviderAndProviderId(Provider.GOOGLE, "google-sub-2")).thenReturn(Optional.empty());
         when(appUserRepository.findByEmailForUpdate("existing@example.com")).thenReturn(Optional.of(existingUser));
         when(userAuthProviderRepository.existsByUserIdAndProvider(existingUser.getId(), Provider.GOOGLE)).thenReturn(false);
-        when(jwtServices.generateAccessToken(eq(existingUser.getId()), anySet())).thenReturn("access");
         when(jwtServices.generateRefreshToken(existingUser.getId())).thenReturn("refresh");
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setAppUser(existingUser);
+        when(sessionService.createSession(eq(existingUser), eq("refresh"), any(), eq("device-2"), any(), any(SessionCreationSpec.class)))
+                .thenReturn(session);
+        when(sessionAccessTokenIssuer.mintAccessToken(eq(session), anySet())).thenReturn("access");
         doNothing().when(authCommonServices).setAccessToken(any(HttpServletResponse.class), anyString());
         doNothing().when(authCommonServices).setRefreshToken(any(HttpServletResponse.class), anyString());
 

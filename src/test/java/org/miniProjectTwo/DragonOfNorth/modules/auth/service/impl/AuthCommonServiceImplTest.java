@@ -9,12 +9,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
+import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.Provider;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
@@ -60,6 +63,9 @@ class AuthCommonServiceImplTest {
 
     @Mock
     private SessionService sessionService;
+
+    @Mock
+    private SessionAccessTokenIssuer sessionAccessTokenIssuer;
 
     @Mock
     private MeterRegistry meterRegistry;
@@ -174,7 +180,7 @@ class AuthCommonServiceImplTest {
                 authCommonService.login("user@example.com", "Secret@123", response, context));
 
         assertEquals(ErrorCode.EMAIL_NOT_VERIFIED, exception.getErrorCode());
-        verify(sessionService, never()).createSession(any(), anyString(), anyString(), anyString(), anyString());
+        verify(sessionService, never()).createSession(any(), anyString(), anyString(), anyString(), anyString(), any());
         verify(meterRegistry).counter("auth.login.failure");
         verify(auditEventLogger).log(eq("auth.login"), eq(user.getId()), eq("device-1"), eq("127.0.0.1"), eq("failure"), argThat(msg -> msg != null && msg.toLowerCase().contains("not verified")), eq("req-1"));
     }
@@ -196,8 +202,13 @@ class AuthCommonServiceImplTest {
         when(userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), Provider.LOCAL)).thenReturn(true);
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
         when(authentication.getPrincipal()).thenReturn(new AppUserDetails(user));
-        when(jwtServices.generateAccessToken(any(), any())).thenReturn("access");
         when(jwtServices.generateRefreshToken(any())).thenReturn("refresh");
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setAppUser(user);
+        when(sessionService.createSession(eq(user), eq("refresh"), any(), eq("device-1"), any(), any(SessionCreationSpec.class)))
+                .thenReturn(session);
+        when(sessionAccessTokenIssuer.mintAccessToken(eq(session), eq(user.getRoles()))).thenReturn("access");
         when(meterRegistry.counter(anyString())).thenReturn(successCounter);
 
         authCommonService.login(" USER@EXAMPLE.COM ", "Secret@123", response, context);
@@ -222,15 +233,20 @@ class AuthCommonServiceImplTest {
         when(jwtServices.extractUserId("old-refresh")).thenReturn(userId);
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
         when(jwtServices.generateRefreshToken(userId)).thenReturn("new-refresh");
-        when(sessionService.validateAndRotateSession("old-refresh", "new-refresh", "device-1")).thenReturn(userId);
+        Session session = new Session();
+        session.setId(UUID.randomUUID());
+        session.setAppUser(user);
+        when(sessionService.validateAndRotateSession("old-refresh", "new-refresh", "device-1")).thenReturn(session);
         when(roleRepository.findRolesById(userId)).thenReturn(Set.of());
-        when(jwtServices.refreshAccessToken("new-refresh", Set.of())).thenReturn("new-access");
+        when(sessionAccessTokenIssuer.mintAccessToken(session, Set.of())).thenReturn("new-access");
         when(meterRegistry.counter(anyString())).thenReturn(successCounter);
 
         authCommonService.refreshToken("old-refresh", response, context);
 
         verify(userStateValidator).validate(user, UserLifecycleOperation.SESSION_ROTATE_REFRESH);
         verify(sessionService).validateAndRotateSession("old-refresh", "new-refresh", "device-1");
+        verify(sessionAccessTokenIssuer).mintAccessToken(session, Set.of());
+        verify(jwtServices, never()).refreshAccessToken(anyString(), any());
     }
 
     @Test
