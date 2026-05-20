@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.miniProjectTwo.DragonOfNorth.security.service.AuthnFacts;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.security.util.KeyUtils;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -40,6 +42,10 @@ public class JwtServicesImpl implements JwtServices {
     private static final String REFRESH_TOKEN_TYPE = "refresh_token";
     private static final String ISSUER = "dragon-of-north-auth";
     private static final String ROLES = "roles";
+    private static final String MFA_VERIFIED = "mfa_verified";
+    private static final String MFA_VERIFIED_AT = "mfa_verified_at";
+    private static final String AMR = "amr";
+    private static final String SESSION_ID = "sid";
 
 
     private final PrivateKey privateKey;
@@ -81,6 +87,30 @@ public class JwtServicesImpl implements JwtServices {
         Map<String, Object> claims = Map.of(TOKEN_TYPE, ACCESS_TOKEN_TYPE, ROLES, roleNames);
 
         return buildToken(userId, claims, accessTokenExpiration);
+    }
+
+    @Override
+    public String generateAccessToken(AuthnFacts authnFacts) {
+        Objects.requireNonNull(authnFacts, "authnFacts cannot be null");
+
+        List<String> roles = authnFacts.roles() == null ? List.of() : List.copyOf(authnFacts.roles());
+        List<String> amr = authnFacts.amr() == null ? List.of() : List.copyOf(authnFacts.amr());
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(TOKEN_TYPE, ACCESS_TOKEN_TYPE);
+        claims.put(ROLES, roles);
+        claims.put(MFA_VERIFIED, authnFacts.mfaVerified());
+        claims.put(AMR, amr);
+
+        if (authnFacts.mfaVerifiedAt() != null) {
+            claims.put(MFA_VERIFIED_AT, Date.from(authnFacts.mfaVerifiedAt()));
+        }
+
+        if (authnFacts.sessionId() != null) {
+            claims.put(SESSION_ID, authnFacts.sessionId().toString());
+        }
+
+        return buildToken(authnFacts.userId(), claims, accessTokenExpiration);
     }
 
     /**
@@ -217,6 +247,60 @@ public class JwtServicesImpl implements JwtServices {
                     String.format("Invalid token type: expected %s but received %s", REFRESH_TOKEN_TYPE, tokenType)
             );
         }
+    }
+
+    @Override
+    public boolean extractMfaVerified(String token) {
+        Claims claims = extractAllClaims(token);
+        Boolean value = claims.get(MFA_VERIFIED, Boolean.class);
+        return Boolean.TRUE.equals(value);
+    }
+
+    @Override
+    public Instant extractMfaVerifiedAt(String token) {
+        Claims claims = extractAllClaims(token);
+        Object value = claims.get(MFA_VERIFIED_AT);
+        return toInstant(value);
+    }
+
+    @Override
+    public List<String> extractAmr(String token) {
+        Claims claims = extractAllClaims(token);
+        Object value = claims.get(AMR);
+        if (value instanceof List<?> list) {
+            List<String> amr = new ArrayList<>();
+            for (Object entry : list) {
+                if (entry != null) {
+                    amr.add(entry.toString());
+                }
+            }
+            return List.copyOf(amr);
+        }
+        return List.of();
+    }
+
+    @Override
+    public UUID extractSessionId(String token) {
+        Claims claims = extractAllClaims(token);
+        String raw = claims.get(SESSION_ID, String.class);
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private Instant toInstant(Object value) {
+        if (value instanceof Date date) {
+            return date.toInstant();
+        }
+        if (value instanceof Number number) {
+            return Instant.ofEpochMilli(number.longValue());
+        }
+        return null;
     }
 }
 

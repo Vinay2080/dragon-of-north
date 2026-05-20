@@ -3,8 +3,8 @@ package org.miniProjectTwo.DragonOfNorth.security.service.impl;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.miniProjectTwo.DragonOfNorth.security.service.AuthnFacts;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
-import org.miniProjectTwo.DragonOfNorth.security.service.impl.JwtServicesImpl;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -14,10 +14,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.time.Instant;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class JwtServicesTest {
 
@@ -80,6 +80,49 @@ class JwtServicesTest {
         assertEquals(userId.toString(), claims.getSubject());
         assertEquals("access_token", claims.get("token_type"));
         assertNotNull(claims.get("roles"));
+    }
+
+    @Test
+    void generateAccessToken_withAuthnFacts_shouldIncludeMfaClaims() {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        Instant verifiedAt = Instant.parse("2026-05-20T00:00:00Z");
+
+        AuthnFacts facts = new AuthnFacts(
+                userId,
+                List.of(RoleName.USER.name()),
+                true,
+                verifiedAt,
+                List.of("pwd"),
+                sessionId
+        );
+
+        String token = jwtServices.generateAccessToken(facts);
+
+        Claims claims = jwtServices.extractAllClaims(token);
+        assertEquals(userId.toString(), claims.getSubject());
+        assertEquals("access_token", claims.get("token_type"));
+        assertEquals(true, claims.get("mfa_verified"));
+        assertEquals("pwd", ((List<?>) claims.get("amr")).getFirst());
+        assertEquals(sessionId.toString(), claims.get("sid"));
+
+        assertTrue(jwtServices.extractMfaVerified(token));
+        assertEquals(verifiedAt, jwtServices.extractMfaVerifiedAt(token));
+        assertEquals(List.of("pwd"), jwtServices.extractAmr(token));
+        assertEquals(sessionId, jwtServices.extractSessionId(token));
+    }
+
+    @Test
+    void extractMfaClaims_shouldTolerateMissingClaims() {
+        UUID userId = UUID.randomUUID();
+        Set<Role> roles = Collections.emptySet();
+
+        String token = jwtServices.generateAccessToken(userId, roles);
+
+        assertFalse(jwtServices.extractMfaVerified(token));
+        assertEquals(List.of(), jwtServices.extractAmr(token));
+        assertNull(jwtServices.extractMfaVerifiedAt(token));
+        assertNull(jwtServices.extractSessionId(token));
     }
 
     @Test

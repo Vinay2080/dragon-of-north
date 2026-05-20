@@ -8,7 +8,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.security.filter.JwtFilter;
+import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -85,7 +85,9 @@ class JwtFilterTest {
         // assert
         verify(filterChain).doFilter(request, response);
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
-        assertEquals(userId, SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        assertInstanceOf(SecurityPrincipal.class, principal);
+        assertEquals(userId, ((SecurityPrincipal) principal).userId());
     }
 
     @Test
@@ -110,7 +112,9 @@ class JwtFilterTest {
         // assert
         verify(filterChain).doFilter(request, response);
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
-        assertEquals(userId, SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        assertInstanceOf(SecurityPrincipal.class, principal);
+        assertEquals(userId, ((SecurityPrincipal) principal).userId());
     }
 
     @Test

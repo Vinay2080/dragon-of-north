@@ -65,6 +65,9 @@ public class SessionServiceImpl implements SessionService {
         session.setUserAgent(userAgent);
         session.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
         session.setLastUsedAt(Instant.now());
+        session.setMfaVerifiedAt(Instant.now());
+        session.setMfaRequired(appUser.isMfaEnabled());
+        session.setPrimaryAmr("pwd");
         sessionRepository.save(session);
         auditEventLogger.log("session.create", appUser.getId(), deviceId, ipAddress, "success",
                 "replaced_existing=" + replacedExisting, null);

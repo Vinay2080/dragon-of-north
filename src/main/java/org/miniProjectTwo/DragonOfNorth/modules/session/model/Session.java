@@ -67,6 +67,15 @@ public class Session extends BaseEntity {
     @Column(nullable = false)
     private boolean revoked = false;
 
+    @Column(name = "mfa_verified_at")
+    private Instant mfaVerifiedAt;
+
+    @Column(name = "mfa_required", nullable = false)
+    private boolean mfaRequired = false;
+
+    @Column(name = "primary_amr", nullable = false, length = 32)
+    private String primaryAmr = "pwd";
+
     /**
      * Returns whether the session is already past its expiry timestamp.
      */

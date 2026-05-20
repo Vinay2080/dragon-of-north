@@ -10,6 +10,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.profile.model.Profile;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
+import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.Provider;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -95,6 +96,10 @@ public class ProfileController implements ProfileApi {
 
         if (principal instanceof AppUser appUser && appUser.getId() != null) {
             return appUser.getId();
+        }
+
+        if (principal instanceof SecurityPrincipal securityPrincipal && securityPrincipal.userId() != null) {
+            return securityPrincipal.userId();
         }
 
         if (principal instanceof UUID userId) {

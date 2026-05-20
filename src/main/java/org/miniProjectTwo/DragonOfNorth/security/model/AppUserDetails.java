@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.springframework.modulith.NamedInterface;
 import org.springframework.security.core.GrantedAuthority;
@@ -117,6 +118,6 @@ public class AppUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return appUser.getAppUserStatus() == AppUserStatus.ACTIVE;
     }
 }

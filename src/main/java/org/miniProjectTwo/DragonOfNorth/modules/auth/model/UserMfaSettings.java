@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.modules.auth.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,6 +20,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "user_mfa_settings")
 public class UserMfaSettings extends BaseEntity {
 
@@ -37,9 +39,4 @@ public class UserMfaSettings extends BaseEntity {
     @Column(name = "totp_enabled_at", nullable = false)
     private Instant totpEnabledAt;
 
-    public UserMfaSettings(AppUser user, String totpSecretEncrypted, Instant totpEnabledAt) {
-        this.user = user;
-        this.totpSecretEncrypted = totpSecretEncrypted;
-        this.totpEnabledAt = totpEnabledAt;
-    }
 }

@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,7 +22,9 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -59,6 +62,11 @@ public class JwtFilter extends OncePerRequestFilter {
     private final JwtServices jwtServices;
 
     private final static String ROLES = "roles";
+    private static final String MFA_VERIFIED = "mfa_verified";
+    private static final String MFA_VERIFIED_AT = "mfa_verified_at";
+    private static final String AMR = "amr";
+    private static final String SESSION_ID = "sid";
+    private static final List<String> LEGACY_DEFAULT_AMR = List.of("pwd");
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
     @Override
@@ -129,9 +137,23 @@ public class JwtFilter extends OncePerRequestFilter {
                         authorities.add(new SimpleGrantedAuthority("ROLE_" + role)));
 
 
+                boolean mfaVerified = resolveMfaVerified(claims);
+                Instant mfaVerifiedAt = resolveMfaVerifiedAt(claims);
+                List<String> amr = resolveAmr(claims);
+                UUID sessionId = resolveSessionId(claims);
+
+                SecurityPrincipal principal = new SecurityPrincipal(
+                        userId,
+                        authorities,
+                        mfaVerified,
+                        mfaVerifiedAt,
+                        sessionId,
+                        amr
+                );
+
                 UsernamePasswordAuthenticationToken authenticationToken =
                         new UsernamePasswordAuthenticationToken(
-                                userId,
+                                principal,
                                 null,
                                 authorities
                         );
@@ -160,5 +182,47 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private boolean isPublic(String path) {
         return Stream.of(public_urls).anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
+    }
+
+    private boolean resolveMfaVerified(Claims claims) {
+        Boolean value = claims.get(MFA_VERIFIED, Boolean.class);
+        return value == null || value;
+    }
+
+    private Instant resolveMfaVerifiedAt(Claims claims) {
+        Object raw = claims.get(MFA_VERIFIED_AT);
+        if (raw instanceof Date date) {
+            return date.toInstant();
+        }
+        if (raw instanceof Number number) {
+            return Instant.ofEpochMilli(number.longValue());
+        }
+        return Instant.now();
+    }
+
+    private List<String> resolveAmr(Claims claims) {
+        Object raw = claims.get(AMR);
+        if (raw instanceof List<?> list) {
+            List<String> amr = new ArrayList<>();
+            for (Object entry : list) {
+                if (entry != null) {
+                    amr.add(entry.toString());
+                }
+            }
+            return amr.isEmpty() ? LEGACY_DEFAULT_AMR : List.copyOf(amr);
+        }
+        return LEGACY_DEFAULT_AMR;
+    }
+
+    private UUID resolveSessionId(Claims claims) {
+        String raw = claims.get(SESSION_ID, String.class);
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 }

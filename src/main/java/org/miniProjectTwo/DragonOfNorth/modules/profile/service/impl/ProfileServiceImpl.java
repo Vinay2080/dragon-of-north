@@ -14,6 +14,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
+import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.UserLifecycleOperation;
@@ -251,6 +252,10 @@ public class ProfileServiceImpl implements ProfileService {
             return userId;
         }
 
+        if (principal instanceof SecurityPrincipal securityPrincipal && securityPrincipal.userId() != null) {
+            return securityPrincipal.userId();
+        }
+
         if (principal instanceof AppUser appUser && appUser.getId() != null) {
             return appUser.getId();
         }
@@ -412,4 +417,3 @@ public class ProfileServiceImpl implements ProfileService {
         profile.setAvatarSource(AvatarSource.USER_DEFINED);
     }
 }
-

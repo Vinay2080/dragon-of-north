@@ -13,6 +13,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
+import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.security.service.impl.JwtServicesImpl;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
@@ -173,6 +174,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private UUID resolveAuthenticatedUserId(Object principal) {
         return switch (principal) {
             case AppUserDetails appUserDetails -> appUserDetails.getAppUser().getId();
+            case SecurityPrincipal securityPrincipal -> securityPrincipal.userId();
             case UUID id -> id;
             case String raw when !raw.isBlank() -> parseAuthenticatedUserId(raw);
             case null, default -> throw new BusinessException(ErrorCode.ACCESS_DENIED, "User not authenticated");
