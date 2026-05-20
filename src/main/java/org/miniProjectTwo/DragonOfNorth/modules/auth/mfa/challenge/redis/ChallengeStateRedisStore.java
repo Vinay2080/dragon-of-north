@@ -43,4 +43,9 @@ public class ChallengeStateRedisStore {
     public void delete(String tokenId) {
         redisTemplate.delete(MfaChallengeRedisKeys.challengeKey(tokenId));
     }
+
+    public boolean deleteIfPresent(String tokenId) {
+        Boolean deleted = redisTemplate.delete(MfaChallengeRedisKeys.challengeKey(tokenId));
+        return Boolean.TRUE.equals(deleted);
+    }
 }

@@ -1,0 +1,35 @@
+package org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.service;
+
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.ChallengeState;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.MfaChallenge;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Manages the pre-authentication MFA challenge lifecycle.
+ */
+public interface MfaChallengeService {
+
+    /**
+     * Creates a new MFA challenge for the user and stores its server-side state in Redis.
+     */
+    MfaChallenge createChallenge(UUID userId,
+                                 String primaryAmr,
+                                 AuthRequestContext context,
+                                 List<ProviderType> availableMethods);
+
+    /**
+     * Reads the challenge state without mutating it.
+     */
+    Optional<ChallengeState> peek(String mfaToken);
+
+    /**
+     * Invalidates the challenge token and deletes its Redis state.
+     */
+    void invalidate(String mfaToken, AuthRequestContext context);
+}
+
