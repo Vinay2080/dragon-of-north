@@ -9,6 +9,7 @@ import java.util.UUID;
  */
 public final class MfaChallengeRedisKeys {
     private static final String CHALLENGE_PREFIX = "auth:mfa:challenge:";
+    private static final String CHALLENGE_LOCK_SUFFIX = ":lock";
     private static final String LOCKOUT_PREFIX = "auth:mfa:lockout:";
 
     private MfaChallengeRedisKeys() {
@@ -27,5 +28,8 @@ public final class MfaChallengeRedisKeys {
         }
         return LOCKOUT_PREFIX + userId;
     }
-}
 
+    public static String challengeLockKey(String tokenId) {
+        return challengeKey(tokenId) + CHALLENGE_LOCK_SUFFIX;
+    }
+}
