@@ -7,10 +7,10 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -56,18 +56,26 @@ import static org.miniProjectTwo.DragonOfNorth.security.config.SecurityConfig.pu
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtServices jwtServices;
+    private final boolean legacyMfaClaimFallbackEnabled;
 
     private final static String ROLES = "roles";
     private static final String MFA_VERIFIED = "mfa_verified";
     private static final String MFA_VERIFIED_AT = "mfa_verified_at";
     private static final String AMR = "amr";
     private static final String SESSION_ID = "sid";
-    private static final List<String> LEGACY_DEFAULT_AMR = List.of("pwd");
+    private static final List<String> LEGACY_DEFAULT_AMR = List.of("legacy_pwd");
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+
+    public JwtFilter(
+            JwtServices jwtServices,
+            @Value("${app.security.jwt.legacy-mfa-claim-fallback-enabled:false}") boolean legacyMfaClaimFallbackEnabled
+    ) {
+        this.jwtServices = jwtServices;
+        this.legacyMfaClaimFallbackEnabled = legacyMfaClaimFallbackEnabled;
+    }
 
     @Override
     public void doFilterInternal(
@@ -186,7 +194,10 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private boolean resolveMfaVerified(Claims claims) {
         Boolean value = claims.get(MFA_VERIFIED, Boolean.class);
-        return value == null || value;
+        if (value != null) {
+            return value;
+        }
+        return legacyMfaClaimFallbackEnabled;
     }
 
     private Instant resolveMfaVerifiedAt(Claims claims) {
@@ -197,7 +208,10 @@ public class JwtFilter extends OncePerRequestFilter {
         if (raw instanceof Number number) {
             return Instant.ofEpochMilli(number.longValue());
         }
-        return Instant.now();
+        if (legacyMfaClaimFallbackEnabled) {
+            return Instant.now();
+        }
+        return null;
     }
 
     private List<String> resolveAmr(Claims claims) {
@@ -209,9 +223,12 @@ public class JwtFilter extends OncePerRequestFilter {
                     amr.add(entry.toString());
                 }
             }
-            return amr.isEmpty() ? LEGACY_DEFAULT_AMR : List.copyOf(amr);
+            if (!amr.isEmpty()) {
+                return List.copyOf(amr);
+            }
+            return legacyMfaClaimFallbackEnabled ? LEGACY_DEFAULT_AMR : List.of();
         }
-        return LEGACY_DEFAULT_AMR;
+        return legacyMfaClaimFallbackEnabled ? LEGACY_DEFAULT_AMR : List.of();
     }
 
     private UUID resolveSessionId(Claims claims) {

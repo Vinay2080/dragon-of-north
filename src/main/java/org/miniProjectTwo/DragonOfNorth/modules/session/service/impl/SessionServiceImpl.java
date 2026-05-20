@@ -85,14 +85,18 @@ public class SessionServiceImpl implements SessionService {
 
         String tokenHash = tokenHasher.hashToken(refreshToken);
 
-        var sessionOptional = sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser(tokenHash, deviceId, appUser);
-        if (sessionOptional.isEmpty()) {
-            meterRegistry.counter("session.revoked.failure").increment();
-            auditEventLogger.log("session.revoke.current", userId, deviceId, null, "failure", "session not found", null);
+        int updated = sessionRepository.revokeCurrentSessionIfActive(userId, deviceId, tokenHash);
+        if (updated == 0) {
+            boolean exists = sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser(tokenHash, deviceId, appUser).isPresent();
+            if (!exists) {
+                meterRegistry.counter("session.revoked.failure").increment();
+                auditEventLogger.log("session.revoke.current", userId, deviceId, null, "failure", "session not found", null);
+                return;
+            }
+            auditEventLogger.log("session.revoke.current", userId, deviceId, null, "success", "already_revoked", null);
             return;
         }
 
-        sessionOptional.get().setRevoked(true);
         meterRegistry.counter("session.revoked.current").increment();
         auditEventLogger.log("session.revoke.current", userId, deviceId, null, "success", null, null);
 
@@ -166,26 +170,22 @@ public class SessionServiceImpl implements SessionService {
         UUID userId = jwtServices.extractUserId(oldRefreshToken);
         AppUser appUser = loadAndValidateUser(userId, UserLifecycleOperation.SESSION_ROTATE_REFRESH);
         String oldTokenHash = tokenHasher.hashToken(oldRefreshToken);
-        Session session = sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser(oldTokenHash, deviceId, appUser)
-                .orElseThrow(() -> {
-                    auditEventLogger.log("session.rotate", userId, deviceId, null, "failure", "session not found", null);
-                    return new BusinessException(ErrorCode.INVALID_TOKEN, "Invalid session: token not found");
-                });
-
-        if (session.isExpired()) {
-            sessionRepository.delete(session);
-            auditEventLogger.log("session.rotate", userId, deviceId, null, "failure", "session expired", null);
-            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Session expired");
-        }
-
-        if (session.isRevoked()) {
-            auditEventLogger.log("session.rotate", userId, deviceId, null, "failure", "session revoked", null);
-            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Session revoked");
-        }
-
         String newTokenHash = tokenHasher.hashToken(newRefreshToken);
-        session.setRefreshTokenHash(newTokenHash);
-        session.setLastUsedAt(Instant.now());
+        Instant now = Instant.now();
+        int updated = sessionRepository.rotateRefreshTokenIfActive(
+                appUser.getId(),
+                deviceId,
+                oldTokenHash,
+                newTokenHash,
+                now,
+                now
+        );
+
+        if (updated != 1) {
+            auditEventLogger.log("session.rotate", userId, deviceId, null, "failure", "session not rotatable", null);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Invalid session: token not rotatable");
+        }
+
         auditEventLogger.log("session.rotate", userId, deviceId, null, "success", null, null);
 
         return appUser.getId();

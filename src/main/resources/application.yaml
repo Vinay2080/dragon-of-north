@@ -38,7 +38,11 @@ spring:
 
 app:
   security:
+    sid-enforcement:
+      mode: ${sid_enforcement_mode:disabled}
+      sensitive-patterns: ${sid_enforcement_sensitive_patterns:/api/v1/session/**,/api/v1/auth/password/forgot/reset}
     jwt:
+      legacy-mfa-claim-fallback-enabled: ${jwt_legacy_mfa_claim_fallback_enabled:false}
       expiration:
         access-token: ${access_token}
         refresh-token: ${refresh_token}

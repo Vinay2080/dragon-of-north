@@ -24,6 +24,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -106,14 +109,12 @@ class SessionServiceImplTest {
         AppUser user = new AppUser();
         user.setId(userId);
 
-        Session session = new Session();
-        session.setRevoked(true);
-        session.setExpiryDate(Instant.now().plusSeconds(60));
-
         when(jwtServices.extractUserId("old")).thenReturn(userId);
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
         when(tokenHasher.hashToken("old")).thenReturn("oldHash");
-        when(sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser("oldHash", "d1", user)).thenReturn(Optional.of(session));
+        when(tokenHasher.hashToken("new")).thenReturn("newHash");
+        when(sessionRepository.rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class)))
+                .thenReturn(0);
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> sessionService.validateAndRotateSession("old", "new", "d1"));
@@ -127,21 +128,17 @@ class SessionServiceImplTest {
         AppUser user = new AppUser();
         user.setId(userId);
 
-        Session session = new Session();
-        session.setRevoked(false);
-        session.setExpiryDate(Instant.now().plusSeconds(60));
-
         when(jwtServices.extractUserId("old")).thenReturn(userId);
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
         when(tokenHasher.hashToken("old")).thenReturn("oldHash");
         when(tokenHasher.hashToken("new")).thenReturn("newHash");
-        when(sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser("oldHash", "d1", user)).thenReturn(Optional.of(session));
+        when(sessionRepository.rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class)))
+                .thenReturn(1);
 
         UUID actual = sessionService.validateAndRotateSession("old", "new", "d1");
 
         assertEquals(userId, actual);
-        assertEquals("newHash", session.getRefreshTokenHash());
-        assertNotNull(session.getLastUsedAt());
+        verify(sessionRepository).rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class));
     }
 
     @Test
@@ -149,12 +146,11 @@ class SessionServiceImplTest {
         UUID userId = UUID.randomUUID();
         AppUser user = new AppUser();
         user.setId(userId);
-        Session session = new Session();
 
         when(jwtServices.extractUserId("refresh")).thenReturn(userId);
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
         when(tokenHasher.hashToken("refresh")).thenReturn("hash");
-        when(sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser("hash", "device1", user)).thenReturn(Optional.of(session));
+        when(sessionRepository.revokeCurrentSessionIfActive(userId, "device1", "hash")).thenReturn(1);
         when(meterRegistry.counter(any())).thenReturn(counter);
 
         sessionService.revokeSession("refresh", "device1");
@@ -162,7 +158,6 @@ class SessionServiceImplTest {
         // Remove this line - save() is not explicitly called
         // verify(sessionRepository).save(session);
 
-        assertTrue(session.isRevoked());
         verify(auditEventLogger).log("session.revoke.current", userId, "device1", null, "success", null, null);
     }
 
@@ -175,12 +170,30 @@ class SessionServiceImplTest {
         when(jwtServices.extractUserId("refresh")).thenReturn(userId);
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
         when(tokenHasher.hashToken("refresh")).thenReturn("hash");
+        when(sessionRepository.revokeCurrentSessionIfActive(userId, "device1", "hash")).thenReturn(0);
         when(sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser("hash", "device1", user)).thenReturn(Optional.empty());
         when(meterRegistry.counter(any())).thenReturn(counter);
 
         sessionService.revokeSession("refresh", "device1");
 
         verify(auditEventLogger).log("session.revoke.current", userId, "device1", null, "failure", "session not found", null);
+    }
+
+    @Test
+    void revokeSession_shouldBeIdempotent_whenAlreadyRevoked() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+
+        when(jwtServices.extractUserId("refresh")).thenReturn(userId);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(tokenHasher.hashToken("refresh")).thenReturn("hash");
+        when(sessionRepository.revokeCurrentSessionIfActive(userId, "device1", "hash")).thenReturn(0);
+        when(sessionRepository.findByRefreshTokenHashAndDeviceIdAndAppUser("hash", "device1", user)).thenReturn(Optional.of(new Session()));
+
+        sessionService.revokeSession("refresh", "device1");
+
+        verify(auditEventLogger).log("session.revoke.current", userId, "device1", null, "success", "already_revoked", null);
     }
 
     @Test
@@ -214,5 +227,176 @@ class SessionServiceImplTest {
                 () -> sessionService.revokeSession("refresh", "device1"));
 
         assertEquals(ErrorCode.USER_BLOCKED, ex.getErrorCode());
+    }
+
+    @Test
+    void validateAndRotateSession_shouldAllowExactlyOneWinnerUnderConcurrency() throws Exception {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+
+        when(jwtServices.extractUserId("old")).thenReturn(userId);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(tokenHasher.hashToken("old")).thenReturn("oldHash");
+        when(tokenHasher.hashToken("new")).thenReturn("newHash");
+
+        AtomicBoolean cas = new AtomicBoolean(false);
+        when(sessionRepository.rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class)))
+                .thenAnswer(invocation -> cas.compareAndSet(false, true) ? 1 : 0);
+
+        int parallel = 8;
+        ExecutorService pool = Executors.newFixedThreadPool(parallel);
+        CountDownLatch ready = new CountDownLatch(parallel);
+        CountDownLatch start = new CountDownLatch(1);
+        AtomicInteger successCount = new AtomicInteger(0);
+
+        try {
+            List<Future<Boolean>> futures = java.util.stream.IntStream.range(0, parallel)
+                    .mapToObj(i -> pool.submit(() -> {
+                        ready.countDown();
+                        assertTrue(start.await(5, TimeUnit.SECONDS));
+                        try {
+                            sessionService.validateAndRotateSession("old", "new", "d1");
+                            return true;
+                        } catch (BusinessException ex) {
+                            return false;
+                        }
+                    }))
+                    .toList();
+
+            assertTrue(ready.await(5, TimeUnit.SECONDS));
+            start.countDown();
+
+            for (Future<Boolean> future : futures) {
+                if (future.get(5, TimeUnit.SECONDS)) successCount.incrementAndGet();
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertEquals(1, successCount.get());
+    }
+
+    @Test
+    void revokeCurrentSession_vs_refreshRotation_shouldBeDeterministicWhenRevokeWins() throws Exception {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+
+        when(jwtServices.extractUserId("refresh")).thenReturn(userId);
+        when(jwtServices.extractUserId("old")).thenReturn(userId);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(tokenHasher.hashToken("refresh")).thenReturn("oldHash");
+        when(tokenHasher.hashToken("old")).thenReturn("oldHash");
+        when(tokenHasher.hashToken("new")).thenReturn("newHash");
+        when(sessionRepository.revokeCurrentSessionIfActive(userId, "d1", "oldHash")).thenReturn(1);
+        when(meterRegistry.counter(any())).thenReturn(counter);
+
+        AtomicBoolean revoked = new AtomicBoolean(false);
+        when(sessionRepository.rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class)))
+                .thenAnswer(invocation -> revoked.get() ? 0 : 1);
+
+        sessionService.revokeSession("refresh", "d1");
+        revoked.set(true);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> sessionService.validateAndRotateSession("old", "new", "d1"));
+        assertEquals(ErrorCode.INVALID_TOKEN, ex.getErrorCode());
+    }
+
+    @Test
+    void revokeAll_vs_refreshRotation_shouldRejectRotationAfterRevokeAllWins() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+
+        when(jwtServices.extractUserId("old")).thenReturn(userId);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(tokenHasher.hashToken("old")).thenReturn("oldHash");
+        when(tokenHasher.hashToken("new")).thenReturn("newHash");
+        when(sessionRepository.revokeAllSessionsByUserId(userId)).thenReturn(2);
+        when(meterRegistry.counter(any())).thenReturn(counter);
+
+        AtomicBoolean allRevoked = new AtomicBoolean(false);
+        when(sessionRepository.rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class)))
+                .thenAnswer(invocation -> allRevoked.get() ? 0 : 1);
+
+        sessionService.revokeAllSessionsByUserId(userId);
+        allRevoked.set(true);
+
+        assertThrows(BusinessException.class, () -> sessionService.validateAndRotateSession("old", "new", "d1"));
+    }
+
+    @Test
+    void concurrentRefreshAttemptsAfterRevoke_shouldAllFail() throws Exception {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+
+        when(jwtServices.extractUserId("old")).thenReturn(userId);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(tokenHasher.hashToken("old")).thenReturn("oldHash");
+        when(tokenHasher.hashToken("new")).thenReturn("newHash");
+        when(sessionRepository.rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class)))
+                .thenReturn(0);
+
+        int attempts = 6;
+        ExecutorService pool = Executors.newFixedThreadPool(attempts);
+        CountDownLatch ready = new CountDownLatch(attempts);
+        CountDownLatch start = new CountDownLatch(1);
+        AtomicInteger successCount = new AtomicInteger(0);
+        try {
+            List<Future<Boolean>> futures = java.util.stream.IntStream.range(0, attempts)
+                    .mapToObj(i -> pool.submit(() -> {
+                        ready.countDown();
+                        start.await(5, TimeUnit.SECONDS);
+                        try {
+                            sessionService.validateAndRotateSession("old", "new", "d1");
+                            return true;
+                        } catch (BusinessException e) {
+                            return false;
+                        }
+                    }))
+                    .toList();
+            assertTrue(ready.await(5, TimeUnit.SECONDS));
+            start.countDown();
+            for (Future<Boolean> f : futures) if (f.get(5, TimeUnit.SECONDS)) successCount.incrementAndGet();
+        } finally {
+            pool.shutdownNow();
+        }
+        assertEquals(0, successCount.get());
+    }
+
+    @Test
+    void concurrentExpiredRefreshAttempts_shouldAllFailDeterministically() throws Exception {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+
+        when(jwtServices.extractUserId("old")).thenReturn(userId);
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(tokenHasher.hashToken("old")).thenReturn("oldHash");
+        when(tokenHasher.hashToken("new")).thenReturn("newHash");
+        when(sessionRepository.rotateRefreshTokenIfActive(eq(userId), eq("d1"), eq("oldHash"), eq("newHash"), any(Instant.class), any(Instant.class)))
+                .thenReturn(0);
+
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+        try {
+            List<Future<Boolean>> futures = java.util.stream.IntStream.range(0, 4)
+                    .mapToObj(i -> pool.submit(() -> {
+                        try {
+                            sessionService.validateAndRotateSession("old", "new", "d1");
+                            return true;
+                        } catch (BusinessException e) {
+                            return false;
+                        }
+                    }))
+                    .toList();
+            for (Future<Boolean> f : futures) {
+                assertFalse(f.get(5, TimeUnit.SECONDS));
+            }
+        } finally {
+            pool.shutdownNow();
+        }
     }
 }

@@ -46,16 +46,11 @@ class MfaRecoveryCodeServiceImpl implements MfaRecoveryCodeService {
         }
 
         String normalizedCode = normalize(recoveryCode);
+        Instant usedAt = Instant.now();
         return recoveryCodeRepository.findByMfaSettingsIdAndUsedFalseAndDeletedFalse(mfaSettings.getId())
                 .stream()
                 .filter(code -> passwordEncoder.matches(normalizedCode, code.getRecoveryCodeHash()))
-                .findFirst()
-                .map(code -> {
-                    code.markUsed(Instant.now());
-                    recoveryCodeRepository.save(code);
-                    return true;
-                })
-                .orElse(false);
+                .anyMatch(code -> recoveryCodeRepository.consumeIfUnused(code.getId(), usedAt) == 1);
     }
 
     @Override

@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.security.config;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.security.filter.CsrfCookieFilter;
 import org.miniProjectTwo.DragonOfNorth.security.filter.JwtFilter;
+import org.miniProjectTwo.DragonOfNorth.security.filter.SidLivenessFilter;
 import org.miniProjectTwo.DragonOfNorth.security.handler.RestAccessDeniedHandler;
 import org.miniProjectTwo.DragonOfNorth.security.handler.RestAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Value;
@@ -91,6 +92,7 @@ public class SecurityConfig {
 
     private final CorsConfigurationSource corsConfigurationSource;
     private final JwtFilter jwtFilter;
+    private final SidLivenessFilter sidLivenessFilter;
     private final CsrfCookieFilter csrfCookieFilter;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
@@ -126,6 +128,7 @@ public class SecurityConfig {
                                 .authenticated())
                 .addFilterAfter(csrfCookieFilter, CsrfFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(sidLivenessFilter, JwtFilter.class)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers.contentSecurityPolicy(csp -> csp

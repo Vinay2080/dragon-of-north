@@ -106,11 +106,11 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
             return verificationResult;
         }
 
-        boolean providerOk = providerVerifier.verify(state.userId(), providerType, code.trim());
-        if (!providerOk) {
+        var providerVerification = providerVerifier.verify(state.userId(), providerType, code.trim());
+        if (!providerVerification.success()) {
             var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
             String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
-            auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", "invalid_code", context.requestId());
+            auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", providerVerification.failureReason(), context.requestId());
             return verificationResult;
         }
 
