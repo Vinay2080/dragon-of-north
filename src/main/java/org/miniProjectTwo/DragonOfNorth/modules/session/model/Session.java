@@ -71,10 +71,10 @@ public class Session extends BaseEntity {
     private Instant mfaVerifiedAt;
 
     @Column(name = "mfa_required", nullable = false)
-    private boolean mfaRequired = false;
+    private boolean mfaRequired;
 
     @Column(name = "primary_amr", nullable = false, length = 32)
-    private String primaryAmr = "pwd";
+    private String primaryAmr;
 
     /**
      * Returns whether the session is already past its expiry timestamp.

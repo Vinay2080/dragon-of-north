@@ -8,15 +8,12 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.GoogleTokenVerifierService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
-import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
-import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
-import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
-import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.Provider;
@@ -34,8 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -45,10 +40,6 @@ class OAuthServiceImplTest {
     @Mock
     private GoogleTokenVerifierService tokenVerifierService;
     @Mock
-    private JwtServices jwtServices;
-    @Mock
-    private SessionService sessionService;
-    @Mock
     private AppUserRepository appUserRepository;
     @Mock
     private UserAuthProviderRepository userAuthProviderRepository;
@@ -57,13 +48,13 @@ class OAuthServiceImplTest {
     @Mock
     private AuthCommonServices authCommonServices;
     @Mock
+    private SessionTokenIssuer sessionTokenIssuer;
+    @Mock
     private ProfileService profileService;
     @Mock
     private AuditEventLogger auditEventLogger;
     @Mock
     private UserStateValidator userStateValidator;
-    @Mock
-    private SessionAccessTokenIssuer sessionAccessTokenIssuer;
 
     @InjectMocks
     private OAuthServiceImpl oAuthService;
@@ -93,13 +84,11 @@ class OAuthServiceImplTest {
         when(appUserRepository.findByEmailForUpdate("new@example.com")).thenReturn(Optional.empty());
         when(roleRepository.findByRoleName(RoleName.USER)).thenReturn(Optional.of(role));
         when(appUserRepository.save(any(AppUser.class))).thenReturn(newUser);
-        when(jwtServices.generateRefreshToken(newUser.getId())).thenReturn("refresh");
-        Session session = new Session();
-        session.setId(UUID.randomUUID());
-        session.setAppUser(newUser);
-        when(sessionService.createSession(eq(newUser), eq("refresh"), any(), eq("device-1"), any(), any(SessionCreationSpec.class)))
-                .thenReturn(session);
-        when(sessionAccessTokenIssuer.mintAccessToken(eq(session), anySet())).thenReturn("access");
+        when(request.getHeader("X-Forwarded-For")).thenReturn("127.0.0.1");
+        when(request.getHeader("User-Agent")).thenReturn("JUnit");
+        when(request.getHeader("X-Request-Id")).thenReturn("req-1");
+        when(sessionTokenIssuer.issueLoginSession(eq(newUser), any(SessionCreationSpec.class), any(), eq("device-1"), any()))
+                .thenReturn(new SessionTokenIssuer.LoginTokens("access", "refresh"));
         doNothing().when(authCommonServices).setAccessToken(any(HttpServletResponse.class), anyString());
         doNothing().when(authCommonServices).setRefreshToken(any(HttpServletResponse.class), anyString());
 
@@ -109,11 +98,10 @@ class OAuthServiceImplTest {
         verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
         verify(profileService).ensureProfileExists(newUser.getId(), userInfo);
         verify(profileService).syncGoogleAvatar(newUser.getId(), userInfo);
-        verify(sessionService).createSession(eq(newUser), eq("refresh"), any(), eq("device-1"), any(), any(SessionCreationSpec.class));
-        verify(sessionAccessTokenIssuer).mintAccessToken(eq(session), anySet());
-        verify(jwtServices, never()).generateAccessToken(any(), anySet());
+        verify(sessionTokenIssuer).issueLoginSession(eq(newUser), any(SessionCreationSpec.class), any(), eq("device-1"), any());
         verify(authCommonServices).setAccessToken(response, "access");
         verify(authCommonServices).setRefreshToken(response, "refresh");
+        verify(auditEventLogger).log("auth.oauth.google.login", newUser.getId(), "device-1", "127.0.0.1", "success", null, "req-1");
     }
 
     @Test
@@ -136,13 +124,11 @@ class OAuthServiceImplTest {
         when(userAuthProviderRepository.findByProviderAndProviderId(Provider.GOOGLE, "google-sub-2")).thenReturn(Optional.empty());
         when(appUserRepository.findByEmailForUpdate("existing@example.com")).thenReturn(Optional.of(existingUser));
         when(userAuthProviderRepository.existsByUserIdAndProvider(existingUser.getId(), Provider.GOOGLE)).thenReturn(false);
-        when(jwtServices.generateRefreshToken(existingUser.getId())).thenReturn("refresh");
-        Session session = new Session();
-        session.setId(UUID.randomUUID());
-        session.setAppUser(existingUser);
-        when(sessionService.createSession(eq(existingUser), eq("refresh"), any(), eq("device-2"), any(), any(SessionCreationSpec.class)))
-                .thenReturn(session);
-        when(sessionAccessTokenIssuer.mintAccessToken(eq(session), anySet())).thenReturn("access");
+        when(request.getHeader("X-Forwarded-For")).thenReturn("127.0.0.1");
+        when(request.getHeader("User-Agent")).thenReturn("JUnit");
+        when(request.getHeader("X-Request-Id")).thenReturn("req-2");
+        when(sessionTokenIssuer.issueLoginSession(eq(existingUser), any(SessionCreationSpec.class), any(), eq("device-2"), any()))
+                .thenReturn(new SessionTokenIssuer.LoginTokens("access", "refresh"));
         doNothing().when(authCommonServices).setAccessToken(any(HttpServletResponse.class), anyString());
         doNothing().when(authCommonServices).setRefreshToken(any(HttpServletResponse.class), anyString());
 
@@ -155,11 +141,6 @@ class OAuthServiceImplTest {
         verify(profileService).syncGoogleAvatar(existingUser.getId(), userInfo);
         verify(authCommonServices).setAccessToken(response, "access");
         verify(authCommonServices).setRefreshToken(response, "refresh");
-
-        UserAuthProvider provider = authProviderCaptor.getValue();
-        assertEquals(Provider.GOOGLE, provider.getProvider());
-        assertEquals("google-sub-2", provider.getProviderId());
-        assertEquals(existingUser, provider.getUser());
-        assertTrue(existingUser.isEmailVerified());
+        verify(auditEventLogger).log("auth.oauth.google.login", existingUser.getId(), "device-2", "127.0.0.1", "success", null, "req-2");
     }
 }

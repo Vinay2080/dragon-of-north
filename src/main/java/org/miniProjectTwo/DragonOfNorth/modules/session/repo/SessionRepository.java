@@ -29,6 +29,24 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
                                                                     String deviceId,
                                                                     String refreshTokenHash);
 
+    /**
+     * Finds an active (non-revoked, non-deleted, unexpired) session after refresh rotation.
+     */
+    @Query("""
+            select s
+            from Session s
+            where s.appUser.id = :appUserId
+              and s.deviceId = :deviceId
+              and s.refreshTokenHash = :refreshTokenHash
+              and s.revoked = false
+              and s.deleted = false
+              and s.expiryDate > :now
+            """)
+    Optional<Session> findLiveByAppUserIdAndDeviceIdAndRefreshTokenHash(@Param("appUserId") UUID appUserId,
+                                                                        @Param("deviceId") String deviceId,
+                                                                        @Param("refreshTokenHash") String refreshTokenHash,
+                                                                        @Param("now") Instant now);
+
     @Modifying
     @Query("""
             update Session s

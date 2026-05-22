@@ -8,15 +8,12 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderReposi
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.GoogleTokenVerifierService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.OAuthService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
-import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
-import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
-import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
-import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.*;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -40,13 +37,11 @@ import java.util.UUID;
 public class OAuthServiceImpl implements OAuthService {
 
     private final GoogleTokenVerifierService tokenVerifierService;
-    private final JwtServices jwtServices;
-    private final SessionService sessionService;
-    private final SessionAccessTokenIssuer sessionAccessTokenIssuer;
     private final AppUserRepository appUserRepository;
     private final UserAuthProviderRepository userAuthProviderRepository;
     private final RoleRepository roleRepository;
     private final AuthCommonServices authCommonServices;
+    private final SessionTokenIssuer sessionTokenIssuer;
     private final ProfileService profileService;
     private final AuditEventLogger auditEventLogger;
     private final UserStateValidator userStateValidator;
@@ -185,19 +180,16 @@ public class OAuthServiceImpl implements OAuthService {
 
         updateLoginInfo(appUser);
 
-        String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
-        Session session = sessionService.createSession(
+        SessionTokenIssuer.LoginTokens loginTokens = sessionTokenIssuer.issueLoginSession(
                 appUser,
-                refreshToken,
+                SessionCreationSpec.fromAppUser(appUser, "oauth"),
                 ipAddress,
                 deviceId,
-                userAgent,
-                SessionCreationSpec.fromAppUser(appUser, "oauth")
+                userAgent
         );
-        String accessToken = sessionAccessTokenIssuer.mintAccessToken(session, appUser.getRoles());
 
-        authCommonServices.setAccessToken(response, accessToken);
-        authCommonServices.setRefreshToken(response, refreshToken);
+        authCommonServices.setAccessToken(response, loginTokens.accessToken());
+        authCommonServices.setRefreshToken(response, loginTokens.refreshToken());
     }
 
     private void recordOauthSuccess(String eventName, UUID userId, String deviceId, RequestMetadata metadata) {

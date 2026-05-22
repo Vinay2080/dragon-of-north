@@ -197,7 +197,7 @@ public class SessionServiceImpl implements SessionService {
 
         auditEventLogger.log("session.rotate", userId, deviceId, null, "success", null, null);
 
-        return sessionRepository.findByAppUserIdAndDeviceIdAndRefreshTokenHash(appUser.getId(), deviceId, newTokenHash)
+        return sessionRepository.findLiveByAppUserIdAndDeviceIdAndRefreshTokenHash(appUser.getId(), deviceId, newTokenHash, now)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN, "Session not found after rotation"));
     }
 

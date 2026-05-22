@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.miniProjectTwo.DragonOfNorth.security.service.AuthnFacts;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
-import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -15,7 +14,9 @@ import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.time.Instant;
-import java.util.*;
+import java.util.Base64;
+import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -66,20 +67,29 @@ class JwtServicesTest {
     void generateAccessToken_shouldCreateValidToken() {
         // arrange
         UUID userId = UUID.randomUUID();
-        Set<Role> roles = new HashSet<>();
-        Role role = new Role();
-        role.setRoleName(RoleName.USER);
-        roles.add(role);
+        UUID sessionId = UUID.randomUUID();
+
+        AuthnFacts facts = new AuthnFacts(
+                userId,
+                List.of(RoleName.USER.name()),
+                false,
+                null,
+                List.of("pwd"),
+                sessionId
+        );
 
         // act
-        String token = jwtServices.generateAccessToken(userId, roles);
+        String token = jwtServices.generateAccessToken(facts);
 
         // assert
         assertNotNull(token);
         Claims claims = jwtServices.extractAllClaims(token);
         assertEquals(userId.toString(), claims.getSubject());
         assertEquals("access_token", claims.get("token_type"));
-        assertNotNull(claims.get("roles"));
+        assertEquals(List.of(RoleName.USER.name()), claims.get("roles"));
+        assertEquals(false, claims.get("mfa_verified"));
+        assertEquals(List.of("pwd"), claims.get("amr"));
+        assertEquals(sessionId.toString(), claims.get("sid"));
     }
 
     @Test
@@ -115,29 +125,23 @@ class JwtServicesTest {
     @Test
     void extractMfaClaims_shouldTolerateMissingClaims() {
         UUID userId = UUID.randomUUID();
-        Set<Role> roles = Collections.emptySet();
+        UUID sessionId = UUID.randomUUID();
 
-        String token = jwtServices.generateAccessToken(userId, roles);
+        AuthnFacts facts = new AuthnFacts(
+                userId,
+                List.of(),
+                false,
+                null,
+                List.of("pwd"),
+                sessionId
+        );
+
+        String token = jwtServices.generateAccessToken(facts);
 
         assertFalse(jwtServices.extractMfaVerified(token));
-        assertEquals(List.of(), jwtServices.extractAmr(token));
+        assertEquals(List.of("pwd"), jwtServices.extractAmr(token));
         assertNull(jwtServices.extractMfaVerifiedAt(token));
-        assertNull(jwtServices.extractSessionId(token));
-    }
-
-    @Test
-    void generateRefreshToken_shouldCreateValidToken() {
-        // arrange
-        UUID userId = UUID.randomUUID();
-
-        // act
-        String token = jwtServices.generateRefreshToken(userId);
-
-        // assert
-        assertNotNull(token);
-        Claims claims = jwtServices.extractAllClaims(token);
-        assertEquals(userId.toString(), claims.getSubject());
-        assertEquals("refresh_token", claims.get("token_type"));
+        assertEquals(sessionId, jwtServices.extractSessionId(token));
     }
 
     @Test
@@ -151,22 +155,5 @@ class JwtServicesTest {
 
         // assert
         assertEquals(userId, extractedId);
-    }
-
-    @Test
-    void refreshAccessToken_shouldGenerateNewAccessToken_whenRefreshTokenIsValid() {
-        // arrange
-        UUID userId = UUID.randomUUID();
-        String refreshToken = jwtServices.generateRefreshToken(userId);
-        Set<Role> roles = Collections.emptySet();
-
-        // act
-        String accessToken = jwtServices.refreshAccessToken(refreshToken, roles);
-
-        // assert
-        assertNotNull(accessToken);
-        Claims claims = jwtServices.extractAllClaims(accessToken);
-        assertEquals(userId.toString(), claims.getSubject());
-        assertEquals("access_token", claims.get("token_type"));
     }
 }

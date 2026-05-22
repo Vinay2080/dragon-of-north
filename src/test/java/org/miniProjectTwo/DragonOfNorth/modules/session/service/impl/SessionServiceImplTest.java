@@ -167,7 +167,7 @@ class SessionServiceImplTest {
         Session rotated = new Session();
         rotated.setAppUser(user);
         rotated.setId(UUID.randomUUID());
-        when(sessionRepository.findByAppUserIdAndDeviceIdAndRefreshTokenHash(userId, "d1", "newHash"))
+        when(sessionRepository.findLiveByAppUserIdAndDeviceIdAndRefreshTokenHash(eq(userId), eq("d1"), eq("newHash"), any(Instant.class)))
                 .thenReturn(Optional.of(rotated));
 
         Session actual = sessionService.validateAndRotateSession("old", "new", "d1");
@@ -280,7 +280,7 @@ class SessionServiceImplTest {
                 .thenAnswer(invocation -> cas.compareAndSet(false, true) ? 1 : 0);
         Session rotated = new Session();
         rotated.setAppUser(user);
-        when(sessionRepository.findByAppUserIdAndDeviceIdAndRefreshTokenHash(userId, "d1", "newHash"))
+        when(sessionRepository.findLiveByAppUserIdAndDeviceIdAndRefreshTokenHash(eq(userId), eq("d1"), eq("newHash"), any(Instant.class)))
                 .thenReturn(Optional.of(rotated));
 
         try (ExecutorService pool = Executors.newFixedThreadPool(8)) {

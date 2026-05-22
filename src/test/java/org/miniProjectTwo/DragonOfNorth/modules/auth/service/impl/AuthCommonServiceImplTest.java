@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
-import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -66,6 +66,9 @@ class AuthCommonServiceImplTest {
 
     @Mock
     private SessionAccessTokenIssuer sessionAccessTokenIssuer;
+
+    @Mock
+    private SessionTokenIssuer sessionTokenIssuer;
 
     @Mock
     private MeterRegistry meterRegistry;
@@ -181,6 +184,7 @@ class AuthCommonServiceImplTest {
 
         assertEquals(ErrorCode.EMAIL_NOT_VERIFIED, exception.getErrorCode());
         verify(sessionService, never()).createSession(any(), anyString(), anyString(), anyString(), anyString(), any());
+        verify(sessionTokenIssuer, never()).issueLoginSession(any(), anyString(), anyString(), anyString(), anyString());
         verify(meterRegistry).counter("auth.login.failure");
         verify(auditEventLogger).log(eq("auth.login"), eq(user.getId()), eq("device-1"), eq("127.0.0.1"), eq("failure"), argThat(msg -> msg != null && msg.toLowerCase().contains("not verified")), eq("req-1"));
     }
@@ -202,13 +206,8 @@ class AuthCommonServiceImplTest {
         when(userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), Provider.LOCAL)).thenReturn(true);
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
         when(authentication.getPrincipal()).thenReturn(new AppUserDetails(user));
-        when(jwtServices.generateRefreshToken(any())).thenReturn("refresh");
-        Session session = new Session();
-        session.setId(UUID.randomUUID());
-        session.setAppUser(user);
-        when(sessionService.createSession(eq(user), eq("refresh"), any(), eq("device-1"), any(), any(SessionCreationSpec.class)))
-                .thenReturn(session);
-        when(sessionAccessTokenIssuer.mintAccessToken(eq(session), eq(user.getRoles()))).thenReturn("access");
+        when(sessionTokenIssuer.issueLoginSession(eq(user), eq("pwd"), anyString(), eq("device-1"), anyString()))
+                .thenReturn(new SessionTokenIssuer.LoginTokens("access", "refresh"));
         when(meterRegistry.counter(anyString())).thenReturn(successCounter);
 
         authCommonService.login(" USER@EXAMPLE.COM ", "Secret@123", response, context);
@@ -246,7 +245,6 @@ class AuthCommonServiceImplTest {
         verify(userStateValidator).validate(user, UserLifecycleOperation.SESSION_ROTATE_REFRESH);
         verify(sessionService).validateAndRotateSession("old-refresh", "new-refresh", "device-1");
         verify(sessionAccessTokenIssuer).mintAccessToken(session, Set.of());
-        verify(jwtServices, never()).refreshAccessToken(anyString(), any());
     }
 
     @Test

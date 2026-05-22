@@ -38,6 +38,10 @@ public class SessionAccessTokenIssuer {
         if (userId == null) {
             throw new IllegalArgumentException("session.appUser.id must not be null");
         }
+        UUID sessionId = session.getId();
+        if (sessionId == null) {
+            throw new IllegalArgumentException("session.id must not be null");
+        }
 
         List<String> roleNames = roles == null
                 ? List.of()
@@ -54,14 +58,14 @@ public class SessionAccessTokenIssuer {
                 mfaVerified,
                 mfaVerifiedAt,
                 buildAmr(session),
-                session.getId()
+                sessionId
         );
     }
 
     private static List<String> buildAmr(Session session) {
         String primary = session.getPrimaryAmr();
         if (primary == null || primary.isBlank()) {
-            primary = "pwd";
+            throw new IllegalArgumentException("session.primaryAmr must not be blank");
         }
         return List.of(primary);
     }

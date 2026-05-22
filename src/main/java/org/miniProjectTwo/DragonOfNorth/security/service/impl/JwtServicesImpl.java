@@ -3,13 +3,11 @@ package org.miniProjectTwo.DragonOfNorth.security.service.impl;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.miniProjectTwo.DragonOfNorth.security.service.AuthnFacts;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.security.util.KeyUtils;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
-import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +25,6 @@ import java.util.*;
  *     <li>Generating access and refresh tokens</li>
  *     <li>Extracting claims and subjects from tokens</li>
  *     <li>Validating token integrity and expiration</li>
- *     <li>Refreshing expired access tokens using valid refresh tokens</li>
  * </ul>
  *
  * <p>Tokens are signed with the RSA private key and verified using the RSA public key.
@@ -69,24 +66,6 @@ public class JwtServicesImpl implements JwtServices {
         this.privateKey = KeyUtils.loadPrivateKey(privateKeyPath);
         this.publicKey = KeyUtils.loadPublicKey(publicKeysPath);
         log.info("JWT RSA keys successfully loaded");
-    }
-
-    /**
-     * Generates a signed JWT access token for the given username.
-     *
-     * @return a compact JWT access token string
-     */
-    @Override
-    public String generateAccessToken(UUID userId, Set<Role> roles) {
-
-        List<String> roleNames = roles
-                .stream()
-                .map(role -> role.getRoleName().name())
-                .toList();
-
-        Map<String, Object> claims = Map.of(TOKEN_TYPE, ACCESS_TOKEN_TYPE, ROLES, roleNames);
-
-        return buildToken(userId, claims, accessTokenExpiration);
     }
 
     @Override
@@ -158,30 +137,6 @@ public class JwtServicesImpl implements JwtServices {
         return UUID.fromString(extractAllClaims(token).getSubject());
     }
 
-    /**
-     * Generates a new access token using a valid refresh token.
-     *
-     * @param refreshToken the provided refresh token
-     * @return a new access token
-     */
-    @Override
-    public String refreshAccessToken(final String refreshToken, Set<Role> roles) {
-        if (StringUtils.isBlank(refreshToken)) {
-            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Refresh token cannot be empty");
-        }
-
-        Claims claims = extractAllClaims(refreshToken);
-
-        validateTokenType(claims);
-
-        if (isTokenExpired(claims)) {
-            log.warn("Refresh token expired for user={}", claims.getSubject());
-            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Refresh token has expired");
-        }
-
-        UUID userId = UUID.fromString(claims.getSubject());
-        return generateAccessToken(userId, roles);
-    }
 
     /**
      * Extracts all claims from the given JWT. Performs signature verification and

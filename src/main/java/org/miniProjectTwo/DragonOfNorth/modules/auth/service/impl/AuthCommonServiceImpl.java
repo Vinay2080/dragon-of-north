@@ -8,8 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
-import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -57,6 +57,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final RoleRepository roleRepository;
     private final SessionService sessionService;
     private final SessionAccessTokenIssuer sessionAccessTokenIssuer;
+    private final SessionTokenIssuer sessionTokenIssuer;
     private final MeterRegistry meterRegistry;
     private final AppUserRepository appUserRepository;
     private final UserAuthProviderRepository userAuthProviderRepository;
@@ -81,7 +82,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
             AppUser authenticatedUser = authenticateUser(normalizedIdentifier, password);
             ensureIdentifierVerified(user, normalizedIdentifier);
 
-            LoginTokens loginTokens = issueLoginSession(authenticatedUser, "pwd", context);
+            SessionTokenIssuer.LoginTokens loginTokens = issueLoginSession(authenticatedUser, "pwd", context);
             writeAuthCookies(response, loginTokens);
 
             recordLoginSuccess(authenticatedUser.getId(), context);
@@ -168,7 +169,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     @Override
     public void completeLogin(AppUser appUser, String identifier, HttpServletResponse response, AuthRequestContext context) {
         ensureIdentifierVerified(appUser, identifier);
-        LoginTokens loginTokens = issueLoginSession(appUser, "passwordless", context);
+        SessionTokenIssuer.LoginTokens loginTokens = issueLoginSession(appUser, "passwordless", context);
         writeAuthCookies(response, loginTokens);
         recordLoginSuccess(appUser.getId(), context);
     }
@@ -242,18 +243,14 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     /**
      * Single login issuance pipeline: refresh token → persisted session → access JWT from session state.
      */
-    private LoginTokens issueLoginSession(AppUser appUser, String primaryAmr, AuthRequestContext context) {
-        String refreshToken = jwtServices.generateRefreshToken(appUser.getId());
-        Session session = sessionService.createSession(
+    private SessionTokenIssuer.LoginTokens issueLoginSession(AppUser appUser, String primaryAmr, AuthRequestContext context) {
+        return sessionTokenIssuer.issueLoginSession(
                 appUser,
-                refreshToken,
+                primaryAmr,
                 context.ipAddress(),
                 context.deviceId(),
-                context.userAgent(),
-                SessionCreationSpec.fromAppUser(appUser, primaryAmr)
+                context.userAgent()
         );
-        String accessToken = sessionAccessTokenIssuer.mintAccessToken(session, appUser.getRoles());
-        return new LoginTokens(accessToken, refreshToken);
     }
 
     private void recordRefreshSuccess(UUID userId, AuthRequestContext context) {
@@ -330,7 +327,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         return new TokenRefreshData(session.getAppUser().getId(), newAccessToken, newRefreshToken);
     }
 
-    public void writeAuthCookies(HttpServletResponse response, LoginTokens loginTokens) {
+    public void writeAuthCookies(HttpServletResponse response, SessionTokenIssuer.LoginTokens loginTokens) {
         setAccessToken(response, loginTokens.accessToken());
         setRefreshToken(response, loginTokens.refreshToken());
     }
@@ -385,12 +382,9 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         response.addCookie(refreshCookie);
     }
 
-    public record LoginTokens(String accessToken, String refreshToken) {
-    }
-
     private record TokenRefreshData(UUID userId, String accessToken, String refreshToken) {
-        private LoginTokens toLoginTokens() {
-            return new LoginTokens(accessToken, refreshToken);
+        private SessionTokenIssuer.LoginTokens toLoginTokens() {
+            return new SessionTokenIssuer.LoginTokens(accessToken, refreshToken);
         }
     }
 }
