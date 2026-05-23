@@ -247,7 +247,8 @@ public interface AuthenticationApi {
                                                     {
                                                       "api_response_status": "success",
                                                       "data": {
-                                                        "mfa_token": "mfa_challenge_token",
+                                                        "mfa_required": true,
+                                                        "challenge_id": "mfa_challenge_token",
                                                         "expires_at": "2026-04-04T06:55:00Z",
                                                         "available_methods": ["TOTP", "RECOVERY_CODE"]
                                                       },
@@ -623,7 +624,8 @@ public interface AuthenticationApi {
                                                     {
                                                       "api_response_status": "success",
                                                       "data": {
-                                                        "mfa_token": "mfa_challenge_token",
+                                                        "mfa_required": true,
+                                                        "challenge_id": "mfa_challenge_token",
                                                         "expires_at": "2026-04-04T06:55:00Z",
                                                         "available_methods": ["TOTP", "RECOVERY_CODE"]
                                                       },

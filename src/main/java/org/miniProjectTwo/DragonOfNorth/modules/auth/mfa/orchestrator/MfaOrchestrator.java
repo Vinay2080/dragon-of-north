@@ -8,7 +8,6 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.provider.MfaProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.registry.MfaProviderRegistry;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,9 +21,6 @@ public class MfaOrchestrator {
 
     private final MfaChallengeService challengeService;
     private final MfaProviderRegistry providerRegistry;
-
-    @Value("${auth.mfa.login.enforce:false}")
-    private boolean enforceLoginMfa;
 
     public MfaOrchestrationResult orchestrateLogin(AppUser user, String primaryAmr, AuthRequestContext context) {
         if (user == null) {
@@ -43,11 +39,11 @@ public class MfaOrchestrator {
                 .toList();
 
         boolean mfaRequired = user.isMfaEnabled() && !availableMethods.isEmpty();
-        if (mfaRequired && enforceLoginMfa) {
-            MfaChallenge challenge = challengeService.createChallenge(user.getId(), primaryAmr, context, availableMethods);
-            return MfaOrchestrationResult.withChallenge(challenge);
+        if (!mfaRequired) {
+            return MfaOrchestrationResult.noChallenge(false, availableMethods);
         }
 
-        return MfaOrchestrationResult.noChallenge(mfaRequired, availableMethods);
+        MfaChallenge challenge = challengeService.createChallenge(user.getId(), primaryAmr, context, availableMethods);
+        return MfaOrchestrationResult.withChallenge(challenge);
     }
 }

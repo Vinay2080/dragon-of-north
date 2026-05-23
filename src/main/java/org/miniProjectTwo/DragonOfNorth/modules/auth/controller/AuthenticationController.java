@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.api.AuthenticationApi;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.*;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaChallengeResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
@@ -80,7 +81,7 @@ public class AuthenticationController implements AuthenticationApi {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(httpServletRequest, request.deviceId());
         MfaOrchestrationResult result = authCommonServices.login(request.identifier(), request.password(), httpServletResponse, context);
         if (result.challengeRequired()) {
-            return ResponseEntity.ok(success(result.challenge()));
+            return ResponseEntity.ok(success(MfaChallengeResponse.from(result.challenge())));
         }
         return ResponseEntity.ok(successMessage("log in successful"));
     }
@@ -166,7 +167,7 @@ public class AuthenticationController implements AuthenticationApi {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, verifyPasswordlessLoginDto.deviceId());
         MfaOrchestrationResult result = passwordlessLoginService.verifyPasswordlessLogin(verifyPasswordlessLoginDto.token(), context, response);
         if (result.challengeRequired()) {
-            return ResponseEntity.ok(success(result.challenge()));
+            return ResponseEntity.ok(success(MfaChallengeResponse.from(result.challenge())));
         }
         return ResponseEntity.ok(successMessage("Passwordless login successful"));
     }

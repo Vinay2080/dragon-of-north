@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.api.OAuthApi;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaChallengeResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.OAuthService;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthLoginRequest;
@@ -40,7 +41,7 @@ public class OAuthController implements OAuthApi {
                 httpResponse
         );
         if (result.challengeRequired()) {
-            return ResponseEntity.ok(success(result.challenge()));
+            return ResponseEntity.ok(success(MfaChallengeResponse.from(result.challenge())));
         }
         return ResponseEntity.ok(successMessage("OAuth authentication successful"));
     }
@@ -60,7 +61,7 @@ public class OAuthController implements OAuthApi {
                 httpResponse
         );
         if (result.challengeRequired()) {
-            return ResponseEntity.ok(success(result.challenge()));
+            return ResponseEntity.ok(success(MfaChallengeResponse.from(result.challenge())));
         }
         return ResponseEntity.ok(successMessage("OAuth signup successful"));
     }
