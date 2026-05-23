@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
@@ -80,7 +81,8 @@ class OAuthServiceImplTest {
         when(appUserRepository.findByEmailForUpdate("new@example.com")).thenReturn(Optional.empty());
         when(roleRepository.findByRoleName(RoleName.USER)).thenReturn(Optional.of(role));
         when(appUserRepository.save(any(AppUser.class))).thenReturn(newUser);
-        doNothing().when(authCommonServices).issueLoginSession(eq(newUser), any(SessionCreationSpec.class), eq(response), eq(context));
+        when(authCommonServices.issueLoginSession(eq(newUser), any(SessionCreationSpec.class), eq(response), eq(context)))
+                .thenReturn(MfaOrchestrationResult.noChallenge(false, java.util.List.of()));
 
         oAuthService.authenticatedWithGoogle("token", null, context, response);
 
@@ -113,7 +115,8 @@ class OAuthServiceImplTest {
         when(userAuthProviderRepository.findByProviderAndProviderId(Provider.GOOGLE, "google-sub-2")).thenReturn(Optional.empty());
         when(appUserRepository.findByEmailForUpdate("existing@example.com")).thenReturn(Optional.of(existingUser));
         when(userAuthProviderRepository.existsByUserIdAndProvider(existingUser.getId(), Provider.GOOGLE)).thenReturn(false);
-        doNothing().when(authCommonServices).issueLoginSession(eq(existingUser), any(SessionCreationSpec.class), eq(response), eq(context));
+        when(authCommonServices.issueLoginSession(eq(existingUser), any(SessionCreationSpec.class), eq(response), eq(context)))
+                .thenReturn(MfaOrchestrationResult.noChallenge(false, java.util.List.of()));
 
         oAuthService.authenticatedWithGoogle("token", "existing@example.com", context, response);
 

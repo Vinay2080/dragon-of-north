@@ -7,10 +7,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrator;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -69,6 +72,9 @@ class AuthCommonServiceImplTest {
 
     @Mock
     private SessionTokenIssuer sessionTokenIssuer;
+
+    @Mock
+    private MfaOrchestrator mfaOrchestrator;
 
     @Mock
     private MeterRegistry meterRegistry;
@@ -184,7 +190,7 @@ class AuthCommonServiceImplTest {
 
         assertEquals(ErrorCode.EMAIL_NOT_VERIFIED, exception.getErrorCode());
         verify(sessionService, never()).createSession(any(), anyString(), anyString(), anyString(), anyString(), any());
-        verify(sessionTokenIssuer, never()).issueLoginSession(any(), anyString(), anyString(), anyString(), anyString());
+        verify(sessionTokenIssuer, never()).issueLoginSession(any(), any(SessionCreationSpec.class), anyString(), anyString(), anyString());
         verify(meterRegistry).counter("auth.login.failure");
         verify(auditEventLogger).log(eq("auth.login"), eq(user.getId()), eq("device-1"), eq("127.0.0.1"), eq("failure"), argThat(msg -> msg != null && msg.toLowerCase().contains("not verified")), eq("req-1"));
     }
@@ -206,17 +212,20 @@ class AuthCommonServiceImplTest {
         when(userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), Provider.LOCAL)).thenReturn(true);
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
         when(authentication.getPrincipal()).thenReturn(new AppUserDetails(user));
-        when(sessionTokenIssuer.issueLoginSession(eq(user), eq("pwd"), anyString(), eq("device-1"), anyString()))
+        when(mfaOrchestrator.orchestrateLogin(eq(user), eq("pwd"), eq(context)))
+                .thenReturn(MfaOrchestrationResult.noChallenge(false, java.util.List.of()));
+        when(sessionTokenIssuer.issueLoginSession(eq(user), any(SessionCreationSpec.class), anyString(), eq("device-1"), anyString()))
                 .thenReturn(new SessionTokenIssuer.LoginTokens("access", "refresh"));
         when(meterRegistry.counter(anyString())).thenReturn(successCounter);
 
-        authCommonService.login(" USER@EXAMPLE.COM ", "Secret@123", response, context);
+        MfaOrchestrationResult result = authCommonService.login(" USER@EXAMPLE.COM ", "Secret@123", response, context);
 
         verify(appUserRepository).findByEmail("user@example.com");
         verify(authenticationManager).authenticate(argThat(token ->
                 token instanceof UsernamePasswordAuthenticationToken up &&
                         "user@example.com".equals(up.getPrincipal())
         ));
+        assertNotNull(result);
     }
 
 

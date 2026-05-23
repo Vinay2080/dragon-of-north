@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.OAuthService;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.ApplicationExceptionHandler;
 import org.mockito.InjectMocks;
@@ -14,8 +15,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -50,6 +54,8 @@ class OAuthControllerTest {
                     "expected_identifier":"user@example.com"
                 }
                 """;
+        when(oAuthService.authenticatedWithGoogle(any(), any(), any(AuthRequestContext.class), any()))
+                .thenReturn(MfaOrchestrationResult.noChallenge(false, List.of()));
 
         mockMvc.perform(post("/api/v1/auth/oauth/google")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -72,6 +78,8 @@ class OAuthControllerTest {
             put("device_id", "device-777");
             put("expected_identifier", "new.user@example.com");
         }});
+        when(oAuthService.signupWithGoogle(any(), any(), any(AuthRequestContext.class), any()))
+                .thenReturn(MfaOrchestrationResult.noChallenge(false, List.of()));
 
         mockMvc.perform(post("/api/v1/auth/oauth/google/signup")
                         .contentType(MediaType.APPLICATION_JSON)

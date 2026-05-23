@@ -10,6 +10,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.*;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.*;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
@@ -78,7 +79,10 @@ public class AuthenticationController implements AuthenticationApi {
             HttpServletRequest httpServletRequest
     ) {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(httpServletRequest, request.deviceId());
-        authCommonServices.login(request.identifier(), request.password(), httpServletResponse, context);
+        MfaOrchestrationResult result = authCommonServices.login(request.identifier(), request.password(), httpServletResponse, context);
+        if (result.challengeRequired()) {
+            return ResponseEntity.status(HttpStatus.OK).body(success(result.challenge()));
+        }
         return ResponseEntity.status(HttpStatus.OK).body(successMessage("log in successful"));
     }
 
@@ -161,7 +165,10 @@ public class AuthenticationController implements AuthenticationApi {
             HttpServletResponse response) {
 
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, verifyPasswordlessLoginDto.deviceId());
-        passwordlessLoginService.verifyPasswordlessLogin(verifyPasswordlessLoginDto.token(), context, response);
+        MfaOrchestrationResult result = passwordlessLoginService.verifyPasswordlessLogin(verifyPasswordlessLoginDto.token(), context, response);
+        if (result.challengeRequired()) {
+            return ResponseEntity.ok(success(result.challenge()));
+        }
         return ResponseEntity.ok(successMessage("Passwordless login successful"));
     }
 

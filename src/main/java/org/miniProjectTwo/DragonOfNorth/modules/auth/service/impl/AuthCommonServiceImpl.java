@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrator;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
@@ -59,6 +61,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final SessionService sessionService;
     private final SessionAccessTokenIssuer sessionAccessTokenIssuer;
     private final SessionTokenIssuer sessionTokenIssuer;
+    private final MfaOrchestrator mfaOrchestrator;
     private final MeterRegistry meterRegistry;
     private final AppUserRepository appUserRepository;
     private final UserAuthProviderRepository userAuthProviderRepository;
@@ -71,7 +74,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private String cookieSameSite;
 
     @Override
-    public void login(String identifier, String password, HttpServletResponse response, AuthRequestContext context) {
+    public MfaOrchestrationResult login(String identifier, String password, HttpServletResponse response, AuthRequestContext context) {
         String normalizedIdentifier = normalizeIdentifier(identifier);
         UUID auditUserId = null;
         try {
@@ -83,9 +86,11 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
             AppUser authenticatedUser = authenticateUser(normalizedIdentifier, password);
             ensureIdentifierVerified(user, normalizedIdentifier);
 
-            issueLoginSession(authenticatedUser, SessionCreationSpec.fromAppUser(authenticatedUser, "pwd"), response, context);
-
-            recordLoginSuccess(authenticatedUser.getId(), context);
+            MfaOrchestrationResult result = issueLoginSession(authenticatedUser, SessionCreationSpec.fromAppUser(authenticatedUser, "pwd"), response, context);
+            if (!result.challengeRequired()) {
+                recordLoginSuccess(authenticatedUser.getId(), context);
+            }
+            return result;
         } catch (AuthenticationException | BusinessException exception) {
             recordLoginFailure(auditUserId, context, exception.getMessage());
             throw exception;
@@ -167,15 +172,23 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     }
 
     @Override
-    public void completeLogin(AppUser appUser, String identifier, HttpServletResponse response, AuthRequestContext context) {
+    public MfaOrchestrationResult completeLogin(AppUser appUser, String identifier, HttpServletResponse response, AuthRequestContext context) {
         ensureIdentifierVerified(appUser, identifier);
-        issueLoginSession(appUser, SessionCreationSpec.fromAppUser(appUser, "passwordless"), response, context);
-        recordLoginSuccess(appUser.getId(), context);
+        MfaOrchestrationResult result = issueLoginSession(appUser, SessionCreationSpec.fromAppUser(appUser, "passwordless"), response, context);
+        if (!result.challengeRequired()) {
+            recordLoginSuccess(appUser.getId(), context);
+        }
+        return result;
     }
 
     @Override
-    // Central issuance hook for future MFA orchestration.
-    public void issueLoginSession(AppUser appUser, SessionCreationSpec creationSpec, HttpServletResponse response, AuthRequestContext context) {
+    // Central issuance hook for MFA orchestration.
+    public MfaOrchestrationResult issueLoginSession(AppUser appUser, SessionCreationSpec creationSpec, HttpServletResponse response, AuthRequestContext context) {
+        MfaOrchestrationResult result = mfaOrchestrator.orchestrateLogin(appUser, creationSpec.primaryAmr(), context);
+        if (result.challengeRequired()) {
+            return result;
+        }
+
         SessionTokenIssuer.LoginTokens loginTokens = sessionTokenIssuer.issueLoginSession(
                 appUser,
                 creationSpec,
@@ -184,6 +197,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
                 context.userAgent()
         );
         writeAuthCookies(response, loginTokens);
+        return result;
     }
 
     private UUID resolveAuthenticatedUserId(Object principal) {

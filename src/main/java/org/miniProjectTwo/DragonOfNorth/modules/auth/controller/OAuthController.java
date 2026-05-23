@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.api.OAuthApi;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.OAuthService;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthLoginRequest;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.success;
 import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.successMessage;
 
 @RestController
@@ -31,12 +33,15 @@ public class OAuthController implements OAuthApi {
             HttpServletResponse httpResponse
     ) {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(httpRequest, request.deviceId());
-        oAuthService.authenticatedWithGoogle(
+        MfaOrchestrationResult result = oAuthService.authenticatedWithGoogle(
                 request.idToken(),
                 request.expectedIdentifier(),
                 context,
                 httpResponse
         );
+        if (result.challengeRequired()) {
+            return ResponseEntity.ok(success(result.challenge()));
+        }
         return ResponseEntity.ok(successMessage("OAuth authentication successful"));
     }
 
@@ -48,12 +53,15 @@ public class OAuthController implements OAuthApi {
             HttpServletResponse httpResponse
     ) {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(httpRequest, request.deviceId());
-        oAuthService.signupWithGoogle(
+        MfaOrchestrationResult result = oAuthService.signupWithGoogle(
                 request.idToken(),
                 request.expectedIdentifier(),
                 context,
                 httpResponse
         );
+        if (result.challengeRequired()) {
+            return ResponseEntity.ok(success(result.challenge()));
+        }
         return ResponseEntity.ok(successMessage("OAuth signup successful"));
     }
 }

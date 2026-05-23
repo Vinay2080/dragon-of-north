@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.service;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
@@ -14,7 +15,7 @@ public interface AuthCommonServices {
     /**
      * Authenticates user credentials and issues auth cookies/session.
      */
-    void login(String identifier, String password, HttpServletResponse response, AuthRequestContext context);
+    MfaOrchestrationResult login(String identifier, String password, HttpServletResponse response, AuthRequestContext context);
 
     /**
      * Rotates refresh/access tokens for the active device.
@@ -49,7 +50,7 @@ public interface AuthCommonServices {
     /**
      * Ensures identifier verification and completes session+cookie login issuance.
      */
-    void completeLogin(AppUser appUser, String identifier, HttpServletResponse response, AuthRequestContext context);
+    MfaOrchestrationResult completeLogin(AppUser appUser, String identifier, HttpServletResponse response, AuthRequestContext context);
 
     /**
      * Writes the access-token cookie.
@@ -64,5 +65,5 @@ public interface AuthCommonServices {
     /**
      * Central login issuance entry point for auth flows (session + JWT + cookies).
      */
-    void issueLoginSession(AppUser appUser, SessionCreationSpec creationSpec, HttpServletResponse response, AuthRequestContext context);
+    MfaOrchestrationResult issueLoginSession(AppUser appUser, SessionCreationSpec creationSpec, HttpServletResponse response, AuthRequestContext context);
 }

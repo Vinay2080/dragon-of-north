@@ -8,6 +8,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.*;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.*;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
@@ -180,9 +181,8 @@ class AuthenticationControllerTest {
     @Test
     void loginUser_shouldReturnUnauthorized_whenEmailNotVerified() throws Exception {
         AppUserLoginRequest request = new AppUserLoginRequest("test@example.com", "Secret@123", "device-1");
-        doThrow(new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED, "Email not verified. Please verify your email before logging in."))
-                .when(authCommonServices)
-                .login(eq(request.identifier()), eq(request.password()), any(), any(AuthRequestContext.class));
+        when(authCommonServices.login(eq(request.identifier()), eq(request.password()), any(), any(AuthRequestContext.class)))
+                .thenThrow(new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED, "Email not verified. Please verify your email before logging in."));
 
         mockMvc.perform(post("/api/v1/auth/identifier/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -215,6 +215,8 @@ class AuthenticationControllerTest {
                   "device_id": "device-1"
                 }
                 """;
+        when(passwordlessLoginService.verifyPasswordlessLogin(eq("raw-token"), any(AuthRequestContext.class), any()))
+                .thenReturn(MfaOrchestrationResult.noChallenge(false, List.of()));
 
         mockMvc.perform(post("/api/v1/auth/passwordless/verify")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -237,6 +239,8 @@ class AuthenticationControllerTest {
                   "device_id": "device-1"
                 }
                 """;
+        when(passwordlessLoginService.verifyPasswordlessLogin(eq("raw-token"), any(AuthRequestContext.class), any()))
+                .thenReturn(MfaOrchestrationResult.noChallenge(false, List.of()));
 
         mockMvc.perform(post("/api/v1/auth/login/passwordless/verify")
                         .contentType(MediaType.APPLICATION_JSON)

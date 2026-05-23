@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.PasswordlessLoginService;
 
@@ -63,10 +64,10 @@ public class PasswordlessLoginServiceImpl implements PasswordlessLoginService {
     }
 
     @Override
-    public void verifyPasswordlessLogin(String token, AuthRequestContext context, HttpServletResponse response) {
+    public MfaOrchestrationResult verifyPasswordlessLogin(String token, AuthRequestContext context, HttpServletResponse response) {
         AppUser appUser = verifyPasswordlessToken(token);
         userStateValidator.validate(appUser, UserLifecycleOperation.PASSWORDLESS_LOGIN_VERIFY);
-        authCommonServices.completeLogin(appUser, appUser.getEmail(), response, context);
+        return authCommonServices.completeLogin(appUser, appUser.getEmail(), response, context);
     }
 
 
