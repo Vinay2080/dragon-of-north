@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.api.OAuthApi;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.OAuthService;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthLoginRequest;
 import org.springframework.http.ResponseEntity;
@@ -29,11 +30,11 @@ public class OAuthController implements OAuthApi {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse
     ) {
+        AuthRequestContext context = AuthRequestContext.fromHttpRequest(httpRequest, request.deviceId());
         oAuthService.authenticatedWithGoogle(
                 request.idToken(),
-                request.deviceId(),
                 request.expectedIdentifier(),
-                httpRequest,
+                context,
                 httpResponse
         );
         return ResponseEntity.ok(successMessage("OAuth authentication successful"));
@@ -46,11 +47,11 @@ public class OAuthController implements OAuthApi {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse
     ) {
+        AuthRequestContext context = AuthRequestContext.fromHttpRequest(httpRequest, request.deviceId());
         oAuthService.signupWithGoogle(
                 request.idToken(),
-                request.deviceId(),
                 request.expectedIdentifier(),
-                httpRequest,
+                context,
                 httpResponse
         );
         return ResponseEntity.ok(successMessage("OAuth signup successful"));

@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.service;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 
@@ -59,4 +60,9 @@ public interface AuthCommonServices {
      * Writes the refresh-token cookie.
      */
     void setRefreshToken(HttpServletResponse response, String token);
+
+    /**
+     * Central login issuance entry point for auth flows (session + JWT + cookies).
+     */
+    void issueLoginSession(AppUser appUser, SessionCreationSpec creationSpec, HttpServletResponse response, AuthRequestContext context);
 }

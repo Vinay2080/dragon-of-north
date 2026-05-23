@@ -1,14 +1,13 @@
 package org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.GoogleTokenVerifierService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.OAuthService;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
@@ -41,7 +40,6 @@ public class OAuthServiceImpl implements OAuthService {
     private final UserAuthProviderRepository userAuthProviderRepository;
     private final RoleRepository roleRepository;
     private final AuthCommonServices authCommonServices;
-    private final SessionTokenIssuer sessionTokenIssuer;
     private final ProfileService profileService;
     private final AuditEventLogger auditEventLogger;
     private final UserStateValidator userStateValidator;
@@ -51,13 +49,12 @@ public class OAuthServiceImpl implements OAuthService {
      */
     @Override
     @Transactional
-    public void authenticatedWithGoogle(String idToken, String deviceId, String expectedIdentifier, HttpServletRequest httpRequest, HttpServletResponse response) {
+    public void authenticatedWithGoogle(String idToken, String expectedIdentifier, AuthRequestContext context, HttpServletResponse response) {
         executeGoogleFlow(
                 "auth.oauth.google.login",
                 idToken,
-                deviceId,
                 expectedIdentifier,
-                httpRequest,
+                context,
                 response,
                 this::findOrCreateUserForGoogleAuth
         );
@@ -68,13 +65,12 @@ public class OAuthServiceImpl implements OAuthService {
      */
     @Override
     @Transactional
-    public void signupWithGoogle(String idToken, String deviceId, String expectedIdentifier, HttpServletRequest httpRequest, HttpServletResponse response) {
+    public void signupWithGoogle(String idToken, String expectedIdentifier, AuthRequestContext context, HttpServletResponse response) {
         executeGoogleFlow(
                 "auth.oauth.google.signup",
                 idToken,
-                deviceId,
                 expectedIdentifier,
-                httpRequest,
+                context,
                 response,
                 this::findOrCreateUserForSignup
         );
@@ -105,22 +101,20 @@ public class OAuthServiceImpl implements OAuthService {
 
     private void executeGoogleFlow(String eventName,
                                    String idToken,
-                                   String deviceId,
                                    String expectedIdentifier,
-                                   HttpServletRequest httpRequest,
+                                   AuthRequestContext context,
                                    HttpServletResponse response,
                                    GoogleUserResolver userResolver) {
-        RequestMetadata metadata = extractRequestMetadata(httpRequest);
         UUID auditUserId = null;
         try {
             OAuthUserInfo userInfo = verifyGoogleIdentity(idToken, expectedIdentifier);
             AppUser appUser = userResolver.resolve(userInfo);
             synchronizeGoogleProfile(appUser, userInfo);
             auditUserId = appUser.getId();
-            finalizeAuthentication(appUser, deviceId, httpRequest, response);
-            recordOauthSuccess(eventName, auditUserId, deviceId, metadata);
+            finalizeAuthentication(appUser, context, response);
+            recordOauthSuccess(eventName, auditUserId, context);
         } catch (BusinessException exception) {
-            recordOauthFailure(eventName, auditUserId, deviceId, metadata, exception);
+            recordOauthFailure(eventName, auditUserId, context, exception);
             throw exception;
         }
     }
@@ -140,13 +134,6 @@ public class OAuthServiceImpl implements OAuthService {
         }
 
         return createNewUserWithRetry(userInfo);
-    }
-
-    private RequestMetadata extractRequestMetadata(HttpServletRequest httpRequest) {
-        return new RequestMetadata(
-                httpRequest.getHeader("X-Forwarded-For"),
-                httpRequest.getHeader("X-Request-Id")
-        );
     }
 
     private OAuthUserInfo verifyGoogleIdentity(String idToken, String expectedIdentifier) {
@@ -174,30 +161,23 @@ public class OAuthServiceImpl implements OAuthService {
         }
     }
 
-    private void finalizeAuthentication(AppUser appUser, String deviceId, HttpServletRequest httpRequest, HttpServletResponse response) {
-        String ipAddress = httpRequest.getHeader("X-Forwarded-For");
-        String userAgent = httpRequest.getHeader("User-Agent");
-
+    private void finalizeAuthentication(AppUser appUser, AuthRequestContext context, HttpServletResponse response) {
         updateLoginInfo(appUser);
 
-        SessionTokenIssuer.LoginTokens loginTokens = sessionTokenIssuer.issueLoginSession(
+        authCommonServices.issueLoginSession(
                 appUser,
                 SessionCreationSpec.fromAppUser(appUser, "oauth"),
-                ipAddress,
-                deviceId,
-                userAgent
+                response,
+                context
         );
-
-        authCommonServices.setAccessToken(response, loginTokens.accessToken());
-        authCommonServices.setRefreshToken(response, loginTokens.refreshToken());
     }
 
-    private void recordOauthSuccess(String eventName, UUID userId, String deviceId, RequestMetadata metadata) {
-        auditEventLogger.log(eventName, userId, deviceId, metadata.ipAddress(), "success", null, metadata.requestId());
+    private void recordOauthSuccess(String eventName, UUID userId, AuthRequestContext context) {
+        auditEventLogger.log(eventName, userId, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
     }
 
-    private void recordOauthFailure(String eventName, UUID userId, String deviceId, RequestMetadata metadata, BusinessException exception) {
-        auditEventLogger.log(eventName, userId, deviceId, metadata.ipAddress(), "failure", exception.getMessage(), metadata.requestId());
+    private void recordOauthFailure(String eventName, UUID userId, AuthRequestContext context, BusinessException exception) {
+        auditEventLogger.log(eventName, userId, context.deviceId(), context.ipAddress(), "failure", exception.getMessage(), context.requestId());
     }
 
     private void updateLoginInfo(AppUser user) {
@@ -274,8 +254,5 @@ public class OAuthServiceImpl implements OAuthService {
     @FunctionalInterface
     private interface GoogleUserResolver {
         AppUser resolve(OAuthUserInfo userInfo);
-    }
-
-    private record RequestMetadata(String ipAddress, String requestId) {
     }
 }

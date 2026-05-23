@@ -1,14 +1,13 @@
 package org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.GoogleTokenVerifierService;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
@@ -48,8 +47,6 @@ class OAuthServiceImplTest {
     @Mock
     private AuthCommonServices authCommonServices;
     @Mock
-    private SessionTokenIssuer sessionTokenIssuer;
-    @Mock
     private ProfileService profileService;
     @Mock
     private AuditEventLogger auditEventLogger;
@@ -60,12 +57,11 @@ class OAuthServiceImplTest {
     private OAuthServiceImpl oAuthService;
 
     @Mock
-    private HttpServletRequest request;
-    @Mock
     private HttpServletResponse response;
 
     @Test
     void authenticatedWithGoogle_createsAccountWhenNoUserExists() {
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
         OAuthUserInfo userInfo = OAuthUserInfo.builder()
                 .sub("google-sub")
                 .email("new@example.com")
@@ -84,28 +80,21 @@ class OAuthServiceImplTest {
         when(appUserRepository.findByEmailForUpdate("new@example.com")).thenReturn(Optional.empty());
         when(roleRepository.findByRoleName(RoleName.USER)).thenReturn(Optional.of(role));
         when(appUserRepository.save(any(AppUser.class))).thenReturn(newUser);
-        when(request.getHeader("X-Forwarded-For")).thenReturn("127.0.0.1");
-        when(request.getHeader("User-Agent")).thenReturn("JUnit");
-        when(request.getHeader("X-Request-Id")).thenReturn("req-1");
-        when(sessionTokenIssuer.issueLoginSession(eq(newUser), any(SessionCreationSpec.class), any(), eq("device-1"), any()))
-                .thenReturn(new SessionTokenIssuer.LoginTokens("access", "refresh"));
-        doNothing().when(authCommonServices).setAccessToken(any(HttpServletResponse.class), anyString());
-        doNothing().when(authCommonServices).setRefreshToken(any(HttpServletResponse.class), anyString());
+        doNothing().when(authCommonServices).issueLoginSession(eq(newUser), any(SessionCreationSpec.class), eq(response), eq(context));
 
-        oAuthService.authenticatedWithGoogle("token", "device-1", null, request, response);
+        oAuthService.authenticatedWithGoogle("token", null, context, response);
 
         verify(appUserRepository).save(any(AppUser.class));
         verify(userAuthProviderRepository).save(any(UserAuthProvider.class));
         verify(profileService).ensureProfileExists(newUser.getId(), userInfo);
         verify(profileService).syncGoogleAvatar(newUser.getId(), userInfo);
-        verify(sessionTokenIssuer).issueLoginSession(eq(newUser), any(SessionCreationSpec.class), any(), eq("device-1"), any());
-        verify(authCommonServices).setAccessToken(response, "access");
-        verify(authCommonServices).setRefreshToken(response, "refresh");
+        verify(authCommonServices).issueLoginSession(eq(newUser), any(SessionCreationSpec.class), eq(response), eq(context));
         verify(auditEventLogger).log("auth.oauth.google.login", newUser.getId(), "device-1", "127.0.0.1", "success", null, "req-1");
     }
 
     @Test
     void authenticatedWithGoogle_linksGoogleProviderForExistingEmailUser() {
+        AuthRequestContext context = new AuthRequestContext("device-2", "127.0.0.1", "req-2", "JUnit");
         OAuthUserInfo userInfo = OAuthUserInfo.builder()
                 .sub("google-sub-2")
                 .email("existing@example.com")
@@ -124,23 +113,16 @@ class OAuthServiceImplTest {
         when(userAuthProviderRepository.findByProviderAndProviderId(Provider.GOOGLE, "google-sub-2")).thenReturn(Optional.empty());
         when(appUserRepository.findByEmailForUpdate("existing@example.com")).thenReturn(Optional.of(existingUser));
         when(userAuthProviderRepository.existsByUserIdAndProvider(existingUser.getId(), Provider.GOOGLE)).thenReturn(false);
-        when(request.getHeader("X-Forwarded-For")).thenReturn("127.0.0.1");
-        when(request.getHeader("User-Agent")).thenReturn("JUnit");
-        when(request.getHeader("X-Request-Id")).thenReturn("req-2");
-        when(sessionTokenIssuer.issueLoginSession(eq(existingUser), any(SessionCreationSpec.class), any(), eq("device-2"), any()))
-                .thenReturn(new SessionTokenIssuer.LoginTokens("access", "refresh"));
-        doNothing().when(authCommonServices).setAccessToken(any(HttpServletResponse.class), anyString());
-        doNothing().when(authCommonServices).setRefreshToken(any(HttpServletResponse.class), anyString());
+        doNothing().when(authCommonServices).issueLoginSession(eq(existingUser), any(SessionCreationSpec.class), eq(response), eq(context));
 
-        oAuthService.authenticatedWithGoogle("token", "device-2", "existing@example.com", request, response);
+        oAuthService.authenticatedWithGoogle("token", "existing@example.com", context, response);
 
         ArgumentCaptor<UserAuthProvider> authProviderCaptor = ArgumentCaptor.forClass(UserAuthProvider.class);
         verify(userAuthProviderRepository).save(authProviderCaptor.capture());
         verify(userStateValidator, times(2)).validate(existingUser, UserLifecycleOperation.GOOGLE_LOGIN);
         verify(profileService, never()).ensureProfileExists(any(UUID.class), any());
         verify(profileService).syncGoogleAvatar(existingUser.getId(), userInfo);
-        verify(authCommonServices).setAccessToken(response, "access");
-        verify(authCommonServices).setRefreshToken(response, "refresh");
+        verify(authCommonServices).issueLoginSession(eq(existingUser), any(SessionCreationSpec.class), eq(response), eq(context));
         verify(auditEventLogger).log("auth.oauth.google.login", existingUser.getId(), "device-2", "127.0.0.1", "success", null, "req-2");
     }
 }

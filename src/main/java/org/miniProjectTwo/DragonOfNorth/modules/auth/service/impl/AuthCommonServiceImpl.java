@@ -10,6 +10,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderReposi
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -82,8 +83,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
             AppUser authenticatedUser = authenticateUser(normalizedIdentifier, password);
             ensureIdentifierVerified(user, normalizedIdentifier);
 
-            SessionTokenIssuer.LoginTokens loginTokens = issueLoginSession(authenticatedUser, "pwd", context);
-            writeAuthCookies(response, loginTokens);
+            issueLoginSession(authenticatedUser, SessionCreationSpec.fromAppUser(authenticatedUser, "pwd"), response, context);
 
             recordLoginSuccess(authenticatedUser.getId(), context);
         } catch (AuthenticationException | BusinessException exception) {
@@ -169,9 +169,21 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     @Override
     public void completeLogin(AppUser appUser, String identifier, HttpServletResponse response, AuthRequestContext context) {
         ensureIdentifierVerified(appUser, identifier);
-        SessionTokenIssuer.LoginTokens loginTokens = issueLoginSession(appUser, "passwordless", context);
-        writeAuthCookies(response, loginTokens);
+        issueLoginSession(appUser, SessionCreationSpec.fromAppUser(appUser, "passwordless"), response, context);
         recordLoginSuccess(appUser.getId(), context);
+    }
+
+    @Override
+    // Central issuance hook for future MFA orchestration.
+    public void issueLoginSession(AppUser appUser, SessionCreationSpec creationSpec, HttpServletResponse response, AuthRequestContext context) {
+        SessionTokenIssuer.LoginTokens loginTokens = sessionTokenIssuer.issueLoginSession(
+                appUser,
+                creationSpec,
+                context.ipAddress(),
+                context.deviceId(),
+                context.userAgent()
+        );
+        writeAuthCookies(response, loginTokens);
     }
 
     private UUID resolveAuthenticatedUserId(Object principal) {
@@ -240,18 +252,6 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
-    /**
-     * Single login issuance pipeline: refresh token → persisted session → access JWT from session state.
-     */
-    private SessionTokenIssuer.LoginTokens issueLoginSession(AppUser appUser, String primaryAmr, AuthRequestContext context) {
-        return sessionTokenIssuer.issueLoginSession(
-                appUser,
-                primaryAmr,
-                context.ipAddress(),
-                context.deviceId(),
-                context.userAgent()
-        );
-    }
 
     private void recordRefreshSuccess(UUID userId, AuthRequestContext context) {
         meterRegistry.counter("auth.refresh.success").increment();
