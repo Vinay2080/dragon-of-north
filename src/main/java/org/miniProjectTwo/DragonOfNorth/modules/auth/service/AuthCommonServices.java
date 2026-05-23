@@ -2,6 +2,7 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.service;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.VerificationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
@@ -66,4 +67,9 @@ public interface AuthCommonServices {
      * Central login issuance entry point for auth flows (session + JWT + cookies).
      */
     MfaOrchestrationResult issueLoginSession(AppUser appUser, SessionCreationSpec creationSpec, HttpServletResponse response, AuthRequestContext context);
+
+    /**
+     * Completes authentication after MFA challenge verification and challenge consumption.
+     */
+    VerificationResult completeMfaChallengeLogin(String challengeId, String code, org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType providerType, HttpServletResponse response, AuthRequestContext context);
 }
