@@ -14,7 +14,6 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchest
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.*;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
@@ -81,9 +80,9 @@ public class AuthenticationController implements AuthenticationApi {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(httpServletRequest, request.deviceId());
         MfaOrchestrationResult result = authCommonServices.login(request.identifier(), request.password(), httpServletResponse, context);
         if (result.challengeRequired()) {
-            return ResponseEntity.status(HttpStatus.OK).body(success(result.challenge()));
+            return ResponseEntity.ok(success(result.challenge()));
         }
-        return ResponseEntity.status(HttpStatus.OK).body(successMessage("log in successful"));
+        return ResponseEntity.ok(successMessage("log in successful"));
     }
 
     @Override
