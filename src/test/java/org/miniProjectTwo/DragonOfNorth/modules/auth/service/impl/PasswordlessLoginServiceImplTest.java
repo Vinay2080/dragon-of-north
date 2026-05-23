@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -22,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -90,11 +92,15 @@ class PasswordlessLoginServiceImplTest {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get("auth:passwordless:token:hashed-token")).thenReturn(userId.toString());
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
-        passwordlessService.verifyPasswordlessLogin("raw-token", context, response);
+        when(authCommonServices.completeLogin(user, "user@example.com", response, context))
+                .thenReturn(MfaOrchestrationResult.noChallenge(false, java.util.List.of()));
+
+        MfaOrchestrationResult result = passwordlessService.verifyPasswordlessLogin("raw-token", context, response);
 
         verify(redisTemplate).delete("auth:passwordless:token:hashed-token");
         verify(redisTemplate).delete("auth:passwordless:user:" + userId);
         verify(userStateValidator).validate(user, UserLifecycleOperation.PASSWORDLESS_LOGIN_VERIFY);
         verify(authCommonServices).completeLogin(user, "user@example.com", response, context);
+        assertNotNull(result);
     }
 }

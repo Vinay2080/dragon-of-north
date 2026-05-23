@@ -17,24 +17,41 @@ public interface OAuthApi {
 
     @Operation(
             summary = "Log in with Google",
-            description = "Authenticates an existing user with a Google ID token and sets the application's auth cookies."
+            description = "Authenticates an existing user with a Google ID token and sets the application's auth cookies when MFA is not required."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "OAuth login successful",
+                    description = "OAuth login successful (or MFA challenge issued)",
                     content = @Content(
                             mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    name = "googleLoginSuccess",
-                                    value = """
-                                            {
-                                              "message": "OAuth authentication successful",
-                                              "api_response_status": "success",
-                                              "time": "2026-04-04T06:45:00Z"
-                                            }
-                                            """
-                            )
+                            examples = {
+                                    @ExampleObject(
+                                            name = "googleLoginSuccess",
+                                            value = """
+                                                    {
+                                                      "message": "OAuth authentication successful",
+                                                      "api_response_status": "success",
+                                                      "time": "2026-04-04T06:45:00Z"
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "googleLoginMfaChallenge",
+                                            value = """
+                                                    {
+                                                      "api_response_status": "success",
+                                                      "data": {
+                                                        "mfa_required": true,
+                                                        "challenge_id": "mfa_challenge_token",
+                                                        "expires_at": "2026-04-04T06:55:00Z",
+                                                        "available_methods": ["TOTP", "RECOVERY_CODE"]
+                                                      },
+                                                      "time": "2026-04-04T06:45:00Z"
+                                                    }
+                                                    """
+                                    )
+                            }
                     )
             ),
             @ApiResponse(responseCode = "401", description = "Google token is invalid or expired"),
@@ -64,24 +81,41 @@ public interface OAuthApi {
 
     @Operation(
             summary = "Sign up with Google",
-            description = "Creates a new account from a Google ID token and immediately establishes an authenticated session."
+            description = "Creates a new account from a Google ID token and immediately establishes an authenticated session when MFA is not required."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "OAuth sign-up successful",
+                    description = "OAuth sign-up successful (or MFA challenge issued)",
                     content = @Content(
                             mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    name = "googleSignupSuccess",
-                                    value = """
-                                            {
-                                              "message": "OAuth signup successful",
-                                              "api_response_status": "success",
-                                              "time": "2026-04-04T06:45:00Z"
-                                            }
-                                            """
-                            )
+                            examples = {
+                                    @ExampleObject(
+                                            name = "googleSignupSuccess",
+                                            value = """
+                                                    {
+                                                      "message": "OAuth signup successful",
+                                                      "api_response_status": "success",
+                                                      "time": "2026-04-04T06:45:00Z"
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "googleSignupMfaChallenge",
+                                            value = """
+                                                    {
+                                                      "api_response_status": "success",
+                                                      "data": {
+                                                        "mfa_required": true,
+                                                        "challenge_id": "mfa_challenge_token",
+                                                        "expires_at": "2026-04-04T06:55:00Z",
+                                                        "available_methods": ["TOTP", "RECOVERY_CODE"]
+                                                      },
+                                                      "time": "2026-04-04T06:45:00Z"
+                                                    }
+                                                    """
+                                    )
+                            }
                     )
             ),
             @ApiResponse(responseCode = "401", description = "Google token is invalid or expired"),

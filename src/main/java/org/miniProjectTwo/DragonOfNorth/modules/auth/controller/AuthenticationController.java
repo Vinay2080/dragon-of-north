@@ -8,12 +8,13 @@ import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.api.AuthenticationApi;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.*;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaChallengeResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.*;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
@@ -78,8 +79,11 @@ public class AuthenticationController implements AuthenticationApi {
             HttpServletRequest httpServletRequest
     ) {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(httpServletRequest, request.deviceId());
-        authCommonServices.login(request.identifier(), request.password(), httpServletResponse, context);
-        return ResponseEntity.status(HttpStatus.OK).body(successMessage("log in successful"));
+        MfaOrchestrationResult result = authCommonServices.login(request.identifier(), request.password(), httpServletResponse, context);
+        if (result.challengeRequired()) {
+            return ResponseEntity.ok(success(MfaChallengeResponse.from(result.challenge())));
+        }
+        return ResponseEntity.ok(successMessage("log in successful"));
     }
 
     @Override
@@ -161,7 +165,10 @@ public class AuthenticationController implements AuthenticationApi {
             HttpServletResponse response) {
 
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, verifyPasswordlessLoginDto.deviceId());
-        passwordlessLoginService.verifyPasswordlessLogin(verifyPasswordlessLoginDto.token(), context, response);
+        MfaOrchestrationResult result = passwordlessLoginService.verifyPasswordlessLogin(verifyPasswordlessLoginDto.token(), context, response);
+        if (result.challengeRequired()) {
+            return ResponseEntity.ok(success(MfaChallengeResponse.from(result.challenge())));
+        }
         return ResponseEntity.ok(successMessage("Passwordless login successful"));
     }
 

@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.service.impl;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
@@ -49,8 +50,8 @@ public class OAuthServiceImpl implements OAuthService {
      */
     @Override
     @Transactional
-    public void authenticatedWithGoogle(String idToken, String expectedIdentifier, AuthRequestContext context, HttpServletResponse response) {
-        executeGoogleFlow(
+    public MfaOrchestrationResult authenticatedWithGoogle(String idToken, String expectedIdentifier, AuthRequestContext context, HttpServletResponse response) {
+        return executeGoogleFlow(
                 "auth.oauth.google.login",
                 idToken,
                 expectedIdentifier,
@@ -65,8 +66,8 @@ public class OAuthServiceImpl implements OAuthService {
      */
     @Override
     @Transactional
-    public void signupWithGoogle(String idToken, String expectedIdentifier, AuthRequestContext context, HttpServletResponse response) {
-        executeGoogleFlow(
+    public MfaOrchestrationResult signupWithGoogle(String idToken, String expectedIdentifier, AuthRequestContext context, HttpServletResponse response) {
+        return executeGoogleFlow(
                 "auth.oauth.google.signup",
                 idToken,
                 expectedIdentifier,
@@ -99,20 +100,21 @@ public class OAuthServiceImpl implements OAuthService {
         return createNewUserWithRetry(userInfo);
     }
 
-    private void executeGoogleFlow(String eventName,
-                                   String idToken,
-                                   String expectedIdentifier,
-                                   AuthRequestContext context,
-                                   HttpServletResponse response,
-                                   GoogleUserResolver userResolver) {
+    private MfaOrchestrationResult executeGoogleFlow(String eventName,
+                                                     String idToken,
+                                                     String expectedIdentifier,
+                                                     AuthRequestContext context,
+                                                     HttpServletResponse response,
+                                                     GoogleUserResolver userResolver) {
         UUID auditUserId = null;
         try {
             OAuthUserInfo userInfo = verifyGoogleIdentity(idToken, expectedIdentifier);
             AppUser appUser = userResolver.resolve(userInfo);
             synchronizeGoogleProfile(appUser, userInfo);
             auditUserId = appUser.getId();
-            finalizeAuthentication(appUser, context, response);
+            MfaOrchestrationResult result = finalizeAuthentication(appUser, context, response);
             recordOauthSuccess(eventName, auditUserId, context);
+            return result;
         } catch (BusinessException exception) {
             recordOauthFailure(eventName, auditUserId, context, exception);
             throw exception;
@@ -161,10 +163,10 @@ public class OAuthServiceImpl implements OAuthService {
         }
     }
 
-    private void finalizeAuthentication(AppUser appUser, AuthRequestContext context, HttpServletResponse response) {
+    private MfaOrchestrationResult finalizeAuthentication(AppUser appUser, AuthRequestContext context, HttpServletResponse response) {
         updateLoginInfo(appUser);
 
-        authCommonServices.issueLoginSession(
+        return authCommonServices.issueLoginSession(
                 appUser,
                 SessionCreationSpec.fromAppUser(appUser, "oauth"),
                 response,

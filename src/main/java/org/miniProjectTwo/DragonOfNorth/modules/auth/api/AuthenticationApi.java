@@ -222,24 +222,41 @@ public interface AuthenticationApi {
 
     @Operation(
             summary = "Log in with identifier",
-            description = "Authenticates credentials and sets HTTP-only access and refresh token cookies for the supplied device."
+            description = "Authenticates credentials and sets HTTP-only access and refresh token cookies for the supplied device when MFA is not required."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "Login successful",
+                    description = "Login successful (or MFA challenge issued)",
                     content = @Content(
                             mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    name = "loginSuccess",
-                                    value = """
-                                            {
-                                              "message": "log in successful",
-                                              "api_response_status": "success",
-                                              "time": "2026-04-04T06:45:00Z"
-                                            }
-                                            """
-                            )
+                            examples = {
+                                    @ExampleObject(
+                                            name = "loginSuccess",
+                                            value = """
+                                                    {
+                                                      "message": "log in successful",
+                                                      "api_response_status": "success",
+                                                      "time": "2026-04-04T06:45:00Z"
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "loginMfaChallenge",
+                                            value = """
+                                                    {
+                                                      "api_response_status": "success",
+                                                      "data": {
+                                                        "mfa_required": true,
+                                                        "challenge_id": "mfa_challenge_token",
+                                                        "expires_at": "2026-04-04T06:55:00Z",
+                                                        "available_methods": ["TOTP", "RECOVERY_CODE"]
+                                                      },
+                                                      "time": "2026-04-04T06:45:00Z"
+                                                    }
+                                                    """
+                                    )
+                            }
                     )
             ),
             @ApiResponse(responseCode = "401", description = "Credentials are invalid or the account is not ready to log in"),
@@ -582,24 +599,41 @@ public interface AuthenticationApi {
 
     @Operation(
             summary = "Verify passwordless login",
-            description = "Validates the passwordless token, creates a session for the supplied device identifier, and sets HTTP-only authentication cookies."
+            description = "Validates the passwordless token, creates a session for the supplied device identifier, and sets HTTP-only authentication cookies when MFA is not required."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "Passwordless login successful",
+                    description = "Passwordless login successful (or MFA challenge issued)",
                     content = @Content(
                             mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    name = "passwordlessVerifySuccess",
-                                    value = """
-                                            {
-                                              "message": "Passwordless login successful",
-                                              "api_response_status": "success",
-                                              "time": "2026-04-04T06:45:00Z"
-                                            }
-                                            """
-                            )
+                            examples = {
+                                    @ExampleObject(
+                                            name = "passwordlessVerifySuccess",
+                                            value = """
+                                                    {
+                                                      "message": "Passwordless login successful",
+                                                      "api_response_status": "success",
+                                                      "time": "2026-04-04T06:45:00Z"
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "passwordlessMfaChallenge",
+                                            value = """
+                                                    {
+                                                      "api_response_status": "success",
+                                                      "data": {
+                                                        "mfa_required": true,
+                                                        "challenge_id": "mfa_challenge_token",
+                                                        "expires_at": "2026-04-04T06:55:00Z",
+                                                        "available_methods": ["TOTP", "RECOVERY_CODE"]
+                                                      },
+                                                      "time": "2026-04-04T06:45:00Z"
+                                                    }
+                                                    """
+                                    )
+                            }
                     )
             ),
             @ApiResponse(responseCode = "400", description = "Token, device identifier, or request payload is invalid"),
