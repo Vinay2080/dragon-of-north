@@ -14,6 +14,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.service.*;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.ApplicationExceptionHandler;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.mockito.InjectMocks;
@@ -290,6 +291,32 @@ class AuthenticationControllerTest {
                 .andExpect(jsonPath("$.data.mfaQrCode").value("data:image/png;base64,AAAA"));
 
         verify(mfaService).requestMfaSetup(argThat(context -> "device-1".equals(context.deviceId())));
+    }
+
+    @Test
+    void verifyMfaChallenge_shouldForwardChallengePayload() throws Exception {
+        String payload = """
+                {
+                  "challenge_id": "challenge-1",
+                  "provider_type": "TOTP",
+                  "code": "123456",
+                  "device_id": "device-1"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/auth/mfa/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"));
+
+        verify(authCommonServices).completeMfaChallengeLogin(
+                eq("challenge-1"),
+                eq("123456"),
+                eq(ProviderType.TOTP),
+                any(),
+                argThat(context -> "device-1".equals(context.deviceId()))
+        );
     }
 
     @Test

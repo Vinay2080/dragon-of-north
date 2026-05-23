@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.ChallengeState;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,6 +21,7 @@ class ChallengeStateCodecTest {
                 "device-1",
                 "10.0.0",
                 "ua-hash",
+                List.of(org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType.TOTP),
                 2,
                 Instant.parse("2026-05-20T00:00:00Z"),
                 Instant.parse("2026-05-20T00:05:00Z")
@@ -44,6 +46,7 @@ class ChallengeStateCodecTest {
                 "device-1",
                 "10.0.0",
                 "ua-hash",
+                List.of(org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType.TOTP),
                 0,
                 Instant.parse("2026-05-20T00:00:00Z"),
                 Instant.parse("2026-05-20T00:05:00Z")
@@ -53,4 +56,3 @@ class ChallengeStateCodecTest {
         assertThrows(IllegalArgumentException.class, () -> codec.deserialize(encoded));
     }
 }
-

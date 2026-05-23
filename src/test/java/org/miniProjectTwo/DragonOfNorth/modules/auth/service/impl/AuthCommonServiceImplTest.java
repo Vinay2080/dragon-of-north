@@ -343,7 +343,7 @@ class AuthCommonServiceImplTest {
         Counter successCounter = mock(Counter.class);
 
         when(mfaChallengeService.verifyAndConsume("challenge-1", ProviderType.TOTP, "123456", context))
-                .thenReturn(new VerificationResult(userId, "pwd", true));
+                .thenReturn(VerificationResult.success(userId, "pwd"));
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
         when(sessionTokenIssuer.issueLoginSession(eq(user), any(SessionCreationSpec.class), anyString(), anyString(), anyString()))
                 .thenReturn(new SessionTokenIssuer.LoginTokens("access", "refresh"));
@@ -353,6 +353,19 @@ class AuthCommonServiceImplTest {
 
         assertTrue(result.success());
         verify(sessionTokenIssuer).issueLoginSession(eq(user), argThat(spec -> !spec.mfaRequired() && spec.mfaVerifiedAt() != null), anyString(), eq("device-1"), anyString());
+    }
+
+    @Test
+    void completeMfaChallengeLogin_shouldNotIssueSessionWhenChallengeConsumedOrExpired() {
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+        when(mfaChallengeService.verifyAndConsume("challenge-1", ProviderType.TOTP, "123456", context))
+                .thenReturn(VerificationResult.failure(null, null, VerificationResult.FailureReason.CHALLENGE_EXPIRED_OR_MISSING));
+
+        assertThrows(BusinessException.class,
+                () -> authCommonService.completeMfaChallengeLogin("challenge-1", "123456", ProviderType.TOTP, response, context));
+
+        verify(sessionTokenIssuer, never()).issueLoginSession(any(), any(SessionCreationSpec.class), anyString(), anyString(), anyString());
     }
 
 }

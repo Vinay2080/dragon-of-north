@@ -1,6 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -15,9 +16,9 @@ public record ChallengeState(
         String deviceId,
         String ipPrefix,
         String userAgentHash,
+        List<org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType> allowedProviders,
         int attempts,
         Instant createdAt,
         Instant expiresAt
 ) {
 }
-

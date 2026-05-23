@@ -207,7 +207,11 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     public VerificationResult completeMfaChallengeLogin(String challengeId, String code, org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType providerType, HttpServletResponse response, AuthRequestContext context) {
         VerificationResult verificationResult = mfaChallengeService.verifyAndConsume(challengeId, providerType, code, context);
         if (!verificationResult.success() || verificationResult.userId() == null || verificationResult.primaryAmr() == null) {
-            throw new BusinessException(ErrorCode.MFA_INVALID_CODE);
+            throw switch (verificationResult.failureReason()) {
+                case CHALLENGE_LOCKED_OUT -> new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
+                case CHALLENGE_EXPIRED_OR_MISSING, CHALLENGE_BUSY_OR_REPLAY, CHALLENGE_CONSUME_RACE -> new BusinessException(ErrorCode.INVALID_TOKEN);
+                case PROVIDER_MISMATCH, CONTEXT_MISMATCH, INVALID_VERIFICATION_CODE, NONE -> new BusinessException(ErrorCode.MFA_INVALID_CODE);
+            };
         }
 
         AppUser appUser = findUserById(verificationResult.userId());
