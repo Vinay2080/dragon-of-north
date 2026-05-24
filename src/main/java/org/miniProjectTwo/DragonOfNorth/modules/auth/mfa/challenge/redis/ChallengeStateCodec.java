@@ -10,6 +10,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.Challen
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -44,6 +45,7 @@ public class ChallengeStateCodec {
                 state.deviceId(),
                 state.ipPrefix(),
                 state.userAgentHash(),
+                state.allowedProviders() == null ? List.of() : state.allowedProviders(),
                 state.attempts(),
                 state.createdAt(),
                 state.expiresAt()
@@ -79,6 +81,7 @@ public class ChallengeStateCodec {
                 payload.deviceId(),
                 payload.ipPrefix(),
                 payload.userAgentHash(),
+                payload.allowedProviders() == null ? List.of() : payload.allowedProviders(),
                 payload.attempts(),
                 payload.createdAt(),
                 payload.expiresAt()
@@ -95,6 +98,7 @@ public class ChallengeStateCodec {
             String deviceId,
             String ipPrefix,
             String userAgentHash,
+            List<org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType> allowedProviders,
             int attempts,
             Instant createdAt,
             Instant expiresAt

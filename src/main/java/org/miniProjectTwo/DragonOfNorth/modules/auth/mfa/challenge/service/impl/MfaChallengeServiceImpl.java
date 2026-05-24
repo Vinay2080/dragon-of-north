@@ -62,6 +62,7 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
                 requestBinding.normalizeDeviceId(context.deviceId()),
                 requestBinding.ipPrefix(context.ipAddress()),
                 requestBinding.userAgentHash(context.userAgent()),
+                availableMethods == null ? List.of() : List.copyOf(availableMethods),
                 0,
                 createdAt,
                 expiresAt
@@ -94,19 +95,30 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
         var claim = atomicOps.claim(token, lockValue, CLAIM_LOCK_TTL);
         if (claim.status() != ChallengeStateAtomicRedisOps.ClaimStatus.OK || claim.stateJson() == null) {
             auditEventLogger.log("auth.mfa.challenge.failed", null, context.deviceId(), context.ipAddress(), "failure", claim.status().name().toLowerCase(), context.requestId());
-            return new VerificationResult(null, null, false);
+            return switch (claim.status()) {
+                case LOCKED_OUT -> VerificationResult.failure(null, null, VerificationResult.FailureReason.CHALLENGE_LOCKED_OUT);
+                case BUSY -> VerificationResult.failure(null, null, VerificationResult.FailureReason.CHALLENGE_BUSY_OR_REPLAY);
+                case MISSING, OK -> VerificationResult.failure(null, null, VerificationResult.FailureReason.CHALLENGE_EXPIRED_OR_MISSING);
+            };
         }
 
         ChallengeState state = store.decode(claim.stateJson());
         var bindings = requestBinding.fromContext(context);
-        VerificationResult verificationResult = new VerificationResult(state.userId(), state.primaryAmr(), false);
         if (!java.util.Objects.equals(state.deviceId(), bindings.deviceId())
                 || !java.util.Objects.equals(state.ipPrefix(), bindings.ipPrefix())
                 || !java.util.Objects.equals(state.userAgentHash(), bindings.userAgentHash())) {
             var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
             String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
             auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", "context_mismatch", context.requestId());
-            return verificationResult;
+            return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.CONTEXT_MISMATCH);
+        }
+
+        List<ProviderType> allowedProviders = state.allowedProviders() == null ? List.of() : state.allowedProviders();
+        if (!allowedProviders.contains(providerType)) {
+            var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
+            String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
+            auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", "provider_mismatch", context.requestId());
+            return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.PROVIDER_MISMATCH);
         }
 
         var providerVerification = providerVerifier.verify(state.userId(), providerType, code.trim());
@@ -114,17 +126,17 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
             var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
             String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
             auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", providerVerification.failureReason(), context.requestId());
-            return verificationResult;
+            return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.INVALID_VERIFICATION_CODE);
         }
 
         boolean consumed = atomicOps.consumeSuccess(token, lockValue);
         if (!consumed) {
             auditEventLogger.log("auth.mfa.challenge.failed", state.userId(), context.deviceId(), context.ipAddress(), "failure", "consume_race", context.requestId());
-            return verificationResult;
+            return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.CHALLENGE_CONSUME_RACE);
         }
 
         auditEventLogger.log("auth.mfa.challenge.verified", state.userId(), context.deviceId(), context.ipAddress(), "success", null, context.requestId());
-        return new VerificationResult(state.userId(), state.primaryAmr(), true);
+        return VerificationResult.success(state.userId(), state.primaryAmr());
     }
 
     @Override

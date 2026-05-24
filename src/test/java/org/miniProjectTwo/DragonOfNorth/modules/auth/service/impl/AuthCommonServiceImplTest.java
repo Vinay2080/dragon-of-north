@@ -7,6 +7,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.VerificationResult;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.service.MfaChallengeService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrator;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
@@ -23,6 +25,7 @@ import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.Provider;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.UserLifecycleOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -75,6 +78,8 @@ class AuthCommonServiceImplTest {
 
     @Mock
     private MfaOrchestrator mfaOrchestrator;
+    @Mock
+    private MfaChallengeService mfaChallengeService;
 
     @Mock
     private MeterRegistry meterRegistry;
@@ -324,6 +329,43 @@ class AuthCommonServiceImplTest {
         verify(appUserRepository, never()).save(any());
         verify(sessionService, never()).revokeAllSessionsByUserId(any());
         verify(profileService, never()).deleteProfileImage(any());
+    }
+
+    @Test
+    void completeMfaChallengeLogin_shouldIssueSessionOnlyAfterSuccessfulVerification() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+        user.setRoles(Set.of());
+        user.setAppUserStatus(ACTIVE);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+        Counter successCounter = mock(Counter.class);
+
+        when(mfaChallengeService.verifyAndConsume("challenge-1", ProviderType.TOTP, "123456", context))
+                .thenReturn(VerificationResult.success(userId, "pwd"));
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(sessionTokenIssuer.issueLoginSession(eq(user), any(SessionCreationSpec.class), anyString(), anyString(), anyString()))
+                .thenReturn(new SessionTokenIssuer.LoginTokens("access", "refresh"));
+        when(meterRegistry.counter(anyString())).thenReturn(successCounter);
+
+        VerificationResult result = authCommonService.completeMfaChallengeLogin("challenge-1", "123456", ProviderType.TOTP, response, context);
+
+        assertTrue(result.success());
+        verify(sessionTokenIssuer).issueLoginSession(eq(user), argThat(spec -> !spec.mfaRequired() && spec.mfaVerifiedAt() != null), anyString(), eq("device-1"), anyString());
+    }
+
+    @Test
+    void completeMfaChallengeLogin_shouldNotIssueSessionWhenChallengeConsumedOrExpired() {
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+        when(mfaChallengeService.verifyAndConsume("challenge-1", ProviderType.TOTP, "123456", context))
+                .thenReturn(VerificationResult.failure(null, null, VerificationResult.FailureReason.CHALLENGE_EXPIRED_OR_MISSING));
+
+        assertThrows(BusinessException.class,
+                () -> authCommonService.completeMfaChallengeLogin("challenge-1", "123456", ProviderType.TOTP, response, context));
+
+        verify(sessionTokenIssuer, never()).issueLoginSession(any(), any(SessionCreationSpec.class), anyString(), anyString(), anyString());
     }
 
 }

@@ -660,6 +660,21 @@ public interface AuthenticationApi {
             @Parameter(hidden = true) HttpServletResponse response
     );
 
+    @Operation(
+            summary = "Verify MFA challenge and complete authentication",
+            description = "Validates provider code against the MFA challenge, consumes the challenge, and only then issues auth cookies."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "MFA verified and login completed"),
+            @ApiResponse(responseCode = "400", description = "Invalid request payload or verification code"),
+            @ApiResponse(responseCode = "401", description = "Challenge expired/consumed/invalid")
+    })
+    ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> verifyMfaChallenge(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true) MfaVerifyRequest request,
+            @Parameter(hidden = true) HttpServletRequest httpServletRequest,
+            @Parameter(hidden = true) HttpServletResponse httpServletResponse
+    );
+
 
     @Operation(
             summary = "Request MFA (TOTP) setup",

@@ -198,6 +198,23 @@ public class AuthenticationController implements AuthenticationApi {
         return ResponseEntity.ok(successMessage("Passwordless login successful"));
     }
 
+    @Override
+    @PostMapping("/mfa/verify")
+    public ResponseEntity<ApiResponse<?>> verifyMfaChallenge(
+            @RequestBody @Valid MfaVerifyRequest request,
+            HttpServletRequest httpServletRequest,
+            HttpServletResponse httpServletResponse) {
+        AuthRequestContext context = AuthRequestContext.fromHttpRequest(httpServletRequest, request.deviceId());
+        authCommonServices.completeMfaChallengeLogin(
+                request.challengeId(),
+                request.code(),
+                request.providerType(),
+                httpServletResponse,
+                context
+        );
+        return ResponseEntity.ok(successMessage("mfa verification successful"));
+    }
+
     /**
      * Starts TOTP setup for an authenticated account and returns bootstrap material.
      * <p>

@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrator;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.VerificationResult;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.service.MfaChallengeService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
@@ -72,6 +74,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final SessionAccessTokenIssuer sessionAccessTokenIssuer;
     private final SessionTokenIssuer sessionTokenIssuer;
     private final MfaOrchestrator mfaOrchestrator;
+    private final MfaChallengeService mfaChallengeService;
     private final MeterRegistry meterRegistry;
     private final AppUserRepository appUserRepository;
     private final UserAuthProviderRepository userAuthProviderRepository;
@@ -208,6 +211,37 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         );
         writeAuthCookies(response, loginTokens);
         return result;
+    }
+
+    @Override
+    public VerificationResult completeMfaChallengeLogin(String challengeId, String code, org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType providerType, HttpServletResponse response, AuthRequestContext context) {
+        VerificationResult verificationResult = mfaChallengeService.verifyAndConsume(challengeId, providerType, code, context);
+        if (!verificationResult.success() || verificationResult.userId() == null || verificationResult.primaryAmr() == null) {
+            throw switch (verificationResult.failureReason()) {
+                case CHALLENGE_LOCKED_OUT -> new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
+                case CHALLENGE_EXPIRED_OR_MISSING, CHALLENGE_BUSY_OR_REPLAY, CHALLENGE_CONSUME_RACE -> new BusinessException(ErrorCode.INVALID_TOKEN);
+                case PROVIDER_MISMATCH, CONTEXT_MISMATCH, INVALID_VERIFICATION_CODE, NONE -> new BusinessException(ErrorCode.MFA_INVALID_CODE);
+            };
+        }
+
+        AppUser appUser = findUserById(verificationResult.userId());
+        userStateValidator.validate(appUser, UserLifecycleOperation.LOCAL_LOGIN);
+
+        SessionCreationSpec creationSpec = new SessionCreationSpec(
+                verificationResult.primaryAmr(),
+                false,
+                java.time.Instant.now()
+        );
+        SessionTokenIssuer.LoginTokens loginTokens = sessionTokenIssuer.issueLoginSession(
+                appUser,
+                creationSpec,
+                context.ipAddress(),
+                context.deviceId(),
+                context.userAgent()
+        );
+        writeAuthCookies(response, loginTokens);
+        recordLoginSuccess(appUser.getId(), context);
+        return verificationResult;
     }
 
     private UUID resolveAuthenticatedUserId(Object principal) {
