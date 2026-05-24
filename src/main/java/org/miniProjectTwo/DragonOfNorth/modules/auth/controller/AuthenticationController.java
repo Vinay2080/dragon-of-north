@@ -27,7 +27,7 @@ import static org.springframework.http.HttpStatus.CREATED;
  * Authentication HTTP controller that coordinates identifier-based authentication flows.
  * <p>
  * This controller intentionally remains thin and delegates business logic to domain services.
- * Several endpoints orchestrate multi-step flows (for example login + MFA challenge and
+ * Several endpoints orchestrate multistep flows (for example, login + MFA challenge and
  * sign-up + OTP verification + completion), so the method contracts are kept stable to
  * make future refactoring safer without breaking API behavior.
  */
@@ -88,7 +88,7 @@ public class AuthenticationController implements AuthenticationApi {
     /**
      * Performs primary-factor login and conditionally branches into MFA challenge orchestration.
      * <p>
-     * When MFA is required, no success message is returned; instead a challenge payload is
+     * When MFA is required, no success message is returned; instead, a challenge payload is
      * returned so clients can continue with the MFA verification flow.
      */
     @Override
