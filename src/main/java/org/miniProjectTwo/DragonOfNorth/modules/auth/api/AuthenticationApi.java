@@ -676,10 +676,10 @@ public interface AuthenticationApi {
                                     name = "mfaSetupResponse",
                                     value = """
                                             {
-                                              "apiResponseStatus": "success",
+                                              "api_response_status": "success",
                                               "data": {
-                                                "mfaSecret": "JBOSSWS3DPEHPK3PXP",
-                                                "mfaQrCode": "data:image/png;base64,iVBORw0KGgo..."
+                                                "mfa_secret": "JBOSSWS3DPEHPK3PXP",
+                                                "mfa_qr_code": "data:image/png;base64,iVBORw0KGgo..."
                                               },
                                               "time": "2026-04-04T06:45:00Z"
                                             }
@@ -701,7 +701,7 @@ public interface AuthenticationApi {
                                     name = "mfaSetupRequest",
                                     value = """
                                             {
-                                              "deviceId": "web-chrome-macos"
+                                              "device_id": "web-chrome-macos"
                                             }
                                             """
                             )
@@ -725,9 +725,9 @@ public interface AuthenticationApi {
                                     name = "mfaSetupConfirmResponse",
                                     value = """
                                             {
-                                              "apiResponseStatus": "success",
+                                              "api_response_status": "success",
                                               "data": {
-                                                "backupCodes": ["ABCD-EFGH", "IJKL-MNOP"]
+                                                "backup_codes": ["ABCD-EFGH", "IJKL-MNOP"]
                                               },
                                               "time": "2026-04-04T06:45:00Z"
                                             }
@@ -749,7 +749,7 @@ public interface AuthenticationApi {
                                     name = "mfaSetupConfirmRequest",
                                     value = """
                                             {
-                                              "deviceId": "web-chrome-macos",
+                                              "device_id": "web-chrome-macos",
                                               "code": "123456"
                                             }
                                             """

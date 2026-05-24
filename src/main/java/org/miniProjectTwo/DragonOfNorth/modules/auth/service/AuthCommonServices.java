@@ -8,7 +8,11 @@ import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 
 /**
- * Shared authentication operations used across identifier strategies.
+ * Shared orchestration contract for local, OAuth, and passwordless authentication flows.
+ * <p>
+ * This boundary centralizes lifecycle steps that must remain consistent regardless of entry path:
+ * credential verification, user-state validation, session creation, JWT cookie issuance, refresh,
+ * logout, and account deletion side effects.
  */
 public interface AuthCommonServices {
 

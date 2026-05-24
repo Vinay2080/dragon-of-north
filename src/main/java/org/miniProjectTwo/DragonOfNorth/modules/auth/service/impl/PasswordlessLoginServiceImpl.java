@@ -24,6 +24,12 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.UUID;
 
+/**
+ * Passwordless authentication implementation using one-time signed email links.
+ * <p>
+ * Request phase stores hashed token linkage in Redis and dispatches email; verification phase
+ * validates token freshness and account state, then delegates to common session/MFA issuance.
+ */
 @RequiredArgsConstructor
 @Service
 @Slf4j

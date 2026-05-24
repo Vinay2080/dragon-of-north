@@ -31,14 +31,10 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.PHONE
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
 
 /**
- * Phone-based authentication service implementation.
+ * Phone-identifier strategy for local sign-up/status/completion flows.
  * <p>
- * Handles user registration, status checking, and verification completion for phone
- * identifiers. Manages password encryption, phone verification flags, and database
- * operations. Critical for phone authentication flow and user lifecycle management.
- *
- * @see AuthenticationServiceResolver for service selection
- * @see AuthCommonServices for shared authentication logic
+ * Mirrors email strategy while applying phone normalization and phone OTP verification semantics.
+ * Keeps identifier-specific branching encapsulated behind {@link org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService}.
  */
 @Service
 @RequiredArgsConstructor

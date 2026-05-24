@@ -12,9 +12,15 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
 
 /**
- * Registers shared infrastructure beans.
- *
- * <p>Includes JPA auditing support and common JSON serialization settings.</p>
+ * Registers foundational beans consumed by multiple modules at runtime.
+ * <p>
+ * Dependency chain:
+ * <ul>
+ *   <li>{@link org.springframework.data.domain.AuditorAware} is consumed by JPA auditing via {@code JpaConfig}.</li>
+ *   <li>{@link ObjectMapper} is used by HTTP serialization paths and internal JSON codecs.</li>
+ * </ul>
+ * Modifying naming strategy or auditor resolution semantics can affect persistence history,
+ * API contracts, and audit/compliance traces across the system.
  */
 @Configuration
 @RequiredArgsConstructor

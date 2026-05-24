@@ -6,6 +6,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 
+/**
+ * Starts password reset by requesting an OTP challenge for a local identifier.
+ * <p>
+ * Response is intentionally generic at API level to avoid leaking account existence.
+ */
 @Schema(name = "PasswordResetRequestOtpRequest", description = "Request payload for starting the password reset OTP flow.")
 public record PasswordResetRequestOtpRequest(
         @JsonAlias({"email", "phone"})

@@ -23,6 +23,14 @@ import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.succes
 import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.successMessage;
 import static org.springframework.http.HttpStatus.CREATED;
 
+/**
+ * Authentication HTTP controller that coordinates identifier-based authentication flows.
+ * <p>
+ * This controller intentionally remains thin and delegates business logic to domain services.
+ * Several endpoints orchestrate multi-step flows (for example login + MFA challenge and
+ * sign-up + OTP verification + completion), so the method contracts are kept stable to
+ * make future refactoring safer without breaking API behavior.
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -51,6 +59,12 @@ public class AuthenticationController implements AuthenticationApi {
         return ResponseEntity.ok(success(response));
     }
 
+    /**
+     * Starts sign-up for an identifier.
+     * <p>
+     * In production this is typically followed by OTP verification through OTP endpoints
+     * and then {@code /identifier/sign-up/complete} to activate the account lifecycle state.
+     */
     @Override
     @PostMapping("/identifier/sign-up")
     public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<AppUserStatusFinderResponse>> signupUser(
@@ -71,6 +85,12 @@ public class AuthenticationController implements AuthenticationApi {
         return ResponseEntity.status(CREATED).body(success(response));
     }
 
+    /**
+     * Performs primary-factor login and conditionally branches into MFA challenge orchestration.
+     * <p>
+     * When MFA is required, no success message is returned; instead a challenge payload is
+     * returned so clients can continue with the MFA verification flow.
+     */
     @Override
     @PostMapping("/identifier/login")
     public ResponseEntity<ApiResponse<?>> loginUser(
@@ -157,6 +177,12 @@ public class AuthenticationController implements AuthenticationApi {
         return ResponseEntity.ok(successMessage("Passwordless login link sent if the email is registered"));
     }
 
+    /**
+     * Verifies passwordless token and applies the same post-auth orchestration as password login.
+     * <p>
+     * This endpoint may also return an MFA challenge, so callers must handle both terminal
+     * login success and challenge-required responses.
+     */
     @Override
     @PostMapping({"/passwordless/verify", "/login/passwordless/verify"})
     public ResponseEntity<ApiResponse<?>> verifyPasswordlessLogin(
@@ -172,6 +198,12 @@ public class AuthenticationController implements AuthenticationApi {
         return ResponseEntity.ok(successMessage("Passwordless login successful"));
     }
 
+    /**
+     * Starts TOTP setup for an authenticated account and returns bootstrap material.
+     * <p>
+     * The setup is not persisted as enabled until {@link #confirmMfaSetup(HttpServletRequest, MfaSetupConfirmRequest)}
+     * succeeds with a valid authenticator code.
+     */
     @PostMapping("/enable/mfa/request")
     @Override
     public ResponseEntity<ApiResponse<MfaSetupResponse>> requestMfaSetup(

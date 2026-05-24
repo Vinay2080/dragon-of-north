@@ -15,7 +15,12 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.EMAIL
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.PHONE;
 
 /**
- * Resolves identifier-specific authentication service implementations.
+ * Router for local identifier auth strategies.
+ * <p>
+ * Controllers call this before status/sign-up flows so identifier type and value format are
+ * validated consistently at one boundary. Extending to new identifier types should add a new
+ * {@link org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService} implementation
+ * and corresponding format guard here.
  */
 @Service
 public class AuthenticationServiceResolver {

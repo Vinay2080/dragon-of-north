@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus.*;
 
 @Component
+/**
+ * Central policy validator for user lifecycle transitions across auth/security operations.
+ */
 public class UserStateValidator {
 
     public void validate(AppUser user, UserLifecycleOperation operation) {

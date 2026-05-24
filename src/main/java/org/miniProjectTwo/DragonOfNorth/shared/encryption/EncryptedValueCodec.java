@@ -10,9 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 /**
- * Serializes encrypted-value envelopes into a single storage-safe Base64URL
- * string. This keeps the wire/storage format stable and independent of API
- * response serialization settings.
+ * Serialization contract for encrypted envelope format exchanged between encryption layers/storage.
  */
 @Component
 public class EncryptedValueCodec {

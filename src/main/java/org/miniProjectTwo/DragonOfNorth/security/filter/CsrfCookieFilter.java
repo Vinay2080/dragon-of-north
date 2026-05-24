@@ -12,8 +12,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Forces eager CSRF token generation so CookieCsrfTokenRepository can persist XSRF-TOKEN
- * even on safe requests.
+ * Synchronizes CSRF token material into response cookies expected by browser clients.
  */
 @Component
 public class CsrfCookieFilter extends OncePerRequestFilter {

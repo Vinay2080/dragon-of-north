@@ -3,7 +3,8 @@ package org.miniProjectTwo.DragonOfNorth.shared.util;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 
 /**
- * Utility for consistent identifier normalization across auth and OTP flows.
+ * Central identifier normalization utility for consistent email/phone canonicalization.
+ * Divergent normalization can break resolver routing, lookup consistency, and rate-limit keys.
  */
 public final class IdentifierNormalizer {
 

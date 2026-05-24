@@ -30,9 +30,11 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName.ADMIN;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName.USER;
 
 /**
- * Seeds deterministic users and sessions for local/test environments.
- *
- * <p>Runs after {@link RolesInitializer} so role records are already available.</p>
+ * Development/test seed orchestrator for deterministic auth/profile/session fixtures.
+ * <p>
+ * Runs after {@link RolesInitializer} and prepares users, providers, profiles, and sessions used by
+ * integration tests and manual QA for login, role checks, profile updates, and session revocation.
+ * This component is profile-gated ({@code test,dev}) and should not be enabled in production.
  */
 @NamedInterface
 @Component

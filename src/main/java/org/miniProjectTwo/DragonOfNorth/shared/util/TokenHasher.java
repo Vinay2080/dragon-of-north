@@ -7,10 +7,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Utility component for secure token hashing.
- * <p>
- * Uses SHA-256 for deterministic hashing.
- * Suitable for refresh tokens which are already high en    tropy.
+ * One-way hashing utility for storing token references (e.g., passwordless tokens) without plaintext.
  */
 @Component
 public class TokenHasher {

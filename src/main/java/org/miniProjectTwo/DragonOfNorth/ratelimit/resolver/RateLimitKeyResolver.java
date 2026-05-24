@@ -7,6 +7,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
+/**
+ * Derives stable rate-limit keys from request identity dimensions (user/session/ip/endpoint).
+ * <p>
+ * Key strategy impacts fairness, abuse resistance, and cross-node consistency in distributed setups.
+ */
 public class RateLimitKeyResolver {
 
     public String resolve(HttpServletRequest request, RateLimitType type) {

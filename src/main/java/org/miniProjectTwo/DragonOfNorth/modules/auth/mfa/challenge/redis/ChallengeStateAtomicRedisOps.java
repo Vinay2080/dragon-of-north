@@ -10,9 +10,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Atomic Redis operations for challenge verification/consumption.
- *
- * <p>Implements replay protection and safe attempt mutation using Lua scripts.</p>
+ * Encapsulates atomic Redis state transitions for MFA challenges to avoid double-consume races.
  */
 @Component
 @RequiredArgsConstructor

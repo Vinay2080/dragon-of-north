@@ -6,10 +6,7 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 /**
- * Centralized structured audit logger.
- *
- * <p>All auth/session/otp flows should log audit events using a consistent schema:
- * event, user_id, device_id, ip, result, reason, request_id.
+ * Shared audit logging facade used by auth/security flows for structured security event trails.
  */
 @Component
 @Slf4j

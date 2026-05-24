@@ -35,6 +35,9 @@ import java.util.function.Consumer;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+/**
+ * Profile service implementation coordinating profile persistence with avatar/media workflows.
+ */
 public class ProfileServiceImpl implements ProfileService {
 
     private final ProfileRepository profileRepository;

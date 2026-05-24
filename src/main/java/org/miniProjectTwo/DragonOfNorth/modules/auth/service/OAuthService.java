@@ -5,7 +5,10 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestCont
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 
 /**
- * OAuth authentication entry points used by controllers.
+ * OAuth login/sign-up orchestration boundary.
+ * <p>
+ * Implementations verify third-party identity tokens, reconcile provider linkage with local users,
+ * and route successful primary auth through the same session/MFA continuation lifecycle as local auth.
  */
 public interface OAuthService {
 

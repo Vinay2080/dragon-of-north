@@ -3,7 +3,10 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Request metadata used by auth services without leaking servlet APIs into service logic.
+ * Transport-neutral request metadata for authentication/audit decisions.
+ * <p>
+ * This record keeps servlet concerns at the controller boundary while allowing services to consume
+ * device identity, request tracing, and user-agent/ip context for risk checks and observability.
  */
 public record AuthRequestContext(
         String deviceId,

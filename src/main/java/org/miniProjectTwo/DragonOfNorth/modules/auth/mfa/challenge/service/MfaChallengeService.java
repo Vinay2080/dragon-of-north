@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Manages the pre-authentication MFA challenge lifecycle.
+ * Challenge lifecycle contract for creating, loading, and completing MFA challenges.
  */
 public interface MfaChallengeService {
 

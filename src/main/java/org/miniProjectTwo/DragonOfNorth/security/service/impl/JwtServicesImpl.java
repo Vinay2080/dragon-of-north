@@ -32,6 +32,12 @@ import java.util.*;
  */
 @Slf4j
 @Service
+/**
+ * Default JWT implementation for access/refresh issuance and validation.
+ * <p>
+ * Encodes authentication facts used by filters and session enforcement. Any claim-format change
+ * must be coordinated with JwtFilter, SidLivenessFilter, and session token issuance components.
+ */
 public class JwtServicesImpl implements JwtServices {
 
     private static final String TOKEN_TYPE = "token_type";

@@ -21,7 +21,7 @@ public interface ProfileApi {
 
     @Operation(
             summary = "Update my profile",
-            description = "Updates the authenticated user's profile fields. Any omitted field is left unchanged."
+            description = "Updates the authenticated user's profile fields. Any omitted field is left unchanged. This contract is intentionally partial-update friendly so client forms can submit only modified values."
     )
     @ApiResponses({
             @ApiResponse(
@@ -96,7 +96,7 @@ public interface ProfileApi {
 
     @Operation(
             summary = "Get my profile",
-            description = "Returns the authenticated user's profile together with the detected authentication provider."
+            description = "Returns the authenticated user's profile together with the detected authentication provider. Provider resolution is included so clients can conditionally render auth-management options."
     )
     @ApiResponses({
             @ApiResponse(

@@ -40,6 +40,9 @@ import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ErrorResponse.Vali
 @RestControllerAdvice
 @RequiredArgsConstructor
 @Slf4j
+/**
+ * Global API exception translation layer mapping domain/security failures to response contracts.
+ */
 public class ApplicationExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)

@@ -46,9 +46,19 @@ import java.util.UUID;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
 
 /**
- * Core authentication service handling login, token refresh, and user management.
- *
- * @see JwtServicesImpl for token operations
+ * Core authentication orchestration service used by all primary auth entry points.
+ * <p>
+ * Coordinates authentication manager checks, user lifecycle validation, MFA orchestration,
+ * session persistence, JWT minting/cookie writing, refresh rotation, and account/session cleanup.
+ * Most controller paths (local login, OAuth, passwordless) eventually converge here for
+ * consistent post-auth behavior.
+ */
+/**
+ * Core authentication orchestration service used by all primary auth entry points.
+ * <p>
+ * Coordinates credential authentication, lifecycle/state checks, MFA branching, session creation,
+ * JWT cookie issuance, refresh rotation, and security cleanup operations (logout/delete).
+ * Any change here can affect local, OAuth, and passwordless flows simultaneously.
  */
 @RequiredArgsConstructor
 @Service

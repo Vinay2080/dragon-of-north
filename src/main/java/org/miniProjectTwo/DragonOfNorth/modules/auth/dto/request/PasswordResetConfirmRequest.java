@@ -8,6 +8,12 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 
+/**
+ * Final step of password reset flow using identifier + OTP + replacement password.
+ * <p>
+ * Used after OTP issuance/verification. Input validation enforces OTP format and strong password
+ * policy to reduce account takeover risk.
+ */
 @Schema(name = "PasswordResetConfirmRequest", description = "Request payload for resetting a local account password with a verified OTP.")
 public record PasswordResetConfirmRequest(
         @JsonAlias({"email", "phone"})

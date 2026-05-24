@@ -4,7 +4,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-//dto for password less login via link requesting email
+
+/**
+ * Starts passwordless login by requesting a signed one-time link for the supplied email.
+ * <p>
+ * Used by public login flows; servers should keep response wording non-enumerating for security.
+ */
 @Schema(name = "RequestPasswordlessLoginDto", description = "Request payload for initiating passwordless login via email link.")
 public record RequestPasswordlessLoginDto(
         @NotBlank

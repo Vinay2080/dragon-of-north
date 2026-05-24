@@ -6,7 +6,11 @@ import jakarta.validation.constraints.NotNull;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 
 /**
- * Request record for completing the user sign-up process.
+ * Completes a sign-up after OTP verification has already succeeded.
+ * <p>
+ * Used by {@code /auth/identifier/sign-up/complete} to transition a CREATED account into an
+ * active login-ready state. The identifier and identifier type must match the earlier sign-up
+ * request to prevent cross-identifier activation.
  */
 @Schema(name = "AppUserSignUpCompleteRequest", description = "Request payload for completing sign-up after OTP verification succeeds.")
 public record AppUserSignUpCompleteRequest(

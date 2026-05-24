@@ -6,7 +6,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * Request body containing the device identifier for session-scoped operations.
+ * Device-scoped request payload shared by refresh, logout, account deletion, MFA setup, and session
+ * revocation operations.
+ * <p>
+ * Accepts both {@code deviceId} and {@code device_id} for backward compatibility while preserving a
+ * single canonical internal field.
  */
 @Schema(name = "DeviceIdRequest", description = "Request payload containing the client device identifier for session-scoped operations.")
 public record DeviceIdRequest(

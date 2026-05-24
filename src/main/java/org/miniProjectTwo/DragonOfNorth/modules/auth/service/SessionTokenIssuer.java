@@ -10,7 +10,12 @@ import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssue
 import org.springframework.stereotype.Service;
 
 /**
- * Central session + access-token issuance for login-like flows.
+ * Issues refresh/access token pairs backed by persisted session records.
+ * <p>
+ * Dependency chain: generate refresh token -> persist session metadata -> mint access token bound
+ * to session id/authentication facts. This keeps token issuance uniform for local, OAuth, and
+ * passwordless entry points and enables centralized future evolution (device trust, step-up auth,
+ * distributed token minting).
  */
 @Service
 @RequiredArgsConstructor

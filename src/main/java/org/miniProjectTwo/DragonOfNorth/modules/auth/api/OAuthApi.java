@@ -17,7 +17,7 @@ public interface OAuthApi {
 
     @Operation(
             summary = "Log in with Google",
-            description = "Authenticates an existing user with a Google ID token and sets the application's auth cookies when MFA is not required."
+            description = "Authenticates an existing user with a Google ID token and sets the application's auth cookies when MFA is not required. When MFA policy applies, clients must continue with the returned challenge payload."
     )
     @ApiResponses({
             @ApiResponse(
@@ -81,7 +81,7 @@ public interface OAuthApi {
 
     @Operation(
             summary = "Sign up with Google",
-            description = "Creates a new account from a Google ID token and immediately establishes an authenticated session when MFA is not required."
+            description = "Creates a new account from a Google ID token and immediately establishes an authenticated session when MFA is not required. When MFA policy applies, clients must continue with the returned challenge payload."
     )
     @ApiResponses({
             @ApiResponse(

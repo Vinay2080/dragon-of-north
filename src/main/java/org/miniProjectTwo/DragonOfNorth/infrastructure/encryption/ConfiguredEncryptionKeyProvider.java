@@ -8,6 +8,14 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
 
+/**
+ * Property-backed key resolver used by encryption services in auth/security workflows.
+ * <p>
+ * Current implementation resolves only one active AES-256 key from {@link EncryptionProperties}.
+ * It still enforces key-id lookup semantics so callers and payload formats remain compatible with
+ * future multi-key rotation (KMS/Vault/key-ring tables). Failure behavior is fail-closed: unknown
+ * key ids or invalid key material throw {@link org.miniProjectTwo.DragonOfNorth.shared.encryption.EncryptionException}.
+ */
 @Component
 @RequiredArgsConstructor
 class ConfiguredEncryptionKeyProvider implements EncryptionKeyProvider {

@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Default implementation of session lifecycle operations.
+ * Persistent session management implementation used by token issuance and SID enforcement paths.
  */
 @Service
 @RequiredArgsConstructor

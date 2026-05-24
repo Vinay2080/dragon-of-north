@@ -27,19 +27,11 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
- * Spring Security configuration for the application.
- *
- * <p>This configuration:
- * <ul>
- *   <li>Enables web and method-level security</li>
- *   <li>Builds a stateless {@link SecurityFilterChain} for token-based (JWT) authentication</li>
- *   <li>Uses cookie-based CSRF protection via {@link CookieCsrfTokenRepository}</li>
- *   <li>Whitelists public endpoints defined in {@link #public_urls}</li>
- *   <li>Requires authentication for all other endpoints</li>
- *   <li>Registers a JWT filter for token validation</li>
- * </ul>
- *
- * @see JwtFilter
+ * Defines security filter chain, authentication boundaries, and cookie/JWT enforcement policy.
+ * <p>
+ * Ordering assumptions in this configuration determine whether JWT identity, SID liveness checks,
+ * CSRF cookie refresh, and exception translation execute correctly. Changes can directly affect
+ * authentication propagation and endpoint protection semantics across all modules.
  */
 @Configuration
 @EnableWebSecurity

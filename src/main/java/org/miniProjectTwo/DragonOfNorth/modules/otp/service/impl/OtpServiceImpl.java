@@ -34,6 +34,10 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.OtpVerificationStatu
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * Core OTP orchestration implementation coordinating generation, sender dispatch, storage, and
+ * verification outcomes with expiration/replay protections.
+ */
 public class OtpServiceImpl implements OtpService {
     private final OtpTokenRepository otpTokenRepository;
     private final EmailOtpSender emailOtpSender;

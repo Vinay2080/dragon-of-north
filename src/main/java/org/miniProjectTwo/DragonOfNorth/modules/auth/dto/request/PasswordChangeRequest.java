@@ -6,6 +6,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
+/**
+ * Authenticated password rotation payload.
+ * <p>
+ * Requires current password proof plus a policy-compliant replacement password. Typically followed by
+ * session revocation so stolen session cookies cannot survive credential rotation.
+ */
 @Schema(name = "PasswordChangeRequest", description = "Request payload for changing the authenticated user's password.")
 public record PasswordChangeRequest(
         @NotBlank

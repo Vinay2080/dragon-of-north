@@ -13,6 +13,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
+/**
+ * Default provider registry resolving MFA providers by type for orchestration flows.
+ */
 public class DefaultMfaProviderRegistry implements MfaProviderRegistry {
     private final Map<ProviderType, MfaProvider> providersByType;
 

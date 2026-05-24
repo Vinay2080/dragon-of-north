@@ -21,10 +21,10 @@ import jakarta.validation.constraints.NotBlank;
  * The service validates credentials against stored hashed passwords and issues secure HTTP-only
  * cookies containing access and refresh tokens for session management.</p>
  *
- * <p><strong>Output Flow:</strong></p>
- * <p>When authentication succeeds, returns a success message via {@code ApiResponse} wrapper
- * and sets secure cookies. Access tokens are short-lived while refresh tokens enable
- * session continuation without re-authentication.</p>
+ * <p><strong>Lifecycle Note:</strong></p>
+ * On successful primary credential verification, auth may either complete immediately (session
+ * cookies issued) or return an MFA challenge continuation payload depending on account policy.
+ * The {@code password} field is security-sensitive and must never be logged.
  */
 @Schema(name = "AppUserLoginRequest", description = "Request payload for local login using an email address or phone number plus password.")
 public record AppUserLoginRequest(

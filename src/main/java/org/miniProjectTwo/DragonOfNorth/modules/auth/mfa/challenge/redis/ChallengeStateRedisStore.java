@@ -10,9 +10,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * Redis-backed persistence for {@link ChallengeState}.
- *
- * <p>This component is intentionally not wired into the login flow yet.</p>
+ * Persistence adapter for MFA challenge state serialization and TTL management in Redis.
  */
 @Component
 @RequiredArgsConstructor

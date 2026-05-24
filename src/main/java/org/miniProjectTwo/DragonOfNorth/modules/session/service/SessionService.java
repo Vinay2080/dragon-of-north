@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Manages user refresh-token sessions across devices.
+ * Session lifecycle contract for creation, lookup, revocation, and cleanup operations.
  */
 public interface SessionService {
 

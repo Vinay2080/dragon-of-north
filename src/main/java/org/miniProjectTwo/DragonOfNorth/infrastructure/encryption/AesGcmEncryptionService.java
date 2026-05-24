@@ -12,6 +12,19 @@ import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Base64;
 
+/**
+ * Authenticated encryption component used by security-sensitive modules (for example MFA secret
+ * storage and other encrypted-at-rest values).
+ * <p>
+ * Dependency workflow: callers provide plaintext -> provider resolves key -> AES-GCM encrypts with
+ * random IV and AAD(version:keyId) -> codec serializes envelope. Decrypt reverses this using key id
+ * from envelope metadata, ensuring tamper detection through GCM authentication tag.
+ * <p>
+ * Input guarantees: plaintext must be non-null; encrypted text must conform to codec format.
+ * Failure behavior: malformed payloads, unknown key ids, invalid tags, or crypto failures throw
+ * {@link org.miniProjectTwo.DragonOfNorth.shared.encryption.EncryptionException}. The service is
+ * stateless and thread-safe for concurrent request handling.
+ */
 @Service
 @RequiredArgsConstructor
 class AesGcmEncryptionService implements EncryptionService {

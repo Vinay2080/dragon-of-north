@@ -7,6 +7,9 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.Provider;
 
 import java.util.List;
 
+/**
+ * Account discovery result used by clients to branch between sign-up, login, and recovery UX.
+ */
 @Schema(name = "AppUserStatusFinderResponse", description = "Response payload describing account existence, verification state, and linked providers for an identifier.")
 public record AppUserStatusFinderResponse(
         @Schema(description = "Whether an account exists for the identifier.", example = "true")

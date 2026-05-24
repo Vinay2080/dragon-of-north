@@ -5,7 +5,11 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusF
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 
 /**
- * Strategy interface for identifier-specific authentication flows.
+ * Strategy interface for identifier-specific local authentication flows.
+ * <p>
+ * Implementations (email/phone) handle identifier normalization, sign-up initiation,
+ * status discovery, and sign-up completion preconditions while delegating shared token/session
+ * issuance concerns to {@link org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices}.
  */
 public interface AuthenticationService {
 

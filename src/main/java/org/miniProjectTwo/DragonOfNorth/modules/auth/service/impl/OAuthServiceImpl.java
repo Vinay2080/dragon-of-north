@@ -30,7 +30,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Handles Google OAuth login/signup and account linking flows.
+ * Google OAuth flow orchestrator.
+ * <p>
+ * Validates Google token claims, matches/creates local provider linkage, and then delegates to
+ * shared login issuance so OAuth and local flows share session/token/MFA lifecycle semantics.
  */
 @Service
 @RequiredArgsConstructor

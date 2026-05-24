@@ -13,7 +13,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * Centralized MFA decision point for login-like flows.
+ * Coordinates post-primary-auth MFA decisioning and challenge handoff.
+ * <p>
+ * Bridges auth services and provider/challenge subsystems so local/OAuth/passwordless flows share
+ * consistent step-up behavior.
  */
 @Service
 @RequiredArgsConstructor
