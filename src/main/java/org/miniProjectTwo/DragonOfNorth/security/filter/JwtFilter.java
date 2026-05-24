@@ -56,6 +56,13 @@ import static org.miniProjectTwo.DragonOfNorth.security.config.SecurityConfig.pu
  */
 @Slf4j
 @Component
+/**
+ * Extracts JWT-based identity and populates the Spring Security context for downstream handlers.
+ * <p>
+ * Runs early in the filter chain so authorization, user-state validation, rate-limit identity keys,
+ * and audit logging can rely on authenticated principal data. Incorrect parsing/validation behavior
+ * can lead to privilege bypass or unintended anonymous execution.
+ */
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtServices jwtServices;

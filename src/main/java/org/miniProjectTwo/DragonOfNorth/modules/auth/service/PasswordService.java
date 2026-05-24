@@ -6,7 +6,11 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.PasswordResetCo
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 
 /**
- * Handles all password-related operations (encode/change/reset flows).
+ * Password lifecycle service for local credentials.
+ * <p>
+ * Covers reset initiation, reset confirmation, authenticated password rotation, and password hashing.
+ * Implementations must preserve non-enumerating behavior for public reset flows and revoke/contain
+ * existing sessions when credential integrity changes.
  */
 public interface PasswordService {
 

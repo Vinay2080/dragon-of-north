@@ -8,7 +8,10 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sns.SnsClient;
 
 /**
- * Creates the AWS SNS client used by SMS delivery components.
+ * SNS client factory used by phone OTP delivery services.
+ * <p>
+ * Keeps cloud client wiring out of domain services so transport implementations can be replaced
+ * (mock providers, alternate gateways, multi-region routing) with minimal auth-module changes.
  */
 @NamedInterface
 @Configuration
@@ -33,4 +36,3 @@ public class SnsConfig {
                 .build();
     }
 }
-//todo easiest ways to send sms

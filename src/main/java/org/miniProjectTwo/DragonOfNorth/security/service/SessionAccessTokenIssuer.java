@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Central access-token issuance: projects persisted {@link Session} state into JWT claims via {@link AuthnFacts}.
+ * Mints access tokens from persisted session context plus role/authentication facts.
  */
 @Component
 public class SessionAccessTokenIssuer {

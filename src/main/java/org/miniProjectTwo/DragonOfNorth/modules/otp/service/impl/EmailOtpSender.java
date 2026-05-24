@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
- * Sends OTP messages over email by delegating to {@link SesEmailService}.
+ * Email channel adapter that sends OTP payloads through configured email infrastructure.
  */
 @Service
 @RequiredArgsConstructor

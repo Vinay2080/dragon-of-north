@@ -7,7 +7,10 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ses.SesClient;
 
 /**
- * Creates the AWS SES client used by email delivery components.
+ * SES client factory used by OTP/email delivery services.
+ * <p>
+ * Region is sourced from configuration and resolved at startup. Misconfiguration causes fail-fast
+ * bean creation failure, surfacing environment issues before handling authentication traffic.
  */
 @Configuration
 public class SesConfig {

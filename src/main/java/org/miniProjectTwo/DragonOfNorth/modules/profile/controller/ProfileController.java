@@ -26,6 +26,13 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode.UNAUTHORIZ
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.GOOGLE;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
 
+/**
+ * Profile controller for authenticated user profile read/update operations.
+ * <p>
+ * This controller resolves the caller identity from Spring Security principals and delegates
+ * profile persistence to {@code ProfileService}. Keeping this boundary thin simplifies future
+ * security principal refactors and provider-resolution changes.
+ */
 @RestController
 @RequestMapping("/api/v1/profile")
 @RequiredArgsConstructor
@@ -34,6 +41,9 @@ public class ProfileController implements ProfileApi {
     private final ProfileService profileService;
     private final UserAuthProviderRepository userAuthProviderRepository;
 
+    /**
+     * Updates mutable profile fields (bio, avatar URL, display name, username).
+     */
     @Override
     @PatchMapping
     public ApiResponse<GetProfileResponse> updateProfile(@RequestBody UpdateProfileRequest request) {
@@ -46,6 +56,9 @@ public class ProfileController implements ProfileApi {
         return ApiResponse.success(toResponse(profile, resolveAuthProvider(resolveCurrentUserId())));
     }
 
+    /**
+     * Uploads a new profile image and returns the persisted avatar metadata.
+     */
     @Override
     @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<ProfileImageResponse> uploadProfileImage(
@@ -61,6 +74,10 @@ public class ProfileController implements ProfileApi {
                 profile.getAvatarSource()
         );
     }
+
+    /**
+     * Retrieves the effective profile view with inferred auth provider for UI display.
+     */
     @Override
     @GetMapping
     public ApiResponse<GetProfileResponse> getProfile() {

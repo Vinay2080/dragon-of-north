@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- * Returns a JSON 401 response whenever authentication is missing or invalid.
+ * Converts unauthenticated access attempts into consistent API error responses.
  */
 @Component
 @RequiredArgsConstructor

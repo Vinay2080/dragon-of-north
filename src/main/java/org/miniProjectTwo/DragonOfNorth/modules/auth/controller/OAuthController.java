@@ -19,6 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.success;
 import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.successMessage;
 
+/**
+ * OAuth authentication controller for Google-based sign-in and sign-up flows.
+ * <p>
+ * Both endpoints can finish authentication immediately or branch into MFA challenge
+ * orchestration depending on account policy, so clients should treat the response as
+ * either terminal success or challenge continuation payload.
+ */
 @RestController
 @RequestMapping("/api/v1/auth/oauth")
 @RequiredArgsConstructor
@@ -26,6 +33,9 @@ public class OAuthController implements OAuthApi {
 
     private final OAuthService oAuthService;
 
+    /**
+     * Authenticates an existing account using a Google ID token and current device context.
+     */
     @Override
     @PostMapping("/google")
     public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> authenticateWithGoogle(
@@ -46,6 +56,9 @@ public class OAuthController implements OAuthApi {
         return ResponseEntity.ok(successMessage("OAuth authentication successful"));
     }
 
+    /**
+     * Creates or links an account using Google identity and applies post-auth MFA orchestration.
+     */
     @Override
     @PostMapping("/google/signup")
     public ResponseEntity<org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse<?>> signupWithGoogle(

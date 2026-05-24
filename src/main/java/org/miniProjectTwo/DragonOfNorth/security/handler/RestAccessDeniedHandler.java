@@ -23,8 +23,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- * Returns 403 only for true authorization/CSRF failures.
- * Delegates unauthenticated access to the authentication entry point (401).
+ * Converts authenticated-but-forbidden requests into standardized API error responses.
  */
 @Component
 @RequiredArgsConstructor

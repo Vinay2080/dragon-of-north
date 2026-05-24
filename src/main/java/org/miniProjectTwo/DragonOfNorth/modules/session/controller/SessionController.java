@@ -15,6 +15,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Session management controller for listing and revoking authenticated user sessions.
+ * <p>
+ * Endpoints bind actions to the caller's resolved user ID to prevent cross-account session
+ * operations and to support device-aware security controls.
+ */
 @RestController
 @RequestMapping("/api/v1/sessions")
 @RequiredArgsConstructor
@@ -22,6 +28,9 @@ public class SessionController implements SessionApi {
 
     private final SessionService sessionService;
 
+    /**
+     * Returns all active/recent sessions visible to the authenticated user.
+     */
     @Override
     @GetMapping("/get/all")
     public ResponseEntity<ApiResponse<List<SessionSummaryResponse>>> getMySessions(Authentication authentication) {
@@ -30,6 +39,9 @@ public class SessionController implements SessionApi {
         return ResponseEntity.ok(ApiResponse.success(sessions));
     }
 
+    /**
+     * Revokes a specific session by identifier for the current authenticated user.
+     */
     @Override
     @DeleteMapping("/delete/{sessionId}")
     public ResponseEntity<ApiResponse<?>> revokeSession(
@@ -41,6 +53,9 @@ public class SessionController implements SessionApi {
         return ResponseEntity.ok(ApiResponse.successMessage("session revoked"));
     }
 
+    /**
+     * Revokes every other session except the current device-bound session.
+     */
     @Override
     @PostMapping("/revoke-others")
     public ResponseEntity<ApiResponse<?>> revokeOtherSessions(

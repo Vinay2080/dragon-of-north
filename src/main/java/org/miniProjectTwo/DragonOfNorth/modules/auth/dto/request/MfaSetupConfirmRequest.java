@@ -7,6 +7,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
+/**
+ * Confirms TOTP enrollment by submitting the current authenticator code for the in-progress setup.
+ * <p>
+ * Security expectations: code must be exactly six digits and device id must be present so enablement
+ * can be bound to a trusted session context.
+ */
 @Schema(name = "MfaSetupConfirmRequest", description = "Request payload for confirming TOTP/MFA setup using an authenticator app code.")
 public record MfaSetupConfirmRequest(
         @NotNull

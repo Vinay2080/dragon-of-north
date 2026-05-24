@@ -19,7 +19,11 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * Wires Redis-backed Bucket4j rate limiting and related metrics.
+ * Infrastructure wiring for distributed rate limiting.
+ * <p>
+ * Creates Redis connectivity, Bucket4j proxy manager, and per-limit-type metrics counters. These
+ * beans are consumed by rate-limit filters/services in security request processing. Changes to
+ * codecs, Redis topology, or metric naming can affect runtime enforcement and observability.
  */
 @Configuration
 public class RateLimitConfig {

@@ -25,6 +25,12 @@ import java.util.UUID;
 
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
 
+/**
+ * Local credential lifecycle implementation for reset/change/hash operations.
+ * <p>
+ * Integrates OTP verification, local-provider checks, user lifecycle validation, and session
+ * revocation controls to contain credential compromise scenarios.
+ */
 @Service
 @RequiredArgsConstructor
 public class PasswordServiceImpl implements PasswordService {

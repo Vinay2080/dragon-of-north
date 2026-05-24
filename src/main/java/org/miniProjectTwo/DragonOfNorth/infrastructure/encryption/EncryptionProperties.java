@@ -6,11 +6,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * Binds externally supplied encryption settings.
- *
- * <p>The master key must be a Base64-encoded 32-byte AES key. It is intentionally
- * not defaulted because production keys must come from environment or secret
- * configuration.</p>
+ * Externalized encryption settings consumed by {@link ConfiguredEncryptionKeyProvider}.
+ * <p>
+ * These values define active key identity and raw key material source. They are expected to come
+ * from environment-backed configuration or secret managers in production. Misconfiguration blocks
+ * encryption/decryption and can impact authentication/MFA flows that persist encrypted secrets.
  */
 @Getter
 @Setter

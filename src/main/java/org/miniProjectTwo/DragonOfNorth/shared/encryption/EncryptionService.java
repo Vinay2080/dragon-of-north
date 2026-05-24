@@ -1,7 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.shared.encryption;
 
 /**
- * Application-level contract for encrypting sensitive values before storage.
+ * Shared abstraction for encrypt/decrypt operations consumed by security-sensitive modules.
  */
 public interface EncryptionService {
 

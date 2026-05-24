@@ -8,7 +8,10 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpVerificationStatus;
 import java.util.function.Function;
 
 /**
- * OTP application service for request, verification, and rate-limit enforcement.
+ * OTP lifecycle service covering issuance, persistence lookup, and verification transitions.
+ * <p>
+ * Shared across signup, login recovery, and password reset flows; behavior changes can alter auth
+ * state transitions in multiple modules.
  */
 public interface OtpService {
 

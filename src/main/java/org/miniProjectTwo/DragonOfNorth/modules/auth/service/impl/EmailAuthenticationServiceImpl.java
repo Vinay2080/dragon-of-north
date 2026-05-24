@@ -35,14 +35,11 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.EMAIL
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
 
 /**
- * Email-based authentication service implementation.
- * Handles user registration, status checking, and verification completion for email
- * identifiers. Manages password encryption, email verification flags, and database
- * operations. Critical for email authentication flow and user lifecycle management.
- *
- * @see AuthenticationServiceResolver for service selection
- * @see AuthCommonServices for shared authentication logic
- **/
+ * Email-identifier strategy for local sign-up/status/completion flows.
+ * <p>
+ * Responsibilities: normalize email identifiers, enforce lifecycle rules, coordinate OTP-gated
+ * completion, provision LOCAL provider linkage, and return state snapshots used by auth UI routing.
+ */
 @Service
 @RequiredArgsConstructor
 public class EmailAuthenticationServiceImpl implements AuthenticationService {

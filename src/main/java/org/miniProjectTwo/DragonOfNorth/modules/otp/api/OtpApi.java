@@ -18,7 +18,7 @@ public interface OtpApi {
 
     @Operation(
             summary = "Request email OTP",
-            description = "Generates a purpose-specific OTP and sends it to the supplied email address."
+            description = "Generates a purpose-specific OTP and sends it to the supplied email address. This endpoint is shared by sign-up, login, and recovery workflows."
     )
     @ApiResponses({
             @ApiResponse(
@@ -62,7 +62,7 @@ public interface OtpApi {
 
     @Operation(
             summary = "Request phone OTP",
-            description = "Generates a purpose-specific OTP and sends it to the supplied phone number."
+            description = "Generates a purpose-specific OTP and sends it to the supplied phone number. This endpoint is shared by sign-up, login, and recovery workflows."
     )
     @ApiResponses({
             @ApiResponse(
@@ -106,7 +106,7 @@ public interface OtpApi {
 
     @Operation(
             summary = "Verify email OTP",
-            description = "Validates an email OTP against the identifier and purpose used during OTP creation."
+            description = "Validates an email OTP against the identifier and purpose used during OTP creation. A successful verification is usually followed by a workflow-specific endpoint (for example sign-up completion or password reset)."
     )
     @ApiResponses({
             @ApiResponse(
@@ -172,7 +172,7 @@ public interface OtpApi {
 
     @Operation(
             summary = "Verify phone OTP",
-            description = "Validates a phone OTP against the identifier and purpose used during OTP creation."
+            description = "Validates a phone OTP against the identifier and purpose used during OTP creation. A successful verification is usually followed by a workflow-specific endpoint (for example sign-up completion or password reset)."
     )
     @ApiResponses({
             @ApiResponse(

@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.sns.model.PublishRequest;
 import java.util.Map;
 
 /**
- * Sends OTP messages over SMS via AWS SNS.
+ * SMS channel adapter that sends OTP payloads through configured messaging infrastructure.
  */
 @Service
 @RequiredArgsConstructor

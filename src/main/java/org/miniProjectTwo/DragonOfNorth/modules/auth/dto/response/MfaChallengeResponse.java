@@ -7,7 +7,8 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Public response for an MFA challenge that must be completed before issuance.
+ * MFA continuation payload returned when primary authentication succeeds but additional verification
+ * is required before issuing final authenticated session state.
  */
 public record MfaChallengeResponse(
         boolean mfaRequired,

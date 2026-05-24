@@ -23,6 +23,9 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Redis-backed MFA challenge lifecycle implementation with expiration and state-transition control.
+ */
 public class MfaChallengeServiceImpl implements MfaChallengeService {
     private static final java.time.Duration CLAIM_LOCK_TTL = java.time.Duration.ofSeconds(5);
 

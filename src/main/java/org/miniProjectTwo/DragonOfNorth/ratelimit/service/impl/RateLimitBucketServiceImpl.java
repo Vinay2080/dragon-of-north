@@ -15,6 +15,11 @@ import java.util.Map;
 
 @Service
 @Slf4j
+/**
+ * Bucket4j-backed distributed rate-limit service using Redis proxy manager state.
+ * <p>
+ * Concurrency behavior depends on backend CAS semantics; policy changes affect both security and UX.
+ */
 public class RateLimitBucketServiceImpl implements RateLimitBucketService {
 
     private final ProxyManager<String> proxyManager;

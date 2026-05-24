@@ -13,7 +13,11 @@ import org.springframework.validation.annotation.Validated;
 
 
 /**
- * Binds Google OAuth settings and exposes Google token verification beans.
+ * Google OAuth property binding + verifier bean factory for auth module integration.
+ * <p>
+ * Consumed by OAuth services to validate Google ID tokens before account login/signup branching.
+ * The configuration boundary allows future support for multiple client IDs, hosted domain checks,
+ * or additional identity providers without changing controller contracts.
  */
 @Getter
 @Setter

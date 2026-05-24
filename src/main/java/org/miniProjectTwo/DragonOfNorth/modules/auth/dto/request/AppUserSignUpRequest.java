@@ -26,10 +26,10 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
  * The service validates the identifier uniqueness, encrypts the password, creates the user account
  * with CREATED status, and initiates a verification process (OTP/email verification).</p>
  *
- * <p><strong>Output Flow:</strong></p>
- * <p>When registration succeeds, returns {@code AppUserStatusFinderResponse} with CREATED status
- * through {@code ApiResponse} wrapper. User must complete verification via {@code AppUserSignUpCompleteRequest}
- * before full authentication capabilities are enabled.</p>
+ * <p><strong>Lifecycle Note:</strong></p>
+ * This request enters at the sign-up start endpoint and transitions account state into a
+ * verification-required phase. Completion requires OTP verification plus the sign-up-complete call.
+ * Password content is security-sensitive and must remain redacted in logs/telemetry.
  */
 @Schema(name = "AppUserSignUpRequest", description = "Request payload for starting a local identifier-based sign-up flow.")
 public record AppUserSignUpRequest(

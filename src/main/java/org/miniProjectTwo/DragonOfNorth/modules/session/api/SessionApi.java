@@ -22,7 +22,7 @@ public interface SessionApi {
 
     @Operation(
             summary = "List my sessions",
-            description = "Returns the current user's active and revoked device sessions for account security screens."
+            description = "Returns the current user's active and revoked device sessions for account security screens. This endpoint is commonly used before targeted revoke or revoke-others actions in device-management UX flows."
     )
     @ApiResponses({
             @ApiResponse(
@@ -94,7 +94,7 @@ public interface SessionApi {
 
     @Operation(
             summary = "Revoke other sessions",
-            description = "Revokes every session owned by the current user except the device identified in the request body."
+            description = "Revokes every session owned by the current user except the device identified in the request body. Use this after password changes or suspicious-login remediation to keep only the current trusted device."
     )
     @ApiResponses({
             @ApiResponse(

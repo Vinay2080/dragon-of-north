@@ -14,7 +14,12 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Runs scheduled cleanup jobs for OTP tokens, stale users, and sessions.
+ * Scheduled maintenance job orchestrator for ephemeral security data lifecycle.
+ * <p>
+ * Cross-module dependencies:
+ * OTP repository (challenge expiration), user repository (stale unverified signups), and session
+ * repository (expired/revoked session retention). Retention changes can affect login UX, forensic
+ * analysis windows, and compliance/audit expectations.
  */
 @RequiredArgsConstructor
 @Component

@@ -17,12 +17,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * OTP controller that exposes request/verify endpoints for email and phone factors.
+ * <p>
+ * OTP flows are intentionally separated from authentication endpoints so sign-up, login,
+ * and recovery paths can reuse the same verification primitives across modules.
+ */
 @RestController
 @RequestMapping("/api/v1/otp")
 @RequiredArgsConstructor
 public class OtpController implements OtpApi {
     private final OtpService otpService;
 
+    /**
+     * Issues an email OTP for the requested purpose (for example SIGNUP or PASSWORD_RESET).
+     */
     @Override
     @PostMapping("/email/request")
     public ResponseEntity<ApiResponse<?>> requestEmailOtp(@RequestBody @Valid EmailOtpRequest request) {
@@ -32,6 +41,9 @@ public class OtpController implements OtpApi {
                 .body(ApiResponse.successMessage("OTP sent"));
     }
 
+    /**
+     * Issues a phone OTP for the requested purpose (for example LOGIN verification).
+     */
     @Override
     @PostMapping("/phone/request")
     public ResponseEntity<ApiResponse<?>> requestPhoneOtp(@RequestBody @Valid PhoneOtpRequest request) {
@@ -40,6 +52,9 @@ public class OtpController implements OtpApi {
                 .body(ApiResponse.successMessage("OTP Sent"));
     }
 
+    /**
+     * Verifies an email OTP and returns status in both success and failed response envelopes.
+     */
     @Override
     @PostMapping("/email/verify")
     public ResponseEntity<ApiResponse<OtpVerificationStatus>> verifyEmailOtp(@RequestBody @Valid EmailVerifyRequest request) {
@@ -49,6 +64,9 @@ public class OtpController implements OtpApi {
                 : ResponseEntity.badRequest().body(ApiResponse.failed(otpVerificationStatus));
     }
 
+    /**
+     * Verifies a phone OTP and returns status in both success and failed response envelopes.
+     */
     @Override
     @PostMapping("/phone/verify")
     public ResponseEntity<ApiResponse<OtpVerificationStatus>> verifyPhoneOtp(@RequestBody @Valid PhoneVerifyRequest request) {

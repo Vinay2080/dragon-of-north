@@ -13,7 +13,10 @@ import org.springframework.core.annotation.Order;
 import java.time.Instant;
 
 /**
- * Ensures system roles exist when the application starts.
+ * Startup role seeding to guarantee authorization baseline before auth flows execute.
+ * <p>
+ * Depends on {@link RoleRepository}; expected to run before test/user initializers. Changing role
+ * bootstrap behavior can break sign-up defaults, admin access, and permission assignments.
  */
 @Slf4j
 @Configuration

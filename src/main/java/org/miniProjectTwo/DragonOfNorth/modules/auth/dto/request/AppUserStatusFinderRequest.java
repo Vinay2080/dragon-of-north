@@ -6,7 +6,10 @@ import jakarta.validation.constraints.NotNull;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 
 /**
- * Request record for checking user registration status and existence.
+ * Input for pre-auth account discovery checks.
+ * <p>
+ * Used before login/sign-up branches to determine whether an identifier already exists and which
+ * flow the client should render. Validation rejects blank identifiers and missing identifier type.
  */
 @Schema(name = "AppUserStatusFinderRequest", description = "Request payload used to inspect whether an account exists for an email address or phone number.")
 public record AppUserStatusFinderRequest(
