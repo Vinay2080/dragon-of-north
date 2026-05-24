@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor User
+    User ->> AuthController: POST /status(email)
+    AuthController ->> AuthenticationServiceResolver: resolve(email, EMAIL)
+    AuthenticationServiceResolver -->> AuthController: EmailAuthenticationService
+    AuthController ->> EmailAuthenticationService: getUserStatus(email)
+    EmailAuthenticationService ->> MeterRegistry: increment()
+    EmailAuthenticationService ->> IdentifierNormalizer: normalizeEmail(email)
+    IdentifierNormalizer -->> EmailAuthenticationService: normalizedEmail
+    EmailAuthenticationService ->> UserRepository: findByEmail(normalizedEmail)
+    UserRepository -->> EmailAuthenticationService: AppUser / null
+
+    alt User exists
+        EmailAuthenticationService ->> EmailAuthenticationService: buildResponse(appUser)
+        EmailAuthenticationService -->> AuthController: AppUserFinderResponse
+    else User not found
+        EmailAuthenticationService -->> AuthController: UserNotFoundResponse
+    end
+
+    AuthController -->> User: HTTP Response

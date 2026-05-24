@@ -2,6 +2,14 @@ package org.miniProjectTwo.DragonOfNorth.shared.enums;
 
 import lombok.Getter;
 
+/**
+ * Describes lifecycle-relevant operations that may be gated by account state.
+ * Using a dedicated operation enum allows {@link org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator}
+ * to centralize lifecycle rules, keeping access decisions consistent across controllers and services.
+ * The current model treats most operations as active-allowed, but this structure supports future
+ * state-aware policies (suspensions, temporary locks, MFA-required states, admin restrictions,
+ * account migration, KYC/compliance flows) without changing callers.
+ */
 @Getter
 public enum UserLifecycleOperation {
     LOCAL_LOGIN(true),
@@ -24,6 +32,10 @@ public enum UserLifecycleOperation {
     MFA_SETUP_REQUEST(true),
     MFA_SETUP_CONFIRM(true);
 
+    /**
+     * Indicates whether the operation is permitted for active users.
+     * This is currently permissive for most operations but remains extensible for finer-grained policies.
+     */
     private final boolean activeAllowed;
 
     UserLifecycleOperation(boolean activeAllowed) {

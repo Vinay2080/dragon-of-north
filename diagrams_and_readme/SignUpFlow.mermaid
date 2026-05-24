@@ -1,0 +1,76 @@
+sequenceDiagram
+    actor User
+    User ->> AuthController: POST /signup(email,password)
+    AuthController ->> AuthenticationServiceResolver: resolve(email, EMAIL)
+    AuthenticationServiceResolver -->> AuthController: EmailAuthenticationServiceImpl
+    AuthController ->> EmailAuthenticationServiceImpl: signUpUser(request)
+    Note over EmailAuthenticationServiceImpl: Normalize identifier
+    EmailAuthenticationServiceImpl ->> IdentifierNormalizer: normalizeEmail(email)
+    IdentifierNormalizer -->> EmailAuthenticationServiceImpl: normalizedEmail
+    Note over EmailAuthenticationServiceImpl: Prepare signup flow
+    EmailAuthenticationServiceImpl ->> AppUserRepository: findByEmailForUpdate(normalizedEmail)
+    AppUserRepository -->> EmailAuthenticationServiceImpl: Optional<AppUser>
+
+    alt Existing User Found
+        EmailAuthenticationServiceImpl ->> EmailAuthenticationServiceImpl: reactivateDeletedAccount(user, request)
+        EmailAuthenticationServiceImpl ->> UserStateValidator: validate(user, LOCAL_SIGNUP_START)
+        UserStateValidator -->> EmailAuthenticationServiceImpl: validation result
+        EmailAuthenticationServiceImpl ->> UserStateValidator: isDeleted(user)
+
+        alt User NOT deleted
+            UserStateValidator -->> EmailAuthenticationServiceImpl: false
+            EmailAuthenticationServiceImpl -->> AuthController: BusinessException(USER_OPERATION_NOT_ALLOWED)
+            AuthController -->> User: Error Response
+
+        else User deleted
+            UserStateValidator -->> EmailAuthenticationServiceImpl: true
+            EmailAuthenticationServiceImpl ->> PasswordService: encodePassword(password)
+            PasswordService -->> EmailAuthenticationServiceImpl: encodedPassword
+            Note over EmailAuthenticationServiceImpl: Set user state
+            Note over EmailAuthenticationServiceImpl: emailVerified = false
+            Note over EmailAuthenticationServiceImpl: status = PENDING_VERIFICATION
+            EmailAuthenticationServiceImpl ->> UserAuthProviderRepository: existsByUserIdAndProvider(userId, LOCAL)
+
+            alt LOCAL provider missing
+                UserAuthProviderRepository -->> EmailAuthenticationServiceImpl: false
+                EmailAuthenticationServiceImpl ->> UserAuthProviderRepository: save(LOCAL provider)
+
+            else LOCAL provider exists
+                UserAuthProviderRepository -->> EmailAuthenticationServiceImpl: true
+
+            end
+
+            EmailAuthenticationServiceImpl ->> AppUserRepository: save(user)
+            AppUserRepository -->> EmailAuthenticationServiceImpl: savedUser
+            EmailAuthenticationServiceImpl ->> AuditEventLogger: log reactivation started
+
+        end
+
+    else User NOT Found
+        EmailAuthenticationServiceImpl ->> EmailAuthenticationServiceImpl: createNewUser(request)
+        EmailAuthenticationServiceImpl ->> EmailAuthenticationServiceImpl: buildEmailUser(request)
+        EmailAuthenticationServiceImpl ->> IdentifierNormalizer: normalizeEmail(email)
+        IdentifierNormalizer -->> EmailAuthenticationServiceImpl: normalizedEmail
+        EmailAuthenticationServiceImpl ->> PasswordService: encodePassword(password)
+        PasswordService -->> EmailAuthenticationServiceImpl: encodedPassword
+        Note over EmailAuthenticationServiceImpl: Build AppUser
+        Note over EmailAuthenticationServiceImpl: emailVerified = false
+        Note over EmailAuthenticationServiceImpl: status = PENDING_VERIFICATION
+        EmailAuthenticationServiceImpl ->> AppUserRepository: save(user)
+        AppUserRepository -->> EmailAuthenticationServiceImpl: savedUser
+        EmailAuthenticationServiceImpl ->> UserAuthProviderRepository: save(LOCAL provider)
+
+    end
+
+    Note over EmailAuthenticationServiceImpl: Record metrics and audit logs
+    EmailAuthenticationServiceImpl ->> MeterRegistry: signup.success increment
+    EmailAuthenticationServiceImpl ->> AuditEventLogger: log signup success
+    Note over EmailAuthenticationServiceImpl: Reuse status flow
+    EmailAuthenticationServiceImpl ->> EmailAuthenticationServiceImpl: getUserStatus(normalizedEmail)
+    EmailAuthenticationServiceImpl ->> AppUserRepository: findByEmail(normalizedEmail)
+    AppUserRepository -->> EmailAuthenticationServiceImpl: AppUser
+    EmailAuthenticationServiceImpl ->> UserAuthProviderRepository: findAllByUserId(userId)
+    UserAuthProviderRepository -->> EmailAuthenticationServiceImpl: providers
+    EmailAuthenticationServiceImpl ->> EmailAuthenticationServiceImpl: buildStatusResponse()
+    EmailAuthenticationServiceImpl -->> AuthController: AppUserStatusFinderResponse
+    AuthController -->> User: HTTP Response
