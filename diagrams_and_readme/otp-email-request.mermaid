@@ -1,0 +1,41 @@
+sequenceDiagram
+    actor User
+    User ->> OtpController: POST /api/v1/otp/email/request {email, otp_purpose}
+    OtpController ->> OtpServiceImpl: createEmailOtp(email, otpPurpose)
+    Note over OtpServiceImpl: createOtp(sender, purpose, identifier, EMAIL, normalizeEmail)
+    OtpServiceImpl ->> IdentifierNormalizer: normalizeEmail(email)
+    IdentifierNormalizer -->> OtpServiceImpl: normalizedEmail
+    OtpServiceImpl ->> OtpServiceImpl: issueOtp(sender, purpose, normalizedEmail, EMAIL)
+    OtpServiceImpl ->> OtpServiceImpl: enforceRateLimits(normalizedEmail, EMAIL, purpose)
+    OtpServiceImpl ->> OtpServiceImpl: checkCooldown(normalizedEmail, EMAIL, purpose, now)
+    OtpServiceImpl ->> OtpTokenRepository: findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(...)
+    OtpTokenRepository -->> OtpServiceImpl: Optional<OtpToken>
+
+    alt cooldown active
+        OtpServiceImpl ->> MeterRegistry: counter("auth.otp.request.failure").increment()
+        OtpServiceImpl ->> AuditEventLogger: log("auth.otp.request", ..., "cooldown_active")
+        OtpServiceImpl -->> OtpController: BusinessException(OTP_RATE_LIMIT, remainingSeconds, purpose)
+        OtpController -->> User: Error Response (HTTP 429)
+    else no cooldown
+        OtpServiceImpl ->> OtpServiceImpl: checkRequestWindow(normalizedEmail, EMAIL, purpose, now)
+        OtpServiceImpl ->> OtpTokenRepository: countByIdentifierAndTypeAndOtpPurposeCreatedAtAfter(...)
+        OtpTokenRepository -->> OtpServiceImpl: requestCount
+
+        alt request window exceeded
+            OtpServiceImpl ->> MeterRegistry: counter("auth.otp.request.failure").increment()
+            OtpServiceImpl ->> AuditEventLogger: log("auth.otp.request", ..., "request_window_exceeded")
+            OtpServiceImpl -->> OtpController: BusinessException(OTP_TOO_MANY_REQUESTS, blockDurationMinutes)
+            OtpController -->> User: Error Response (HTTP 429)
+        else within limits
+            OtpServiceImpl ->> OtpTokenRepository: invalidateActiveTokens(normalizedEmail, EMAIL, purpose)
+            OtpServiceImpl ->> OtpServiceImpl: generateOtp() -> otp
+            OtpServiceImpl ->> BCrypt: hashpw(otp, gensalt()) -> otpHash
+            OtpServiceImpl ->> OtpTokenRepository: save(new OtpToken(...))
+            OtpServiceImpl ->> EmailOtpSender: send(normalizedEmail, otp, ttlMinutes)
+            EmailOtpSender ->> SesEmailService: sendOtpEmail(email, otp, ttlMinutes)
+            OtpServiceImpl ->> MeterRegistry: counter("auth.otp.request.success").increment()
+            OtpServiceImpl ->> AuditEventLogger: log("auth.otp.request", ..., "success")
+            OtpController -->> User: 201 ApiResponse {message: "OTP sent"}
+        end
+    end
+

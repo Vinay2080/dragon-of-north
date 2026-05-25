@@ -23,15 +23,12 @@ import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssuer;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.Provider;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.*;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -352,7 +349,15 @@ class AuthCommonServiceImplTest {
         VerificationResult result = authCommonService.completeMfaChallengeLogin("challenge-1", "123456", ProviderType.TOTP, response, context);
 
         assertTrue(result.success());
-        verify(sessionTokenIssuer).issueLoginSession(eq(user), argThat(spec -> !spec.mfaRequired() && spec.mfaVerifiedAt() != null), anyString(), eq("device-1"), anyString());
+        verify(sessionTokenIssuer).issueLoginSession(
+                eq(user),
+                ArgumentMatchers.<SessionCreationSpec>argThat(
+                        spec -> !spec.mfaRequired() && spec.mfaVerifiedAt() != null
+                ),
+                anyString(),
+                eq("device-1"),
+                anyString()
+        );
     }
 
     @Test

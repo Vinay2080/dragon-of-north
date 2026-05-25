@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor User
+    User ->> AuthController: POST /status(email)
+    AuthController ->> AuthenticationServiceResolver: resolve(email, EMAIL)
+    AuthenticationServiceResolver -->> AuthController: EmailAuthenticationServiceImpl
+    AuthController ->> EmailAuthenticationServiceImpl: getUserStatus(email)
+    EmailAuthenticationServiceImpl ->> MeterRegistry: counter("auth.status.request").increment()
+    EmailAuthenticationServiceImpl ->> IdentifierNormalizer: normalizeEmail(email)
+    IdentifierNormalizer -->> EmailAuthenticationServiceImpl: normalizedEmail
+    EmailAuthenticationServiceImpl ->> AppUserRepository: findByEmail(normalizedEmail)
+    AppUserRepository -->> EmailAuthenticationServiceImpl: AppUser | null
+
+    alt User exists
+        EmailAuthenticationServiceImpl ->> UserAuthProviderRepository: findAllByUserId(userId)
+        UserAuthProviderRepository -->> EmailAuthenticationServiceImpl: providers
+        EmailAuthenticationServiceImpl ->> EmailAuthenticationServiceImpl: buildStatusResponse(appUser, providers)
+        EmailAuthenticationServiceImpl -->> AuthController: AppUserFinderResponse
+        AuthController -->> User: HTTP 200 Response
+    else User not found
+        EmailAuthenticationServiceImpl -->> AuthController: UserNotFoundResponse
+        AuthController -->> User: HTTP 404 Response
+    end
