@@ -1,0 +1,7 @@
+sequenceDiagram
+    actor User
+    User ->> SessionController: GET /api/v1/sessions/get/all
+    SessionController ->> SessionController: resolveUserId(authentication)
+    SessionController ->> SessionService: getSessionsForUser(userId)
+    SessionService -->> SessionController: List<SessionSummaryResponse>
+    SessionController -->> User: 200 ApiResponse<List<SessionSummaryResponse>>

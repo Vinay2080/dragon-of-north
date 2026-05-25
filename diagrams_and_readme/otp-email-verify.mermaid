@@ -1,0 +1,10 @@
+sequenceDiagram
+    actor User
+    User ->> OtpController: POST /api/v1/otp/email/verify
+    OtpController ->> OtpService: verifyEmailOtp(email, otp, otpPurpose)
+    OtpService -->> OtpController: OtpVerificationStatus
+    alt status.isSuccess()
+        OtpController -->> User: 202 ApiResponse.success(status)
+    else not success
+        OtpController -->> User: 400 ApiResponse.failed(status)
+    end

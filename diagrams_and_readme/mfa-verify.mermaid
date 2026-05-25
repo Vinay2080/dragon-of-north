@@ -1,0 +1,7 @@
+sequenceDiagram
+    actor User
+    User ->> AuthenticationController: POST /api/v1/auth/mfa/verify
+    AuthenticationController ->> AuthRequestContext: fromHttpRequest(request, deviceId)
+    AuthenticationController ->> AuthCommonServices: completeMfaChallengeLogin(challengeId, code, providerType, response, context)
+    AuthCommonServices -->> AuthenticationController: completion
+    AuthenticationController -->> User: 200 ApiResponse {message: "mfa verification successful"}

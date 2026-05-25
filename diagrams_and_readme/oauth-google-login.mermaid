@@ -1,0 +1,11 @@
+sequenceDiagram
+    actor User
+    User ->> OAuthController: POST /api/v1/auth/oauth/google
+    OAuthController ->> AuthRequestContext: fromHttpRequest(request, deviceId)
+    OAuthController ->> OAuthService: authenticatedWithGoogle(idToken, expectedIdentifier, context, response)
+    OAuthService -->> OAuthController: MfaOrchestrationResult
+    alt challengeRequired == true
+        OAuthController -->> User: 200 ApiResponse<MfaChallengeResponse>
+    else challengeRequired == false
+        OAuthController -->> User: 200 ApiResponse {message: "OAuth authentication successful"}
+    end

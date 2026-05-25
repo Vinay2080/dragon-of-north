@@ -1,0 +1,7 @@
+sequenceDiagram
+    actor User
+    User ->> SessionController: DELETE /api/v1/sessions/delete/{sessionId}
+    SessionController ->> SessionController: resolveUserId(authentication)
+    SessionController ->> SessionService: revokeSessionById(userId, sessionId)
+    SessionService -->> SessionController: completion
+    SessionController -->> User: 200 ApiResponse {message: "session revoked"}

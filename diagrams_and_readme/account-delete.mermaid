@@ -1,0 +1,7 @@
+sequenceDiagram
+    actor User
+    User ->> AuthenticationController: POST /api/v1/auth/account/delete
+    AuthenticationController ->> AuthRequestContext: fromHttpRequest(request, deviceId)
+    AuthenticationController ->> AuthCommonServices: deleteAccount(response, context)
+    AuthCommonServices -->> AuthenticationController: completion
+    AuthenticationController -->> User: 200 ApiResponse {message: "account deleted successfully"}

@@ -1,0 +1,8 @@
+sequenceDiagram
+    actor User
+    User ->> AuthenticationController: POST /api/v1/auth/jwt/refresh
+    AuthenticationController ->> AuthenticationController: extractRefreshToken(request.cookies)
+    AuthenticationController ->> AuthRequestContext: fromHttpRequest(request, deviceId)
+    AuthenticationController ->> AuthCommonServices: refreshToken(refreshToken, response, context)
+    AuthCommonServices -->> AuthenticationController: completion
+    AuthenticationController -->> User: 200 ApiResponse {message: "refresh token sent"}

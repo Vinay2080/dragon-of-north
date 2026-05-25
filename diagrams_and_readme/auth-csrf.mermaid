@@ -1,0 +1,5 @@
+sequenceDiagram
+    actor User
+    User ->> AuthenticationController: GET /api/v1/auth/csrf
+    AuthenticationController ->> CsrfToken: getToken()
+    AuthenticationController -->> User: 200 ApiResponse {message: "csrf token ready"}

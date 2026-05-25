@@ -1,0 +1,7 @@
+sequenceDiagram
+    actor User
+    User ->> AuthenticationController: POST /api/v1/auth/enable/mfa/confirm
+    AuthenticationController ->> AuthRequestContext: fromHttpRequest(request, deviceId)
+    AuthenticationController ->> MfaService: confirmMfaSetup(context, code)
+    MfaService -->> AuthenticationController: MfaSetupConfirmResponse
+    AuthenticationController -->> User: 200 ApiResponse<MfaSetupConfirmResponse>

@@ -1,0 +1,7 @@
+sequenceDiagram
+    actor User
+    User ->> ProfileController: POST /api/v1/profile/image (multipart/form-data)
+    ProfileController ->> ProfileController: resolveCurrentUserId()
+    ProfileController ->> ProfileService: updateProfileImage(userId, file)
+    ProfileService -->> ProfileController: Profile
+    ProfileController -->> User: 200 ApiResponse<ProfileImageResponse>

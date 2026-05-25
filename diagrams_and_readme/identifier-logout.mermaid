@@ -1,0 +1,8 @@
+sequenceDiagram
+    actor User
+    User ->> AuthenticationController: POST /api/v1/auth/identifier/logout
+    AuthenticationController ->> AuthenticationController: extractRefreshToken(request.cookies)
+    AuthenticationController ->> AuthRequestContext: fromHttpRequest(request, deviceId)
+    AuthenticationController ->> AuthCommonServices: logoutUser(refreshToken, response, context)
+    AuthCommonServices -->> AuthenticationController: completion
+    AuthenticationController -->> User: 200 ApiResponse {message: "user logged out successfully"}

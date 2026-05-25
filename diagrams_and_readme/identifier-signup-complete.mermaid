@@ -1,0 +1,8 @@
+sequenceDiagram
+    actor User
+    User ->> AuthenticationController: POST /api/v1/auth/identifier/sign-up/complete
+    AuthenticationController ->> AuthenticationServiceResolver: resolve(identifier, identifierType)
+    AuthenticationServiceResolver -->> AuthenticationController: AuthenticationService implementation
+    AuthenticationController ->> AuthenticationService: completeSignUp(identifier)
+    AuthenticationService -->> AuthenticationController: AppUserStatusFinderResponse
+    AuthenticationController -->> User: 201 ApiResponse<AppUserStatusFinderResponse>

@@ -1,0 +1,6 @@
+sequenceDiagram
+    actor User
+    User ->> OtpController: POST /api/v1/otp/phone/request
+    OtpController ->> OtpService: createPhoneOtp(phone, otpPurpose)
+    OtpService -->> OtpController: completion
+    OtpController -->> User: 201 ApiResponse {message: "OTP Sent"}

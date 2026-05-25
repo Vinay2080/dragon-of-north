@@ -1,0 +1,7 @@
+sequenceDiagram
+    actor User
+    User ->> SessionController: POST /api/v1/sessions/revoke-others
+    SessionController ->> SessionController: resolveUserId(authentication)
+    SessionController ->> SessionService: revokeAllOtherSessions(userId, deviceId)
+    SessionService -->> SessionController: revokedCount
+    SessionController -->> User: 200 ApiResponse {message: "revoked N other session(s)"}

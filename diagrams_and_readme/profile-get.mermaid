@@ -1,0 +1,8 @@
+sequenceDiagram
+    actor User
+    User ->> ProfileController: GET /api/v1/profile
+    ProfileController ->> ProfileService: getProfile()
+    ProfileService -->> ProfileController: Profile
+    ProfileController ->> ProfileController: resolveCurrentUserId()
+    ProfileController ->> ProfileController: resolveAuthProvider(userId)
+    ProfileController -->> User: 200 ApiResponse<GetProfileResponse>
