@@ -6,10 +6,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrator;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.VerificationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.service.MfaChallengeService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrator;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
@@ -23,7 +23,6 @@ import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssuer;
-import org.miniProjectTwo.DragonOfNorth.security.service.impl.JwtServicesImpl;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
@@ -54,8 +53,6 @@ import static org.miniProjectTwo.DragonOfNorth.shared.enums.Provider.LOCAL;
  * session persistence, JWT minting/cookie writing, refresh rotation, and account/session cleanup.
  * Most controller paths (local login, OAuth, passwordless) eventually converge here for
  * consistent post-auth behavior.
- */
-/**
  * Core authentication orchestration service used by all primary auth entry points.
  * <p>
  * Coordinates credential authentication, lifecycle/state checks, MFA branching, session creation,
@@ -219,7 +216,8 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         if (!verificationResult.success() || verificationResult.userId() == null || verificationResult.primaryAmr() == null) {
             throw switch (verificationResult.failureReason()) {
                 case CHALLENGE_LOCKED_OUT -> new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
-                case CHALLENGE_EXPIRED_OR_MISSING, CHALLENGE_BUSY_OR_REPLAY, CHALLENGE_CONSUME_RACE -> new BusinessException(ErrorCode.INVALID_TOKEN);
+                case CHALLENGE_EXPIRED_OR_MISSING, CHALLENGE_BUSY_OR_REPLAY, CHALLENGE_CONSUME_RACE ->
+                        new BusinessException(ErrorCode.MFA_CHALLENGE_FAILED);
                 case PROVIDER_MISMATCH, CONTEXT_MISMATCH, INVALID_VERIFICATION_CODE, NONE -> new BusinessException(ErrorCode.MFA_INVALID_CODE);
             };
         }

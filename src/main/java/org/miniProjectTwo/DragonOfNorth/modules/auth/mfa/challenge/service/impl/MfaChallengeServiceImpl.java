@@ -21,11 +21,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Service
-@RequiredArgsConstructor
 /**
  * Redis-backed MFA challenge lifecycle implementation with expiration and state-transition control.
  */
+@lombok.extern.slf4j.Slf4j
+@Service
+@RequiredArgsConstructor
 public class MfaChallengeServiceImpl implements MfaChallengeService {
     private static final java.time.Duration CLAIM_LOCK_TTL = java.time.Duration.ofSeconds(5);
 
@@ -92,8 +93,13 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
 
         String token = mfaToken.trim();
         String lockValue = UUID.randomUUID().toString();
+        log.info("TEMP_DEBUG: verifyAndConsume started for token={}, lockValue={}", token, lockValue);
+        
         var claim = atomicOps.claim(token, lockValue, CLAIM_LOCK_TTL);
+        log.info("TEMP_DEBUG: claim status={} for lockValue={}", claim.status(), lockValue);
+        
         if (claim.status() != ChallengeStateAtomicRedisOps.ClaimStatus.OK || claim.stateJson() == null) {
+            log.info("TEMP_DEBUG: claim failed with status={}", claim.status());
             auditEventLogger.log("auth.mfa.challenge.failed", null, context.deviceId(), context.ipAddress(), "failure", claim.status().name().toLowerCase(), context.requestId());
             return switch (claim.status()) {
                 case LOCKED_OUT -> VerificationResult.failure(null, null, VerificationResult.FailureReason.CHALLENGE_LOCKED_OUT);
@@ -102,11 +108,14 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
             };
         }
 
+        try {
+
         ChallengeState state = store.decode(claim.stateJson());
         var bindings = requestBinding.fromContext(context);
         if (!java.util.Objects.equals(state.deviceId(), bindings.deviceId())
                 || !java.util.Objects.equals(state.ipPrefix(), bindings.ipPrefix())
                 || !java.util.Objects.equals(state.userAgentHash(), bindings.userAgentHash())) {
+            log.info("TEMP_DEBUG: context mismatch for lockValue={}", lockValue);
             var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
             String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
             auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", "context_mismatch", context.requestId());
@@ -122,21 +131,31 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
         }
 
         var providerVerification = providerVerifier.verify(state.userId(), providerType, code.trim());
+            log.info("TEMP_DEBUG: provider verification result={} for lockValue={}", providerVerification.success(), lockValue);
+        
         if (!providerVerification.success()) {
+            log.info("TEMP_DEBUG: provider verification failed for lockValue={}, reason={}", lockValue, providerVerification.failureReason());
             var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
+            log.info("TEMP_DEBUG: recordFailure status={}", fail.status());
             String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
             auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", providerVerification.failureReason(), context.requestId());
             return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.INVALID_VERIFICATION_CODE);
         }
 
         boolean consumed = atomicOps.consumeSuccess(token, lockValue);
+            log.info("TEMP_DEBUG: consumeSuccess={} for lockValue={}", consumed, lockValue);
+        
         if (!consumed) {
+            log.info("TEMP_DEBUG: consumeSuccess failed for lockValue={}", lockValue);
             auditEventLogger.log("auth.mfa.challenge.failed", state.userId(), context.deviceId(), context.ipAddress(), "failure", "consume_race", context.requestId());
             return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.CHALLENGE_CONSUME_RACE);
         }
 
         auditEventLogger.log("auth.mfa.challenge.verified", state.userId(), context.deviceId(), context.ipAddress(), "success", null, context.requestId());
         return VerificationResult.success(state.userId(), state.primaryAmr());
+        } finally {
+            atomicOps.unlock(token, lockValue);
+        }
     }
 
     @Override

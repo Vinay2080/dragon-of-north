@@ -68,6 +68,7 @@ class SecurityConfigTest {
                 "/api/v1/auth/identifier/sign-up/complete",
                 "/api/v1/auth/identifier/login",
                 "/api/v1/auth/identifier/logout",
+                "/api/v1/auth/mfa/verify",
                 "/api/v1/auth/jwt/refresh",
                 "/api/v1/auth/oauth/google",
                 "/api/v1/auth/oauth/google/signup",

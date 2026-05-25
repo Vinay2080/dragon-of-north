@@ -29,7 +29,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 /**
  * Defines security filter chain, authentication boundaries, and cookie/JWT enforcement policy.
  * <p>
- * Ordering assumptions in this configuration determine whether JWT identity, SID liveness checks,
+ * Ordering assumptions in this configuration determines whether JWT identity, SID liveness checks,
  * CSRF cookie refresh, and exception translation execute correctly. Changes can directly affect
  * authentication propagation and endpoint protection semantics across all modules.
  */
@@ -46,6 +46,7 @@ public class SecurityConfig {
             "/api/v1/auth/identifier/sign-up/complete",
             "/api/v1/auth/identifier/login",
             "/api/v1/auth/identifier/logout",
+            "/api/v1/auth/mfa/verify",
             "/api/v1/auth/jwt/refresh",
             "/api/v1/auth/oauth/google",
             "/api/v1/auth/oauth/google/signup",
@@ -74,6 +75,7 @@ public class SecurityConfig {
      */
     public static final String[] csrf_bypass_urls = {
             "/api/v1/auth/identifier/**",
+            "/api/v1/auth/mfa/verify",
             "/api/v1/auth/jwt/refresh",
             "/api/v1/auth/oauth/**",
             "/api/v1/auth/password/forgot/**",

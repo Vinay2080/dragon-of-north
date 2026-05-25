@@ -17,6 +17,7 @@ import java.util.Objects;
 public class ChallengeStateAtomicRedisOps {
     private static final String LOCKOUT_PREFIX = "auth:mfa:lockout:";
 
+    @SuppressWarnings("unchecked")
     private static final DefaultRedisScript<List<Object>> CLAIM_SCRIPT = new DefaultRedisScript<>("""
             local challengeKey = KEYS[1]
             local lockKey = KEYS[2]
@@ -40,8 +41,9 @@ public class ChallengeStateAtomicRedisOps {
             end
 
             return {'ok', stateJson}
-            """);
+            """, (Class<List<Object>>) (Class<?>) List.class);
 
+    @SuppressWarnings("unchecked")
     private static final DefaultRedisScript<List<Object>> FAIL_SCRIPT = new DefaultRedisScript<>("""
             local challengeKey = KEYS[1]
             local lockKey = KEYS[2]
@@ -82,7 +84,7 @@ public class ChallengeStateAtomicRedisOps {
             redis.call('SET', challengeKey, cjson.encode(state), 'KEEPTTL')
             redis.call('DEL', lockKey)
             return {'failed', tostring(attempts), userId}
-            """);
+            """, (Class<List<Object>>) (Class<?>) List.class);
 
     private static final DefaultRedisScript<Long> SUCCESS_SCRIPT = new DefaultRedisScript<>("""
             local challengeKey = KEYS[1]
@@ -97,6 +99,16 @@ public class ChallengeStateAtomicRedisOps {
             redis.call('DEL', challengeKey)
             redis.call('DEL', lockKey)
             return 1
+            """, Long.class);
+
+    private static final DefaultRedisScript<Long> UNLOCK_SCRIPT = new DefaultRedisScript<>("""
+            local lockKey = KEYS[1]
+            local lockValue = ARGV[1]
+            local currentLock = redis.call('GET', lockKey)
+            if currentLock == lockValue then
+              return redis.call('DEL', lockKey)
+            end
+            return 0
             """, Long.class);
 
     private final StringRedisTemplate redisTemplate;
@@ -180,6 +192,14 @@ public class ChallengeStateAtomicRedisOps {
                 lockValue
         );
         return Objects.equals(result, 1L);
+    }
+
+    public void unlock(String tokenId, String lockValue) {
+        redisTemplate.execute(
+                UNLOCK_SCRIPT,
+                List.of(MfaChallengeRedisKeys.challengeLockKey(tokenId)),
+                lockValue
+        );
     }
 
     public record ClaimResult(ClaimStatus status, String stateJson) {
