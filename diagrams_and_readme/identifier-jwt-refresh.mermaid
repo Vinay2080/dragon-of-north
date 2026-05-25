@@ -1,0 +1,47 @@
+sequenceDiagram
+    actor User
+    User ->> AuthenticationController: POST /api/v1/auth/jwt/refresh {deviceId}
+    AuthenticationController ->> AuthenticationController: extractRefreshToken(request.cookies)
+    AuthenticationController ->> AuthRequestContext: fromHttpRequest(request, deviceId)
+    AuthRequestContext -->> AuthenticationController: context(ipAddress,userAgent,deviceId,requestId)
+    AuthenticationController ->> AuthCommonServiceImpl: refreshToken(oldRefreshToken, response, context)
+    Note over AuthCommonServiceImpl: validateRefreshRequest(oldRefreshToken, context)
+    alt refresh token missing
+        AuthCommonServiceImpl ->> AuthCommonServiceImpl: throw BusinessException(UNAUTHORIZED, "Refresh token missing")
+        AuthCommonServiceImpl ->> AuthCommonServiceImpl: clearRefreshTokenCookie(response)
+        AuthCommonServiceImpl ->> MeterRegistry: counter("auth.refresh.failure").increment()
+        AuthCommonServiceImpl ->> AuditEventLogger: log("auth.refresh", null, deviceId, ip, "failure", message, requestId)
+        AuthCommonServiceImpl -->> AuthenticationController: BusinessException
+        AuthenticationController -->> User: Error Response (global exception handler)
+    else token present
+        alt deviceId missing/blank
+            AuthCommonServiceImpl ->> AuthCommonServiceImpl: throw BusinessException(INVALID_TOKEN, "device ID missing")
+            AuthCommonServiceImpl ->> AuthCommonServiceImpl: clearRefreshTokenCookie(response)
+            AuthCommonServiceImpl ->> MeterRegistry: counter("auth.refresh.failure").increment()
+            AuthCommonServiceImpl ->> AuditEventLogger: log("auth.refresh", null, deviceId, ip, "failure", message, requestId)
+            AuthCommonServiceImpl -->> AuthenticationController: BusinessException
+            AuthenticationController -->> User: Error Response
+        else request valid
+            Note over AuthCommonServiceImpl: rotateRefreshTokens(oldRefreshToken, deviceId)
+            AuthCommonServiceImpl ->> JwtServices: extractUserId(oldRefreshToken)
+            JwtServices -->> AuthCommonServiceImpl: userIdFromOldToken
+            AuthCommonServiceImpl ->> AppUserRepository: findById(userIdFromOldToken)
+            AppUserRepository -->> AuthCommonServiceImpl: AppUser
+            AuthCommonServiceImpl ->> UserStateValidator: validate(appUser, SESSION_ROTATE_REFRESH)
+            AuthCommonServiceImpl ->> JwtServices: generateRefreshToken(userIdFromOldToken)
+            JwtServices -->> AuthCommonServiceImpl: newRefreshToken
+            AuthCommonServiceImpl ->> SessionService: validateAndRotateSession(oldRefreshToken, newRefreshToken, deviceId)
+            SessionService -->> AuthCommonServiceImpl: Session
+            AuthCommonServiceImpl ->> RoleRepository: findRolesById(session.appUser.id)
+            RoleRepository -->> AuthCommonServiceImpl: roles
+            AuthCommonServiceImpl ->> SessionAccessTokenIssuer: mintAccessToken(session, roles)
+            SessionAccessTokenIssuer -->> AuthCommonServiceImpl: newAccessToken
+            AuthCommonServiceImpl ->> AuthCommonServiceImpl: writeAuthCookies(response, LoginTokens(newAccessToken,newRefreshToken))
+            AuthCommonServiceImpl ->> AuthCommonServiceImpl: setAccessToken(response, newAccessToken)
+            AuthCommonServiceImpl ->> AuthCommonServiceImpl: setRefreshToken(response, newRefreshToken)
+            AuthCommonServiceImpl ->> MeterRegistry: counter("auth.refresh.success").increment()
+            AuthCommonServiceImpl ->> AuditEventLogger: log("auth.refresh", userId, deviceId, ip, "success", null, requestId)
+            AuthCommonServiceImpl -->> AuthenticationController: completion
+            AuthenticationController -->> User: HTTP 200 ApiResponse.successMessage("refresh token sent")
+        end
+    end

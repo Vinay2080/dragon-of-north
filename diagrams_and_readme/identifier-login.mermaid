@@ -1,0 +1,66 @@
+sequenceDiagram
+    actor User
+    User ->> AuthenticationController: POST /api/v1/auth/identifier/login {identifier,password,deviceId}
+    AuthenticationController ->> AuthRequestContext: fromHttpRequest(httpRequest, deviceId)
+    AuthRequestContext -->> AuthenticationController: context(ipAddress, userAgent, deviceId, requestId)
+    AuthenticationController ->> AuthCommonServiceImpl: login(identifier, password, httpResponse, context)
+    Note over AuthCommonServiceImpl: normalizeIdentifier(identifier)
+    AuthCommonServiceImpl ->> IdentifierNormalizer: normalizeEmail(...) or normalizePhone(...)
+    IdentifierNormalizer -->> AuthCommonServiceImpl: normalizedIdentifier
+    AuthCommonServiceImpl ->> AppUserRepository: findByEmail(...) or findByPhone(...)
+    AppUserRepository -->> AuthCommonServiceImpl: AppUser | empty
+
+    alt user not found
+        AuthCommonServiceImpl ->> MeterRegistry: counter("auth.login.failure").increment()
+        AuthCommonServiceImpl ->> AuditEventLogger: log("auth.login", null, ..., "failure", reason)
+        AuthCommonServiceImpl -->> AuthenticationController: BusinessException(USER_NOT_FOUND)
+        AuthenticationController -->> User: Error Response (global exception handler)
+    else user found
+        AuthCommonServiceImpl ->> UserStateValidator: validate(user, LOCAL_LOGIN)
+        AuthCommonServiceImpl ->> UserAuthProviderRepository: findAllByUserId(user.id)
+        UserAuthProviderRepository -->> AuthCommonServiceImpl: provider list
+
+        alt LOCAL provider missing
+            AuthCommonServiceImpl ->> MeterRegistry: counter("auth.login.failure").increment()
+            AuthCommonServiceImpl ->> AuditEventLogger: log("auth.login", user.id, ..., "failure", "Local provider not found")
+            AuthCommonServiceImpl -->> AuthenticationController: BusinessException(ACCESS_DENIED)
+            AuthenticationController -->> User: Error Response
+        else provider available
+            AuthCommonServiceImpl ->> AuthenticationManager: authenticate(UsernamePasswordAuthenticationToken)
+            AuthenticationManager -->> AuthCommonServiceImpl: Authentication | AuthenticationException
+
+            alt bad credentials/auth failure
+                AuthCommonServiceImpl ->> MeterRegistry: counter("auth.login.failure").increment()
+                AuthCommonServiceImpl ->> AuditEventLogger: log("auth.login", user.id, ..., "failure", exception.message)
+                AuthCommonServiceImpl -->> AuthenticationController: AuthenticationException
+                AuthenticationController -->> User: Error Response
+            else authenticated
+                AuthCommonServiceImpl ->> AuthCommonServiceImpl: ensureIdentifierVerified(user, normalizedIdentifier)
+
+                alt identifier not verified / OTP precondition failed
+                    AuthCommonServiceImpl ->> MeterRegistry: counter("auth.login.failure").increment()
+                    AuthCommonServiceImpl ->> AuditEventLogger: log("auth.login", user.id, ..., "failure", reason)
+                    AuthCommonServiceImpl -->> AuthenticationController: BusinessException(...)
+                    AuthenticationController -->> User: Error Response
+                else verified
+                    Note over AuthCommonServiceImpl: issueLoginSession(authenticatedUser, SessionCreationSpec.fromAppUser(...,"pwd"), response, context)
+                    AuthCommonServiceImpl ->> MfaOrchestrator: orchestrateLogin(appUser, "pwd", context)
+                    MfaOrchestrator -->> AuthCommonServiceImpl: MfaOrchestrationResult
+
+                    alt challengeRequired == true
+                        AuthCommonServiceImpl -->> AuthenticationController: MfaOrchestrationResult(with challenge)
+                        AuthenticationController ->> MfaChallengeResponse: from(result.challenge())
+                        AuthenticationController -->> User: HTTP 200 ApiResponse.success(challenge)
+                    else challengeRequired == false
+                        AuthCommonServiceImpl ->> SessionTokenIssuer: issueLoginSession(appUser, creationSpec, ipAddress, deviceId, userAgent)
+                        SessionTokenIssuer -->> AuthCommonServiceImpl: LoginTokens(access, refresh)
+                        AuthCommonServiceImpl ->> AuthCommonServiceImpl: writeAuthCookies(response, loginTokens)
+                        AuthCommonServiceImpl ->> MeterRegistry: counter("auth.login.success").increment()
+                        AuthCommonServiceImpl ->> AuditEventLogger: log("auth.login", user.id, ..., "success", null)
+                        AuthCommonServiceImpl -->> AuthenticationController: MfaOrchestrationResult(no challenge)
+                        AuthenticationController -->> User: HTTP 200 ApiResponse.successMessage("log in successful")
+                    end
+                end
+            end
+        end
+    end

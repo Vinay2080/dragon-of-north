@@ -1,0 +1,74 @@
+sequenceDiagram
+    actor User
+    User ->> AuthenticationController: POST /api/v1/auth/identifier/sign-up/complete {identifier, identifierType}
+    AuthenticationController ->> AuthenticationServiceResolver: resolve(identifier, identifierType)
+    AuthenticationServiceResolver -->> AuthenticationController: EmailAuthenticationServiceImpl | PhoneAuthenticationServiceImpl
+    AuthenticationController ->> AuthenticationServiceImpl: completeSignUp(identifier)
+
+    alt EMAIL identifier flow
+        AuthenticationServiceImpl ->> IdentifierNormalizer: normalizeEmail(identifier)
+        IdentifierNormalizer -->> AuthenticationServiceImpl: normalizedIdentifier
+        AuthenticationServiceImpl ->> AppUserRepository: findByEmail(normalizedIdentifier)
+        AppUserRepository -->> AuthenticationServiceImpl: AppUser | empty
+    else PHONE identifier flow
+        AuthenticationServiceImpl ->> IdentifierNormalizer: normalizePhone(identifier)
+        IdentifierNormalizer -->> AuthenticationServiceImpl: normalizedIdentifier
+        AuthenticationServiceImpl ->> AppUserRepository: findByPhone(normalizedIdentifier)
+        AppUserRepository -->> AuthenticationServiceImpl: AppUser | empty
+    end
+
+    alt User not found
+        AuthenticationServiceImpl ->> MeterRegistry: counter("auth.signup.complete.failure").increment()
+        AuthenticationServiceImpl ->> AuditEventLogger: log("auth.signup.complete", ..., "failure", "business_user_not_found")
+        AuthenticationServiceImpl -->> AuthenticationController: BusinessException(USER_NOT_FOUND)
+        AuthenticationController -->> User: Error Response (global exception handler)
+    else User found
+        AuthenticationServiceImpl ->> UserStateValidator: validate(appUser, LOCAL_SIGNUP_COMPLETE)
+
+        alt State validation rejected
+            UserStateValidator -->> AuthenticationServiceImpl: BusinessException(USER_ALREADY_ACTIVE | EMAIL_NOT_VERIFIED | USER_BLOCKED | USER_REACTIVATION_REQUIRED | USER_OPERATION_NOT_ALLOWED)
+            AuthenticationServiceImpl ->> MeterRegistry: counter("auth.signup.complete.failure").increment()
+            AuthenticationServiceImpl ->> AuditEventLogger: log("auth.signup.complete", ..., "failure", "business_<error_code>")
+            AuthenticationServiceImpl -->> AuthenticationController: BusinessException(...)
+            AuthenticationController -->> User: Error Response
+        else State validation allowed
+            Note over AuthenticationServiceImpl: ensureSignupOtpVerified(normalizedIdentifier)
+            AuthenticationServiceImpl ->> OtpServiceImpl: fetchLatest(normalizedIdentifier, type, SIGNUP)
+            OtpServiceImpl -->> AuthenticationServiceImpl: OtpToken | BusinessException(OTP_NOT_FOUND)
+            AuthenticationServiceImpl ->> OtpServiceImpl: fetchLatest(normalizedIdentifier, type, LOGIN_UNVERIFIED)
+            OtpServiceImpl -->> AuthenticationServiceImpl: OtpToken | BusinessException(OTP_NOT_FOUND)
+
+            alt No verified + unexpired OTP for either purpose
+                AuthenticationServiceImpl ->> MeterRegistry: counter("auth.signup.complete.failure").increment()
+                AuthenticationServiceImpl ->> AuditEventLogger: log("auth.signup.complete", ..., "failure", "business_signup_otp_not_verified")
+                AuthenticationServiceImpl -->> AuthenticationController: BusinessException(SIGNUP_OTP_NOT_VERIFIED)
+                AuthenticationController -->> User: Error Response
+            else OTP verified precondition satisfied
+                alt Email signup completion
+                    AuthenticationServiceImpl ->> AppUser: setEmailVerified(true)
+                    AuthenticationServiceImpl ->> AppUser: setAppUserStatus(ACTIVE)
+                else Phone signup completion
+                    AuthenticationServiceImpl ->> AppUser: setPhoneNumberVerified(true)
+                    AuthenticationServiceImpl ->> AppUser: setAppUserStatus(ACTIVE)
+                end
+
+                AuthenticationServiceImpl ->> UserRoleService: assignDefaultUserRole(appUser)
+                UserRoleService -->> AuthenticationServiceImpl: role ensured
+                AuthenticationServiceImpl ->> AppUserRepository: save(appUser)
+                AppUserRepository -->> AuthenticationServiceImpl: persisted appUser
+                AuthenticationServiceImpl ->> MeterRegistry: counter("auth.signup.complete.success").increment()
+                AuthenticationServiceImpl ->> AuditEventLogger: log("auth.signup.complete", appUser.id, ..., "success", "status=ACTIVE")
+                Note over AuthenticationServiceImpl: build response via getUserStatus(normalizedIdentifier)
+                alt EMAIL status projection
+                    AuthenticationServiceImpl ->> AppUserRepository: findByEmail(normalizedIdentifier)
+                else PHONE status projection
+                    AuthenticationServiceImpl ->> AppUserRepository: findByPhone(normalizedIdentifier)
+                end
+                AppUserRepository -->> AuthenticationServiceImpl: AppUser
+                AuthenticationServiceImpl ->> UserAuthProviderRepository: findAllByUserId(appUser.id)
+                UserAuthProviderRepository -->> AuthenticationServiceImpl: providers
+                AuthenticationServiceImpl -->> AuthenticationController: AppUserStatusFinderResponse
+                AuthenticationController -->> User: HTTP 201 ApiResponse.success(response)
+            end
+        end
+    end

@@ -1,0 +1,60 @@
+sequenceDiagram
+    actor User
+    User ->> OtpController: POST /api/v1/otp/email/verify {email, otp, otpPurpose}
+    OtpController ->> OtpServiceImpl: verifyEmailOtp(email, providedOtp, otpPurpose)
+    Note over OtpServiceImpl: verifyEmailOtp(...) entry
+    OtpServiceImpl ->> IdentifierNormalizer: normalizeEmail(email)
+    IdentifierNormalizer -->> OtpServiceImpl: normalizedEmail
+    Note over OtpServiceImpl: fetchLatest(normalizedEmail, EMAIL, otpPurpose)
+    OtpServiceImpl ->> OtpTokenRepository: findTopByIdentifierAndTypeAndOtpPurposeOrderByCreatedAtDesc(...)
+    OtpTokenRepository -->> OtpServiceImpl: Optional<OtpToken>
+
+    alt No token found
+        OtpServiceImpl ->> AuditEventLogger: log("auth.otp.verify", ..., "failure", "otp_not_found")
+        OtpServiceImpl -->> OtpController: BusinessException(OTP_NOT_FOUND)
+        OtpController -->> User: Error Response (handled by global exception handler)
+    else Token found
+        Note over OtpServiceImpl: verifyToken(otpToken, providedOtp, otpPurpose)
+        OtpServiceImpl ->> OtpServiceImpl: validateTokenForVerification(otpToken, otpPurpose)
+
+        alt otpToken.isExpired()
+            OtpServiceImpl ->> MeterRegistry: counter("auth.otp.verify.failure").increment()
+            OtpServiceImpl ->> AuditEventLogger: log("auth.otp.verify", ..., "failure", "OTP has expired")
+            OtpServiceImpl -->> OtpController: EXPIRED_OTP
+            OtpController -->> User: HTTP 400 ApiResponse.failed(EXPIRED_OTP)
+        else otpToken.getAttempts() >= maxAttempts
+            OtpServiceImpl ->> MeterRegistry: counter("auth.otp.verify.failure").increment()
+            OtpServiceImpl ->> AuditEventLogger: log("auth.otp.verify", ..., "failure", "Maximum verification attempts exceeded")
+            OtpServiceImpl -->> OtpController: MAX_ATTEMPT_EXCEEDED
+            OtpController -->> User: HTTP 400 ApiResponse.failed(MAX_ATTEMPT_EXCEEDED)
+        else otpToken.isConsumed()
+            OtpServiceImpl ->> MeterRegistry: counter("auth.otp.verify.failure").increment()
+            OtpServiceImpl ->> AuditEventLogger: log("auth.otp.verify", ..., "failure", "OTP has already been used")
+            OtpServiceImpl -->> OtpController: ALREADY_USED
+            OtpController -->> User: HTTP 400 ApiResponse.failed(ALREADY_USED)
+        else otpToken.getOtpPurpose() != otpPurpose
+            OtpServiceImpl ->> MeterRegistry: counter("auth.otp.verify.failure").increment()
+            OtpServiceImpl ->> AuditEventLogger: log("auth.otp.verify", ..., "failure", "OTP was not generated for this purpose")
+            OtpServiceImpl -->> OtpController: INVALID_PURPOSE
+            OtpController -->> User: HTTP 400 ApiResponse.failed(INVALID_PURPOSE)
+        else token metadata valid
+            OtpServiceImpl ->> OtpToken: incrementAttempts()
+            OtpServiceImpl ->> BCrypt: checkpw(providedOtp, otpToken.otpHash)
+            BCrypt -->> OtpServiceImpl: correct (true|false)
+
+            alt OTP hash mismatch
+                OtpServiceImpl ->> OtpTokenRepository: save(otpToken) [attempt increment persisted]
+                OtpServiceImpl ->> MeterRegistry: counter("auth.otp.verify.failure").increment()
+                OtpServiceImpl ->> AuditEventLogger: log("auth.otp.verify", ..., "failure", "Invalid OTP")
+                OtpServiceImpl -->> OtpController: INVALID_OTP
+                OtpController -->> User: HTTP 400 ApiResponse.failed(INVALID_OTP)
+            else OTP hash match
+                OtpServiceImpl ->> OtpToken: markVerified() [sets consumed=true]
+                OtpServiceImpl ->> OtpTokenRepository: save(otpToken)
+                OtpServiceImpl ->> MeterRegistry: counter("auth.otp.verify.success").increment()
+                OtpServiceImpl ->> AuditEventLogger: log("auth.otp.verify", ..., "success", "identifier_type=EMAIL,purpose=<otpPurpose>")
+                OtpServiceImpl -->> OtpController: SUCCESS
+                OtpController -->> User: HTTP 202 ApiResponse.success(SUCCESS)
+            end
+        end
+    end
