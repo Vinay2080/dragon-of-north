@@ -8,8 +8,8 @@ import java.util.Objects;
 /**
  * Explicit MFA/session policy applied when a new device session row is created.
  *
- * <p>{@code mfaVerifiedAt} is set only when MFA is not required for this session.
- * When MFA is required but not yet satisfied, it remains {@code null}.</p>
+ * <p>{@code mfaVerifiedAt} is set only when MFA has been completed (login MFA or step-up).
+ * When MFA has not been completed, it remains {@code null}.</p>
  */
 public record SessionCreationSpec(
         String primaryAmr,
@@ -24,9 +24,6 @@ public record SessionCreationSpec(
         if (mfaRequired && mfaVerifiedAt != null) {
             throw new IllegalArgumentException("mfaVerifiedAt must be null when mfaRequired is true");
         }
-        if (!mfaRequired && mfaVerifiedAt == null) {
-            throw new IllegalArgumentException("mfaVerifiedAt must be set when mfaRequired is false");
-        }
     }
 
     /**
@@ -35,7 +32,7 @@ public record SessionCreationSpec(
     public static SessionCreationSpec fromAppUser(AppUser appUser, String primaryAmr) {
         Objects.requireNonNull(appUser, "appUser must not be null");
         boolean mfaRequired = appUser.isMfaEnabled();
-        Instant mfaVerifiedAt = mfaRequired ? null : Instant.now();
+        Instant mfaVerifiedAt = null;
         return new SessionCreationSpec(primaryAmr, mfaRequired, mfaVerifiedAt);
     }
 }

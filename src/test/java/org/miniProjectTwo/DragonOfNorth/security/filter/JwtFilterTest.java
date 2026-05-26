@@ -38,7 +38,7 @@ class JwtFilterTest {
 
     @BeforeEach
     void setUp() {
-        jwtFilter = new JwtFilter(jwtServices, false);
+        jwtFilter = new JwtFilter(jwtServices);
         SecurityContextHolder.clearContext();
     }
 
@@ -94,8 +94,7 @@ class JwtFilterTest {
     }
 
     @Test
-    void doFilterInternal_shouldUseLegacyFallbackOnlyWhenCompatibilityEnabled() throws Exception {
-        JwtFilter legacyModeFilter = new JwtFilter(jwtServices, true);
+    void doFilterInternal_shouldNotFabricateMfaClaimsWhenMissing() throws Exception {
         UUID userId = UUID.randomUUID();
         String token = "legacy-token";
         MockHttpServletRequest request = new MockHttpServletRequest();
@@ -109,16 +108,12 @@ class JwtFilterTest {
         when(claims.get("roles", List.class)).thenReturn(List.of("USER"));
         when(jwtServices.extractAllClaims(token)).thenReturn(claims);
 
-        Instant before = Instant.now();
-        legacyModeFilter.doFilterInternal(request, response, filterChain);
-        Instant after = Instant.now();
+        jwtFilter.doFilterInternal(request, response, filterChain);
 
         SecurityPrincipal principal = (SecurityPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        assertTrue(principal.mfaVerified());
-        assertNotNull(principal.mfaVerifiedAt());
-        assertFalse(principal.mfaVerifiedAt().isBefore(before));
-        assertFalse(principal.mfaVerifiedAt().isAfter(after));
-        assertEquals(List.of("legacy_pwd"), principal.amr());
+        assertFalse(principal.mfaVerified());
+        assertNull(principal.mfaVerifiedAt());
+        assertEquals(List.of(), principal.amr());
     }
 
     @Test

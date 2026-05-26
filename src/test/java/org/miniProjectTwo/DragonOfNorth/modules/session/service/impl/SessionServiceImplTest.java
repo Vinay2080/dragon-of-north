@@ -76,7 +76,7 @@ class SessionServiceImplTest {
         verify(sessionRepository).flush();
         verify(sessionRepository).save(argThat(session ->
                 !session.isMfaRequired()
-                        && session.getMfaVerifiedAt() != null
+                        && session.getMfaVerifiedAt() == null
                         && "pwd".equals(session.getPrimaryAmr())
         ));
     }

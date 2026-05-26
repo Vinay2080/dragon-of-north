@@ -12,6 +12,7 @@ import java.util.UUID;
  */
 public record ChallengeState(
         UUID userId,
+        UUID sessionId,
         String primaryAmr,
         String deviceId,
         String ipPrefix,

@@ -43,6 +43,25 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
                                         String primaryAmr,
                                         AuthRequestContext context,
                                         List<ProviderType> availableMethods) {
+        return createChallengeInternal(userId, null, primaryAmr, context, availableMethods);
+    }
+
+    @Override
+    public MfaChallenge createStepUpChallenge(UUID userId,
+                                              UUID sessionId,
+                                              AuthRequestContext context,
+                                              List<ProviderType> availableMethods) {
+        if (sessionId == null) {
+            throw new IllegalArgumentException("sessionId must not be null");
+        }
+        return createChallengeInternal(userId, sessionId, "step_up", context, availableMethods);
+    }
+
+    private MfaChallenge createChallengeInternal(UUID userId,
+                                                 UUID sessionId,
+                                                 String primaryAmr,
+                                                 AuthRequestContext context,
+                                                 List<ProviderType> availableMethods) {
         if (userId == null) {
             throw new IllegalArgumentException("userId must not be null");
         }
@@ -59,6 +78,7 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
 
         ChallengeState state = new ChallengeState(
                 userId,
+                sessionId,
                 primaryAmr.trim(),
                 requestBinding.normalizeDeviceId(context.deviceId()),
                 requestBinding.ipPrefix(context.ipAddress()),
@@ -86,6 +106,15 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
                                                ProviderType providerType,
                                                String code,
                                                AuthRequestContext context) {
+        return verifyAndConsume(mfaToken, providerType, code, context, null);
+    }
+
+    @Override
+    public VerificationResult verifyAndConsume(String mfaToken,
+                                               ProviderType providerType,
+                                               String code,
+                                               AuthRequestContext context,
+                                               UUID sessionId) {
         if (mfaToken == null || mfaToken.isBlank()) throw new IllegalArgumentException("mfaToken must not be blank");
         if (providerType == null) throw new IllegalArgumentException("providerType must not be null");
         if (code == null || code.isBlank()) throw new IllegalArgumentException("code must not be blank");
@@ -93,13 +122,8 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
 
         String token = mfaToken.trim();
         String lockValue = UUID.randomUUID().toString();
-        log.info("TEMP_DEBUG: verifyAndConsume started for token={}, lockValue={}", token, lockValue);
-        
         var claim = atomicOps.claim(token, lockValue, CLAIM_LOCK_TTL);
-        log.info("TEMP_DEBUG: claim status={} for lockValue={}", claim.status(), lockValue);
-        
         if (claim.status() != ChallengeStateAtomicRedisOps.ClaimStatus.OK || claim.stateJson() == null) {
-            log.info("TEMP_DEBUG: claim failed with status={}", claim.status());
             auditEventLogger.log("auth.mfa.challenge.failed", null, context.deviceId(), context.ipAddress(), "failure", claim.status().name().toLowerCase(), context.requestId());
             return switch (claim.status()) {
                 case LOCKED_OUT -> VerificationResult.failure(null, null, VerificationResult.FailureReason.CHALLENGE_LOCKED_OUT);
@@ -112,13 +136,16 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
 
         ChallengeState state = store.decode(claim.stateJson());
         var bindings = requestBinding.fromContext(context);
+        boolean sessionMismatch = (state.sessionId() != null && !java.util.Objects.equals(state.sessionId(), sessionId))
+                || (state.sessionId() == null && sessionId != null);
         if (!java.util.Objects.equals(state.deviceId(), bindings.deviceId())
                 || !java.util.Objects.equals(state.ipPrefix(), bindings.ipPrefix())
-                || !java.util.Objects.equals(state.userAgentHash(), bindings.userAgentHash())) {
-            log.info("TEMP_DEBUG: context mismatch for lockValue={}", lockValue);
+                || !java.util.Objects.equals(state.userAgentHash(), bindings.userAgentHash())
+                || sessionMismatch) {
             var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
             String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
-            auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", "context_mismatch", context.requestId());
+            String reason = sessionMismatch ? "session_mismatch" : "context_mismatch";
+            auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", reason, context.requestId());
             return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.CONTEXT_MISMATCH);
         }
 
@@ -131,22 +158,15 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
         }
 
         var providerVerification = providerVerifier.verify(state.userId(), providerType, code.trim());
-            log.info("TEMP_DEBUG: provider verification result={} for lockValue={}", providerVerification.success(), lockValue);
-        
         if (!providerVerification.success()) {
-            log.info("TEMP_DEBUG: provider verification failed for lockValue={}, reason={}", lockValue, providerVerification.failureReason());
             var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
-            log.info("TEMP_DEBUG: recordFailure status={}", fail.status());
             String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
             auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", providerVerification.failureReason(), context.requestId());
             return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.INVALID_VERIFICATION_CODE);
         }
 
         boolean consumed = atomicOps.consumeSuccess(token, lockValue);
-            log.info("TEMP_DEBUG: consumeSuccess={} for lockValue={}", consumed, lockValue);
-        
         if (!consumed) {
-            log.info("TEMP_DEBUG: consumeSuccess failed for lockValue={}", lockValue);
             auditEventLogger.log("auth.mfa.challenge.failed", state.userId(), context.deviceId(), context.ipAddress(), "failure", "consume_race", context.requestId());
             return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.CHALLENGE_CONSUME_RACE);
         }

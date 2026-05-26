@@ -9,11 +9,10 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.DeviceIdRequest
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.MfaVerifyRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaChallengeResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.MfaChallenge;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaProperties;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
+import org.miniProjectTwo.DragonOfNorth.security.web.RequireRecentMfa;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -36,7 +35,7 @@ import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.succes
  *
  * <h2>Flow</h2>
  * <ol>
- *   <li>Sensitive endpoint calls {@link RecentMfaService#requireRecentMfa} and gets a 403 when the
+ *   <li>Sensitive endpoint is annotated with {@link RequireRecentMfa} and returns 403 when the
  *       session's {@code mfa_verified_at} is stale or absent.</li>
  *   <li>Client calls {@code POST /api/v1/auth/step-up/mfa/request} to get a challenge token.</li>
  *   <li>Client presents the TOTP / recovery-code at {@code POST /api/v1/auth/step-up/mfa/verify}.</li>
@@ -60,8 +59,6 @@ import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.succes
 public class StepUpController {
 
     private final AuthCommonServices authCommonServices;
-    private final RecentMfaService recentMfaService;
-    private final RecentMfaProperties recentMfaProperties;
 
     /**
      * Issues a step-up MFA challenge for the currently-authenticated user.
@@ -77,7 +74,8 @@ public class StepUpController {
 
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(httpServletRequest, deviceIdRequest.deviceId());
         AppUser user = authCommonServices.findAuthenticatedUser();
-        MfaChallenge challenge = authCommonServices.issueStepUpChallenge(user, context);
+        UUID sessionId = resolveSessionId();
+        MfaChallenge challenge = authCommonServices.issueStepUpChallenge(user, sessionId, context);
         return ResponseEntity.ok(success(MfaChallengeResponse.from(challenge)));
     }
 
@@ -113,17 +111,16 @@ public class StepUpController {
     /**
      * Demonstrates a sensitive endpoint that requires recent MFA before proceeding.
      *
-     * <p>This endpoint illustrates how {@link RecentMfaService#requireRecentMfa} is used as a
-     * one-liner guard at any sensitive operation — the same pattern can be applied to disable-MFA,
+     * <p>This endpoint illustrates how {@link RequireRecentMfa} is used as a centralized guard
+     * at any sensitive operation — the same pattern can be applied to disable-MFA,
      * password-change, account-deletion, and other security-critical actions.</p>
      */
     @PostMapping("/protected-action")
+    @RequireRecentMfa
     public ResponseEntity<ApiResponse<?>> sensitiveAction(
             @RequestBody @Valid DeviceIdRequest deviceIdRequest,
             HttpServletRequest httpServletRequest) {
 
-        SecurityPrincipal principal = resolveSecurityPrincipal();
-        recentMfaService.requireRecentMfa(principal.mfaVerifiedAt(), recentMfaProperties.getMfaMaxAge());
         return ResponseEntity.ok(successMessage("sensitive action completed"));
     }
 

@@ -87,11 +87,12 @@ public interface AuthCommonServices {
      * <p>Uses the same challenge infrastructure as login-time MFA so there is a single
      * challenge lifecycle — no second MFA system is introduced.</p>
      *
-     * @param user    the currently-authenticated user
-     * @param context request metadata for binding and audit
+     * @param user      the currently-authenticated user
+     * @param sessionId authenticated session id for binding
+     * @param context   request metadata for binding and audit
      * @return the MFA challenge token and expiry for the client to present to the verify endpoint
      */
-    MfaChallenge issueStepUpChallenge(AppUser user, AuthRequestContext context);
+    MfaChallenge issueStepUpChallenge(AppUser user, UUID sessionId, AuthRequestContext context);
 
     /**
      * Verifies a step-up MFA challenge, then updates the session's {@code mfa_verified_at}

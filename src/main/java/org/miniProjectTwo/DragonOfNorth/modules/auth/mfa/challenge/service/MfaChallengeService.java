@@ -24,6 +24,14 @@ public interface MfaChallengeService {
                                  List<ProviderType> availableMethods);
 
     /**
+     * Creates a step-up MFA challenge bound to the authenticated session.
+     */
+    MfaChallenge createStepUpChallenge(UUID userId,
+                                       UUID sessionId,
+                                       AuthRequestContext context,
+                                       List<ProviderType> availableMethods);
+
+    /**
      * Reads the challenge state without mutating it.
      */
     Optional<ChallengeState> peek(String mfaToken);
@@ -35,6 +43,15 @@ public interface MfaChallengeService {
                                         ProviderType providerType,
                                         String code,
                                         AuthRequestContext context);
+
+    /**
+     * Verifies and atomically consumes a one-time challenge bound to a session.
+     */
+    VerificationResult verifyAndConsume(String mfaToken,
+                                        ProviderType providerType,
+                                        String code,
+                                        AuthRequestContext context,
+                                        UUID sessionId);
 
     /**
      * Invalidates the challenge token and deletes its Redis state.

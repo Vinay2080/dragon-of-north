@@ -14,6 +14,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupRespon
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.*;
+import org.miniProjectTwo.DragonOfNorth.security.web.RequireRecentMfa;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -150,6 +151,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/password/change")
+    @RequireRecentMfa
     public ResponseEntity<ApiResponse<?>> changePassword(
             @RequestBody @Valid PasswordChangeRequest request
     ) {
@@ -159,6 +161,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/account/delete")
+    @RequireRecentMfa
     public ResponseEntity<ApiResponse<?>> deleteAccount(
             @RequestBody @Valid DeviceIdRequest deviceIdRequest,
             HttpServletRequest request,

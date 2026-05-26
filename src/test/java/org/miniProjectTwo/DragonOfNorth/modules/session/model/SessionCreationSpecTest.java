@@ -10,14 +10,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class SessionCreationSpecTest {
 
     @Test
-    void fromAppUser_shouldSetVerifiedTimestamp_whenMfaNotRequired() {
+    void fromAppUser_shouldNotSetVerifiedTimestamp_whenMfaNotRequired() {
         AppUser user = new AppUser();
         user.setMfaEnabled(false);
 
         SessionCreationSpec spec = SessionCreationSpec.fromAppUser(user, "pwd");
 
         assertFalse(spec.mfaRequired());
-        assertNotNull(spec.mfaVerifiedAt());
+        assertNull(spec.mfaVerifiedAt());
     }
 
     @Test
@@ -39,8 +39,7 @@ class SessionCreationSpecTest {
     }
 
     @Test
-    void constructor_shouldRejectMissingVerifiedTimestamp_whenMfaNotRequired() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new SessionCreationSpec("pwd", false, null));
+    void constructor_shouldAllowMissingVerifiedTimestamp_whenMfaNotRequired() {
+        assertDoesNotThrow(() -> new SessionCreationSpec("pwd", false, null));
     }
 }

@@ -16,8 +16,8 @@ import java.time.Instant;
  * <h2>Trust boundaries</h2>
  * <ul>
  *   <li>The source of truth for "when MFA was last verified" is the {@code mfa_verified_at}
- *       column on the session row — <strong>not</strong> a cookie, local state, or a separate
- *       token.</li>
+ *       column on the session row, which is only populated when MFA has actually been completed
+ *       (login MFA or step-up) — <strong>not</strong> a cookie, local state, or a separate token.</li>
  *   <li>After a successful step-up verification the session row is updated atomically and a
  *       new access token is minted from that truthful state, so every downstream claim check
  *       immediately reflects the refresh.</li>

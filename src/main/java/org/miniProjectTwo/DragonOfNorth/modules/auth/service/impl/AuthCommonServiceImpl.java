@@ -250,9 +250,12 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     }
 
     @Override
-    public MfaChallenge issueStepUpChallenge(AppUser user, AuthRequestContext context) {
+    public MfaChallenge issueStepUpChallenge(AppUser user, UUID sessionId, AuthRequestContext context) {
         if (user == null) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED, "User not authenticated");
+        }
+        if (sessionId == null) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Session ID missing for step-up challenge");
         }
 
         List<ProviderType> availableMethods =
@@ -265,7 +268,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
             throw new BusinessException(ErrorCode.MFA_REQUIRED, "No MFA methods available for step-up");
         }
 
-        MfaChallenge challenge = mfaChallengeService.createChallenge(user.getId(), "step_up", context, availableMethods);
+        MfaChallenge challenge = mfaChallengeService.createStepUpChallenge(user.getId(), sessionId, context, availableMethods);
         auditEventLogger.log("auth.mfa.step_up.challenge.issued",
                 user.getId(), context.deviceId(), context.ipAddress(), "success", null, context.requestId());
         return challenge;
@@ -278,7 +281,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
                                            UUID sessionId,
                                            HttpServletResponse response,
                                            AuthRequestContext context) {
-        VerificationResult verificationResult = mfaChallengeService.verifyAndConsume(challengeId, providerType, code, context);
+        VerificationResult verificationResult = mfaChallengeService.verifyAndConsume(challengeId, providerType, code, context, sessionId);
         if (!verificationResult.success() || verificationResult.userId() == null) {
             throw switch (verificationResult.failureReason()) {
                 case CHALLENGE_LOCKED_OUT -> new BusinessException(ErrorCode.TOO_MANY_REQUESTS);

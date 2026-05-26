@@ -41,6 +41,7 @@ public class ChallengeStateCodec {
         ChallengeStatePayload payload = new ChallengeStatePayload(
                 VERSION,
                 state.userId() == null ? null : state.userId().toString(),
+                state.sessionId() == null ? null : state.sessionId().toString(),
                 state.primaryAmr(),
                 state.deviceId(),
                 state.ipPrefix(),
@@ -75,8 +76,10 @@ public class ChallengeStateCodec {
         }
 
         UUID userId = payload.userId() == null ? null : UUID.fromString(payload.userId());
+        UUID sessionId = payload.sessionId() == null ? null : UUID.fromString(payload.sessionId());
         return new ChallengeState(
                 userId,
+                sessionId,
                 payload.primaryAmr(),
                 payload.deviceId(),
                 payload.ipPrefix(),
@@ -94,6 +97,7 @@ public class ChallengeStateCodec {
     private record ChallengeStatePayload(
             int v,
             String userId,
+            String sessionId,
             String primaryAmr,
             String deviceId,
             String ipPrefix,
