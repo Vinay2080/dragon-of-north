@@ -16,6 +16,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.modules.profile.service.ProfileService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
+import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -66,6 +67,9 @@ class AuthCommonServiceImplTest {
 
     @Mock
     private SessionService sessionService;
+
+    @Mock
+    private SessionRepository sessionRepository;
 
     @Mock
     private SessionAccessTokenIssuer sessionAccessTokenIssuer;
@@ -371,6 +375,24 @@ class AuthCommonServiceImplTest {
                 () -> authCommonService.completeMfaChallengeLogin("challenge-1", "123456", ProviderType.TOTP, response, context));
 
         verify(sessionTokenIssuer, never()).issueLoginSession(any(), any(SessionCreationSpec.class), anyString(), anyString(), anyString());
+    }
+
+
+
+    @Test
+    void issueStepUpChallenge_shouldRejectWhenSessionNotLiveForUser() {
+        AppUser user = new AppUser();
+        user.setId(UUID.randomUUID());
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+        UUID sessionId = UUID.randomUUID();
+
+        when(sessionRepository.existsLiveSessionForUser(sessionId, user.getId(), any())).thenReturn(false);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> authCommonService.issueStepUpChallenge(user, sessionId, context));
+
+        assertEquals(ErrorCode.INVALID_TOKEN, ex.getErrorCode());
+        verify(mfaChallengeService, never()).createStepUpChallenge(any(), any(), any(), any());
     }
 
 }

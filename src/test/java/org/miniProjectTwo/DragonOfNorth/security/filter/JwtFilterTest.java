@@ -198,4 +198,27 @@ class JwtFilterTest {
         verify(filterChain).doFilter(request, response);
         assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
+
+
+    @Test
+    void doFilterInternal_shouldRejectTokenWhenMfaVerifiedTrueButTimestampMissing() throws Exception {
+        UUID userId = UUID.randomUUID();
+        String token = "legacy-bypass-token";
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setServletPath("/api/v1/users/me");
+        request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        Claims claims = mock(Claims.class);
+        when(claims.get("token_type", String.class)).thenReturn("access_token");
+        when(claims.getSubject()).thenReturn(userId.toString());
+        when(claims.get("roles", List.class)).thenReturn(List.of("USER"));
+        when(claims.get("mfa_verified", Boolean.class)).thenReturn(Boolean.TRUE);
+        when(jwtServices.extractAllClaims(token)).thenReturn(claims);
+
+        jwtFilter.doFilterInternal(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+    }
+
 }

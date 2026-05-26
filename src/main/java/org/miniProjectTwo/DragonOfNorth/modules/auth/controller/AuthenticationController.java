@@ -225,6 +225,7 @@ public class AuthenticationController implements AuthenticationApi {
      * succeeds with a valid authenticator code.
      */
     @PostMapping("/enable/mfa/request")
+    @RequireRecentMfa
     @Override
     public ResponseEntity<ApiResponse<MfaSetupResponse>> requestMfaSetup(
             HttpServletRequest request,
@@ -236,6 +237,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/enable/mfa/confirm")
+    @RequireRecentMfa
     public ResponseEntity<ApiResponse<MfaSetupConfirmResponse>> confirmMfaSetup(
             HttpServletRequest request,
             @RequestBody @Valid MfaSetupConfirmRequest mfaSetupConfirmRequest) {

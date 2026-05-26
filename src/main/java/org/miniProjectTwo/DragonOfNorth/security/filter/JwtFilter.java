@@ -144,8 +144,8 @@ public class JwtFilter extends OncePerRequestFilter {
                         authorities.add(new SimpleGrantedAuthority("ROLE_" + role)));
 
 
-                boolean mfaVerified = resolveMfaVerified(claims);
                 Instant mfaVerifiedAt = resolveMfaVerifiedAt(claims);
+                boolean mfaVerified = resolveMfaVerified(claims, mfaVerifiedAt);
                 List<String> amr = resolveAmr(claims);
                 UUID sessionId = resolveSessionId(claims);
 
@@ -191,8 +191,15 @@ public class JwtFilter extends OncePerRequestFilter {
         return Stream.of(public_urls).anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
     }
 
-    private boolean resolveMfaVerified(Claims claims) {
-        return Boolean.TRUE.equals(claims.get(MFA_VERIFIED, Boolean.class));
+    private boolean resolveMfaVerified(Claims claims, Instant mfaVerifiedAt) {
+        boolean verifiedClaim = Boolean.TRUE.equals(claims.get(MFA_VERIFIED, Boolean.class));
+        if (!verifiedClaim) {
+            return false;
+        }
+        if (mfaVerifiedAt == null) {
+            throw new IllegalArgumentException("JWT mfa_verified_at is required when mfa_verified=true");
+        }
+        return true;
     }
 
     private Instant resolveMfaVerifiedAt(Claims claims) {

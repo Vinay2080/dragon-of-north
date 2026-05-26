@@ -18,6 +18,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
+import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
@@ -74,6 +75,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final JwtServices jwtServices;
     private final RoleRepository roleRepository;
     private final SessionService sessionService;
+    private final SessionRepository sessionRepository;
     private final SessionAccessTokenIssuer sessionAccessTokenIssuer;
     private final SessionTokenIssuer sessionTokenIssuer;
     private final MfaOrchestrator mfaOrchestrator;
@@ -258,6 +260,8 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "Session ID missing for step-up challenge");
         }
 
+        assertLiveSessionOwnership(sessionId, user.getId());
+
         List<ProviderType> availableMethods =
                 mfaProviderRegistry.getAvailableProviders(user).stream()
                         .filter(MfaProvider::allowsStepUp)
@@ -281,6 +285,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
                                            UUID sessionId,
                                            HttpServletResponse response,
                                            AuthRequestContext context) {
+        assertLiveSessionOwnership(sessionId, resolveAuthenticatedUserId(SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
         VerificationResult verificationResult = mfaChallengeService.verifyAndConsume(challengeId, providerType, code, context, sessionId);
         if (!verificationResult.success() || verificationResult.userId() == null) {
             throw switch (verificationResult.failureReason()) {
@@ -306,6 +311,14 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         auditEventLogger.log("auth.mfa.step_up.completed",
                 appUser.getId(), context.deviceId(), context.ipAddress(), "success",
                 "session_id=" + sessionId, context.requestId());
+    }
+
+
+    private void assertLiveSessionOwnership(UUID sessionId, UUID userId) {
+        boolean live = sessionRepository.existsLiveSessionForUser(sessionId, userId, Instant.now());
+        if (!live) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Session not found or no longer live");
+        }
     }
 
     private UUID resolveAuthenticatedUserId(Object principal) {

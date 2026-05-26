@@ -44,7 +44,6 @@ app:
     step-up:
       mfa-max-age: ${step_up_mfa_max_age:PT15M}
     jwt:
-      legacy-mfa-claim-fallback-enabled: ${jwt_legacy_mfa_claim_fallback_enabled:false}
       expiration:
         access-token: ${access_token}
         refresh-token: ${refresh_token}
