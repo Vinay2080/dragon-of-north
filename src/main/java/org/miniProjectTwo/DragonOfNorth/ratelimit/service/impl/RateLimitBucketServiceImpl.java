@@ -70,9 +70,7 @@ public class RateLimitBucketServiceImpl implements RateLimitBucketService {
             }
         } catch (Exception e) {
             log.error("Rate limit check failed for key={}, type={}", key, type, e);
-            // FAIL-OPEN: Allow request if Redis is down (change to FAIL-CLOSED for strict security)
-            // For production, consider: return ConsumptionResult.blocked(0, 0, 60);
-            return ConsumptionResult.allowed(0, 0);
+            return ConsumptionResult.blocked(0, 0, 60);
         }
 
 

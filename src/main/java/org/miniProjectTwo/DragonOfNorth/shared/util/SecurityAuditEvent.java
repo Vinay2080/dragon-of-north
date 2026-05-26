@@ -32,4 +32,8 @@ public final class SecurityAuditEvent {
     public static final String AUTH_SESSION_REVOKED = "auth.session.revoked";
     public static final String AUTH_SESSION_ROTATE_FAILED = "auth.session.rotate.failed";
     public static final String AUTH_SESSION_SUSPICIOUS = "auth.session.suspicious";
+    public static final String AUTH_ABUSE_RATE_LIMITED = "auth.abuse.rate_limited";
+    public static final String AUTH_ABUSE_CHALLENGE_FLOOD = "auth.abuse.challenge_flood";
+    public static final String AUTH_ABUSE_MFA_BRUTEFORCE = "auth.abuse.mfa_bruteforce";
+
 }

@@ -13,6 +13,9 @@ import org.miniProjectTwo.DragonOfNorth.ratelimit.service.RateLimitBucketService
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RateLimitType;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
+import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
+import org.miniProjectTwo.DragonOfNorth.shared.util.SecurityAuditContext;
+import org.miniProjectTwo.DragonOfNorth.shared.util.SecurityAuditEvent;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -37,6 +40,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final RateLimitProperties properties;
     private final Map<RateLimitType, Counter> blockedCounters;
     private final Map<RateLimitType, Counter> successCounters;
+    private final AuditEventLogger auditEventLogger;
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
@@ -44,12 +48,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
                            RateLimitKeyResolver keyResolver,
                            RateLimitProperties properties,
                            Map<RateLimitType, Counter> rateLimitBlockedCounters,
-                           Map<RateLimitType, Counter> rateLimitSuccessCounters) {
+                           Map<RateLimitType, Counter> rateLimitSuccessCounters,
+                           AuditEventLogger auditEventLogger) {
         this.bucketService = bucketService;
         this.keyResolver = keyResolver;
         this.properties = properties;
         this.blockedCounters = rateLimitBlockedCounters;
         this.successCounters = rateLimitSuccessCounters;
+        this.auditEventLogger = auditEventLogger;
     }
 
     @Override
@@ -73,8 +79,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 response.setHeader("Retry-After", String.valueOf(result.getRetryAfterSeconds()));
                 blockedCounters.get(type).increment();
 
-                log.warn("Rate limit exceeded for key={}, type={}, retryAfter={}s",
-                        key, type, result.getRetryAfterSeconds());
+                auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_ABUSE_RATE_LIMITED, new SecurityAuditContext(
+                        null, null, request.getHeader("X-Device-Id"), request.getHeader("X-Request-Id"), request.getRemoteAddr(), null,
+                        "rate_limit", type.name(), "failure", "retry_after=" + result.getRetryAfterSeconds(), null
+                ));
+                if (type == RateLimitType.STEP_UP_REQUEST || type == RateLimitType.MFA_VERIFY) {
+                    auditEventLogger.log(SecurityAuditEvent.AUTH_ABUSE_CHALLENGE_FLOOD, null, request.getHeader("X-Device-Id"), request.getRemoteAddr(), "failure", type.name().toLowerCase(), request.getHeader("X-Request-Id"));
+                }
+                if (type == RateLimitType.MFA_VERIFY || type == RateLimitType.STEP_UP_VERIFY) {
+                    auditEventLogger.log(SecurityAuditEvent.AUTH_ABUSE_MFA_BRUTEFORCE, null, request.getHeader("X-Device-Id"), request.getRemoteAddr(), "failure", type.name().toLowerCase(), request.getHeader("X-Request-Id"));
+                }
+                log.warn("Rate limit exceeded for type={}, retryAfter={}s", type, result.getRetryAfterSeconds());
                 throw new BusinessException(ErrorCode.RATE_LIMIT_EXCEEDED);
             }
 

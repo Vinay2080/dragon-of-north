@@ -11,6 +11,7 @@ import org.miniProjectTwo.DragonOfNorth.ratelimit.service.RateLimitBucketService
 import org.miniProjectTwo.DragonOfNorth.ratelimit.service.impl.RateLimitBucketServiceImpl;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RateLimitType;
+import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -29,6 +30,7 @@ class RateLimitFilterTest {
 
     private Map<RateLimitType, Counter> blockedCounters;
     private Map<RateLimitType, Counter> successCounters;
+    private AuditEventLogger auditEventLogger;
 
     private static RateLimitProperties propertiesFor() {
         RateLimitProperties props = new RateLimitProperties();
@@ -48,6 +50,7 @@ class RateLimitFilterTest {
         blockedCounters = new EnumMap<>(RateLimitType.class);
         successCounters = new EnumMap<>(RateLimitType.class);
 
+        auditEventLogger = mock(AuditEventLogger.class);
         for (RateLimitType t : RateLimitType.values()) {
             blockedCounters.put(t, mock(Counter.class));
             successCounters.put(t, mock(Counter.class));
@@ -60,7 +63,7 @@ class RateLimitFilterTest {
         RateLimitProperties props = new RateLimitProperties();
         // no endpoints configured => matchEndpoint returns null
 
-        RateLimitFilter filter = new RateLimitFilter(bucketService, keyResolver, props, blockedCounters, successCounters);
+        RateLimitFilter filter = new RateLimitFilter(bucketService, keyResolver, props, blockedCounters, successCounters, auditEventLogger);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/api/v1/unknown");
@@ -81,7 +84,7 @@ class RateLimitFilterTest {
         // arrange
         RateLimitProperties props = propertiesFor();
 
-        RateLimitFilter filter = new RateLimitFilter(bucketService, keyResolver, props, blockedCounters, successCounters);
+        RateLimitFilter filter = new RateLimitFilter(bucketService, keyResolver, props, blockedCounters, successCounters, auditEventLogger);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/api/v1/otp/email/request");
@@ -108,7 +111,7 @@ class RateLimitFilterTest {
         // arrange
         RateLimitProperties props = propertiesFor();
 
-        RateLimitFilter filter = new RateLimitFilter(bucketService, keyResolver, props, blockedCounters, successCounters);
+        RateLimitFilter filter = new RateLimitFilter(bucketService, keyResolver, props, blockedCounters, successCounters, auditEventLogger);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/api/v1/otp/email/request");

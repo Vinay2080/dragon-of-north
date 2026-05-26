@@ -110,12 +110,19 @@ rate-limit:
     passwordless-verify:
       pattern: /api/v1/auth/**/passwordless/verify
       type: passwordless
-    step-up-request:
-      pattern: /api/v1/auth/step-up/mfa/request
-      type: step-up
     step-up-verify:
       pattern: /api/v1/auth/step-up/mfa/verify
-      type: step-up
+      type: step_up_verify
+    step-up-request:
+      pattern: /api/v1/auth/step-up/mfa/request
+      type: step_up_request
+
+    mfa-verify:
+      pattern: /api/v1/auth/mfa/verify
+      type: mfa_verify
+    refresh:
+      pattern: /api/v1/auth/jwt/refresh
+      type: refresh
   rules:
     signup:
       capacity: 5
@@ -132,6 +139,22 @@ rate-limit:
     passwordless:
       capacity: 5
       refill-tokens: 1
+      refill-minutes: 10
+    mfa_verify:
+      capacity: 5
+      refill-tokens: 5
+      refill-minutes: 10
+    step_up_request:
+      capacity: 4
+      refill-tokens: 4
+      refill-minutes: 10
+    step_up_verify:
+      capacity: 6
+      refill-tokens: 6
+      refill-minutes: 10
+    refresh:
+      capacity: 12
+      refill-tokens: 12
       refill-minutes: 10
 
 management:
