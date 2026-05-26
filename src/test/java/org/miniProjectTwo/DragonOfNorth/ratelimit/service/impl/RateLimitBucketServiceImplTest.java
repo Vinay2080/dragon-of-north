@@ -18,6 +18,24 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class RateLimitBucketServiceImplTest {
 
+    private Map<String, RateLimitProperties.LimitRule> fullRules() {
+        RateLimitProperties.LimitRule rule = new RateLimitProperties.LimitRule();
+        rule.setCapacity(10);
+        rule.setRefillTokens(5);
+        rule.setRefillMinutes(1);
+        return Map.of(
+                "otp", rule,
+                "signup", rule,
+                "login", rule,
+                "passwordless", rule,
+                "mfa_verify", rule,
+                "step_up_request", rule,
+                "step_up_verify", rule,
+                "refresh", rule
+        );
+    }
+
+
 
     @Mock
     private RateLimitProperties properties;
@@ -48,12 +66,7 @@ class RateLimitBucketServiceImplTest {
         passwordlessRule.setRefillTokens(1);
         passwordlessRule.setRefillMinutes(10);
 
-        when(properties.getRules()).thenReturn(Map.of(
-                "otp", otpRule,
-                "signup", signupRule,
-                "login", loginRule,
-                "passwordless", passwordlessRule
-        ));
+        when(properties.getRules()).thenReturn(fullRules());
 
         // act & assert
         assertDoesNotThrow(() -> rateLimitBucketService.initializeConfigurations());
@@ -84,12 +97,7 @@ class RateLimitBucketServiceImplTest {
         passwordlessRule.setRefillTokens(1);
         passwordlessRule.setRefillMinutes(10);
 
-        when(properties.getRules()).thenReturn(Map.of(
-                "otp", otpRule,
-                "signup", signupRule,
-                "login", loginRule,
-                "passwordless", passwordlessRule
-        ));
+        when(properties.getRules()).thenReturn(fullRules());
         rateLimitBucketService.initializeConfigurations();
 
         String key = "test@example.com";
@@ -124,12 +132,7 @@ class RateLimitBucketServiceImplTest {
         passwordlessRule.setRefillTokens(1);
         passwordlessRule.setRefillMinutes(10);
 
-        when(properties.getRules()).thenReturn(Map.of(
-                "otp", otpRule,
-                "signup", signupRule,
-                "login", loginRule,
-                "passwordless", passwordlessRule
-        ));
+        when(properties.getRules()).thenReturn(fullRules());
         rateLimitBucketService.initializeConfigurations();
 
         // act
@@ -162,12 +165,7 @@ class RateLimitBucketServiceImplTest {
         passwordlessRule.setRefillTokens(1);
         passwordlessRule.setRefillMinutes(10);
 
-        when(properties.getRules()).thenReturn(Map.of(
-                "otp", otpRule,
-                "signup", signupRule,
-                "login", loginRule,
-                "passwordless", passwordlessRule
-        ));
+        when(properties.getRules()).thenReturn(fullRules());
         rateLimitBucketService.initializeConfigurations();
 
         // act
