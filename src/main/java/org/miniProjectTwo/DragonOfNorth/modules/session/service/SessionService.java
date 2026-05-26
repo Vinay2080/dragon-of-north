@@ -5,6 +5,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.SessionCreationSpec;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -54,4 +55,13 @@ public interface SessionService {
      * Revokes all active sessions for a user.
      */
     void revokeAllSessionsByUserId(UUID userId);
+
+    /**
+     * Updates the mfaVerifiedAt timestamp for a live session after step-up MFA verification.
+     *
+     * <p>Returns the updated session so callers can re-mint the access token from truthful state.
+     * Throws {@link org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException} if the
+     * session is not live or does not belong to the user.</p>
+     */
+    Session refreshMfaVerifiedAt(UUID sessionId, UUID userId, Instant verifiedAt);
 }

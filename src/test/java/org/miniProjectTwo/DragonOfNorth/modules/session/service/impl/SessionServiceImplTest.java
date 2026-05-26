@@ -437,4 +437,51 @@ class SessionServiceImplTest {
             }
         }
     }
+
+    // ------------------------------------------------------------------ refreshMfaVerifiedAt
+
+    @Test
+    void refreshMfaVerifiedAt_shouldReturnUpdatedSession_whenSessionIsLive() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Instant verifiedAt = Instant.now();
+
+        AppUser user = new AppUser();
+        user.setId(userId);
+
+        Session session = new Session();
+        session.setId(sessionId);
+        session.setAppUser(user);
+
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
+        when(sessionRepository.refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), any(Instant.class)))
+                .thenReturn(1);
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+
+        Session result = sessionService.refreshMfaVerifiedAt(sessionId, userId, verifiedAt);
+
+        assertNotNull(result);
+        assertEquals(sessionId, result.getId());
+        verify(sessionRepository).refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), any(Instant.class));
+        verify(sessionRepository).findById(sessionId);
+        verify(auditEventLogger).log(eq("session.mfa.step_up"), eq(userId), any(), any(), eq("success"), any(), any());
+    }
+
+    @Test
+    void refreshMfaVerifiedAt_shouldThrowBusinessException_whenSessionNotFound() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Instant verifiedAt = Instant.now();
+
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
+        when(sessionRepository.refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), any(Instant.class)))
+                .thenReturn(0);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> sessionService.refreshMfaVerifiedAt(sessionId, userId, verifiedAt));
+
+        assertEquals(ErrorCode.INVALID_TOKEN, ex.getErrorCode());
+        verify(sessionRepository).refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), any(Instant.class));
+        verify(sessionRepository, never()).findById(any());
+    }
 }

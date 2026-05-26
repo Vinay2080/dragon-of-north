@@ -6,10 +6,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.MfaChallenge;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.VerificationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.service.MfaChallengeService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrator;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.provider.MfaProvider;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.registry.MfaProviderRegistry;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.SessionTokenIssuer;
@@ -25,6 +28,7 @@ import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.UserLifecycleOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -41,6 +45,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -72,6 +78,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     private final SessionTokenIssuer sessionTokenIssuer;
     private final MfaOrchestrator mfaOrchestrator;
     private final MfaChallengeService mfaChallengeService;
+    private final MfaProviderRegistry mfaProviderRegistry;
     private final MeterRegistry meterRegistry;
     private final AppUserRepository appUserRepository;
     private final UserAuthProviderRepository userAuthProviderRepository;
@@ -240,6 +247,62 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         writeAuthCookies(response, loginTokens);
         recordLoginSuccess(appUser.getId(), context);
         return verificationResult;
+    }
+
+    @Override
+    public MfaChallenge issueStepUpChallenge(AppUser user, AuthRequestContext context) {
+        if (user == null) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED, "User not authenticated");
+        }
+
+        List<ProviderType> availableMethods =
+                mfaProviderRegistry.getAvailableProviders(user).stream()
+                        .filter(MfaProvider::allowsStepUp)
+                        .map(MfaProvider::type)
+                        .toList();
+
+        if (availableMethods.isEmpty()) {
+            throw new BusinessException(ErrorCode.MFA_REQUIRED, "No MFA methods available for step-up");
+        }
+
+        MfaChallenge challenge = mfaChallengeService.createChallenge(user.getId(), "step_up", context, availableMethods);
+        auditEventLogger.log("auth.mfa.step_up.challenge.issued",
+                user.getId(), context.deviceId(), context.ipAddress(), "success", null, context.requestId());
+        return challenge;
+    }
+
+    @Override
+    public void completeStepUpMfaChallenge(String challengeId,
+                                           ProviderType providerType,
+                                           String code,
+                                           UUID sessionId,
+                                           HttpServletResponse response,
+                                           AuthRequestContext context) {
+        VerificationResult verificationResult = mfaChallengeService.verifyAndConsume(challengeId, providerType, code, context);
+        if (!verificationResult.success() || verificationResult.userId() == null) {
+            throw switch (verificationResult.failureReason()) {
+                case CHALLENGE_LOCKED_OUT -> new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
+                case CHALLENGE_EXPIRED_OR_MISSING, CHALLENGE_BUSY_OR_REPLAY, CHALLENGE_CONSUME_RACE ->
+                        new BusinessException(ErrorCode.MFA_CHALLENGE_FAILED);
+                case PROVIDER_MISMATCH, CONTEXT_MISMATCH, INVALID_VERIFICATION_CODE, NONE ->
+                        new BusinessException(ErrorCode.MFA_INVALID_CODE);
+            };
+        }
+
+        AppUser appUser = findUserById(verificationResult.userId());
+        userStateValidator.validate(appUser, UserLifecycleOperation.LOCAL_LOGIN);
+
+        Instant verifiedAt = Instant.now();
+        Session updatedSession = sessionService.refreshMfaVerifiedAt(sessionId, appUser.getId(), verifiedAt);
+
+        Set<Role> roles = roleRepository.findRolesById(appUser.getId());
+        String newAccessToken = sessionAccessTokenIssuer.mintAccessToken(updatedSession, roles);
+        setAccessToken(response, newAccessToken);
+
+        meterRegistry.counter("auth.mfa.step_up.success").increment();
+        auditEventLogger.log("auth.mfa.step_up.completed",
+                appUser.getId(), context.deviceId(), context.ipAddress(), "success",
+                "session_id=" + sessionId, context.requestId());
     }
 
     private UUID resolveAuthenticatedUserId(Object principal) {

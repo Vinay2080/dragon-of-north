@@ -140,4 +140,26 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
     boolean existsLiveSessionForUser(@Param("sessionId") UUID sessionId,
                                      @Param("userId") UUID userId,
                                      @Param("now") Instant now);
+
+    /**
+     * Updates the mfaVerifiedAt timestamp for a live session (used by step-up MFA).
+     *
+     * <p>Only updates non-revoked, non-deleted sessions that have not yet expired, so
+     * a stale or revoked session cannot have its trust timestamp silently refreshed.</p>
+     */
+    @Modifying
+    @Query("""
+            update Session s
+               set s.mfaVerifiedAt = :verifiedAt,
+                   s.mfaRequired = false
+             where s.id = :sessionId
+               and s.appUser.id = :userId
+               and s.revoked = false
+               and s.deleted = false
+               and s.expiryDate > :now
+            """)
+    int refreshMfaVerifiedAt(@Param("sessionId") UUID sessionId,
+                             @Param("userId") UUID userId,
+                             @Param("verifiedAt") Instant verifiedAt,
+                             @Param("now") Instant now);
 }

@@ -212,6 +212,26 @@ public class SessionServiceImpl implements SessionService {
         auditEventLogger.log("session.revoke.all_user", userId, null, null, "success", "revoked_count=" + revoked, null);
     }
 
+    /**
+     * Updates the mfaVerifiedAt timestamp on a live session after step-up MFA verification.
+     *
+     * <p>The update is constrained to sessions that are not revoked, not deleted, and not expired,
+     * so a stale session cannot silently receive a refreshed trust timestamp.</p>
+     */
+    @Override
+    @Transactional
+    public Session refreshMfaVerifiedAt(UUID sessionId, UUID userId, Instant verifiedAt) {
+        Instant now = Instant.now();
+        int updated = sessionRepository.refreshMfaVerifiedAt(sessionId, userId, verifiedAt, now);
+        if (updated != 1) {
+            auditEventLogger.log("session.mfa.step_up", userId, null, null, "failure", "session not found or not live", null);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Session not found or no longer live");
+        }
+        auditEventLogger.log("session.mfa.step_up", userId, null, null, "success", "session_id=" + sessionId, null);
+        return sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN, "Session not found after mfa refresh"));
+    }
+
     private AppUser loadAndValidateUser(UUID userId, UserLifecycleOperation operation) {
         AppUser appUser = appUserRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "User not found"));

@@ -41,6 +41,8 @@ app:
     sid-enforcement:
       mode: ${sid_enforcement_mode:disabled}
       sensitive-patterns: ${sid_enforcement_sensitive_patterns:/api/v1/session/**,/api/v1/auth/password/forgot/reset}
+    step-up:
+      mfa-max-age: ${step_up_mfa_max_age:PT15M}
     jwt:
       legacy-mfa-claim-fallback-enabled: ${jwt_legacy_mfa_claim_fallback_enabled:false}
       expiration:
@@ -109,6 +111,12 @@ rate-limit:
     passwordless-verify:
       pattern: /api/v1/auth/**/passwordless/verify
       type: passwordless
+    step-up-request:
+      pattern: /api/v1/auth/step-up/mfa/request
+      type: step-up
+    step-up-verify:
+      pattern: /api/v1/auth/step-up/mfa/verify
+      type: step-up
   rules:
     signup:
       capacity: 5

@@ -50,6 +50,7 @@ public enum ErrorCode {
     MFA_CHALLENGE_LOCKED_OUT("AUTH_025", "MFA challenge is locked out", HttpStatus.BAD_REQUEST),
     MFA_CHALLENGE_NOT_FOUND("AUTH_026", "MFA challenge not found", HttpStatus.NOT_FOUND),
     MFA_CHALLENGE_ALREADY_CONSUMED("AUTH_027", "MFA challenge has already been consumed", HttpStatus.BAD_REQUEST),
+    MFA_STEP_UP_REQUIRED("AUTH_028", "Recent MFA verification required. Please complete step-up MFA before proceeding.", HttpStatus.FORBIDDEN),
 
     ROLE_NOT_FOUND("ROL_009", "role %s not found", HttpStatus.NOT_FOUND),
 
