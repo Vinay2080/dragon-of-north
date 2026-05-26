@@ -8,6 +8,8 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaService
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
+import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
+import org.miniProjectTwo.DragonOfNorth.shared.util.SecurityAuditEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -20,6 +22,7 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
 
     private final RecentMfaService recentMfaService;
     private final RecentMfaProperties recentMfaProperties;
+    private final AuditEventLogger auditEventLogger;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
@@ -33,7 +36,10 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
         if (authentication == null || !(authentication.getPrincipal() instanceof SecurityPrincipal principal)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED, "User not authenticated");
         }
-        recentMfaService.requireRecentMfa(principal.mfaVerifiedAt(), recentMfaProperties.getMfaMaxAge());
+        if (!recentMfaService.isRecentMfaSatisfied(principal.mfaVerifiedAt(), recentMfaProperties.getMfaMaxAge())) {
+            auditEventLogger.log(SecurityAuditEvent.AUTH_MFA_STEPUP_REQUIRED, principal.userId(), null, request.getRemoteAddr(), "failure", "recent_mfa_stale_or_missing", null);
+            recentMfaService.requireRecentMfa(principal.mfaVerifiedAt(), recentMfaProperties.getMfaMaxAge());
+        }
         return true;
     }
 

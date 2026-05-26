@@ -8,6 +8,8 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
+import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
+import org.miniProjectTwo.DragonOfNorth.shared.util.SecurityAuditEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,16 +35,19 @@ public class SidLivenessFilter extends OncePerRequestFilter {
     private final SessionRepository sessionRepository;
     private final SidEnforcementMode enforcementMode;
     private final List<String> sensitivePatterns;
+    private final AuditEventLogger auditEventLogger;
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
     public SidLivenessFilter(
             SessionRepository sessionRepository,
             @Value("${app.security.sid-enforcement.mode:disabled}") String enforcementMode,
-            @Value("${app.security.sid-enforcement.sensitive-patterns:/api/v1/session/**,/api/v1/auth/password/forgot/reset}") String sensitivePatterns
+            @Value("${app.security.sid-enforcement.sensitive-patterns:/api/v1/session/**,/api/v1/auth/password/forgot/reset}") String sensitivePatterns,
+            AuditEventLogger auditEventLogger
     ) {
         this.sessionRepository = sessionRepository;
         this.enforcementMode = SidEnforcementMode.from(enforcementMode);
         this.sensitivePatterns = List.of(sensitivePatterns.split(","));
+        this.auditEventLogger = auditEventLogger;
     }
 
     @Override
@@ -62,6 +67,7 @@ public class SidLivenessFilter extends OncePerRequestFilter {
 
         UUID sessionId = principal.sessionId();
         if (sessionId == null || principal.userId() == null) {
+            auditEventLogger.log(SecurityAuditEvent.AUTH_SESSION_BINDING_FAILURE, principal.userId(), null, null, "failure", "sid_missing", null);
             SecurityContextHolder.clearContext();
             filterChain.doFilter(request, response);
             return;
@@ -70,6 +76,7 @@ public class SidLivenessFilter extends OncePerRequestFilter {
         boolean live = sessionRepository.existsLiveSessionForUser(sessionId, principal.userId(), Instant.now());
         if (!live) {
             log.debug("SID liveness check failed for user={} sid={}", principal.userId(), sessionId);
+            auditEventLogger.log(SecurityAuditEvent.AUTH_SESSION_SUSPICIOUS, principal.userId(), null, null, "failure", "sid_not_live", null);
             SecurityContextHolder.clearContext();
         }
 

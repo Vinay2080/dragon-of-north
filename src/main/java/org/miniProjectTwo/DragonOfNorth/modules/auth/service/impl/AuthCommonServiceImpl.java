@@ -37,6 +37,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
+import org.miniProjectTwo.DragonOfNorth.shared.util.SecurityAuditEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -273,7 +274,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         }
 
         MfaChallenge challenge = mfaChallengeService.createStepUpChallenge(user.getId(), sessionId, context, availableMethods);
-        auditEventLogger.log("auth.mfa.step_up.challenge.issued",
+        auditEventLogger.log(SecurityAuditEvent.AUTH_MFA_STEPUP_CHALLENGE_ISSUED,
                 user.getId(), context.deviceId(), context.ipAddress(), "success", null, context.requestId());
         return challenge;
     }
@@ -308,7 +309,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         setAccessToken(response, newAccessToken);
 
         meterRegistry.counter("auth.mfa.step_up.success").increment();
-        auditEventLogger.log("auth.mfa.step_up.completed",
+        auditEventLogger.log(SecurityAuditEvent.AUTH_MFA_STEPUP_COMPLETED,
                 appUser.getId(), context.deviceId(), context.ipAddress(), "success",
                 "session_id=" + sessionId, context.requestId());
     }
@@ -362,7 +363,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
     private void recordLogoutFailure(UUID userId, AuthRequestContext context, String message) {
         meterRegistry.counter("auth.logout.failure").increment();
-        auditEventLogger.log("auth.logout", userId, context.deviceId(), context.ipAddress(), "failure", message, context.requestId());
+        auditEventLogger.log(SecurityAuditEvent.AUTH_LOGOUT_FAILED, userId, context.deviceId(), context.ipAddress(), "failure", message, context.requestId());
     }
 
     private void clearAuthCookies(HttpServletResponse response) {
@@ -372,7 +373,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
     private void recordLogoutSuccess(UUID userId, AuthRequestContext context) {
         meterRegistry.counter("auth.logout.success").increment();
-        auditEventLogger.log("auth.logout", userId, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
+        auditEventLogger.log(SecurityAuditEvent.AUTH_LOGOUT_SUCCESS, userId, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
     }
 
     private void validateRefreshRequest(String oldRefreshToken, AuthRequestContext context) {
@@ -390,12 +391,12 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
     private void recordRefreshSuccess(UUID userId, AuthRequestContext context) {
         meterRegistry.counter("auth.refresh.success").increment();
-        auditEventLogger.log("auth.refresh", userId, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
+        auditEventLogger.log(SecurityAuditEvent.AUTH_REFRESH_SUCCESS, userId, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
     }
 
     private void recordRefreshFailure(AuthRequestContext context, String message) {
         meterRegistry.counter("auth.refresh.failure").increment();
-        auditEventLogger.log("auth.refresh", null, context.deviceId(), context.ipAddress(), "failure", message, context.requestId());
+        auditEventLogger.log(SecurityAuditEvent.AUTH_REFRESH_FAILED, null, context.deviceId(), context.ipAddress(), "failure", message, context.requestId());
     }
 
     private void ensureDeviceIdPresent(String deviceId) {
@@ -469,12 +470,12 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
     public void recordLoginSuccess(UUID userId, AuthRequestContext context) {
         meterRegistry.counter("auth.login.success").increment();
-        auditEventLogger.log("auth.login", userId, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
+        auditEventLogger.log(SecurityAuditEvent.AUTH_LOGIN_SUCCESS, userId, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
     }
 
     private void recordLoginFailure(UUID userId, AuthRequestContext context, String message) {
         meterRegistry.counter("auth.login.failure").increment();
-        auditEventLogger.log("auth.login", userId, context.deviceId(), context.ipAddress(), "failure", message, context.requestId());
+        auditEventLogger.log(SecurityAuditEvent.AUTH_LOGIN_FAILED, userId, context.deviceId(), context.ipAddress(), "failure", message, context.requestId());
     }
 
     public void setAccessToken(HttpServletResponse response, String token) {

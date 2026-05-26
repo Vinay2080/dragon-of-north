@@ -55,7 +55,7 @@ class MfaChallengeServiceImplTest {
     @Test
     void peek_shouldDelegateToStore() {
         ChallengeStateRedisStore store = mock(ChallengeStateRedisStore.class);
-        ChallengeState state = new ChallengeState(UUID.randomUUID(), "pwd", null, null, null, List.of(ProviderType.TOTP), 0, null, null);
+        ChallengeState state = new ChallengeState(UUID.randomUUID(), null, "pwd", null, null, null, List.of(ProviderType.TOTP), 0, null, null);
         when(store.find("token-1")).thenReturn(Optional.of(state));
 
         MfaChallengeServiceImpl service = new MfaChallengeServiceImpl(
@@ -74,13 +74,15 @@ class MfaChallengeServiceImplTest {
         MfaChallengeProperties properties = new MfaChallengeProperties();
         properties.setMaxAttempts(3);
         properties.setLockoutTtl(Duration.ofMinutes(5));
+        AuditEventLogger auditEventLogger = mock(AuditEventLogger.class);
         MfaChallengeServiceImpl service = new MfaChallengeServiceImpl(
                 mock(MfaChallengeTokenGenerator.class), store, atomicOps,
-                new ChallengeRequestBinding(new TokenHasher()), providerVerifier, properties, mock(AuditEventLogger.class));
+                new ChallengeRequestBinding(new TokenHasher()), providerVerifier, properties, auditEventLogger);
 
         AuthRequestContext context = new AuthRequestContext("device-1", "203.0.113.42", "req-1", "Mozilla/5.0");
         ChallengeState state = new ChallengeState(
                 UUID.randomUUID(),
+                null,
                 "pwd",
                 "device-1",
                 "203.0.113",
@@ -98,5 +100,6 @@ class MfaChallengeServiceImplTest {
 
         assertEquals(VerificationResult.FailureReason.PROVIDER_MISMATCH, result.failureReason());
         verify(providerVerifier, never()).verify(any(), any(), anyString());
+        verify(auditEventLogger, atLeastOnce()).logSecurity(anyString(), any());
     }
 }

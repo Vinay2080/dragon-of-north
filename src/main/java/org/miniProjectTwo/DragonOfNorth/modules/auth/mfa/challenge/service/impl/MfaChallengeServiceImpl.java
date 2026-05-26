@@ -14,6 +14,8 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.service.MfaCh
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.token.MfaChallengeTokenGenerator;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
+import org.miniProjectTwo.DragonOfNorth.shared.util.SecurityAuditContext;
+import org.miniProjectTwo.DragonOfNorth.shared.util.SecurityAuditEvent;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -90,13 +92,19 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
         );
 
         store.save(token, state);
-        auditEventLogger.log("auth.mfa.challenge.issued",
+        auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_ISSUED, new SecurityAuditContext(
                 userId,
+                sessionId,
                 context.deviceId(),
+                context.requestId(),
                 context.ipAddress(),
+                requestBinding.userAgentHash(context.userAgent()),
+                primaryAmr,
+                null,
                 "success",
                 null,
-                context.requestId());
+                "challenge_ref=" + Integer.toHexString(token.hashCode())
+        ));
 
         return new MfaChallenge(token, expiresAt, availableMethods);
     }
@@ -124,7 +132,7 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
         String lockValue = UUID.randomUUID().toString();
         var claim = atomicOps.claim(token, lockValue, CLAIM_LOCK_TTL);
         if (claim.status() != ChallengeStateAtomicRedisOps.ClaimStatus.OK || claim.stateJson() == null) {
-            auditEventLogger.log("auth.mfa.challenge.failed", null, context.deviceId(), context.ipAddress(), "failure", claim.status().name().toLowerCase(), context.requestId());
+            auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_FAILED, new SecurityAuditContext(null, sessionId, context.deviceId(), context.requestId(), context.ipAddress(), requestBinding.userAgentHash(context.userAgent()), "mfa_challenge", providerType.name(), "failure", claim.status().name().toLowerCase(), "challenge_ref=" + Integer.toHexString(token.hashCode())));
             return switch (claim.status()) {
                 case LOCKED_OUT -> VerificationResult.failure(null, null, VerificationResult.FailureReason.CHALLENGE_LOCKED_OUT);
                 case BUSY -> VerificationResult.failure(null, null, VerificationResult.FailureReason.CHALLENGE_BUSY_OR_REPLAY);
@@ -142,36 +150,38 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
                 || !java.util.Objects.equals(state.ipPrefix(), bindings.ipPrefix())
                 || !java.util.Objects.equals(state.userAgentHash(), bindings.userAgentHash())
                 || sessionMismatch) {
-            var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
-            String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
+            atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
             String reason = sessionMismatch ? "session_mismatch" : "context_mismatch";
-            auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", reason, context.requestId());
+            auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_FAILED, new SecurityAuditContext(state.userId(), state.sessionId(), context.deviceId(), context.requestId(), context.ipAddress(), bindings.userAgentHash(), state.primaryAmr(), providerType.name(), "failure", reason, "challenge_ref=" + Integer.toHexString(token.hashCode())));
+            if (sessionMismatch) {
+                auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_SESSION_BINDING_FAILURE, new SecurityAuditContext(state.userId(), state.sessionId(), context.deviceId(), context.requestId(), context.ipAddress(), bindings.userAgentHash(), state.primaryAmr(), providerType.name(), "failure", reason, "challenge_ref=" + Integer.toHexString(token.hashCode())));
+            } else {
+                auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_SUSPICIOUS_CONTEXT_MISMATCH, new SecurityAuditContext(state.userId(), state.sessionId(), context.deviceId(), context.requestId(), context.ipAddress(), bindings.userAgentHash(), state.primaryAmr(), providerType.name(), "failure", reason, "challenge_ref=" + Integer.toHexString(token.hashCode())));
+            }
             return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.CONTEXT_MISMATCH);
         }
 
         List<ProviderType> allowedProviders = state.allowedProviders() == null ? List.of() : state.allowedProviders();
         if (!allowedProviders.contains(providerType)) {
-            var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
-            String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
-            auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", "provider_mismatch", context.requestId());
+            atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
+            auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_FAILED, new SecurityAuditContext(state.userId(), state.sessionId(), context.deviceId(), context.requestId(), context.ipAddress(), bindings.userAgentHash(), state.primaryAmr(), providerType.name(), "failure", "provider_mismatch", "challenge_ref=" + Integer.toHexString(token.hashCode())));
             return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.PROVIDER_MISMATCH);
         }
 
         var providerVerification = providerVerifier.verify(state.userId(), providerType, code.trim());
         if (!providerVerification.success()) {
-            var fail = atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
-            String event = fail.status() == ChallengeStateAtomicRedisOps.FailStatus.LOCKED ? "auth.mfa.challenge.locked" : "auth.mfa.challenge.failed";
-            auditEventLogger.log(event, state.userId(), context.deviceId(), context.ipAddress(), "failure", providerVerification.failureReason(), context.requestId());
+            atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
+            auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_FAILED, new SecurityAuditContext(state.userId(), state.sessionId(), context.deviceId(), context.requestId(), context.ipAddress(), bindings.userAgentHash(), state.primaryAmr(), providerType.name(), "failure", providerVerification.failureReason(), "challenge_ref=" + Integer.toHexString(token.hashCode())));
             return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.INVALID_VERIFICATION_CODE);
         }
 
         boolean consumed = atomicOps.consumeSuccess(token, lockValue);
         if (!consumed) {
-            auditEventLogger.log("auth.mfa.challenge.failed", state.userId(), context.deviceId(), context.ipAddress(), "failure", "consume_race", context.requestId());
+            auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_REPLAY_DETECTED, new SecurityAuditContext(state.userId(), state.sessionId(), context.deviceId(), context.requestId(), context.ipAddress(), bindings.userAgentHash(), state.primaryAmr(), providerType.name(), "failure", "consume_race", "challenge_ref=" + Integer.toHexString(token.hashCode())));
             return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.CHALLENGE_CONSUME_RACE);
         }
 
-        auditEventLogger.log("auth.mfa.challenge.verified", state.userId(), context.deviceId(), context.ipAddress(), "success", null, context.requestId());
+        auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_VERIFIED, new SecurityAuditContext(state.userId(), state.sessionId(), context.deviceId(), context.requestId(), context.ipAddress(), bindings.userAgentHash(), state.primaryAmr(), providerType.name(), "success", null, "challenge_ref=" + Integer.toHexString(token.hashCode())));
         return VerificationResult.success(state.userId(), state.primaryAmr());
         } finally {
             atomicOps.unlock(token, lockValue);
@@ -200,7 +210,7 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
 
         UUID userId = state.map(ChallengeState::userId).orElse(null);
         String reason = deleted ? null : "not_found";
-        auditEventLogger.log("auth.mfa.challenge.invalidated",
+        auditEventLogger.log(SecurityAuditEvent.AUTH_MFA_CHALLENGE_INVALIDATED,
                 userId,
                 context.deviceId(),
                 context.ipAddress(),
