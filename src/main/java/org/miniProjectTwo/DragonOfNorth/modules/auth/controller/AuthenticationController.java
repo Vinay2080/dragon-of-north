@@ -15,6 +15,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchest
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.*;
 import org.miniProjectTwo.DragonOfNorth.security.web.RequireRecentMfa;
+import org.miniProjectTwo.DragonOfNorth.security.web.SensitiveAccountOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -151,7 +152,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/password/change")
-    @RequireRecentMfa
+    @SensitiveAccountOperation
     public ResponseEntity<ApiResponse<?>> changePassword(
             @RequestBody @Valid PasswordChangeRequest request
     ) {
@@ -161,7 +162,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/account/delete")
-    @RequireRecentMfa
+    @SensitiveAccountOperation
     public ResponseEntity<ApiResponse<?>> deleteAccount(
             @RequestBody @Valid DeviceIdRequest deviceIdRequest,
             HttpServletRequest request,
@@ -225,7 +226,7 @@ public class AuthenticationController implements AuthenticationApi {
      * succeeds with a valid authenticator code.
      */
     @PostMapping("/enable/mfa/request")
-    @RequireRecentMfa
+    @SensitiveAccountOperation
     @Override
     public ResponseEntity<ApiResponse<MfaSetupResponse>> requestMfaSetup(
             HttpServletRequest request,
@@ -237,7 +238,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/enable/mfa/confirm")
-    @RequireRecentMfa
+    @SensitiveAccountOperation
     public ResponseEntity<ApiResponse<MfaSetupConfirmResponse>> confirmMfaSetup(
             HttpServletRequest request,
             @RequestBody @Valid MfaSetupConfirmRequest mfaSetupConfirmRequest) {

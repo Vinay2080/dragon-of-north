@@ -13,6 +13,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.security.web.RequireRecentMfa;
+import org.miniProjectTwo.DragonOfNorth.security.web.SensitiveAccountOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -116,7 +117,7 @@ public class StepUpController {
      * password-change, account-deletion, and other security-critical actions.</p>
      */
     @PostMapping("/protected-action")
-    @RequireRecentMfa
+    @SensitiveAccountOperation
     public ResponseEntity<ApiResponse<?>> sensitiveAction(
             @RequestBody @Valid DeviceIdRequest deviceIdRequest,
             HttpServletRequest httpServletRequest) {

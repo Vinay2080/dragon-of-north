@@ -8,6 +8,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.session.dto.response.SessionSumm
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.security.web.RequireRecentMfa;
+import org.miniProjectTwo.DragonOfNorth.security.web.SensitiveAccountOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -45,7 +46,7 @@ public class SessionController implements SessionApi {
      */
     @Override
     @DeleteMapping("/delete/{sessionId}")
-    @RequireRecentMfa
+    @SensitiveAccountOperation
     public ResponseEntity<ApiResponse<?>> revokeSession(
             Authentication authentication,
             @PathVariable UUID sessionId
@@ -60,7 +61,7 @@ public class SessionController implements SessionApi {
      */
     @Override
     @PostMapping("/revoke-others")
-    @RequireRecentMfa
+    @SensitiveAccountOperation
     public ResponseEntity<ApiResponse<?>> revokeOtherSessions(
             Authentication authentication,
             @RequestBody @Valid DeviceIdRequest deviceIdRequest
