@@ -10,7 +10,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * Persistence adapter for MFA challenge state serialization and TTL management in Redis.
+ * Persistence adapter for MFA challenges state serialization and TTL management in Redis.
  */
 @Component
 @RequiredArgsConstructor
