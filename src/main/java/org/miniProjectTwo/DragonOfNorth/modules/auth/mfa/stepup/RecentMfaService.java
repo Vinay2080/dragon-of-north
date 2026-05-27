@@ -4,10 +4,10 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Centralised utility contract for "recent MFA" evaluation and step-up authorization.
+ * Centralized utility contract for "recent MFA" evaluation and step-up authorization.
  *
  * <h2>Architecture rationale</h2>
- * <p>A valid, authenticated session proves <em>identity</em>.  A recently-completed MFA
+ * <p>A valid, authenticated session proves <em>identity</em>.  Recently completed MFA
  * verification proves <em>possession of the second factor right now</em>.  This distinction
  * prevents a scenario where an attacker who hijacks a long-lived authenticated session can
  * immediately perform sensitive security operations — they must still satisfy the second
@@ -18,7 +18,7 @@ import java.time.Instant;
  *   <li>The source of truth for "when MFA was last verified" is the {@code mfa_verified_at}
  *       column on the session row, which is only populated when MFA has actually been completed
  *       (login MFA or step-up) — <strong>not</strong> a cookie, local state, or a separate token.</li>
- *   <li>After a successful step-up verification the session row is updated atomically and a
+ *   <li>After successful step-up verification, the session row is updated atomically, and a
  *       new access token is minted from that truthful state, so every downstream claim check
  *       immediately reflects the refresh.</li>
  *   <li>No "half-authenticated" states are introduced: the session either satisfies recent-MFA

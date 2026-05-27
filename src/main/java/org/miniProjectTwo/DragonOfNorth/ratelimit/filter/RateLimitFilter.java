@@ -24,15 +24,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Map;
 
-@Component
-@Order(1)
-@Slf4j
 /**
- * Request interception layer that enforces per-policy rate limits before controller execution.
+ * Request an interception layer that enforces per-policy rate limits before controller execution.
  * <p>
  * Depends on key resolution and distributed bucket state; positioned to mitigate brute-force and
  * abuse traffic before expensive authentication/service work is performed.
  */
+@Component
+@Order(1)
+@Slf4j
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimitBucketService bucketService;

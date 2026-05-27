@@ -72,7 +72,7 @@ public interface AuthCommonServices {
     void setRefreshToken(HttpServletResponse response, String token);
 
     /**
-     * Central login issuance entry point for auth flows (session + JWT + cookies).
+     * Central login issuance entry point for auth flows (session + JWT and cookies).
      */
     MfaOrchestrationResult issueLoginSession(AppUser appUser, SessionCreationSpec creationSpec, HttpServletResponse response, AuthRequestContext context);
 
@@ -84,13 +84,13 @@ public interface AuthCommonServices {
     /**
      * Issues a step-up MFA challenge for an already-authenticated user.
      *
-     * <p>Uses the same challenge infrastructure as login-time MFA so there is a single
+     * <p>Uses the same challenge infrastructure as login-time MFA, so there is a single
      * challenge lifecycle — no second MFA system is introduced.</p>
      *
-     * @param user      the currently-authenticated user
+     * @param user      the currently authenticated user
      * @param sessionId authenticated session id for binding
      * @param context   request metadata for binding and audit
-     * @return the MFA challenge token and expiry for the client to present to the verify endpoint
+     * @return the MFA challenge token and expiry for the client to present to the verified endpoint
      */
     MfaChallenge issueStepUpChallenge(AppUser user, UUID sessionId, AuthRequestContext context);
 

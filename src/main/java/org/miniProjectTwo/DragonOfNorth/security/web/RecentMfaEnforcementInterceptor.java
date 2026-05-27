@@ -3,6 +3,7 @@ package org.miniProjectTwo.DragonOfNorth.security.web;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaProperties;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaService;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
@@ -25,7 +26,7 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
     private final AuditEventLogger auditEventLogger;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
         if (!(handler instanceof HandlerMethod handlerMethod)) {
             return true;
         }

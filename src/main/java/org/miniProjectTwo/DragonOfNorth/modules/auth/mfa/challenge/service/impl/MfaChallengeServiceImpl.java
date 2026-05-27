@@ -152,11 +152,12 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
                 || sessionMismatch) {
             atomicOps.recordFailure(token, lockValue, properties.getMaxAttempts(), properties.getLockoutTtl());
             String reason = sessionMismatch ? "session_mismatch" : "context_mismatch";
-            auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_FAILED, new SecurityAuditContext(state.userId(), state.sessionId(), context.deviceId(), context.requestId(), context.ipAddress(), bindings.userAgentHash(), state.primaryAmr(), providerType.name(), "failure", reason, "challenge_ref=" + Integer.toHexString(token.hashCode())));
+            SecurityAuditContext failure = new SecurityAuditContext(state.userId(), state.sessionId(), context.deviceId(), context.requestId(), context.ipAddress(), bindings.userAgentHash(), state.primaryAmr(), providerType.name(), "failure", reason, "challenge_ref=" + Integer.toHexString(token.hashCode()));
+            auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_FAILED, failure);
             if (sessionMismatch) {
-                auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_SESSION_BINDING_FAILURE, new SecurityAuditContext(state.userId(), state.sessionId(), context.deviceId(), context.requestId(), context.ipAddress(), bindings.userAgentHash(), state.primaryAmr(), providerType.name(), "failure", reason, "challenge_ref=" + Integer.toHexString(token.hashCode())));
+                auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_SESSION_BINDING_FAILURE, failure);
             } else {
-                auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_SUSPICIOUS_CONTEXT_MISMATCH, new SecurityAuditContext(state.userId(), state.sessionId(), context.deviceId(), context.requestId(), context.ipAddress(), bindings.userAgentHash(), state.primaryAmr(), providerType.name(), "failure", reason, "challenge_ref=" + Integer.toHexString(token.hashCode())));
+                auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_SUSPICIOUS_CONTEXT_MISMATCH, failure);
             }
             return VerificationResult.failure(state.userId(), state.primaryAmr(), VerificationResult.FailureReason.CONTEXT_MISMATCH);
         }

@@ -5,14 +5,13 @@ import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.miniProjectTwo.DragonOfNorth.infrastructure.config.RateLimitProperties;
-import org.miniProjectTwo.DragonOfNorth.ratelimit.filter.RateLimitFilter;
 import org.miniProjectTwo.DragonOfNorth.ratelimit.resolver.RateLimitKeyResolver;
 import org.miniProjectTwo.DragonOfNorth.ratelimit.service.RateLimitBucketService;
 import org.miniProjectTwo.DragonOfNorth.ratelimit.service.impl.RateLimitBucketServiceImpl;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RateLimitType;
-import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
+import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 

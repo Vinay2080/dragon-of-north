@@ -22,8 +22,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-@Slf4j
-@Component
 /**
  * Enforces session-id (SID) liveness for access tokens minted with session binding.
  * <p>
@@ -31,6 +29,8 @@ import java.util.UUID;
  * verifying that token SID still maps to an active session state. Assumes session persistence is
  * authoritative for revocation decisions.
  */
+@Slf4j
+@Component
 public class SidLivenessFilter extends OncePerRequestFilter {
     private final SessionRepository sessionRepository;
     private final SidEnforcementMode enforcementMode;

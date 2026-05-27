@@ -7,7 +7,6 @@ import org.miniProjectTwo.DragonOfNorth.modules.session.api.SessionApi;
 import org.miniProjectTwo.DragonOfNorth.modules.session.dto.response.SessionSummaryResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
-import org.miniProjectTwo.DragonOfNorth.security.web.RequireRecentMfa;
 import org.miniProjectTwo.DragonOfNorth.security.web.SensitiveAccountOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.springframework.http.ResponseEntity;

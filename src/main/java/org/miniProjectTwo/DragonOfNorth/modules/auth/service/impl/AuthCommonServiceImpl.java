@@ -27,11 +27,7 @@ import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.security.service.JwtServices;
 import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssuer;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.AppUserStatus;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.UserLifecycleOperation;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.*;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
@@ -49,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -286,7 +283,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
                                            UUID sessionId,
                                            HttpServletResponse response,
                                            AuthRequestContext context) {
-        assertLiveSessionOwnership(sessionId, resolveAuthenticatedUserId(SecurityContextHolder.getContext().getAuthentication().getPrincipal()));
+        assertLiveSessionOwnership(sessionId, resolveAuthenticatedUserId(Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal()));
         VerificationResult verificationResult = mfaChallengeService.verifyAndConsume(challengeId, providerType, code, context, sessionId);
         if (!verificationResult.success() || verificationResult.userId() == null) {
             throw switch (verificationResult.failureReason()) {

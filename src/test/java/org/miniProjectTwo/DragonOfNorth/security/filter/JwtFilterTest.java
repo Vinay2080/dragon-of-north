@@ -18,8 +18,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -110,7 +110,8 @@ class JwtFilterTest {
 
         jwtFilter.doFilterInternal(request, response, filterChain);
 
-        SecurityPrincipal principal = (SecurityPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        SecurityPrincipal principal = (SecurityPrincipal) Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal();
+        assert principal != null;
         assertFalse(principal.mfaVerified());
         assertNull(principal.mfaVerifiedAt());
         assertEquals(List.of(), principal.amr());

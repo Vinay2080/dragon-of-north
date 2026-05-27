@@ -32,7 +32,7 @@ public record SessionCreationSpec(
     public static SessionCreationSpec fromAppUser(AppUser appUser, String primaryAmr) {
         Objects.requireNonNull(appUser, "appUser must not be null");
         boolean mfaRequired = appUser.isMfaEnabled();
-        Instant mfaVerifiedAt = null;
-        return new SessionCreationSpec(primaryAmr, mfaRequired, mfaVerifiedAt);
+//        Instant mfaVerifiedAt = null;
+        return new SessionCreationSpec(primaryAmr, mfaRequired, null);
     }
 }

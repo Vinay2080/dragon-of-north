@@ -62,7 +62,7 @@ public class StepUpController {
     private final AuthCommonServices authCommonServices;
 
     /**
-     * Issues a step-up MFA challenge for the currently-authenticated user.
+     * Issues a step-up MFA challenge for the currently authenticated user.
      *
      * <p>Requires a valid access-token (the user must be authenticated).  Returns the same
      * {@link MfaChallengeResponse} shape used by login-time MFA so clients need only one
@@ -88,7 +88,7 @@ public class StepUpController {
      *   <li>The session row's {@code mfa_verified_at} is set to the current time.</li>
      *   <li>A new access-token cookie is written that reflects the refreshed MFA timestamp.</li>
      * </ul>
-     * After this call the client may retry the originally-blocked sensitive operation.</p>
+     * After this call, the client may retry the originally blocked sensitive operation.</p>
      */
     @PostMapping("/mfa/verify")
     public ResponseEntity<ApiResponse<?>> verifyStepUp(
