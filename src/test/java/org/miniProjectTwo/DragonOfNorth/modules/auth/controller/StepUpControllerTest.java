@@ -42,6 +42,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -256,8 +257,62 @@ class StepUpControllerTest {
                         .header("X-Device-Id", "device-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.apiResponseStatus").value("failed"))
+                .andExpect(jsonPath("$.error.code").value(ErrorCode.MFA_STEP_UP_REQUIRED.getCode()))
+                .andExpect(jsonPath("$.error.challengeId").value("token-expired"))
+                .andExpect(jsonPath("$.error.availableMethods[0]").value("TOTP"))
+                .andExpect(jsonPath("$.error.expiresAt").exists());
         verify(authCommonServices).issueStepUpChallenge(eq(user), eq(sessionId), any());
+    }
+
+    @Test
+    void sensitiveAction_shouldReturn401AndNeverIssueChallenge_whenSessionNotLive() throws Exception {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = setUpSecurityContextWithSessionId(sessionId, Instant.now().minus(Duration.ofMinutes(25)));
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any())).thenReturn(java.util.Optional.empty());
+
+        mockMvc.perform(post("/api/v1/auth/step-up/protected-action")
+                        .header("X-Device-Id", "device-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new DeviceIdRequest("device-1"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error.code").value(ErrorCode.INVALID_TOKEN.getCode()))
+                .andExpect(jsonPath("$.error.defaultMessage", contains("no longer live")));
+
+        verify(authCommonServices, never()).issueStepUpChallenge(any(), any(), any());
+    }
+
+    @Test
+    void sensitiveAction_shouldPassAndRefreshAccessToken_whenSessionFreshButJwtStale() throws Exception {
+        Instant jwtStale = Instant.now().minus(Duration.ofMinutes(30));
+        Instant sessionFresh = Instant.now().minus(Duration.ofSeconds(20));
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = setUpSecurityContextWithSessionId(sessionId, jwtStale);
+
+        AppUser user = new AppUser();
+        user.setId(userId);
+        user.setMfaEnabled(true);
+        when(appUserRepository.findById(userId)).thenReturn(java.util.Optional.of(user));
+
+        Session session = buildSession(sessionId, sessionFresh);
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any())).thenReturn(java.util.Optional.of(session));
+        when(recentMfaProperties.resolveMaxAge(any())).thenReturn(Duration.ofMinutes(15));
+        when(recentMfaService.isRecentMfaSatisfied(eq(jwtStale), any())).thenReturn(false);
+        when(recentMfaService.isRecentMfaSatisfied(eq(sessionFresh), any())).thenReturn(true);
+        when(roleRepository.findRolesById(userId)).thenReturn(java.util.Set.of());
+        when(sessionAccessTokenIssuer.mintAccessToken(session, java.util.Set.of())).thenReturn("refreshed-access-token");
+
+        mockMvc.perform(post("/api/v1/auth/step-up/protected-action")
+                        .header("X-Device-Id", "device-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new DeviceIdRequest("device-1"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"));
+
+        verify(sessionAccessTokenIssuer).mintAccessToken(session, java.util.Set.of());
+        verify(authCommonServices).setAccessToken(any(), eq("refreshed-access-token"));
+        verify(authCommonServices, never()).issueStepUpChallenge(any(), any(), any());
     }
 
     @Test
