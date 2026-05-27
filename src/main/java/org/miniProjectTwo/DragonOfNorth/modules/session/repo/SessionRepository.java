@@ -141,6 +141,19 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
                                      @Param("userId") UUID userId,
                                      @Param("now") Instant now);
 
+    @Query("""
+            select s
+            from Session s
+            where s.id = :sessionId
+              and s.appUser.id = :userId
+              and s.revoked = false
+              and s.deleted = false
+              and s.expiryDate > :now
+            """)
+    Optional<Session> findLiveByIdAndAppUserId(@Param("sessionId") UUID sessionId,
+                                               @Param("userId") UUID userId,
+                                               @Param("now") Instant now);
+
     /**
      * Updates the mfaVerifiedAt timestamp for a live session (used by step-up MFA).
      *

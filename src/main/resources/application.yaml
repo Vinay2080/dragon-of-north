@@ -43,6 +43,11 @@ app:
       sensitive-patterns: ${sid_enforcement_sensitive_patterns:/api/v1/session/**,/api/v1/auth/password/forgot/reset}
     step-up:
       mfa-max-age: ${step_up_mfa_max_age:PT15M}
+      password-change-max-age: ${step_up_password_change_max_age:PT5M}
+      account-delete-max-age: ${step_up_account_delete_max_age:PT1M}
+      recovery-code-regeneration-max-age: ${step_up_recovery_code_regeneration_max_age:PT2M}
+      session-revoke-max-age: ${step_up_session_revoke_max_age:PT5M}
+      session-revoke-all-max-age: ${step_up_session_revoke_all_max_age:PT5M}
     jwt:
       expiration:
         access-token: ${access_token}

@@ -10,9 +10,9 @@ import java.time.Instant;
 /**
  * Default implementation of {@link RecentMfaService}.
  *
- * <p>All freshness decisions are made against the authoritative {@code mfa_verified_at}
- * value projected from the session row into the JWT claim.  No temporary tokens, secondary
- * stores, or in-memory state are introduced.</p>
+ * <p>Freshness decisions are derived from session {@code mfa_verified_at} timestamps.
+ * JWT claims are treated as a convenience hint only; authoritative truth is always the
+ * session row.</p>
  */
 @Service
 public class RecentMfaServiceImpl implements RecentMfaService {

@@ -14,6 +14,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupRespon
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.*;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaPolicy;
 import org.miniProjectTwo.DragonOfNorth.security.web.RequireRecentMfa;
 import org.miniProjectTwo.DragonOfNorth.security.web.SensitiveAccountOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
@@ -152,7 +153,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/password/change")
-    @SensitiveAccountOperation
+    @SensitiveAccountOperation(policy = RecentMfaPolicy.PASSWORD_CHANGE)
     public ResponseEntity<ApiResponse<?>> changePassword(
             @RequestBody @Valid PasswordChangeRequest request
     ) {
@@ -162,7 +163,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/account/delete")
-    @SensitiveAccountOperation
+    @SensitiveAccountOperation(policy = RecentMfaPolicy.ACCOUNT_DELETE)
     public ResponseEntity<ApiResponse<?>> deleteAccount(
             @RequestBody @Valid DeviceIdRequest deviceIdRequest,
             HttpServletRequest request,

@@ -12,12 +12,19 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.MfaChal
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaProperties;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
+import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
+import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssuer;
+import org.miniProjectTwo.DragonOfNorth.security.web.RecentMfaEnforcementInterceptor;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.ApplicationExceptionHandler;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
+import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
+import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -61,11 +68,39 @@ class StepUpControllerTest {
     @Mock
     private RecentMfaProperties recentMfaProperties;
 
+    @Mock
+    private AuditEventLogger auditEventLogger;
+
+    @Mock
+    private AppUserRepository appUserRepository;
+
+    @Mock
+    private SessionRepository sessionRepository;
+
+    @Mock
+    private SessionAccessTokenIssuer sessionAccessTokenIssuer;
+
+    @Mock
+    private RoleRepository roleRepository;
+
+    private RecentMfaEnforcementInterceptor recentMfaEnforcementInterceptor;
+
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
+        recentMfaEnforcementInterceptor = new RecentMfaEnforcementInterceptor(
+                recentMfaService,
+                recentMfaProperties,
+                auditEventLogger,
+                appUserRepository,
+                sessionRepository,
+                sessionAccessTokenIssuer,
+                roleRepository,
+                authCommonServices
+        );
         mockMvc = MockMvcBuilders.standaloneSetup(stepUpController)
                 .setControllerAdvice(new ApplicationExceptionHandler())
+                .addInterceptors(recentMfaEnforcementInterceptor)
                 .build();
     }
 
@@ -74,12 +109,14 @@ class StepUpControllerTest {
     @Test
     void requestStepUp_shouldReturnChallenge_whenUserAuthenticated() throws Exception {
         UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
         AppUser user = new AppUser();
         user.setId(userId);
+        setUpSecurityContextWithSessionId(sessionId, Instant.now());
 
         MfaChallenge challenge = new MfaChallenge("token-abc", Instant.now().plusSeconds(120), List.of(ProviderType.TOTP));
         when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
-        when(authCommonServices.issueStepUpChallenge(eq(user), any())).thenReturn(challenge);
+        when(authCommonServices.issueStepUpChallenge(eq(user), eq(sessionId), any())).thenReturn(challenge);
 
         DeviceIdRequest request = new DeviceIdRequest("device-1");
 
@@ -92,16 +129,18 @@ class StepUpControllerTest {
                 .andExpect(jsonPath("$.data.mfaRequired").value(true));
 
         verify(authCommonServices).findAuthenticatedUser();
-        verify(authCommonServices).issueStepUpChallenge(eq(user), any());
+        verify(authCommonServices).issueStepUpChallenge(eq(user), eq(sessionId), any());
     }
 
     @Test
     void requestStepUp_shouldReturn403_whenNoMfaMethodAvailable() throws Exception {
         AppUser user = new AppUser();
         user.setId(UUID.randomUUID());
+        UUID sessionId = UUID.randomUUID();
+        setUpSecurityContextWithSessionId(sessionId, Instant.now());
 
         when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
-        when(authCommonServices.issueStepUpChallenge(eq(user), any()))
+        when(authCommonServices.issueStepUpChallenge(eq(user), eq(sessionId), any()))
                 .thenThrow(new BusinessException(ErrorCode.MFA_REQUIRED, "No MFA methods available for step-up"));
 
         DeviceIdRequest request = new DeviceIdRequest("device-1");
@@ -170,10 +209,13 @@ class StepUpControllerTest {
     @Test
     void sensitiveAction_shouldReturn200_whenRecentMfaIsFresh() throws Exception {
         Instant recentlyVerified = Instant.now().minusSeconds(30);
-        setUpSecurityContextWithSessionId(UUID.randomUUID(), recentlyVerified);
+        UUID sessionId = UUID.randomUUID();
+        setUpSecurityContextWithSessionId(sessionId, recentlyVerified);
+        Session session = buildSession(sessionId, recentlyVerified);
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), any(), any())).thenReturn(java.util.Optional.of(session));
 
-        when(recentMfaProperties.getMfaMaxAge()).thenReturn(Duration.ofMinutes(15));
-        doNothing().when(recentMfaService).requireRecentMfa(eq(recentlyVerified), any());
+        when(recentMfaProperties.resolveMaxAge(any())).thenReturn(Duration.ofMinutes(15));
+        when(recentMfaService.isRecentMfaSatisfied(eq(recentlyVerified), any())).thenReturn(true);
 
         DeviceIdRequest request = new DeviceIdRequest("device-1");
 
@@ -183,15 +225,19 @@ class StepUpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"));
 
-        verify(recentMfaService).requireRecentMfa(eq(recentlyVerified), any());
+        verify(recentMfaService, never()).requireRecentMfa(eq(recentlyVerified), any());
     }
 
     @Test
     void sensitiveAction_shouldReturn403_whenRecentMfaIsExpired() throws Exception {
         Instant staleVerification = Instant.now().minus(Duration.ofMinutes(20));
-        setUpSecurityContextWithSessionId(UUID.randomUUID(), staleVerification);
+        UUID sessionId = UUID.randomUUID();
+        setUpSecurityContextWithSessionId(sessionId, staleVerification);
+        Session session = buildSession(sessionId, staleVerification);
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), any(), any())).thenReturn(java.util.Optional.of(session));
 
-        when(recentMfaProperties.getMfaMaxAge()).thenReturn(Duration.ofMinutes(15));
+        when(recentMfaProperties.resolveMaxAge(any())).thenReturn(Duration.ofMinutes(15));
+        when(recentMfaService.isRecentMfaSatisfied(eq(staleVerification), any())).thenReturn(false);
         doThrow(new BusinessException(ErrorCode.MFA_STEP_UP_REQUIRED))
                 .when(recentMfaService).requireRecentMfa(eq(staleVerification), any());
 
@@ -205,9 +251,13 @@ class StepUpControllerTest {
 
     @Test
     void sensitiveAction_shouldReturn403_whenMfaVerifiedAtIsNull() throws Exception {
-        setUpSecurityContextWithSessionId(UUID.randomUUID(), null);
+        UUID sessionId = UUID.randomUUID();
+        setUpSecurityContextWithSessionId(sessionId, null);
+        Session session = buildSession(sessionId, null);
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), any(), any())).thenReturn(java.util.Optional.of(session));
 
-        when(recentMfaProperties.getMfaMaxAge()).thenReturn(Duration.ofMinutes(15));
+        when(recentMfaProperties.resolveMaxAge(any())).thenReturn(Duration.ofMinutes(15));
+        when(recentMfaService.isRecentMfaSatisfied(eq(null), any())).thenReturn(false);
         doThrow(new BusinessException(ErrorCode.MFA_STEP_UP_REQUIRED))
                 .when(recentMfaService).requireRecentMfa(eq(null), any());
 
@@ -233,5 +283,12 @@ class StepUpControllerTest {
         UsernamePasswordAuthenticationToken auth =
                 new UsernamePasswordAuthenticationToken(principal, null, principal.authorities());
         SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    private Session buildSession(UUID sessionId, Instant mfaVerifiedAt) {
+        Session session = new Session();
+        session.setId(sessionId);
+        session.setMfaVerifiedAt(mfaVerifiedAt);
+        return session;
     }
 }

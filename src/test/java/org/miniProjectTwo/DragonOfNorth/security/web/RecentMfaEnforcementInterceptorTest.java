@@ -6,13 +6,19 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaPolicy;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaProperties;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaService;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
+import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
+import org.miniProjectTwo.DragonOfNorth.security.service.SessionAccessTokenIssuer;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
+import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,16 +42,34 @@ class RecentMfaEnforcementInterceptorTest {
     private RecentMfaProperties recentMfaProperties;
     private AuditEventLogger auditEventLogger;
     private AppUserRepository appUserRepository;
+    private SessionRepository sessionRepository;
+    private SessionAccessTokenIssuer sessionAccessTokenIssuer;
+    private RoleRepository roleRepository;
+    private AuthCommonServices authCommonServices;
     private RecentMfaEnforcementInterceptor interceptor;
 
     @BeforeEach
     void setUp() {
         recentMfaService = mock(RecentMfaService.class);
-        recentMfaProperties = mock(RecentMfaProperties.class);
+        recentMfaProperties = new RecentMfaProperties();
+        recentMfaProperties.setMfaMaxAge(Duration.ofMinutes(15));
+        recentMfaProperties.setAccountDeleteMaxAge(Duration.ofSeconds(60));
         auditEventLogger = mock(AuditEventLogger.class);
         appUserRepository = mock(AppUserRepository.class);
-        interceptor = new RecentMfaEnforcementInterceptor(recentMfaService, recentMfaProperties, auditEventLogger, appUserRepository);
-        when(recentMfaProperties.getMfaMaxAge()).thenReturn(Duration.ofMinutes(15));
+        sessionRepository = mock(SessionRepository.class);
+        sessionAccessTokenIssuer = mock(SessionAccessTokenIssuer.class);
+        roleRepository = mock(RoleRepository.class);
+        authCommonServices = mock(AuthCommonServices.class);
+        interceptor = new RecentMfaEnforcementInterceptor(
+                recentMfaService,
+                recentMfaProperties,
+                auditEventLogger,
+                appUserRepository,
+                sessionRepository,
+                sessionAccessTokenIssuer,
+                roleRepository,
+                authCommonServices
+        );
     }
 
     @AfterEach
@@ -56,12 +80,15 @@ class RecentMfaEnforcementInterceptorTest {
     @Test
     void firstTimeEnrollment_allowsAuthenticatedUserWithoutMfa() throws Exception {
         UUID userId = UUID.randomUUID();
-        SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(), false, null, UUID.randomUUID(), List.of("pwd"));
+        UUID sessionId = UUID.randomUUID();
+        SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(), false, null, sessionId, List.of("pwd"));
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of()));
 
         AppUser user = new AppUser();
         user.setMfaEnabled(false);
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        Session session = buildSession(sessionId, null);
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any())).thenReturn(Optional.of(session));
 
         HandlerMethod handlerMethod = new HandlerMethod(new TestController(), TestController.class.getMethod("enrollRequest"));
 
@@ -75,14 +102,17 @@ class RecentMfaEnforcementInterceptorTest {
     void firstTimeEnrollment_requiresRecentMfaWhenAlreadyEnabled() throws Exception {
         UUID userId = UUID.randomUUID();
         Instant stale = Instant.now().minus(Duration.ofHours(2));
-        SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(), true, stale, UUID.randomUUID(), List.of("pwd", "mfa"));
+        UUID sessionId = UUID.randomUUID();
+        SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(), true, stale, sessionId, List.of("pwd", "mfa"));
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of()));
 
         AppUser user = new AppUser();
         user.setMfaEnabled(true);
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        Session session = buildSession(sessionId, stale);
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any())).thenReturn(Optional.of(session));
         when(recentMfaService.isRecentMfaSatisfied(eq(stale), any())).thenReturn(false);
-        doThrow(new BusinessException(ErrorCode.MFA_REQUIRED_STEP_UP, "Recent MFA required"))
+        doThrow(new BusinessException(ErrorCode.MFA_STEP_UP_REQUIRED, "Recent MFA required"))
                 .when(recentMfaService).requireRecentMfa(eq(stale), any());
 
         HandlerMethod handlerMethod = new HandlerMethod(new TestController(), TestController.class.getMethod("enrollConfirm"));
@@ -92,7 +122,7 @@ class RecentMfaEnforcementInterceptorTest {
                 () -> interceptor.preHandle(mock(HttpServletRequest.class), mock(HttpServletResponse.class), handlerMethod)
         );
 
-        assertEquals(ErrorCode.MFA_REQUIRED_STEP_UP, exception.getErrorCode());
+        assertEquals(ErrorCode.MFA_STEP_UP_REQUIRED, exception.getErrorCode());
         verify(recentMfaService).requireRecentMfa(eq(stale), any());
     }
 
@@ -110,11 +140,124 @@ class RecentMfaEnforcementInterceptorTest {
         verifyNoInteractions(appUserRepository);
     }
 
+    @Test
+    void accountDeletionPolicy_usesStrictWindow() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        Instant verifiedAt = Instant.now().minusSeconds(10);
+        SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(), true, verifiedAt, sessionId, List.of("pwd", "mfa"));
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+
+        Session session = buildSession(sessionId, verifiedAt);
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any())).thenReturn(Optional.of(session));
+        when(recentMfaService.isRecentMfaSatisfied(eq(verifiedAt), eq(Duration.ofSeconds(60)))).thenReturn(true);
+
+        HandlerMethod handlerMethod = new HandlerMethod(new TestController(), TestController.class.getMethod("accountDelete"));
+
+        assertTrue(interceptor.preHandle(mock(HttpServletRequest.class), mock(HttpServletResponse.class), handlerMethod));
+        verify(recentMfaService, never()).requireRecentMfa(any(), any());
+        verify(authCommonServices, never()).setAccessToken(any(), any());
+    }
+
+    @Test
+    void jwtStale_sessionFresh_remintsAccessToken() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        Instant jwtStale = Instant.now().minus(Duration.ofMinutes(30));
+        Instant sessionFresh = Instant.now().minusSeconds(20);
+        SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(), true, jwtStale, sessionId, List.of("pwd", "mfa"));
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+
+        Session session = buildSession(sessionId, sessionFresh);
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any())).thenReturn(Optional.of(session));
+        when(recentMfaService.isRecentMfaSatisfied(eq(jwtStale), any())).thenReturn(false);
+        when(recentMfaService.isRecentMfaSatisfied(eq(sessionFresh), any())).thenReturn(true);
+        when(sessionAccessTokenIssuer.mintAccessToken(eq(session), any())).thenReturn("refreshed-token");
+
+        HandlerMethod handlerMethod = new HandlerMethod(new TestController(), TestController.class.getMethod("accountDelete"));
+
+        assertTrue(interceptor.preHandle(mock(HttpServletRequest.class), mock(HttpServletResponse.class), handlerMethod));
+        verify(authCommonServices).setAccessToken(any(), eq("refreshed-token"));
+    }
+
+    @Test
+    void jwtFresh_sessionFresh_doesNotRemintAccessToken() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        Instant verifiedAt = Instant.now().minusSeconds(15);
+        SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(), true, verifiedAt, sessionId, List.of("pwd", "mfa"));
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+
+        Session session = buildSession(sessionId, verifiedAt);
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any())).thenReturn(Optional.of(session));
+        when(recentMfaService.isRecentMfaSatisfied(eq(verifiedAt), any())).thenReturn(true);
+
+        HandlerMethod handlerMethod = new HandlerMethod(new TestController(), TestController.class.getMethod("accountDelete"));
+
+        assertTrue(interceptor.preHandle(mock(HttpServletRequest.class), mock(HttpServletResponse.class), handlerMethod));
+        verify(authCommonServices, never()).setAccessToken(any(), any());
+    }
+
+    @Test
+    void revokedSession_deniesAccess() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(), true, Instant.now(), sessionId, List.of("pwd", "mfa"));
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any())).thenReturn(Optional.empty());
+
+        HandlerMethod handlerMethod = new HandlerMethod(new TestController(), TestController.class.getMethod("accountDelete"));
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> interceptor.preHandle(mock(HttpServletRequest.class), mock(HttpServletResponse.class), handlerMethod)
+        );
+
+        assertEquals(ErrorCode.INVALID_TOKEN, exception.getErrorCode());
+    }
+
+    @Test
+    void sessionStale_deniesEvenWhenJwtFresh() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        Instant jwtFresh = Instant.now().minusSeconds(20);
+        Instant sessionStale = Instant.now().minus(Duration.ofHours(2));
+        SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(), true, jwtFresh, sessionId, List.of("pwd", "mfa"));
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+
+        Session session = buildSession(sessionId, sessionStale);
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any())).thenReturn(Optional.of(session));
+        when(recentMfaService.isRecentMfaSatisfied(eq(jwtFresh), any())).thenReturn(true);
+        when(recentMfaService.isRecentMfaSatisfied(eq(sessionStale), any())).thenReturn(false);
+        doThrow(new BusinessException(ErrorCode.MFA_STEP_UP_REQUIRED))
+                .when(recentMfaService).requireRecentMfa(eq(sessionStale), any());
+
+        HandlerMethod handlerMethod = new HandlerMethod(new TestController(), TestController.class.getMethod("accountDelete"));
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> interceptor.preHandle(mock(HttpServletRequest.class), mock(HttpServletResponse.class), handlerMethod)
+        );
+
+        assertEquals(ErrorCode.MFA_STEP_UP_REQUIRED, exception.getErrorCode());
+    }
+
     static class TestController {
         @RequireRecentMfa(onlyWhenMfaEnabled = true)
         public void enrollRequest() {}
 
         @RequireRecentMfa(onlyWhenMfaEnabled = true)
         public void enrollConfirm() {}
+
+        @SensitiveAccountOperation(policy = RecentMfaPolicy.ACCOUNT_DELETE)
+        public void accountDelete() {}
+    }
+
+    private Session buildSession(UUID sessionId, Instant mfaVerifiedAt) {
+        Session session = new Session();
+        session.setId(sessionId);
+        session.setMfaVerifiedAt(mfaVerifiedAt);
+        return session;
     }
 }

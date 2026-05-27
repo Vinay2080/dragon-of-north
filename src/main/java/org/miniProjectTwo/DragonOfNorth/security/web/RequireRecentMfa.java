@@ -1,5 +1,7 @@
 package org.miniProjectTwo.DragonOfNorth.security.web;
 
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaPolicy;
+
 import java.lang.annotation.*;
 
 /**
@@ -9,6 +11,11 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface RequireRecentMfa {
+    /**
+     * Policy identifier that selects the per-operation freshness window.
+     */
+    RecentMfaPolicy policy() default RecentMfaPolicy.DEFAULT;
+
     /**
      * When {@code true}, the recent-MFA requirement is enforced only for users who already have MFA enabled.
      *
