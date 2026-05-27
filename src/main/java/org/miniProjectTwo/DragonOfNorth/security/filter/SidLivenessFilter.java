@@ -19,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,12 +42,15 @@ public class SidLivenessFilter extends OncePerRequestFilter {
     public SidLivenessFilter(
             SessionRepository sessionRepository,
             @Value("${app.security.sid-enforcement.mode:disabled}") String enforcementMode,
-            @Value("${app.security.sid-enforcement.sensitive-patterns:/api/v1/session/**,/api/v1/auth/password/forgot/reset}") String sensitivePatterns,
+            @Value("${app.security.sid-enforcement.sensitive-patterns:/api/v1/sessions/**,/api/v1/auth/password/forgot/reset,/api/v1/auth/password/change,/api/v1/auth/account/delete,/api/v1/auth/enable/mfa/**,/api/v1/auth/step-up/**}") String sensitivePatterns,
             AuditEventLogger auditEventLogger
     ) {
         this.sessionRepository = sessionRepository;
         this.enforcementMode = SidEnforcementMode.from(enforcementMode);
-        this.sensitivePatterns = List.of(sensitivePatterns.split(","));
+        this.sensitivePatterns = Arrays.stream(sensitivePatterns.split(","))
+                .map(String::trim)
+                .filter(pattern -> !pattern.isBlank())
+                .toList();
         this.auditEventLogger = auditEventLogger;
     }
 
@@ -88,8 +92,7 @@ public class SidLivenessFilter extends OncePerRequestFilter {
             case DISABLED -> false;
             case ALL_AUTHENTICATED -> true;
             case MFA_ONLY -> principal.mfaVerified();
-            case SENSITIVE_ONLY -> sensitivePatterns.stream().map(String::trim)
-                    .filter(pattern -> !pattern.isBlank())
+            case SENSITIVE_ONLY -> sensitivePatterns.stream()
                     .anyMatch(pattern -> PATH_MATCHER.match(pattern, servletPath));
         };
     }

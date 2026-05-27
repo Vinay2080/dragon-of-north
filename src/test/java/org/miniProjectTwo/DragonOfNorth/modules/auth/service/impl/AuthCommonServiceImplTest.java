@@ -234,6 +234,35 @@ class AuthCommonServiceImplTest {
         assertNotNull(result);
     }
 
+    @Test
+    void login_shouldNotIssueTokensOrSession_whenMfaConfigurationIsInvalid() {
+        AppUser user = new AppUser();
+        user.setId(UUID.randomUUID());
+        user.setEmail("user@example.com");
+        user.setEmailVerified(true);
+
+        Authentication authentication = mock(Authentication.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        Counter failureCounter = mock(Counter.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+
+        when(appUserRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(userAuthProviderRepository.existsByUserIdAndProvider(user.getId(), Provider.LOCAL)).thenReturn(true);
+        when(authenticationManager.authenticate(any())).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(new AppUserDetails(user));
+        when(mfaOrchestrator.orchestrateLogin(eq(user), eq("pwd"), eq(context)))
+                .thenThrow(new BusinessException(ErrorCode.MFA_CONFIGURATION_INVALID));
+        when(meterRegistry.counter(anyString())).thenReturn(failureCounter);
+
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> authCommonService.login("user@example.com", "Secret@123", response, context));
+
+        assertEquals(ErrorCode.MFA_CONFIGURATION_INVALID, exception.getErrorCode());
+        verify(sessionService, never()).createSession(any(), anyString(), anyString(), anyString(), anyString(), any());
+        verify(sessionTokenIssuer, never()).issueLoginSession(any(), any(SessionCreationSpec.class), anyString(), anyString(), anyString());
+        verify(auditEventLogger).log(eq("auth.login"), eq(user.getId()), eq("device-1"), eq("127.0.0.1"), eq("failure"), anyString(), eq("req-1"));
+    }
+
 
     @Test
     void refreshToken_shouldValidateUserStateBeforeRotation() {
@@ -344,7 +373,7 @@ class AuthCommonServiceImplTest {
         Counter successCounter = mock(Counter.class);
 
         when(mfaChallengeService.verifyAndConsume("challenge-1", ProviderType.TOTP, "123456", context))
-                .thenReturn(VerificationResult.success(userId, "pwd"));
+                .thenReturn(VerificationResult.success(userId, "pwd", "totp"));
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
         when(sessionTokenIssuer.issueLoginSession(eq(user), any(SessionCreationSpec.class), anyString(), anyString(), anyString()))
                 .thenReturn(new SessionTokenIssuer.LoginTokens("access", "refresh"));
@@ -356,7 +385,7 @@ class AuthCommonServiceImplTest {
         verify(sessionTokenIssuer).issueLoginSession(
                 eq(user),
                 ArgumentMatchers.<SessionCreationSpec>argThat(
-                        spec -> !spec.mfaRequired() && spec.mfaVerifiedAt() != null
+                        spec -> !spec.mfaRequired() && spec.mfaVerifiedAt() != null && "totp".equals(spec.mfaMethodAmr())
                 ),
                 anyString(),
                 eq("device-1"),
@@ -375,6 +404,49 @@ class AuthCommonServiceImplTest {
                 () -> authCommonService.completeMfaChallengeLogin("challenge-1", "123456", ProviderType.TOTP, response, context));
 
         verify(sessionTokenIssuer, never()).issueLoginSession(any(), any(SessionCreationSpec.class), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void completeMfaChallengeLogin_shouldNotIssueSessionWhenChallengeInfraFails() {
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+        when(mfaChallengeService.verifyAndConsume("challenge-1", ProviderType.TOTP, "123456", context))
+                .thenThrow(new BusinessException(ErrorCode.MFA_CHALLENGE_INFRASTRUCTURE_UNAVAILABLE));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> authCommonService.completeMfaChallengeLogin("challenge-1", "123456", ProviderType.TOTP, response, context));
+
+        assertEquals(ErrorCode.MFA_CHALLENGE_INFRASTRUCTURE_UNAVAILABLE, ex.getErrorCode());
+        verify(sessionTokenIssuer, never()).issueLoginSession(any(), any(SessionCreationSpec.class), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void completeMfaChallengeLogin_shouldPreserveRecoveryCodeAmrWhenRecoveryUsed() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser();
+        user.setId(userId);
+        user.setRoles(Set.of());
+        user.setAppUserStatus(ACTIVE);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+        Counter successCounter = mock(Counter.class);
+
+        when(mfaChallengeService.verifyAndConsume("challenge-2", ProviderType.RECOVERY_CODE, "ABCDEF", context))
+                .thenReturn(VerificationResult.success(userId, "pwd", "recovery_code"));
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(sessionTokenIssuer.issueLoginSession(eq(user), any(SessionCreationSpec.class), anyString(), anyString(), anyString()))
+                .thenReturn(new SessionTokenIssuer.LoginTokens("access", "refresh"));
+        when(meterRegistry.counter(anyString())).thenReturn(successCounter);
+
+        authCommonService.completeMfaChallengeLogin("challenge-2", "ABCDEF", ProviderType.RECOVERY_CODE, response, context);
+
+        verify(sessionTokenIssuer).issueLoginSession(
+                eq(user),
+                ArgumentMatchers.<SessionCreationSpec>argThat(spec -> "pwd".equals(spec.primaryAmr()) && "recovery_code".equals(spec.mfaMethodAmr())),
+                anyString(),
+                eq("device-1"),
+                anyString()
+        );
     }
 
 

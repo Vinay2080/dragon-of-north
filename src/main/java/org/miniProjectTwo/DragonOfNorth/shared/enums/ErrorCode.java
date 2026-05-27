@@ -51,6 +51,8 @@ public enum ErrorCode {
     MFA_CHALLENGE_NOT_FOUND("AUTH_026", "MFA challenge not found", HttpStatus.NOT_FOUND),
     MFA_CHALLENGE_ALREADY_CONSUMED("AUTH_027", "MFA challenge has already been consumed", HttpStatus.BAD_REQUEST),
     MFA_STEP_UP_REQUIRED("AUTH_028", "Recent MFA verification required. Please complete step-up MFA before proceeding.", HttpStatus.FORBIDDEN),
+    MFA_CONFIGURATION_INVALID("AUTH_029", "MFA is enabled but no MFA providers are configured for this account", HttpStatus.FORBIDDEN),
+    MFA_CHALLENGE_INFRASTRUCTURE_UNAVAILABLE("AUTH_030", "MFA challenge service temporarily unavailable. Please try again.", HttpStatus.SERVICE_UNAVAILABLE),
 
     ROLE_NOT_FOUND("ROL_009", "role %s not found", HttpStatus.NOT_FOUND),
 

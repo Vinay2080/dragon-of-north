@@ -454,15 +454,15 @@ class SessionServiceImplTest {
         session.setAppUser(user);
 
         when(meterRegistry.counter(anyString())).thenReturn(counter);
-        when(sessionRepository.refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), any(Instant.class)))
+        when(sessionRepository.refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), eq("totp"), any(Instant.class)))
                 .thenReturn(1);
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
 
-        Session result = sessionService.refreshMfaVerifiedAt(sessionId, userId, verifiedAt);
+        Session result = sessionService.refreshMfaVerifiedAt(sessionId, userId, verifiedAt, "totp");
 
         assertNotNull(result);
         assertEquals(sessionId, result.getId());
-        verify(sessionRepository).refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), any(Instant.class));
+        verify(sessionRepository).refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), eq("totp"), any(Instant.class));
         verify(sessionRepository).findById(sessionId);
         verify(auditEventLogger).log(eq("session.mfa.step_up"), eq(userId), any(), any(), eq("success"), any(), any());
     }
@@ -474,14 +474,14 @@ class SessionServiceImplTest {
         Instant verifiedAt = Instant.now();
 
         when(meterRegistry.counter(anyString())).thenReturn(counter);
-        when(sessionRepository.refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), any(Instant.class)))
+        when(sessionRepository.refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), eq("totp"), any(Instant.class)))
                 .thenReturn(0);
 
         BusinessException ex = assertThrows(BusinessException.class,
-                () -> sessionService.refreshMfaVerifiedAt(sessionId, userId, verifiedAt));
+                () -> sessionService.refreshMfaVerifiedAt(sessionId, userId, verifiedAt, "totp"));
 
         assertEquals(ErrorCode.INVALID_TOKEN, ex.getErrorCode());
-        verify(sessionRepository).refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), any(Instant.class));
+        verify(sessionRepository).refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), eq("totp"), any(Instant.class));
         verify(sessionRepository, never()).findById(any());
     }
 }

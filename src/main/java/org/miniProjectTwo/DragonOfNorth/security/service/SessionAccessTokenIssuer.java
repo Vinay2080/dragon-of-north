@@ -67,6 +67,13 @@ public class SessionAccessTokenIssuer {
         if (primary == null || primary.isBlank()) {
             throw new IllegalArgumentException("session.primaryAmr must not be blank");
         }
-        return List.of(primary);
+        String mfaMethod = session.getMfaMethodAmr();
+        if (mfaMethod == null || mfaMethod.isBlank()) {
+            return List.of(primary);
+        }
+        if (primary.equals(mfaMethod)) {
+            return List.of(primary);
+        }
+        return List.of(primary, mfaMethod);
     }
 }

@@ -63,5 +63,5 @@ public interface SessionService {
      * Throws {@link org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException} if the
      * session is not live or does not belong to the user.</p>
      */
-    Session refreshMfaVerifiedAt(UUID sessionId, UUID userId, Instant verifiedAt);
+    Session refreshMfaVerifiedAt(UUID sessionId, UUID userId, Instant verifiedAt, String mfaMethodAmr);
 }

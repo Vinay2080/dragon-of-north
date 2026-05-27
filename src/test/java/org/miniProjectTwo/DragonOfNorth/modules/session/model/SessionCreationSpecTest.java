@@ -35,11 +35,11 @@ class SessionCreationSpecTest {
     @Test
     void constructor_shouldRejectVerifiedTimestamp_whenMfaRequired() {
         assertThrows(IllegalArgumentException.class,
-                () -> new SessionCreationSpec("pwd", true, Instant.now()));
+                () -> new SessionCreationSpec("pwd", true, Instant.now(), "totp"));
     }
 
     @Test
     void constructor_shouldAllowMissingVerifiedTimestamp_whenMfaNotRequired() {
-        assertDoesNotThrow(() -> new SessionCreationSpec("pwd", false, null));
+        assertDoesNotThrow(() -> new SessionCreationSpec("pwd", false, null, null));
     }
 }

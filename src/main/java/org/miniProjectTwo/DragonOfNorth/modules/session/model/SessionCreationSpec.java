@@ -14,7 +14,8 @@ import java.util.Objects;
 public record SessionCreationSpec(
         String primaryAmr,
         boolean mfaRequired,
-        Instant mfaVerifiedAt
+        Instant mfaVerifiedAt,
+        String mfaMethodAmr
 ) {
     public SessionCreationSpec {
         Objects.requireNonNull(primaryAmr, "primaryAmr must not be null");
@@ -23,6 +24,9 @@ public record SessionCreationSpec(
         }
         if (mfaRequired && mfaVerifiedAt != null) {
             throw new IllegalArgumentException("mfaVerifiedAt must be null when mfaRequired is true");
+        }
+        if (mfaMethodAmr != null && mfaMethodAmr.isBlank()) {
+            throw new IllegalArgumentException("mfaMethodAmr must not be blank when provided");
         }
     }
 
@@ -33,6 +37,6 @@ public record SessionCreationSpec(
         Objects.requireNonNull(appUser, "appUser must not be null");
         boolean mfaRequired = appUser.isMfaEnabled();
 //        Instant mfaVerifiedAt = null;
-        return new SessionCreationSpec(primaryAmr, mfaRequired, null);
+        return new SessionCreationSpec(primaryAmr, mfaRequired, null, null);
     }
 }

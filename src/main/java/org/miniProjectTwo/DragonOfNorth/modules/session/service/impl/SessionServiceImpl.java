@@ -76,6 +76,7 @@ public class SessionServiceImpl implements SessionService {
         session.setMfaRequired(creationSpec.mfaRequired());
         session.setMfaVerifiedAt(creationSpec.mfaVerifiedAt());
         session.setPrimaryAmr(creationSpec.primaryAmr());
+        session.setMfaMethodAmr(creationSpec.mfaMethodAmr());
         Session saved = sessionRepository.save(session);
         auditEventLogger.log("session.create", appUser.getId(), deviceId, ipAddress, "success",
                 "replaced_existing=" + replacedExisting + ",mfa_required=" + creationSpec.mfaRequired(), null);
@@ -220,9 +221,9 @@ public class SessionServiceImpl implements SessionService {
      */
     @Override
     @Transactional
-    public Session refreshMfaVerifiedAt(UUID sessionId, UUID userId, Instant verifiedAt) {
+    public Session refreshMfaVerifiedAt(UUID sessionId, UUID userId, Instant verifiedAt, String mfaMethodAmr) {
         Instant now = Instant.now();
-        int updated = sessionRepository.refreshMfaVerifiedAt(sessionId, userId, verifiedAt, now);
+        int updated = sessionRepository.refreshMfaVerifiedAt(sessionId, userId, verifiedAt, mfaMethodAmr, now);
         if (updated != 1) {
             auditEventLogger.log("session.mfa.step_up", userId, null, null, "failure", "session not found or not live", null);
             throw new BusinessException(ErrorCode.INVALID_TOKEN, "Session not found or no longer live");

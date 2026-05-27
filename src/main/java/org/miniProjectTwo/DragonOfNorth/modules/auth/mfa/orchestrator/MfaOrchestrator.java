@@ -7,7 +7,11 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.service.MfaCh
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.provider.MfaProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.registry.MfaProviderRegistry;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
+import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
+import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
+import org.miniProjectTwo.DragonOfNorth.shared.util.SecurityAuditEvent;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,6 +28,7 @@ public class MfaOrchestrator {
 
     private final MfaChallengeService challengeService;
     private final MfaProviderRegistry providerRegistry;
+    private final AuditEventLogger auditEventLogger;
 
     public MfaOrchestrationResult orchestrateLogin(AppUser user, String primaryAmr, AuthRequestContext context) {
         if (user == null) {
@@ -41,9 +46,21 @@ public class MfaOrchestrator {
                 .map(MfaProvider::type)
                 .toList();
 
-        boolean mfaRequired = user.isMfaEnabled() && !availableMethods.isEmpty();
-        if (!mfaRequired) {
+        if (!user.isMfaEnabled()) {
             return MfaOrchestrationResult.noChallenge(false, availableMethods);
+        }
+
+        if (availableMethods.isEmpty()) {
+            auditEventLogger.log(
+                    SecurityAuditEvent.AUTH_MFA_CONFIGURATION_INVALID,
+                    user.getId(),
+                    context.deviceId(),
+                    context.ipAddress(),
+                    "failure",
+                    "mfa_enabled_but_no_login_capable_provider",
+                    context.requestId()
+            );
+            throw new BusinessException(ErrorCode.MFA_CONFIGURATION_INVALID);
         }
 
         MfaChallenge challenge = challengeService.createChallenge(user.getId(), primaryAmr, context, availableMethods);

@@ -220,7 +220,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
     @Override
     public VerificationResult completeMfaChallengeLogin(String challengeId, String code, org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType providerType, HttpServletResponse response, AuthRequestContext context) {
         VerificationResult verificationResult = mfaChallengeService.verifyAndConsume(challengeId, providerType, code, context);
-        if (!verificationResult.success() || verificationResult.userId() == null || verificationResult.primaryAmr() == null) {
+        if (!verificationResult.success() || verificationResult.userId() == null || verificationResult.primaryAmr() == null || verificationResult.mfaMethodAmr() == null) {
             throw switch (verificationResult.failureReason()) {
                 case CHALLENGE_LOCKED_OUT -> new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
                 case CHALLENGE_EXPIRED_OR_MISSING, CHALLENGE_BUSY_OR_REPLAY, CHALLENGE_CONSUME_RACE ->
@@ -235,7 +235,8 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         SessionCreationSpec creationSpec = new SessionCreationSpec(
                 verificationResult.primaryAmr(),
                 false,
-                java.time.Instant.now()
+                java.time.Instant.now(),
+                verificationResult.mfaMethodAmr()
         );
         SessionTokenIssuer.LoginTokens loginTokens = sessionTokenIssuer.issueLoginSession(
                 appUser,
@@ -285,7 +286,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
                                            AuthRequestContext context) {
         assertLiveSessionOwnership(sessionId, resolveAuthenticatedUserId(Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getPrincipal()));
         VerificationResult verificationResult = mfaChallengeService.verifyAndConsume(challengeId, providerType, code, context, sessionId);
-        if (!verificationResult.success() || verificationResult.userId() == null) {
+        if (!verificationResult.success() || verificationResult.userId() == null || verificationResult.mfaMethodAmr() == null) {
             throw switch (verificationResult.failureReason()) {
                 case CHALLENGE_LOCKED_OUT -> new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
                 case CHALLENGE_EXPIRED_OR_MISSING, CHALLENGE_BUSY_OR_REPLAY, CHALLENGE_CONSUME_RACE ->
@@ -299,7 +300,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
         userStateValidator.validate(appUser, UserLifecycleOperation.LOCAL_LOGIN);
 
         Instant verifiedAt = Instant.now();
-        Session updatedSession = sessionService.refreshMfaVerifiedAt(sessionId, appUser.getId(), verifiedAt);
+        Session updatedSession = sessionService.refreshMfaVerifiedAt(sessionId, appUser.getId(), verifiedAt, verificationResult.mfaMethodAmr());
 
         Set<Role> roles = roleRepository.findRolesById(appUser.getId());
         String newAccessToken = sessionAccessTokenIssuer.mintAccessToken(updatedSession, roles);

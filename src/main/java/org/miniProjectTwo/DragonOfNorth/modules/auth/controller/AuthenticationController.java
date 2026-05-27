@@ -14,6 +14,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupRespon
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.*;
+import org.miniProjectTwo.DragonOfNorth.security.web.RequireRecentMfa;
 import org.miniProjectTwo.DragonOfNorth.security.web.SensitiveAccountOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.springframework.http.ResponseEntity;
@@ -225,7 +226,7 @@ public class AuthenticationController implements AuthenticationApi {
      * succeeds with a valid authenticator code.
      */
     @PostMapping("/enable/mfa/request")
-    @SensitiveAccountOperation
+    @RequireRecentMfa(onlyWhenMfaEnabled = true)
     @Override
     public ResponseEntity<ApiResponse<MfaSetupResponse>> requestMfaSetup(
             HttpServletRequest request,
@@ -237,7 +238,7 @@ public class AuthenticationController implements AuthenticationApi {
 
     @Override
     @PostMapping("/enable/mfa/confirm")
-    @SensitiveAccountOperation
+    @RequireRecentMfa(onlyWhenMfaEnabled = true)
     public ResponseEntity<ApiResponse<MfaSetupConfirmResponse>> confirmMfaSetup(
             HttpServletRequest request,
             @RequestBody @Valid MfaSetupConfirmRequest mfaSetupConfirmRequest) {

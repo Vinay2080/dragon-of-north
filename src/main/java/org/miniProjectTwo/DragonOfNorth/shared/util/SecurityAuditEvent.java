@@ -27,6 +27,7 @@ public final class SecurityAuditEvent {
     public static final String AUTH_MFA_STEPUP_CHALLENGE_ISSUED = "auth.mfa.stepup.challenge.issued";
     public static final String AUTH_MFA_STEPUP_COMPLETED = "auth.mfa.stepup.completed";
     public static final String AUTH_MFA_STEPUP_REQUIRED = "auth.mfa.stepup.required";
+    public static final String AUTH_MFA_CONFIGURATION_INVALID = "auth.mfa.configuration.invalid";
 
     public static final String AUTH_SESSION_CREATED = "auth.session.created";
     public static final String AUTH_SESSION_REVOKED = "auth.session.revoked";

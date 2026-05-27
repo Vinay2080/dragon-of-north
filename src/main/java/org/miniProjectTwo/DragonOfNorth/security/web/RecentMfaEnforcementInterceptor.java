@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaProperties;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaService;
+import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
@@ -24,6 +25,7 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
     private final RecentMfaService recentMfaService;
     private final RecentMfaProperties recentMfaProperties;
     private final AuditEventLogger auditEventLogger;
+    private final AppUserRepository appUserRepository;
 
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
@@ -37,6 +39,11 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
         if (authentication == null || !(authentication.getPrincipal() instanceof SecurityPrincipal principal)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED, "User not authenticated");
         }
+        RequireRecentMfa policy = resolvePolicy(handlerMethod);
+        if (policy.onlyWhenMfaEnabled() && !isMfaEnabled(principal.userId())) {
+            return true;
+        }
+
         if (!recentMfaService.isRecentMfaSatisfied(principal.mfaVerifiedAt(), recentMfaProperties.getMfaMaxAge())) {
             auditEventLogger.log(SecurityAuditEvent.AUTH_MFA_STEPUP_REQUIRED, principal.userId(), null, request.getRemoteAddr(), "failure", "recent_mfa_stale_or_missing", null);
             recentMfaService.requireRecentMfa(principal.mfaVerifiedAt(), recentMfaProperties.getMfaMaxAge());
@@ -47,5 +54,19 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
     private boolean requiresRecentMfa(HandlerMethod handlerMethod) {
         return handlerMethod.hasMethodAnnotation(RequireRecentMfa.class)
                 || handlerMethod.getBeanType().isAnnotationPresent(RequireRecentMfa.class);
+    }
+
+    private RequireRecentMfa resolvePolicy(HandlerMethod handlerMethod) {
+        RequireRecentMfa methodPolicy = handlerMethod.getMethodAnnotation(RequireRecentMfa.class);
+        if (methodPolicy != null) {
+            return methodPolicy;
+        }
+        return handlerMethod.getBeanType().getAnnotation(RequireRecentMfa.class);
+    }
+
+    private boolean isMfaEnabled(java.util.UUID userId) {
+        return appUserRepository.findById(userId)
+                .map(user -> user.isMfaEnabled())
+                .orElse(false);
     }
 }

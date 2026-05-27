@@ -12,7 +12,9 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.redis.Challen
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.redis.ChallengeStateRedisStore;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.service.MfaChallengeService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.token.MfaChallengeTokenGenerator;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
+import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.shared.util.SecurityAuditContext;
 import org.miniProjectTwo.DragonOfNorth.shared.util.SecurityAuditEvent;
@@ -22,6 +24,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 /**
  * Redis-backed MFA challenge lifecycle implementation with expiration and state-transition control.
@@ -91,7 +94,10 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
                 expiresAt
         );
 
-        store.save(token, state);
+        withRedisGuard(() -> {
+            store.save(token, state);
+            return null;
+        }, context, userId, sessionId, primaryAmr, null, "challenge_create_redis_error");
         auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_ISSUED, new SecurityAuditContext(
                 userId,
                 sessionId,
@@ -130,7 +136,15 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
 
         String token = mfaToken.trim();
         String lockValue = UUID.randomUUID().toString();
-        var claim = atomicOps.claim(token, lockValue, CLAIM_LOCK_TTL);
+        var claim = withRedisGuard(
+                () -> atomicOps.claim(token, lockValue, CLAIM_LOCK_TTL),
+                context,
+                null,
+                sessionId,
+                "mfa_challenge",
+                providerType,
+                "challenge_claim_redis_error"
+        );
         if (claim.status() != ChallengeStateAtomicRedisOps.ClaimStatus.OK || claim.stateJson() == null) {
             auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_FAILED, new SecurityAuditContext(null, sessionId, context.deviceId(), context.requestId(), context.ipAddress(), requestBinding.userAgentHash(context.userAgent()), "mfa_challenge", providerType.name(), "failure", claim.status().name().toLowerCase(), "challenge_ref=" + Integer.toHexString(token.hashCode())));
             return switch (claim.status()) {
@@ -183,9 +197,12 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
         }
 
         auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_VERIFIED, new SecurityAuditContext(state.userId(), state.sessionId(), context.deviceId(), context.requestId(), context.ipAddress(), bindings.userAgentHash(), state.primaryAmr(), providerType.name(), "success", null, "challenge_ref=" + Integer.toHexString(token.hashCode())));
-        return VerificationResult.success(state.userId(), state.primaryAmr());
+        return VerificationResult.success(state.userId(), state.primaryAmr(), providerType.getKey());
         } finally {
-            atomicOps.unlock(token, lockValue);
+            withRedisGuard(() -> {
+                atomicOps.unlock(token, lockValue);
+                return null;
+            }, context, null, sessionId, "mfa_challenge", providerType, "challenge_unlock_redis_error");
         }
     }
 
@@ -194,7 +211,15 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
         if (mfaToken == null || mfaToken.isBlank()) {
             throw new IllegalArgumentException("mfaToken must not be blank");
         }
-        return store.find(mfaToken.trim());
+        return withRedisGuard(
+                () -> store.find(mfaToken.trim()),
+                null,
+                null,
+                null,
+                "mfa_challenge",
+                null,
+                "challenge_peek_redis_error"
+        );
     }
 
     @Override
@@ -206,8 +231,24 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
             throw new IllegalArgumentException("context must not be null");
         }
 
-        Optional<ChallengeState> state = store.find(mfaToken.trim());
-        boolean deleted = store.deleteIfPresent(mfaToken.trim());
+        Optional<ChallengeState> state = withRedisGuard(
+                () -> store.find(mfaToken.trim()),
+                context,
+                null,
+                null,
+                "mfa_challenge",
+                null,
+                "challenge_invalidate_lookup_redis_error"
+        );
+        boolean deleted = withRedisGuard(
+                () -> store.deleteIfPresent(mfaToken.trim()),
+                context,
+                state.map(ChallengeState::userId).orElse(null),
+                state.map(ChallengeState::sessionId).orElse(null),
+                state.map(ChallengeState::primaryAmr).orElse("mfa_challenge"),
+                null,
+                "challenge_invalidate_delete_redis_error"
+        );
 
         UUID userId = state.map(ChallengeState::userId).orElse(null);
         String reason = deleted ? null : "not_found";
@@ -218,6 +259,29 @@ public class MfaChallengeServiceImpl implements MfaChallengeService {
                 "success",
                 reason,
                 context.requestId());
+    }
+
+    private <T> T withRedisGuard(Supplier<T> operation,
+                                 AuthRequestContext context,
+                                 UUID userId,
+                                 UUID sessionId,
+                                 String primaryAmr,
+                                 ProviderType providerType,
+                                 String reason) {
+        try {
+            return operation.get();
+        } catch (RuntimeException ex) {
+            String provider = providerType == null ? null : providerType.name();
+            String deviceId = context == null ? null : context.deviceId();
+            String requestId = context == null ? null : context.requestId();
+            String ipAddress = context == null ? null : context.ipAddress();
+            String userAgentHash = context == null ? null : requestBinding.userAgentHash(context.userAgent());
+            auditEventLogger.logSecurity(SecurityAuditEvent.AUTH_MFA_CHALLENGE_FAILED,
+                    new SecurityAuditContext(userId, sessionId, deviceId, requestId, ipAddress, userAgentHash,
+                            primaryAmr, provider, "failure", "infrastructure_unavailable",
+                            "reason=" + reason));
+            throw new BusinessException(ErrorCode.MFA_CHALLENGE_INFRASTRUCTURE_UNAVAILABLE);
+        }
     }
 
 }

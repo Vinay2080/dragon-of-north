@@ -8,15 +8,16 @@ import java.util.UUID;
 public record VerificationResult(
         UUID userId,
         String primaryAmr,
+        String mfaMethodAmr,
         boolean success,
         FailureReason failureReason
 ) {
-    public static VerificationResult success(UUID userId, String primaryAmr) {
-        return new VerificationResult(userId, primaryAmr, true, FailureReason.NONE);
+    public static VerificationResult success(UUID userId, String primaryAmr, String mfaMethodAmr) {
+        return new VerificationResult(userId, primaryAmr, mfaMethodAmr, true, FailureReason.NONE);
     }
 
     public static VerificationResult failure(UUID userId, String primaryAmr, FailureReason failureReason) {
-        return new VerificationResult(userId, primaryAmr, false, failureReason);
+        return new VerificationResult(userId, primaryAmr, null, false, failureReason);
     }
 
     public enum FailureReason {

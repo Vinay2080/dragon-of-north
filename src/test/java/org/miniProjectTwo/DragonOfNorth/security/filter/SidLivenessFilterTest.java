@@ -45,7 +45,7 @@ class SidLivenessFilterTest {
 
     @Test
     void shouldClearAuthentication_whenModeAllAuthenticatedAndSidMissing() throws ServletException, IOException {
-        SidLivenessFilter filter = new SidLivenessFilter(sessionRepository, "all-authenticated", "/api/v1/session/**", auditEventLogger);
+        SidLivenessFilter filter = new SidLivenessFilter(sessionRepository, "all-authenticated", "/api/v1/sessions/**", auditEventLogger);
         SecurityPrincipal principal = new SecurityPrincipal(UUID.randomUUID(), List.of(new SimpleGrantedAuthority("ROLE_USER")), false, null, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));
 
@@ -59,7 +59,7 @@ class SidLivenessFilterTest {
 
     @Test
     void shouldClearAuthentication_whenSidRevokedOrMissingInStore() throws ServletException, IOException {
-        SidLivenessFilter filter = new SidLivenessFilter(sessionRepository, "all-authenticated", "/api/v1/session/**", auditEventLogger);
+        SidLivenessFilter filter = new SidLivenessFilter(sessionRepository, "all-authenticated", "/api/v1/sessions/**", auditEventLogger);
         UUID userId = UUID.randomUUID();
         UUID sid = UUID.randomUUID();
         SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(new SimpleGrantedAuthority("ROLE_USER")), true, Instant.now(), sid, List.of("pwd"));
@@ -75,7 +75,7 @@ class SidLivenessFilterTest {
 
     @Test
     void shouldPreserveAuthentication_whenModeSensitiveOnlyAndNonSensitivePath() throws ServletException, IOException {
-        SidLivenessFilter filter = new SidLivenessFilter(sessionRepository, "sensitive-only", "/api/v1/session/**", auditEventLogger);
+        SidLivenessFilter filter = new SidLivenessFilter(sessionRepository, "sensitive-only", "/api/v1/sessions/**", auditEventLogger);
         UUID userId = UUID.randomUUID();
         UUID sid = UUID.randomUUID();
         SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(new SimpleGrantedAuthority("ROLE_USER")), false, null, sid, List.of());
@@ -87,5 +87,22 @@ class SidLivenessFilterTest {
 
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
         verify(sessionRepository, never()).existsLiveSessionForUser(any(), any(), any());
+    }
+
+    @Test
+    void shouldEnforceSensitiveSessionsRoute_whenPatternMatchesPluralSessionsPath() throws ServletException, IOException {
+        SidLivenessFilter filter = new SidLivenessFilter(sessionRepository, "sensitive-only", "/api/v1/sessions/**", auditEventLogger);
+        UUID userId = UUID.randomUUID();
+        UUID sid = UUID.randomUUID();
+        SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(new SimpleGrantedAuthority("ROLE_USER")), false, null, sid, List.of("pwd"));
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, principal.authorities()));
+        when(sessionRepository.existsLiveSessionForUser(eq(sid), eq(userId), any(Instant.class))).thenReturn(false);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setServletPath("/api/v1/sessions/get/all");
+        filter.doFilterInternal(request, new MockHttpServletResponse(), filterChain);
+
+        verify(sessionRepository).existsLiveSessionForUser(eq(sid), eq(userId), any(Instant.class));
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
 }

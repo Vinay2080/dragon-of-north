@@ -151,6 +151,7 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
     @Query("""
             update Session s
                set s.mfaVerifiedAt = :verifiedAt,
+                   s.mfaMethodAmr = :mfaMethodAmr,
                    s.mfaRequired = false
              where s.id = :sessionId
                and s.appUser.id = :userId
@@ -161,5 +162,6 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
     int refreshMfaVerifiedAt(@Param("sessionId") UUID sessionId,
                              @Param("userId") UUID userId,
                              @Param("verifiedAt") Instant verifiedAt,
+                             @Param("mfaMethodAmr") String mfaMethodAmr,
                              @Param("now") Instant now);
 }

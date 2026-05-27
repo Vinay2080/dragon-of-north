@@ -10,7 +10,9 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.provider.MfaC
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.redis.ChallengeStateAtomicRedisOps;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.redis.ChallengeStateRedisStore;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.token.MfaChallengeTokenGenerator;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
+import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.shared.util.TokenHasher;
 
@@ -20,6 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -101,5 +104,46 @@ class MfaChallengeServiceImplTest {
         assertEquals(VerificationResult.FailureReason.PROVIDER_MISMATCH, result.failureReason());
         verify(providerVerifier, never()).verify(any(), any(), anyString());
         verify(auditEventLogger, atLeastOnce()).logSecurity(anyString(), any());
+    }
+
+    @Test
+    void createChallenge_shouldFailClosedWhenRedisUnavailable() {
+        MfaChallengeTokenGenerator tokenGenerator = () -> "token-1";
+        ChallengeStateRedisStore store = mock(ChallengeStateRedisStore.class);
+        doThrow(new RuntimeException("redis down")).when(store).save(anyString(), any());
+
+        MfaChallengeServiceImpl service = new MfaChallengeServiceImpl(
+                tokenGenerator,
+                store,
+                mock(ChallengeStateAtomicRedisOps.class),
+                new ChallengeRequestBinding(new TokenHasher()),
+                mock(MfaChallengeProviderVerifier.class),
+                new MfaChallengeProperties(),
+                mock(AuditEventLogger.class)
+        );
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.createChallenge(UUID.randomUUID(), "pwd", new AuthRequestContext("device-1", "127.0.0.1", "req-1", "ua"), List.of(ProviderType.TOTP)));
+        assertEquals(ErrorCode.MFA_CHALLENGE_INFRASTRUCTURE_UNAVAILABLE, ex.getErrorCode());
+    }
+
+    @Test
+    void verifyAndConsume_shouldFailClosedWhenRedisUnavailableOnClaim() {
+        ChallengeStateAtomicRedisOps atomicOps = mock(ChallengeStateAtomicRedisOps.class);
+        when(atomicOps.claim(anyString(), anyString(), any())).thenThrow(new RuntimeException("redis timeout"));
+
+        MfaChallengeServiceImpl service = new MfaChallengeServiceImpl(
+                mock(MfaChallengeTokenGenerator.class),
+                mock(ChallengeStateRedisStore.class),
+                atomicOps,
+                new ChallengeRequestBinding(new TokenHasher()),
+                mock(MfaChallengeProviderVerifier.class),
+                new MfaChallengeProperties(),
+                mock(AuditEventLogger.class)
+        );
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.verifyAndConsume("t-1", ProviderType.TOTP, "111111", new AuthRequestContext("device-1", "127.0.0.1", "req-1", "ua")));
+        assertEquals(ErrorCode.MFA_CHALLENGE_INFRASTRUCTURE_UNAVAILABLE, ex.getErrorCode());
     }
 }

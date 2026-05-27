@@ -76,6 +76,9 @@ public class Session extends BaseEntity {
     @Column(name = "primary_amr", nullable = false, length = 32)
     private String primaryAmr;
 
+    @Column(name = "mfa_method_amr", length = 32)
+    private String mfaMethodAmr;
+
     /**
      * Returns whether the session is already past its expiry timestamp.
      */

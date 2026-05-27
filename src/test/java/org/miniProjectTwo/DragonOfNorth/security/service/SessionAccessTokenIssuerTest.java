@@ -43,6 +43,7 @@ class SessionAccessTokenIssuerTest {
         session.setMfaRequired(false);
         session.setMfaVerifiedAt(verifiedAt);
         session.setPrimaryAmr("passwordless");
+        session.setMfaMethodAmr("totp");
 
         Role role = new Role();
         role.setRoleName(RoleName.USER);
@@ -53,7 +54,7 @@ class SessionAccessTokenIssuerTest {
         assertEquals(sessionId, facts.sessionId());
         assertTrue(facts.mfaVerified());
         assertEquals(verifiedAt, facts.mfaVerifiedAt());
-        assertEquals(List.of("passwordless"), facts.amr());
+        assertEquals(List.of("passwordless", "totp"), facts.amr());
         assertEquals(List.of(RoleName.USER.name()), facts.roles());
     }
 
