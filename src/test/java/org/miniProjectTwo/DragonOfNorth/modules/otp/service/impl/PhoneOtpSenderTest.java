@@ -2,7 +2,6 @@ package org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl.PhoneOtpSender;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;

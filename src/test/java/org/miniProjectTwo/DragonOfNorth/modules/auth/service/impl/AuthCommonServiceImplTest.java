@@ -198,7 +198,7 @@ class AuthCommonServiceImplTest {
         verify(sessionService, never()).createSession(any(), anyString(), anyString(), anyString(), anyString(), any());
         verify(sessionTokenIssuer, never()).issueLoginSession(any(), any(SessionCreationSpec.class), anyString(), anyString(), anyString());
         verify(meterRegistry).counter("auth.login.failure");
-        verify(auditEventLogger).log(eq("auth.login"), eq(user.getId()), eq("device-1"), eq("127.0.0.1"), eq("failure"), argThat(msg -> msg != null && msg.toLowerCase().contains("not verified")), eq("req-1"));
+        verify(auditEventLogger).log(eq("auth.login.failed"), eq(user.getId()), eq("device-1"), eq("127.0.0.1"), eq("failure"), argThat(msg -> msg != null && msg.toLowerCase().contains("not verified")), eq("req-1"));
     }
 
     @Test
@@ -260,7 +260,7 @@ class AuthCommonServiceImplTest {
         assertEquals(ErrorCode.MFA_CONFIGURATION_INVALID, exception.getErrorCode());
         verify(sessionService, never()).createSession(any(), anyString(), anyString(), anyString(), anyString(), any());
         verify(sessionTokenIssuer, never()).issueLoginSession(any(), any(SessionCreationSpec.class), anyString(), anyString(), anyString());
-        verify(auditEventLogger).log(eq("auth.login"), eq(user.getId()), eq("device-1"), eq("127.0.0.1"), eq("failure"), anyString(), eq("req-1"));
+        verify(auditEventLogger).log(eq("auth.login.failed"), eq(user.getId()), eq("device-1"), eq("127.0.0.1"), eq("failure"), anyString(), eq("req-1"));
     }
 
 
@@ -458,7 +458,7 @@ class AuthCommonServiceImplTest {
         AuthRequestContext context = new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
         UUID sessionId = UUID.randomUUID();
 
-        when(sessionRepository.existsLiveSessionForUser(sessionId, user.getId(), any())).thenReturn(false);
+        when(sessionRepository.existsLiveSessionForUser(eq(sessionId), eq(user.getId()), any())).thenReturn(false);
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> authCommonService.issueStepUpChallenge(user, sessionId, context));

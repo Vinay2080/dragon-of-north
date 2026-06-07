@@ -453,7 +453,6 @@ class SessionServiceImplTest {
         session.setId(sessionId);
         session.setAppUser(user);
 
-        when(meterRegistry.counter(anyString())).thenReturn(counter);
         when(sessionRepository.refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), eq("totp"), any(Instant.class)))
                 .thenReturn(1);
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
@@ -473,7 +472,6 @@ class SessionServiceImplTest {
         UUID userId = UUID.randomUUID();
         Instant verifiedAt = Instant.now();
 
-        when(meterRegistry.counter(anyString())).thenReturn(counter);
         when(sessionRepository.refreshMfaVerifiedAt(eq(sessionId), eq(userId), eq(verifiedAt), eq("totp"), any(Instant.class)))
                 .thenReturn(0);
 

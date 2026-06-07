@@ -6,7 +6,6 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AppUserSignUpRe
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.PasswordService;
@@ -152,6 +151,21 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
+    /**
+     * Builds a user status response for the given user.
+     * <p>
+     * This method constructs an {@code AppUserStatusFinderResponse} based on the
+     * provided {@code AppUser} entity. It includes the user's current status,
+     * email verification state, and a list of associated authentication providers.
+     * The provider information is retrieved from the database and filtered to
+     * include only distinct provider types linked to the user. This response is
+     * used by the frontend to determine the appropriate next steps in the
+     * authentication flow (e.g., whether to prompt for password, show email
+     * verification, etc.).
+     *
+     * @param user the user entity for which to build the status response
+     * @return an {@code AppUserStatusFinderResponse} containing the user's status and provider information
+     */
     private AppUserStatusFinderResponse buildStatusResponse(AppUser user) {
         return new AppUserStatusFinderResponse(
                 true,
@@ -165,40 +179,37 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
         );
     }
 
-    private AppUser buildEmailUser(AppUserSignUpRequest request) {
-        String normalizedIdentifier = IdentifierNormalizer.normalizeEmail(request.identifier());
-        AppUser user = new AppUser();
-        user.setEmail(normalizedIdentifier);
-        user.setPassword(passwordService.encodePassword(request.password()));
-        user.setAppUserStatus(PENDING_VERIFICATION);
-        user.setEmailVerified(false);
-        return user;
-    }
-
-    private void persistLocalProvider(AppUser savedUser) {
-        UserAuthProvider localProvider = new UserAuthProvider();
-        localProvider.setUser(savedUser);
-        localProvider.setProvider(LOCAL);
-        userAuthProviderRepository.save(localProvider);
-    }
-
+    /**
+     * Finds a user by their email address.
+     *
+     * @param identifier the email address to search for
+     * @return the user entity if found
+     * @throws BusinessException if no user is found with the specified email
+     */
     private AppUser findUserByEmail(String identifier) {
         return appUserRepository.findByEmail(identifier)
                 .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
     }
 
+    /**
+     * Prepares a user for sign-up by either reactivating a deleted account or creating a new one.
+     *
+     * @param request              the sign-up request
+     * @param normalizedIdentifier the normalized email identifier
+     */
     private void prepareUserForSignup(AppUserSignUpRequest request, String normalizedIdentifier) {
         appUserRepository.findByEmailForUpdate(normalizedIdentifier)
                 .map(existingUser -> reactivateDeletedAccount(existingUser, request))
                 .orElseGet(() -> createNewUser(request));
     }
 
-    private AppUser createNewUser(AppUserSignUpRequest request) {
-        AppUser savedUser = appUserRepository.save(buildEmailUser(request));
-        persistLocalProvider(savedUser);
-        return savedUser;
-    }
-
+    /**
+     * Reactivates a deleted account for sign-up.
+     *
+     * @param appUser the user to reactivate
+     * @param request the sign-up request
+     * @return the reactivated user entity
+     */
     private AppUser reactivateDeletedAccount(AppUser appUser, AppUserSignUpRequest request) {
         userStateValidator.validate(appUser, UserLifecycleOperation.LOCAL_SIGNUP_START);
         if (!userStateValidator.isDeleted(appUser)) {
@@ -216,12 +227,81 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
         return savedUser;
     }
 
+    /**
+     * Creates a new user for sign-up.
+     *
+     * @param request the sign-up request
+     * @return the newly created user entity
+     */
+    private AppUser createNewUser(AppUserSignUpRequest request) {
+        AppUser savedUser = appUserRepository.save(buildEmailUser(request));
+        persistLocalProvider(savedUser);
+        return savedUser;
+    }
+
+    /**
+     * Persists the local authentication provider for a user if it doesn't already exist.
+     *
+     * @param savedUser the user for whom to persist the local provider
+     */
     private void persistLocalProviderIfMissing(AppUser savedUser) {
         if (!userAuthProviderRepository.existsByUserIdAndProvider(savedUser.getId(), LOCAL)) {
             persistLocalProvider(savedUser);
         }
     }
 
+    /**
+     * Records the start of a reactivation process.
+     *
+     * @param appUser the user for whom to record the reactivation
+     */
+    private void recordReactivationStarted(AppUser appUser) {
+        meterRegistry.counter("auth.reactivation.started").increment();
+        auditEventLogger.log("auth.reactivation", appUser.getId(), null, null, "started", "identifier_type=EMAIL", null);
+    }
+
+    /**
+     * Builds a new AppUser entity for email-based sign-up.
+     * <p>
+     * This method creates a new {@code AppUser} instance based on the provided
+     * sign-up request. It normalizes the email identifier, encodes the password,
+     * and sets the initial account status to {@code PENDING_VERIFICATION} with
+     * the {@code emailVerified} flag set to {@code false}. This user entity is
+     * then persisted to the database as part of the sign-up process. The method
+     * encapsulates the logic for constructing a user entity that is ready for
+     * email-based registration and subsequent verification steps.
+     *
+     * @param request the sign-up request containing the email and password
+     * @return a new {@code AppUser} entity initialized for email-based sign-up
+     */
+    private AppUser buildEmailUser(AppUserSignUpRequest request) {
+        String normalizedIdentifier = IdentifierNormalizer.normalizeEmail(request.identifier());
+        AppUser user = new AppUser();
+        user.setEmail(normalizedIdentifier);
+        user.setPassword(passwordService.encodePassword(request.password()));
+        user.setAppUserStatus(PENDING_VERIFICATION);
+        user.setEmailVerified(false);
+        return user;
+    }
+
+    /**
+     * Persists a local authentication provider for the given user.
+     *
+     * @param savedUser the user for whom to persist the local provider
+     */
+    private void persistLocalProvider(AppUser savedUser) {
+        UserAuthProvider localProvider = new UserAuthProvider();
+        localProvider.setUser(savedUser);
+        localProvider.setProvider(LOCAL);
+        userAuthProviderRepository.save(localProvider);
+    }
+
+    /**
+     * Ensures that the user has verified their email address via OTP before completing sign-up.
+     *
+     * @param identifier the email identifier
+     * @throws BusinessException if the email is not verified
+     */
     private void ensureSignupOtpVerified(String identifier) {
         OtpToken latestVerified = null;
 
@@ -246,6 +326,11 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
+    /**
+     * Completes the email sign-up process for a user.
+     *
+     * @param appUser the user for whom to complete the sign-up
+     */
     private void completeEmailSignup(AppUser appUser) {
         authCommonServices.assignDefaultRole(appUser);
         appUser.setEmailVerified(true);
@@ -254,29 +339,42 @@ public class EmailAuthenticationServiceImpl implements AuthenticationService {
         profileService.ensureProfileExists(appUser.getId(), null);
     }
 
+    /**
+     * Records a successful sign-up event.
+     */
     private void recordSignupSuccess() {
         meterRegistry.counter("auth.signup.success").increment();
         auditEventLogger.log("auth.signup", null, null, null, "success", "identifier_type=EMAIL", null);
     }
 
+    /**
+     * Records a failed sign-up event.
+     *
+     * @param ex the exception that occurred during sign-up
+     */
     private void recordSignupFailure(RuntimeException ex) {
         meterRegistry.counter("auth.signup.failure").increment();
         auditEventLogger.log("auth.signup", null, null, null, "failure", ex.getMessage(), null);
     }
 
+    /**
+     * Records a successful sign-up completion event.
+     *
+     * @param appUser the user for whom to record the completion
+     */
     private void recordSignupCompleteSuccess(AppUser appUser) {
         meterRegistry.counter("auth.signup.complete.success").increment();
         auditEventLogger.log("auth.signup.complete", appUser.getId(), null, null, "success", "identifier_type=EMAIL", null);
     }
 
+    /**
+     * Records a failed sign-up completion event.
+     *
+     * @param ex the exception that occurred during sign-up completion
+     */
     private void recordSignupCompleteFailure(RuntimeException ex) {
         meterRegistry.counter("auth.signup.complete.failure").increment();
         auditEventLogger.log("auth.signup.complete", null, null, null, "failure", ex.getMessage(), null);
-    }
-
-    private void recordReactivationStarted(AppUser appUser) {
-        meterRegistry.counter("auth.reactivation.started").increment();
-        auditEventLogger.log("auth.reactivation", appUser.getId(), null, null, "started", "identifier_type=EMAIL", null);
     }
 
 

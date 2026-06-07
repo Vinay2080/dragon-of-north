@@ -9,6 +9,15 @@ import java.util.Arrays;
 
 /**
  * Produces stable, privacy-preserving request bindings for MFA challenges.
+ * <ol>
+ *     <li>Device ID: normalized and trimmed client-provided device identifier.</li>
+ *     <li>IP Prefix: coarse prefix of the client IP address for geolocation/risk checks without storing full IPs.</li>
+ *     <li>User Agent Hash: truncated and hashed user agent string to preserve privacy while allowing device fingerprinting and risk analysis.</li>
+ * </ol>
+ * <p>
+ * These bindings are designed to be consistent for the same client context while minimizing sensitive data storage, enabling effective MFA challenge management and risk-based authentication decisions without compromising user privacy.
+ * </p>
+ *
  */
 @Component
 @RequiredArgsConstructor

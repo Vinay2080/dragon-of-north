@@ -7,7 +7,11 @@ import jakarta.validation.constraints.Pattern;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 
 /**
- * Request DTO for verifying OTP codes delivered via email.
+ * Request payload for verifying an OTP sent to an email address.
+ *
+ * <p>This DTO captures the necessary information to verify an OTP, including the email
+ * address, the OTP code, and the purpose of the OTP. Validation annotations ensure that
+ * the input data is well-formed before processing.</p>
  */
 @Schema(name = "EmailVerifyRequest", description = "Request payload for verifying an OTP that was sent to an email address.")
 public record EmailVerifyRequest(

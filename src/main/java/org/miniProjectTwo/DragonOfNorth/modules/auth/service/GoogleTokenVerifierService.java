@@ -34,8 +34,13 @@ public class GoogleTokenVerifierService {
     private final GoogleOAuthConfig config;
     private final ObjectMapper objectMapper;
 
+
     /**
-     * Validates a Google ID token and returns normalized user claims.
+     * Verifies the provided Google ID token and extracts user information if valid. This method uses the GoogleIdTokenVerifier to validate the token's signature and claims. It checks the issuer against allowed Google issuers, validates the audience to ensure it matches the expected client ID, and enforces that the email is verified. If the token is valid, it maps relevant claims into an OAuthUserInfo object. If any validation step fails, it logs detailed diagnostics and throws an InvalidOAuthTokenException.
+     *
+     * @param idToken The Google ID token to verify.
+     * @return An OAuthUserInfo object containing user details extracted from the token if verification is successful.
+     * @throws InvalidOAuthTokenException If the token is invalid, expired, or fails any of the verification checks.
      */
     public OAuthUserInfo verifyToken(String idToken) {
         try {
@@ -88,34 +93,12 @@ public class GoogleTokenVerifierService {
         }
     }
 
-    private String resolveAudience(Object audienceClaim) {
-        String expectedClientId = config.normalizedClientId();
-        if (audienceClaim instanceof String audience) {
-            return audience.trim();
-        }
-
-        if (audienceClaim instanceof Collection<?> audiences) {
-            return audiences.stream()
-                    .filter(String.class::isInstance)
-                    .map(String.class::cast)
-                    .map(String::trim)
-                    .filter(expectedClientId::equals)
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        return null;
-    }
-
-    private String maskedClientId() {
-        String clientId = config.normalizedClientId();
-        if (clientId == null || clientId.isBlank()) {
-            return "unset";
-        }
-        int keep = Math.min(6, clientId.length());
-        return clientId.substring(0, keep) + "...";
-    }
-
+    /**
+     * Decodes the unverified payload of a Google ID token.
+     *
+     * @param idToken The Google ID token to decode.
+     * @return A map containing the decoded payload claims.
+     */
     private Map<String, Object> decodeUnverifiedPayload(String idToken) {
         if (idToken == null || idToken.isBlank()) {
             return Map.of();
@@ -133,5 +116,44 @@ public class GoogleTokenVerifierService {
         } catch (Exception ignored) {
             return Map.of();
         }
+    }
+
+    /**
+     * Returns a masked version of the client ID for logging purposes.
+     *
+     * @return The masked client ID.
+     */
+    private String maskedClientId() {
+        String clientId = config.normalizedClientId();
+        if (clientId == null || clientId.isBlank()) {
+            return "unset";
+        }
+        int keep = Math.min(6, clientId.length());
+        return clientId.substring(0, keep) + "...";
+    }
+
+    /**
+     * Resolves the audience claim from the token payload, handling both string and array formats. Google ID tokens may return the "aud" claim as either a single string or an array of strings. This method checks the type of the claim and extracts the audience accordingly. If the claim is a string, it trims whitespace and returns it. If it's a collection, it filters for string entries, trims them, and checks if any match the expected client ID from the configuration. If a match is found, it returns that audience; otherwise, it returns null.
+     *
+     * @param audienceClaim The raw audience claim extracted from the token payload, which may be a String or a Collection.
+     * @return The resolved audience string if valid, or null if it cannot be resolved or does not match the expected client ID.
+     */
+    private String resolveAudience(Object audienceClaim) {
+        String expectedClientId = config.normalizedClientId();
+        if (audienceClaim instanceof String audience) {
+            return audience.trim();
+        }
+
+        if (audienceClaim instanceof Collection<?> audiences) {
+            return audiences.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .map(String::trim)
+                    .filter(expectedClientId::equals)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        return null;
     }
 }

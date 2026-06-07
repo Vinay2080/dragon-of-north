@@ -22,6 +22,12 @@ public class TokenHasher {
         return sha256(token);
     }
 
+    /**
+     * Hashes a raw token using SHA-256.
+     *
+     * @param input The raw token to hash.
+     * @return The deterministic SHA-256 hash of the token.
+     */
     private String sha256(String input) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -32,6 +38,12 @@ public class TokenHasher {
         }
     }
 
+    /**
+     * Converts a byte array to a hexadecimal string representation.
+     *
+     * @param bytes The byte array to convert.
+     * @return The hexadecimal string representation of the byte array.
+     */
     private String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {

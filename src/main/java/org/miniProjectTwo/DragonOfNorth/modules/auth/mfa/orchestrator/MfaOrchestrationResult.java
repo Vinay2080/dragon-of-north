@@ -7,6 +7,7 @@ import java.util.List;
 
 /**
  * Result of MFA orchestration before login session issuance.
+ * <p>Returned by the MFA orchestration service to indicate whether MFA is required, which methods are available, and any active challenge context that the client needs to be aware of. This result informs the client whether it needs to prompt the user for MFA verification and which options to present, as well as providing the necessary context for any ongoing MFA challenge that the client may need to continue with.</p>
  */
 public record MfaOrchestrationResult(
         boolean mfaRequired,

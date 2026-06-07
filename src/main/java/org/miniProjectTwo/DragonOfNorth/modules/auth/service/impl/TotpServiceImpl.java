@@ -24,11 +24,23 @@ import static dev.samstevens.totp.code.HashingAlgorithm.SHA1;
 @Slf4j
 class TotpServiceImpl implements TotpService {
 
+    /**
+     * Generates a new TOTP secret using the default secret generator provided by the TOTP library. The generated secret is a Base32-encoded string that can be used to set up TOTP-based MFA for a user. This method does not associate the generated secret with any user or persist it; it simply returns the raw secret string for use in the MFA setup process.
+     *
+     * @return A newly generated TOTP secret as a Base32-encoded string.
+     */
     @Override
     public String generateSecret() {
         return new DefaultSecretGenerator().generate();
     }
 
+    /**
+     * Generates a QR code for setting up TOTP-based MFA for a user. The QR code contains the necessary information for the user's authenticator app to register the account.
+     *
+     * @param secret  the TOTP secret for the user
+     * @param appUser the user for whom to generate the QR code
+     * @return A data URL containing the QR code image, or null if an error occurs
+     */
     @Override
     public String generateQrCode(String secret, AppUser appUser) {
         QrData qrData = new QrData.Builder()
@@ -50,6 +62,13 @@ class TotpServiceImpl implements TotpService {
         }
     }
 
+    /**
+     * Validates a TOTP code against a secret. Checks if the provided code is valid for the given secret at the current time.
+     *
+     * @param secret the TOTP secret for the user
+     * @param code   the TOTP code to validate
+     * @return true if the code is valid, false otherwise
+     */
     @Override
     public boolean isValidCode(String secret, String code) {
         TimeProvider timeProvider = new SystemTimeProvider();

@@ -54,6 +54,9 @@ public class SidLivenessFilter extends OncePerRequestFilter {
         this.auditEventLogger = auditEventLogger;
     }
 
+    /**
+     * For applicable requests, verifies that the authenticated principal's session ID maps to a live session. If not, clears the security context to force re-authentication.
+     */
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,

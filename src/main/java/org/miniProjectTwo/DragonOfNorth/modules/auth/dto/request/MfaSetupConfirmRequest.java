@@ -10,8 +10,12 @@ import org.hibernate.validator.constraints.Length;
 /**
  * Confirms TOTP enrollment by submitting the current authenticator code for the in-progress setup.
  * <p>
- * Security expectations: code must be exactly six digits and device id must be present so enablement
+ * Security expectations: code must be exactly six digits, and device id must be present so enablement
  * can be bound to a trusted session context.
+ * <p>
+ * Used by {@code /auth/mfa/setup/confirm} to finalize TOTP/MFA setup after the user has scanned the QR code and configured their authenticator app. The submitted code is verified against the expected TOTP value for the shared secret, and if valid, the MFA method is enabled for the user's account and associated with the provided device id for session binding. This step is crucial to ensure that the user has successfully configured their authenticator app and can generate valid codes before enabling MFA for their account.
+ * @param code The 6-digit TOTP code from the user's authenticator app.
+ * @param deviceId The client-generated device id to bind the MFA enablement to a session
  */
 @Schema(name = "MfaSetupConfirmRequest", description = "Request payload for confirming TOTP/MFA setup using an authenticator app code.")
 public record MfaSetupConfirmRequest(

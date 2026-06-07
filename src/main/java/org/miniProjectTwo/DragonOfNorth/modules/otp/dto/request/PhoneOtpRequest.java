@@ -8,7 +8,9 @@ import jakarta.validation.constraints.Size;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 
 /**
- * Request DTO for generating OTP codes via SMS delivery.
+ * Request payload for sending an OTP to a phone number.
+ *
+ * <p>Includes validation constraints to ensure the phone number is in a valid format and the OTP purpose is specified.</p>
  */
 @Schema(name = "PhoneOtpRequest", description = "Request payload for sending an OTP to a phone number.")
 public record PhoneOtpRequest(

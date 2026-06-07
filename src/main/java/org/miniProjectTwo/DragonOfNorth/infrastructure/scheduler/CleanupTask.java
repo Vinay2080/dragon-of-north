@@ -35,6 +35,8 @@ public class CleanupTask {
 
     /**
      * Deletes OTP records whose expiration time has passed.
+     * <p>Runs at a fixed delay defined by the {@code otp.cleanup.delay-ms} property.  If cleanup fails, the exception is logged and rethrown to trigger any configured retry or alerting mechanisms.</p>
+     * @throws RuntimeException if OTP cleanup fails
      */
     @Scheduled(fixedDelayString = "${otp.cleanup.delay-ms}")
     @Transactional
@@ -51,6 +53,8 @@ public class CleanupTask {
 
     /**
      * Deletes unverified users that are older than the configured grace period.
+     * <p>Runs every 15 minutes.  If cleanup fails, the exception is logged and rethrown to trigger any configured retry or alerting mechanisms.</p>
+     * @throws RuntimeException if user cleanup fails
      */
     @Scheduled(fixedDelay = 15 * 60 * 1000)
     @Transactional
@@ -68,8 +72,11 @@ public class CleanupTask {
         }
     }
 
+
     /**
      * Removes expired sessions and old revoked sessions.
+     * <p>Runs at a fixed delay defined by the {@code session.cleanup.delay-ms} property.  If cleanup fails, the exception is logged and rethrown to trigger any configured retry or alerting mechanisms.</p>
+     * @throws RuntimeException if session cleanup fails
      */
     @Scheduled(fixedDelayString = "${session.cleanup.delay-ms}")
     @Transactional

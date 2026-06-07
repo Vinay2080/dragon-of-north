@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.infrastructure.audit.AuditorAwareImpl;
-import org.miniProjectTwo.DragonOfNorth.infrastructure.config.BeansConfig;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;

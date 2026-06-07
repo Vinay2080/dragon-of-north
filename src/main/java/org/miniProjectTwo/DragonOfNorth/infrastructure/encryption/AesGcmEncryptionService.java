@@ -13,7 +13,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 
 /**
- * Authenticated encryption component used by security-sensitive modules (for example MFA secret
+ * Authenticated encryption component used by security-sensitive modules (for example, MFA secret
  * storage and other encrypted-at-rest values).
  * <p>
  * Dependency workflow: callers provide plaintext -> provider resolves key -> AES-GCM encrypts with
@@ -37,6 +37,16 @@ class AesGcmEncryptionService implements EncryptionService {
     private final EncryptedValueCodec encryptedValueCodec;
     private final SecureRandom secureRandom = new SecureRandom();
 
+    /**
+     * Encrypts the provided plain text using the current encryption key.
+     * Adds version information to the encrypted text.
+     * Uses AES-GCM for encryption and decryption.
+     * Uses TRANSFORMATION constant for cipher initialization.
+     *
+     * @param plainText The plain text to encrypt.
+     * @return The encrypted text.
+     * @throws EncryptionException If encryption fails or the plain text is null.
+     */
     @Override
     public String encrypt(String plainText) {
         if (plainText == null) {
@@ -62,8 +72,21 @@ class AesGcmEncryptionService implements EncryptionService {
         }
     }
 
+    /**
+     * Decrypts the provided encrypted text using the appropriate encryption key.
+     * Checks for version compatibility and performs decryption.
+     * Uses AES-GCM for encryption and decryption.
+     *
+     * @param encryptedText The encrypted text to decrypt.
+     * @return The decrypted plain text.
+     * @throws EncryptionException If decryption fails or the encrypted value version is unsupported.
+     */
     @Override
     public String decrypt(String encryptedText) {
+        if (encryptedText == null) {
+            throw new EncryptionException("Encrypted text cannot be null");
+        }
+
         EncryptedValue encryptedValue = encryptedValueCodec.parse(encryptedText);
         if (encryptedValue.version() != EncryptedValue.CURRENT_VERSION) {
             throw new EncryptionException("Unsupported encrypted value version: " + encryptedValue.version());

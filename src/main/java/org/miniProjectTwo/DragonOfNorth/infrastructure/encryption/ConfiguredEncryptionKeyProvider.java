@@ -12,7 +12,7 @@ import java.util.Base64;
  * Property-backed key resolver used by encryption services in auth/security workflows.
  * <p>
  * Current implementation resolves only one active AES-256 key from {@link EncryptionProperties}.
- * It still enforces key-id lookup semantics so callers and payload formats remain compatible with
+ * It still enforces key-id lookup semantics, so caller and payload formats remain compatible with
  * future multi-key rotation (KMS/Vault/key-ring tables). Failure behavior is fail-closed: unknown
  * key ids or invalid key material throw {@link org.miniProjectTwo.DragonOfNorth.shared.encryption.EncryptionException}.
  */
@@ -25,11 +25,22 @@ class ConfiguredEncryptionKeyProvider implements EncryptionKeyProvider {
 
     private final EncryptionProperties properties;
 
+    /**
+     * Retrieves the current encryption key for new writes.
+     *
+     * @return The current encryption key.
+     */
     @Override
     public EncryptionKey currentKey() {
         return keyFor(activeKeyId());
     }
 
+    /**
+     * Retrieves the encryption key for the specified key id.
+     *
+     * @param keyId The unique identifier for the encryption key.
+     * @return The encryption key for the specified key id.
+     */
     @Override
     public EncryptionKey keyFor(String keyId) {
         String activeKeyId = activeKeyId();
@@ -39,6 +50,11 @@ class ConfiguredEncryptionKeyProvider implements EncryptionKeyProvider {
         return new EncryptionKey(activeKeyId, secretKey());
     }
 
+    /**
+     * Decodes the master key from Base64 format.
+     *
+     * @return The decoded master key as a SecretKey.
+     */
     private SecretKey secretKey() {
         String encodedKey = properties.getMasterKey();
         if (encodedKey == null || encodedKey.isBlank()) {
@@ -64,12 +80,17 @@ class ConfiguredEncryptionKeyProvider implements EncryptionKeyProvider {
         }
     }
 
+    /**
+     * Retrieves the unique identifier for the active encryption key.
+     *
+     * @return The normalized active key id.
+     */
     private String activeKeyId() {
         return normalizeKeyId(properties.getActiveKeyId());
     }
 
     private String normalizeKeyId(String keyId) {
-        if (keyId == null || keyId.isBlank()) {
+        if (keyId == null) {
             throw new EncryptionException("app.encryption.active-key-id must be configured");
         }
         return keyId.trim();

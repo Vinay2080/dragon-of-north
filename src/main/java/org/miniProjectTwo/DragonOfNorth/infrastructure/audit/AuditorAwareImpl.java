@@ -16,7 +16,7 @@ import java.util.UUID;
 
 /**
  * Resolves the current auditor for JPA auditing fields.
- *
+ * <p>This implementation checks the Spring Security context for an authenticated principal and extracts a user identifier to use as the auditor. It supports principals of type {@link AppUserDetails}, UUID, or String. If no authenticated user is found, it defaults to "SYSTEM".</p>
  * <p>Uses the Spring Security principal when available, otherwise falls back to {@code SYSTEM}.</p>
  */
 @NullMarked
@@ -30,8 +30,15 @@ public class AuditorAwareImpl implements AuditorAware<String> {
 
     /**
      * Returns the identity to store in audit columns.
+     * <ol>
+     *   <li>If the principal is an {@link AppUserDetails}, returns the email if present, otherwise the phone number.</li>
+     *   <li>If the principal is a UUID, returns the UUID as a string.</li>
+     *   <li>If the principal is a non-empty string (and not "anonymousUser"), returns that string.</li>
+     *   <li>If the principal is null or empty, returns {@code SYSTEM}.</li>
+     *   </ol>
      *
      * @return authenticated identifier, or {@code SYSTEM} when no user is authenticated
+     *
      */
     @Override
     public Optional<String> getCurrentAuditor() {

@@ -42,7 +42,11 @@ public class ProfileController implements ProfileApi {
     private final UserAuthProviderRepository userAuthProviderRepository;
 
     /**
-     * Updates mutable profile fields (bio, avatar URL, display name, username).
+     * Updates the authenticated user's profile information, including bio, avatar URL, display name, and username. The method accepts an UpdateProfileRequest DTO containing the new profile details, resolves the user's identity from the Spring Security context, and delegates the update operation to the ProfileService. Upon successful update, it returns the updated profile information along with the primary authentication provider wrapped in a GetProfileResponse DTO within a successful ApiResponse envelope.
+     *
+     * @param request An UpdateProfileRequest DTO containing the new profile details to be updated. Must not be null.
+     * @return An ApiResponse containing a GetProfileResponse DTO with the updated profile information and primary authentication provider.
+     * @throws BusinessException If the user is not authenticated, or if there is an issue resolving the user's identity or authentication provider.
      */
     @Override
     @PatchMapping
@@ -57,7 +61,11 @@ public class ProfileController implements ProfileApi {
     }
 
     /**
-     * Uploads a new profile image and returns the persisted avatar metadata.
+     * Uploads a new profile image for the authenticated user. The method accepts a multipart file upload, resolves the user's identity from the Spring Security context, and delegates the image processing and profile update to the ProfileService. Upon successful update, it returns the new avatar URL and source wrapped in a ProfileImageResponse DTO within a successful ApiResponse envelope.
+     *
+     * @param file The multipart file containing the new profile image to be uploaded. Must not be null.
+     * @return An ApiResponse containing a ProfileImageResponse DTO with the updated avatar URL and source.
+     * @throws BusinessException If the user is not authenticated, or if there is an issue, resolving the user's identity.
      */
     @Override
     @PostMapping(value = "/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -76,7 +84,10 @@ public class ProfileController implements ProfileApi {
     }
 
     /**
-     * Retrieves the effective profile view with inferred auth provider for UI display.
+     * Retrieves the current user's profile information, including username, display name, bio, avatar URL, avatar source, and primary authentication provider. The method resolves the user's identity from the Spring Security context, fetches the associated profile from the ProfileService, determines the primary authentication provider using the UserAuthProviderRepository, and returns the profile information wrapped in a GetProfileResponse DTO within a successful ApiResponse envelope.
+     *
+     * @return An ApiResponse containing a GetProfileResponse DTO with the user's profile information and primary authentication provider.
+     * @throws BusinessException If the user is not authenticated, or if there is an issue resolving the user's identity or authentication provider.
      */
     @Override
     @GetMapping
@@ -88,6 +99,13 @@ public class ProfileController implements ProfileApi {
         return ApiResponse.success(toResponse(profile, authProvider));
     }
 
+    /**
+     * Converts a Profile entity and an authentication provider into a GetProfileResponse DTO.
+     *
+     * @param profile      The profile entity to convert.
+     * @param authProvider The authentication provider associated with the profile.
+     * @return A GetProfileResponse DTO containing the profile information and auth provider.
+     */
     private GetProfileResponse toResponse(Profile profile, Provider authProvider) {
         return new GetProfileResponse(
                 profile.getUsername(),
@@ -99,6 +117,30 @@ public class ProfileController implements ProfileApi {
         );
     }
 
+    /**
+     * Resolves the primary authentication provider for the given user ID. This method checks the user's linked auth providers in a defined order (e.g., LOCAL first, then GOOGLE) and returns the first match. If no providers are found, it returns null, indicating an unknown or unsupported provider.
+     *
+     * @param userId The ID of the user for whom to resolve the auth provider.
+     * @return The resolved Provider enum value representing the user's primary auth provider, or null if no provider is found.
+     */
+    private Provider resolveAuthProvider(UUID userId) {
+        if (userAuthProviderRepository.existsByUserIdAndProvider(userId, LOCAL)) {
+            return LOCAL;
+        }
+
+        if (userAuthProviderRepository.existsByUserIdAndProvider(userId, GOOGLE)) {
+            return GOOGLE;
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolves the current authenticated user's ID from the Spring Security context. This method checks various possible principal types (AppUserDetails, AppUser, SecurityPrincipal, raw UUID string) to extract the user ID. If no valid user ID can be resolved, it throws a BusinessException with an UNAUTHORIZED error code.
+     *
+     * @return The UUID of the currently authenticated user.
+     * @throws BusinessException If the user is not authenticated, or if the authentication principal is of an unsupported type.
+     */
     private UUID resolveCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getPrincipal() == null) {
@@ -132,17 +174,5 @@ public class ProfileController implements ProfileApi {
         }
 
         throw new BusinessException(UNAUTHORIZED, "Unsupported authentication principal");
-    }
-
-    private Provider resolveAuthProvider(UUID userId) {
-        if (userAuthProviderRepository.existsByUserIdAndProvider(userId, LOCAL)) {
-            return LOCAL;
-        }
-
-        if (userAuthProviderRepository.existsByUserIdAndProvider(userId, GOOGLE)) {
-            return GOOGLE;
-        }
-
-        return null;
     }
 }

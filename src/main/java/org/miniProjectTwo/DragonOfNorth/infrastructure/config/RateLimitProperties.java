@@ -13,7 +13,7 @@ import java.util.Map;
 
 /**
  * Binds external rate-limit settings.
- *
+ * <p>Defines endpoint patterns and their associated token-bucket rules for rate limiting. This configuration allows flexible mapping of API endpoints to specific rate-limiting strategies, enabling fine-grained control over request throttling based on the defined rules.</p>
  * <p>Maps endpoint patterns to limit-rule definitions.</p>
  */
 @Setter

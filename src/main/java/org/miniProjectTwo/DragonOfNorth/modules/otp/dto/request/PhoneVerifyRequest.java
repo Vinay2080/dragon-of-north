@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 
 /**
- * Request DTO for verifying OTP codes delivered via SMS.
+ * Request payload for verifying an OTP that was sent to a phone number.
  */
 @Schema(name = "PhoneVerifyRequest", description = "Request payload for verifying an OTP that was sent to a phone number.")
 public record PhoneVerifyRequest(

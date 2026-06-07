@@ -43,8 +43,20 @@ public class SessionServiceImpl implements SessionService {
     @Value("${app.security.jwt.expiration.refresh-token}")
     private long refreshTokenDurationMs;
 
+
     /**
-     * Creates a new session for a device and replaces any existing device session.
+     * Creates a new session for the given user and device, replacing any existing session for the same device.
+     * The refresh token is hashed before storage, and the session is initialized with metadata such as IP address and user agent.
+     * The method also logs an audit event indicating whether an existing session was replaced and if MFA is required.
+     *
+     * @param appUser          The user for whom the session is being created. Must not be null.
+     * @param rawRefreshToken  The raw refresh token string to be hashed and stored. Must not be null or empty.
+     * @param ipAddress        The IP address from which the session is being created. Optional.
+     * @param deviceId         The unique identifier of the device for this session. Must not be null or empty.
+     * @param userAgent        The user agent string of the client's device. Optional.
+     * @param creationSpec     Additional specifications for session creation, such as MFA requirements. Must not be null.
+     * @return The created Session entity with all relevant metadata and hashed refresh token.
+     * @throws BusinessException If there is an issue during session creation, such as database errors or invalid input.
      */
     @Override
     @Transactional
@@ -85,7 +97,12 @@ public class SessionServiceImpl implements SessionService {
 
 
     /**
-     * Revokes the current-device session if found.
+     * Revokes the session associated with the given refresh token and device ID. The method first extracts the user ID from the refresh token,
+     * validates the user's state for session revocation, and then attempts to revoke the session if it is active. If no active session is found for the given token and device, it checks if a session exists at all to determine whether to log a failure or a success event (already revoked).
+     *
+     * @param refreshToken The raw refresh token string associated with the session to revoke. Must not be null or empty.
+     * @param deviceId     The unique identifier of the device for which to revoke the session. Must not be null or empty.
+     * @throws BusinessException If there is an issue during session revocation, such as invalid token, user not found, or database errors.
      */
     @Override
     @Transactional
@@ -113,7 +130,11 @@ public class SessionServiceImpl implements SessionService {
     }
 
     /**
-     * Retrieves sessions for a user ordered by last usage time.
+     * Retrieves a list of session summaries for the given user ID, ordered by last used timestamp descending. Each summary includes session metadata such as device ID, IP address, user agent, last used time, expiry date, and revocation status.
+     *
+     * @param userId The UUID of the user for whom to retrieve sessions. Must not be null.
+     * @return A list of SessionSummaryResponse objects representing the user's sessions.
+     * @throws BusinessException If there is an issue during retrieval, such as user not found or database errors.
      */
     @Override
     @Transactional(readOnly = true)
@@ -132,7 +153,11 @@ public class SessionServiceImpl implements SessionService {
     }
 
     /**
-     * Revokes a single user-owned session by id.
+     * Revokes a specific session by its ID for the given user. The method first validates the user's state for session revocation, then attempts to find the session by ID and user ID. If the session is found and is not already revoked, it marks it as revoked. If the session is not found, it logs a failure event and throws a BusinessException.
+     *
+     * @param userId    The UUID of the user who owns the session to revoke. Must not be null.
+     * @param sessionId The UUID of the session to revoke. Must not be null.
+     * @throws BusinessException If there is an issue during session revocation, such as user not found, session not found, or database errors.
      */
     @Override
     @Transactional
@@ -154,7 +179,12 @@ public class SessionServiceImpl implements SessionService {
     }
 
     /**
-     * Revokes all sessions except the provided current device id.
+     * Revokes all sessions for the given user except the one associated with the current device ID. The method first validates the user's state for session revocation, then attempts to revoke all other sessions. If the current device ID is missing or empty, it logs a failure event and throws a BusinessException.
+     *
+     * @param userId          The UUID of the user whose sessions are to be revoked. Must not be null.
+     * @param currentDeviceId The unique identifier of the current device whose session should not be revoked. Must not be null or empty.
+     * @return The number of sessions that were revoked.
+     * @throws BusinessException If there is an issue during session revocation, such as user not found, invalid device ID, or database errors.
      */
     @Override
     @Transactional
@@ -172,7 +202,13 @@ public class SessionServiceImpl implements SessionService {
     }
 
     /**
-     * Validates and rotates the refresh-token hash for an existing session.
+     * Validates the old refresh token and device ID, then rotates the refresh token by replacing the old token hash with the new token hash in the session record. The method first extracts the user ID from the old refresh token, validates the user's state for session rotation, and then attempts to rotate the token if the session is active. If no active session is found for the given token and device, it logs a failure event and throws a BusinessException. If successful, it returns the updated Session entity.
+     *
+     * @param oldRefreshToken The raw old refresh token string to validate and rotate. Must not be null or empty.
+     * @param newRefreshToken The raw new refresh token string to replace the old one. Must not be null or empty.
+     * @param deviceId        The unique identifier of the device for which to rotate the session. Must not be null or empty.
+     * @return The updated Session entity after successful rotation.
+     * @throws BusinessException If there is an issue during session rotation, such as invalid token, user not found, session not rotatable, or database errors.
      */
     @Override
     @Transactional
@@ -203,7 +239,10 @@ public class SessionServiceImpl implements SessionService {
     }
 
     /**
-     * Revokes every active session for the given user id.
+     * Revokes all sessions for the given user ID. The method first validates the user's state for session revocation, then attempts to revoke all sessions. It logs an audit event with the count of revoked sessions.
+     *
+     * @param userId The UUID of the user whose sessions are to be revoked. Must not be null.
+     * @throws BusinessException If there is an issue during session revocation, such as user not found or database errors.
      */
     @Override
     @Transactional
@@ -233,6 +272,14 @@ public class SessionServiceImpl implements SessionService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN, "Session not found after mfa refresh"));
     }
 
+    /**
+     * Loads the user by ID and validates their state for the given lifecycle operation. If the user is not found or fails validation, a BusinessException is thrown.
+     *
+     * @param userId    The UUID of the user to load and validate. Must not be null.
+     * @param operation The lifecycle operation for which to validate the user's state. Must not be null.
+     * @return The loaded AppUser entity if found and valid.
+     * @throws BusinessException If the user is not found or fails validation for the specified operation.
+     */
     private AppUser loadAndValidateUser(UUID userId, UserLifecycleOperation operation) {
         AppUser appUser = appUserRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "User not found"));

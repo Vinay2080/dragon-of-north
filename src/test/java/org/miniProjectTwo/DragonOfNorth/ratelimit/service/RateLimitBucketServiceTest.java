@@ -25,6 +25,21 @@ class RateLimitBucketServiceTest {
         return rule;
     }
 
+    @Test
+    void initializeConfigurations_shouldSucceed_whenAllRulesPresent() {
+        // arrange
+        @SuppressWarnings("unchecked")
+        ProxyManager<String> proxyManager = mock(ProxyManager.class);
+
+        RateLimitProperties properties = new RateLimitProperties();
+        properties.setRules(allRules());
+
+        RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
+
+        // act + assert
+        assertDoesNotThrow(service::initializeConfigurations);
+    }
+
     @SuppressWarnings("unchecked")
     private static Supplier<BucketConfiguration> anySupplier() {
         return any(Supplier.class);
@@ -46,24 +61,17 @@ class RateLimitBucketServiceTest {
         assertTrue(ex.getMessage().contains("Missing rate limit configuration"));
     }
 
-    @Test
-    void initializeConfigurations_shouldSucceed_whenAllRulesPresent() {
-        // arrange
-        @SuppressWarnings("unchecked")
-        ProxyManager<String> proxyManager = mock(ProxyManager.class);
-
-        RateLimitProperties properties = new RateLimitProperties();
-        properties.setRules(Map.of(
+    private static Map<String, RateLimitProperties.LimitRule> allRules() {
+        return Map.of(
                 "signup", rule(),
                 "login", rule(),
                 "otp", rule(),
-                "passwordless", rule()
-        ));
-
-        RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
-
-        // act + assert
-        assertDoesNotThrow(service::initializeConfigurations);
+                "passwordless", rule(),
+                "mfa_verify", rule(),
+                "step_up_verify", rule(),
+                "step_up_request", rule(),
+                "refresh", rule()
+        );
     }
 
     @Test
@@ -81,12 +89,7 @@ class RateLimitBucketServiceTest {
         when(bucket.tryConsumeAndReturnRemaining(1)).thenReturn(probe);
 
         RateLimitProperties properties = new RateLimitProperties();
-        properties.setRules(Map.of(
-                "signup", rule(),
-                "login", rule(),
-                "otp", rule(),
-                "passwordless", rule()
-        ));
+        properties.setRules(allRules());
 
         RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
         service.initializeConfigurations();
@@ -117,12 +120,7 @@ class RateLimitBucketServiceTest {
         when(bucket.tryConsumeAndReturnRemaining(1)).thenReturn(probe);
 
         RateLimitProperties properties = new RateLimitProperties();
-        properties.setRules(Map.of(
-                "signup", rule(),
-                "login", rule(),
-                "otp", rule(),
-                "passwordless", rule()
-        ));
+        properties.setRules(allRules());
 
         RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
         service.initializeConfigurations();
@@ -145,12 +143,7 @@ class RateLimitBucketServiceTest {
         when(proxyManager.builder()).thenThrow(new RuntimeException("redis down"));
 
         RateLimitProperties properties = new RateLimitProperties();
-        properties.setRules(Map.of(
-                "signup", rule(),
-                "login", rule(),
-                "otp", rule(),
-                "passwordless", rule()
-        ));
+        properties.setRules(allRules());
 
         RateLimitBucketService service = new RateLimitBucketServiceImpl(proxyManager, properties);
         service.initializeConfigurations();
@@ -159,8 +152,9 @@ class RateLimitBucketServiceTest {
         RateLimitBucketServiceImpl.ConsumptionResult result = service.tryConsume("k", RateLimitType.OTP);
 
         // assert
-        assertTrue(result.isAllowed());
+        assertFalse(result.isAllowed());
         assertEquals(0L, result.getRemaining());
         assertEquals(0L, result.getCapacity());
+        assertEquals(60L, result.getRetryAfterSeconds());
     }
 }

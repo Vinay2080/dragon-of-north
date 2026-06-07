@@ -3,7 +3,6 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.resolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;

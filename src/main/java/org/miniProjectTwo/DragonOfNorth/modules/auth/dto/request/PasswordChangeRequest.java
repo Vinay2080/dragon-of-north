@@ -11,6 +11,9 @@ import jakarta.validation.constraints.Pattern;
  * <p>
  * Requires current password proof plus a policy-compliant replacement password. Typically followed by
  * session revocation so stolen session cookies cannot survive credential rotation.
+ *
+ * @param oldPassword The current password for the authenticated account.
+ * @param newPassword The new password to store after validation.
  */
 @Schema(name = "PasswordChangeRequest", description = "Request payload for changing the authenticated user's password.")
 public record PasswordChangeRequest(

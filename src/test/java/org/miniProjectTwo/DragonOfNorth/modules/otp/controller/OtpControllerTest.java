@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.modules.otp.controller.OtpController;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.dto.request.EmailOtpRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.dto.request.EmailVerifyRequest;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.dto.request.PhoneOtpRequest;

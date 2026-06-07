@@ -2,7 +2,6 @@ package org.miniProjectTwo.DragonOfNorth.security.model;
 
 import org.junit.jupiter.api.Test;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
-import org.miniProjectTwo.DragonOfNorth.security.model.AppUserDetails;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Permission;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;

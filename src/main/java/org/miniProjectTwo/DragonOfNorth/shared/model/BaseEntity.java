@@ -87,6 +87,11 @@ public class BaseEntity {
     @Column(nullable = false, columnDefinition = "boolean default false")
     private Boolean deleted = false;
 
+    /**
+     * The version number of the entity.
+     * Automatically managed by Hibernate for optimistic locking.
+     * This field is always non-null.
+     */
     @Version
     private Long version;
 

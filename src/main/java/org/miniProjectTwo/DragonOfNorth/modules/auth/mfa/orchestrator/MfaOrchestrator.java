@@ -30,6 +30,14 @@ public class MfaOrchestrator {
     private final MfaProviderRegistry providerRegistry;
     private final AuditEventLogger auditEventLogger;
 
+    /**
+     * Determines if MFA is required for the given user and primary authentication method, and if so, creates an MFA challenge and returns the necessary context for the client to proceed with MFA verification. This method checks if the user has MFA enabled, retrieves the available MFA providers for the user, and logs an audit event if there is a configuration issue (MFA enabled but no providers available). If MFA is not required, it returns a result indicating that no challenge is needed along with the available methods. If MFA is required and properly configured, it creates a new MFA challenge using the {@link MfaChallengeService} and returns it in the orchestration result.
+     *
+     * @param user       The user for whom the MFA orchestration is being performed. Must not be null.
+     * @param primaryAmr The primary authentication method reference. Must not be null or blank.
+     * @param context    The authentication request context. Must not be null.
+     * @return The result of the MFA orchestration.
+     */
     public MfaOrchestrationResult orchestrateLogin(AppUser user, String primaryAmr, AuthRequestContext context) {
         if (user == null) {
             throw new IllegalArgumentException("user must not be null");

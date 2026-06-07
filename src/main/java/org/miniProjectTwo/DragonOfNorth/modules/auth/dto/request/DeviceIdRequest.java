@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotBlank;
  * <p>
  * Accepts both {@code deviceId} and {@code device_id} for backward compatibility while preserving a
  * single canonical internal field.
+ * @param deviceId The client-generated device identifier to scope the operation to a specific session/device context.
  */
 @Schema(name = "DeviceIdRequest", description = "Request payload containing the client device identifier for session-scoped operations.")
 public record DeviceIdRequest(

@@ -33,34 +33,27 @@ import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ErrorResponse.Vali
  * Maps exceptions to standardized ErrorResponse with proper HTTP status codes.
  * Handles validation, authentication, and business logic exceptions. Critical for
  * API contract maintenance and client error handling consistency.
- *
+ * Global API exception translation layer mapping domain/security failures to response contracts.
  * @see BusinessException for business errors
  * @see ErrorCode for error mapping
  */
 @RestControllerAdvice
 @RequiredArgsConstructor
 @Slf4j
-/**
- * Global API exception translation layer mapping domain/security failures to response contracts.
- */
+
 public class ApplicationExceptionHandler {
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiResponse<ErrorResponse>> handleException(BusinessException businessException) {
-        // Builds error response from a business exception
-        final ErrorResponse errorResponse = ErrorResponse.builder()
-                .code(businessException.getErrorCode().getCode())
-                .defaultMessage(
-                        businessException.getMessage() != null && !businessException.getMessage().isBlank()
-                                ? businessException.getMessage()
-                                : businessException.getErrorCode().getDefaultMessage()
-                )
-                .build();
-
-        return ResponseEntity
-                .status(businessException.getErrorCode().getHttpStatus())
-                .body(ApiResponse.failed(errorResponse));
-
+    /**
+     * Handles multipart parsing exceptions by logging the error and returning a generic invalid input response.
+     */
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleMultipartException(MultipartException ex) {
+        String message = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase();
+        String clientMessage = message.contains("size")
+                ? "File size exceeds limit of 2MB"
+                : "Invalid multipart file format";
+        log.warn("Multipart parsing failed: {}", ex.getMessage());
+        return handleException(new BusinessException(ErrorCode.INVALID_INPUT, clientMessage));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -198,17 +191,30 @@ public class ApplicationExceptionHandler {
                 "Missing multipart field: " + ex.getRequestPartName()));
     }
 
-    @ExceptionHandler(MultipartException.class)
-    public ResponseEntity<ApiResponse<ErrorResponse>> handleMultipartException(MultipartException ex) {
-        String message = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase();
-        String clientMessage = message.contains("size")
-                ? "File size exceeds limit of 2MB"
-                : "Invalid multipart file format";
-        log.warn("Multipart parsing failed: {}", ex.getMessage());
-        return handleException(new BusinessException(ErrorCode.INVALID_INPUT, clientMessage));
+    /**
+     * Handles business exceptions by logging the error and returning a corresponding API response.
+     */
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleException(BusinessException businessException) {
+        // Builds error response from a business exception
+        final ErrorResponse errorResponse = ErrorResponse.builder()
+                .code(businessException.getErrorCode().getCode())
+                .defaultMessage(
+                        businessException.getMessage() != null && !businessException.getMessage().isBlank()
+                                ? businessException.getMessage()
+                                : businessException.getErrorCode().getDefaultMessage()
+                )
+                .build();
+
+        return ResponseEntity
+                .status(businessException.getErrorCode().getHttpStatus())
+                .body(ApiResponse.failed(errorResponse));
+
     }
 
-
+    /**
+     * Handles all uncaught exceptions by logging the error and returning a generic internal server error response.
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<ErrorResponse>> handleAllUncaughtException(Exception ex) {
         log.error("Unexpected error occurred: {}", ex.getMessage(), ex);
@@ -224,3 +230,4 @@ public class ApplicationExceptionHandler {
     }
 
 }
+//todo if unexpected exception occurs in future use custom exception handler

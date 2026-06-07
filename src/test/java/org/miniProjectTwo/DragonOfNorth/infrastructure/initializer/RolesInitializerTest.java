@@ -2,7 +2,6 @@ package org.miniProjectTwo.DragonOfNorth.infrastructure.initializer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.infrastructure.initializer.RolesInitializer;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
 import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;

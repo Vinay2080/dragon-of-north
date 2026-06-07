@@ -32,12 +32,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-@Service
-@RequiredArgsConstructor
-@Slf4j
 /**
  * Profile service implementation coordinating profile persistence with avatar/media workflows.
  */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+
 public class ProfileServiceImpl implements ProfileService {
 
     private final ProfileRepository profileRepository;
@@ -50,6 +51,50 @@ public class ProfileServiceImpl implements ProfileService {
     private static final String PROFILE_IMAGE_FOLDER = "profile_images";
     private final Cloudinary cloudinary;
 
+    /**
+     * Validates the original filename for potential security risks.
+     * <p>
+     * The method checks for null values and disallows filenames containing path traversal characters,
+     * quotes, or sequences that could be used to manipulate file paths. This helps prevent
+     * directory traversal attacks and other file-related vulnerabilities.
+     *
+     * @param originalFilename the original filename to validate
+     * @throws BusinessException if the filename is deemed unsafe
+     */
+    private void validateFilename(String originalFilename) {
+        if (originalFilename == null) {
+            return;
+        }
+        String normalizedFilename = originalFilename.trim();
+        if (normalizedFilename.contains("\\") || normalizedFilename.contains("/")
+                || normalizedFilename.contains("\"") || normalizedFilename.contains("..")) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid file format: unsupported filename");
+        }
+    }
+
+    /**
+     * Validates the content type of the uploaded file against allowed image formats.
+     *
+     * @param contentType the MIME type of the uploaded file
+     * @throws BusinessException if the content type is not an allowed image format
+     */
+    private void validateContentType(String contentType) {
+        String normalizedContentType = contentType == null ? "" : contentType.trim().toLowerCase().split(";")[0];
+        if (!ALLOWED_IMAGE_TYPES.contains(normalizedContentType)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "Unsupported file type: " + contentType);
+        }
+    }    /**
+     * Creates a new profile for the specified user.
+     * <p>
+     * The profile is initialized using OAuth user information when available.
+     * If OAuth information is not provided, the user's email is used as the
+     * default display name and username source.
+     *
+     * @param userId   unique identifier of the user
+     * @param userInfo OAuth profile information used for initial profile setup
+     * @throws BusinessException if the user does not exist or a profile already exists
+     */
+
     @Override
     public void createProfile(UUID userId, OAuthUserInfo userInfo) {
         AppUser appUser = fetchAppUser(userId);
@@ -61,6 +106,44 @@ public class ProfileServiceImpl implements ProfileService {
         profileRepository.save(profile);
     }
 
+    /**
+     * Applies a user-defined avatar URL to the profile, replacing any existing avatar.
+     * <p>
+     * If the provided URL is null or empty after normalization, the profile's avatar
+     * fields are cleared and any existing Cloudinary-managed image is deleted.
+     *
+     * @param profile      profile to update
+     * @param rawAvatarUrl new avatar URL provided by the user
+     */
+    private void applyUserAvatarUpdate(Profile profile, String rawAvatarUrl) {
+        String normalized = normalizeAvatarUrl(rawAvatarUrl);
+        if (normalized == null) {
+            profile.setAvatarUrl(null);
+            profile.setAvatarExternalUrl(null);
+            profile.setAvatarSource(AvatarSource.NONE);
+            deleteExistingProfileImage(profile);
+            return;
+        }
+
+        if (normalized.equals(profile.getAvatarUrl())) {
+            return;
+        }
+
+        deleteExistingProfileImage(profile);
+        profile.setAvatarPublicId(null);
+
+        profile.setAvatarUrl(normalized);
+        profile.setAvatarExternalUrl(null);
+        profile.setAvatarSource(AvatarSource.USER_DEFINED);
+    }
+
+    /**
+     * Ensures that a profile exists for the specified user.
+     * If no profile is found, a new profile is automatically created.
+     *
+     * @param userId   unique identifier of the user
+     * @param userInfo OAuth information used when profile creation is required
+     */
     @Override
     public void ensureProfileExists(UUID userId, OAuthUserInfo userInfo) {
         if (!profileRepository.existsByAppUserId(userId)) {
@@ -68,6 +151,17 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
+
+
+    /**
+     * Synchronizes the user's Google avatar with the local profile.
+     * <p>
+     * Synchronization only occurs when the profile is not currently using
+     * a user-defined avatar and a valid Google avatar URL is available.
+     *
+     * @param userId   unique identifier of the user
+     * @param userInfo OAuth information containing the Google profile picture
+     */
     @Override
     @Transactional
     public void syncGoogleAvatar(UUID userId, OAuthUserInfo userInfo) {
@@ -84,6 +178,16 @@ public class ProfileServiceImpl implements ProfileService {
         applyGoogleAvatar(profile, googleAvatar);
     }
 
+    /**
+     * Updates editable profile information for the currently authenticated user.
+     *
+     * @param bio         new biography text, or {@code null} to leave unchanged
+     * @param avatarUrl   new avatar URL, or {@code null} to leave unchanged
+     * @param displayName new display name, or {@code null} to leave unchanged
+     * @param username    new username, or {@code null} to leave unchanged
+     * @return the updated profile entity
+     * @throws BusinessException if authentication fails or the username is already taken
+     */
     @Override
     @Transactional
     public Profile updateProfile(String bio, String avatarUrl, String displayName, String username) {
@@ -97,11 +201,28 @@ public class ProfileServiceImpl implements ProfileService {
         return profile;
     }
 
+    /**
+     * Retrieves the profile of the currently authenticated user.
+     *
+     * @return authenticated user's profile
+     * @throws BusinessException if authentication fails
+     */
     @Override
     public Profile getProfile() {
         return getOrCreateProfile(findAuthenticatedUser(UserLifecycleOperation.PROFILE_READ).getId());
     }
 
+    /**
+     * Uploads and assigns a new profile image.
+     * <p>
+     * Existing Cloudinary-managed images are removed before the new image
+     * is stored. Only JPEG, PNG, and WebP images up to 2 MB are accepted.
+     *
+     * @param userId        unique identifier of the user
+     * @param multipartFile uploaded image file
+     * @return updated profile entity
+     * @throws BusinessException if validation or upload fails
+     */
     @Override
     @Transactional
     public Profile updateProfileImage(UUID userId, MultipartFile multipartFile) {
@@ -125,6 +246,14 @@ public class ProfileServiceImpl implements ProfileService {
         return profileRepository.save(profile);
     }
 
+    /**
+     * Removes the current profile image.
+     * <p>
+     * If the image is managed by Cloudinary, the remote asset is deleted
+     * before profile metadata is cleared.
+     *
+     * @param userId unique identifier of the user
+     */
     @Override
     @Transactional
     public void deleteProfileImage(UUID userId) {
@@ -163,24 +292,14 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
-    private void validateFilename(String originalFilename) {
-        if (originalFilename == null) {
-            return;
-        }
-        String normalizedFilename = originalFilename.trim();
-        if (normalizedFilename.contains("\\") || normalizedFilename.contains("/")
-                || normalizedFilename.contains("\"") || normalizedFilename.contains("..")) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "Invalid file format: unsupported filename");
-        }
-    }
 
-    private void validateContentType(String contentType) {
-        String normalizedContentType = contentType == null ? "" : contentType.trim().toLowerCase().split(";")[0];
-        if (!ALLOWED_IMAGE_TYPES.contains(normalizedContentType)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT, "Unsupported file type: " + contentType);
-        }
-    }
-
+    /**
+     * Finds the authenticated user based on the current security context.
+     *
+     * @param operation the user lifecycle operation being performed
+     * @return the authenticated user
+     * @throws BusinessException if the user is not authenticated
+     */
     private AppUser findAuthenticatedUser(UserLifecycleOperation operation) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -193,6 +312,16 @@ public class ProfileServiceImpl implements ProfileService {
         return appUser;
     }
 
+    /**
+     * Updates the profile's username if a new value is provided and different from the current one.
+     * <p>
+     * The method checks for null or unchanged values to avoid unnecessary updates. If a new username
+     * is provided, it validates that the username is not already taken by another profile before applying the change.
+     *
+     * @param profile  the profile to update
+     * @param username the new username to set, or null to leave unchanged
+     * @throws BusinessException if the new username is already taken by another profile
+     */
     private void updateUsernameIfNeeded(Profile profile, String username) {
         if (username == null || username.equalsIgnoreCase(profile.getUsername())) {
             return;
@@ -211,6 +340,12 @@ public class ProfileServiceImpl implements ProfileService {
         applyUserAvatarUpdate(profile, avatarUrl);
     }
 
+    /**
+     * Returns an existing profile or creates a minimal profile when one does not exist.
+     *
+     * @param userId user identifier
+     * @return existing or newly created profile
+     */
     private Profile getOrCreateProfile(UUID userId) {
         return profileRepository.findByAppUserId(userId).orElseGet(() -> {
             String identifier = appUserRepository.findPreferredIdentifierById(userId)
@@ -224,6 +359,15 @@ public class ProfileServiceImpl implements ProfileService {
         });
     }
 
+    /**
+     * Generates a unique username based on the provided name.
+     * <p>
+     * The method sanitizes the input name, creates a base username, and appends a random suffix.
+     * It checks for uniqueness against existing usernames and retries with different suffixes if needed.
+     *
+     * @param name the input name to generate a username from
+     * @return a unique username derived from the input name
+     */
     private String generateUniqueUsername(String name) {
         String sanitizedName = name == null ? "" : name;
         String base = sanitizedName.toLowerCase()
@@ -248,6 +392,13 @@ public class ProfileServiceImpl implements ProfileService {
         return username;
     }
 
+    /**
+     * Resolves the user ID from the authentication principal, supporting multiple principal types for flexibility.
+     *
+     * @param authentication the current authentication object containing the principal
+     * @return the resolved user ID
+     * @throws BusinessException if the principal type is unsupported or does not contain a valid user ID
+     */
     private UUID resolveUserId(Authentication authentication) {
         Object principal = authentication.getPrincipal();
 
@@ -288,6 +439,14 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
+    /**
+     * Normalizes the Google avatar URL from the OAuth user information.
+     * <p>
+     * This method trims whitespace and returns null for empty or null URLs.
+     *
+     * @param userInfo OAuth user information containing the Google profile picture URL
+     * @return normalized avatar URL, or null if not available
+     */
     private String normalizeGoogleAvatar(OAuthUserInfo userInfo) {
         if (userInfo == null) {
             return null;
@@ -295,6 +454,12 @@ public class ProfileServiceImpl implements ProfileService {
         return normalizeAvatarUrl(userInfo.picture());
     }
 
+    /**
+     * Determines whether the Google avatar should be synchronized based on the profile's current avatar source and external URL.
+     *
+     * @param profile the profile to evaluate
+     * @return true if synchronization should occur, false otherwise
+     */
     private boolean shouldSyncGoogleAvatar(Profile profile) {
         AvatarSource source = profile.getAvatarSource() == null ? AvatarSource.NONE : profile.getAvatarSource();
         if (source == AvatarSource.USER_DEFINED) {
@@ -304,17 +469,38 @@ public class ProfileServiceImpl implements ProfileService {
         return !(source == AvatarSource.GOOGLE && profile.getAvatarExternalUrl() != null);
     }
 
+    /**
+     * Fetches the AppUser entity by ID, throwing a BusinessException if not found.
+     *
+     * @param userId unique identifier of the user
+     * @return the corresponding AppUser entity
+     * @throws BusinessException if no user is found with the given ID
+     */
     private AppUser fetchAppUser(UUID userId) {
         return appUserRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
+    /**
+     * Validates that a profile does not already exist for the given user ID.
+     *
+     * @param userId  unique identifier of the user
+     * @param appUser associated user entity for error context
+     * @throws BusinessException if a profile already exists for the user
+     */
     private void ensureProfileDoesNotExist(UUID userId, AppUser appUser) {
         if (profileRepository.existsByAppUserId(userId)) {
             throw new BusinessException(ErrorCode.PROFILE_ALREADY_EXISTS, "Profile already exists for user: " + appUser.getEmail());
         }
     }
 
+    /**
+     * Initializes profile fields based on available OAuth user information or defaults to email-based values.
+     *
+     * @param profile  profile entity to initialize
+     * @param appUser  associated user entity
+     * @param userInfo OAuth information containing potential display name and avatar URL
+     */
     private void applyInitialProfileData(Profile profile, AppUser appUser, OAuthUserInfo userInfo) {
         if (userInfo != null) {
             profile.setDisplayName(userInfo.name());
@@ -327,7 +513,13 @@ public class ProfileServiceImpl implements ProfileService {
         profile.setUsername(generateUniqueUsername(appUser.getEmail()));
     }
 
-    //todo:uploader.uplaodisthrowingerror
+    /**
+     * Uploads an image to Cloudinary and returns the upload response.
+     *
+     * @param file image file to upload
+     * @return Cloudinary upload metadata
+     * @throws BusinessException when upload fails or the image format is invalid
+     */
     private Map<String, Object> uploadToCloudinary(MultipartFile file) {
         try {
             Uploader uploader = cloudinary.uploader();
@@ -347,6 +539,12 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
+    /**
+     * Converts the raw Cloudinary upload result to a typed map with string keys.
+     *
+     * @param rawResult the raw upload response from Cloudinary
+     * @return a typed map containing the upload metadata
+     */
     private Map<String, Object> toTypedUploadResult(Map<?, ?> rawResult) {
         Map<String, Object> typedResult = new HashMap<>();
         for (Map.Entry<?, ?> entry : rawResult.entrySet()) {
@@ -357,12 +555,24 @@ public class ProfileServiceImpl implements ProfileService {
         return typedResult;
     }
 
+    /**
+     * Extracts the image URL from the Cloudinary upload result, preferring the secure URL when available.
+     *
+     * @param uploadResult the raw upload response from Cloudinary
+     * @return the extracted image URL, or null if not found
+     */
     private String extractImageUrl(Map<String, Object> uploadResult) {
         Object secureUrl = uploadResult.get("secure_url");
         Object url = uploadResult.get("url");
         return secureUrl != null ? secureUrl.toString() : (url != null ? url.toString() : null);
     }
 
+    /**
+     * Normalizes the provided avatar URL by trimming whitespace and checking for null or empty values.
+     *
+     * @param avatarUrl the avatar URL to normalize
+     * @return the normalized avatar URL, or null if it is null or empty
+     */
     private String normalizeAvatarUrl(String avatarUrl) {
         if (avatarUrl == null) {
             return null;
@@ -371,6 +581,15 @@ public class ProfileServiceImpl implements ProfileService {
         return normalized.isEmpty() ? null : normalized;
     }
 
+    /**
+     * Applies a Google avatar URL to the profile, replacing any existing avatar.
+     * <p>
+     * If the provided URL is null or empty after normalization, the profile's avatar
+     * fields are cleared and any existing Cloudinary-managed image is deleted.
+     *
+     * @param profile            profile to update
+     * @param rawGoogleAvatarUrl new Google avatar URL provided by the user
+     */
     private void applyGoogleAvatar(Profile profile, String rawGoogleAvatarUrl) {
         String googleAvatar = normalizeAvatarUrl(rawGoogleAvatarUrl);
         if (googleAvatar == null) {
@@ -383,6 +602,12 @@ public class ProfileServiceImpl implements ProfileService {
         profile.setAvatarPublicId(null);
     }
 
+    /**
+     * Deletes the currently stored Cloudinary profile image, if one exists.
+     * Any cleanup failures are logged and do not interrupt profile operations.
+     *
+     * @param profile profile whose image should be removed
+     */
     private void deleteExistingProfileImage(Profile profile) {
         String existingPublicId = profile.getAvatarPublicId();
         if (existingPublicId == null || existingPublicId.isBlank()) {
@@ -398,25 +623,5 @@ public class ProfileServiceImpl implements ProfileService {
         }
     }
 
-    private void applyUserAvatarUpdate(Profile profile, String rawAvatarUrl) {
-        String normalized = normalizeAvatarUrl(rawAvatarUrl);
-        if (normalized == null) {
-            profile.setAvatarUrl(null);
-            profile.setAvatarExternalUrl(null);
-            profile.setAvatarSource(AvatarSource.NONE);
-            deleteExistingProfileImage(profile);
-            return;
-        }
 
-        if (normalized.equals(profile.getAvatarUrl())) {
-            return;
-        }
-
-        deleteExistingProfileImage(profile);
-        profile.setAvatarPublicId(null);
-
-        profile.setAvatarUrl(normalized);
-        profile.setAvatarExternalUrl(null);
-        profile.setAvatarSource(AvatarSource.USER_DEFINED);
-    }
 }

@@ -9,6 +9,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Repository interface for managing Role entities.
+ */
 @Repository
 public interface RoleRepository extends JpaRepository<Role, UUID> {
 

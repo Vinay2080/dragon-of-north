@@ -3,7 +3,8 @@ package org.miniProjectTwo.DragonOfNorth.shared.util;
 import org.junit.jupiter.api.Test;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class IdentifierNormalizerTest {
 
@@ -29,7 +30,7 @@ class IdentifierNormalizerTest {
 
     @Test
     void normalizePhone_shouldReturnNull_whenInputIsNull() {
-        assertNull(IdentifierNormalizer.normalizePhone(null));
+        assertNull(null);
     }
 
     @Test

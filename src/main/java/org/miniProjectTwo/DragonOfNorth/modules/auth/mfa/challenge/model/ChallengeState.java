@@ -6,7 +6,7 @@ import java.util.UUID;
 
 /**
  * Mutable server-side state for an in-progress MFA challenge.
- *
+ * <p>Contains all necessary context to evaluate MFA attempts, enforce rate limits, and create a session upon successful completion.</p>
  * <p>Stored in Redis and addressed by an opaque token. This state exists after
  * primary authentication but before a full authenticated session is created.</p>
  */

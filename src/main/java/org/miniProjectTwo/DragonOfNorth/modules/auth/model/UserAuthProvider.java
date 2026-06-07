@@ -13,6 +13,10 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.Provider;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Entity representing an external authentication provider linked to a user account.
+ * This allows users to authenticate using third-party providers (e.g., Google, Facebook).
+ */
 @Entity
 @Table(name = "user_auth_providers",
         uniqueConstraints = {
@@ -26,6 +30,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 public class UserAuthProvider {
+
 
     @Id
     @GeneratedValue

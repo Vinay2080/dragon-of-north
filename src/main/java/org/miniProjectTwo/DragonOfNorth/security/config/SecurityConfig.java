@@ -100,6 +100,12 @@ public class SecurityConfig {
     @Value("${app.security.cookie.domain}")
     private String cookieDomain;
 
+    /**
+     * Configures the security filter chain with CORS, CSRF, JWT, session management, and exception handling.
+     * <p>
+     * Filter ordering is critical: JWT filter must run before SID liveness to ensure authentication context is available,
+     * and CSRF cookie filter should run after CSRF processing to refresh tokens on state-changing requests.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity httpSecurity) {
         CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
@@ -138,6 +144,12 @@ public class SecurityConfig {
                 .build();
     }
 
+    /**
+     * Configures CSRF token repository to use cookies with custom settings for name, path, and security attributes.
+     * <p>
+     * Using cookies allows client-side JavaScript to read the token and include it in headers for state-changing requests.
+     * Customizing cookie attributes ensures proper scoping and security based on application requirements.
+     */
     @Bean
     public CookieCsrfTokenRepository csrfTokenRepository() {
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();

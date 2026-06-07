@@ -1,7 +1,6 @@
 package org.miniProjectTwo.DragonOfNorth.shared.dto.oauth;
 
 import org.junit.jupiter.api.Test;
-import org.miniProjectTwo.DragonOfNorth.shared.dto.oauth.OAuthUserInfo;
 
 import static org.junit.jupiter.api.Assertions.*;
 

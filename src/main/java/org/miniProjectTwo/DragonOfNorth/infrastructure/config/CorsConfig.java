@@ -12,6 +12,14 @@ import java.util.List;
 
 /**
  * Configures Cross-Origin Resource Sharing (CORS) for HTTP endpoints.
+ * This configuration ensures that only trusted origins are allowed to access the API,
+ * and that only necessary HTTP methods and headers are permitted. It also includes
+ * support for wildcard ports in local development environments.
+ *
+ * <p>Security considerations: By limiting origins and methods, we mitigate the risk of
+ * cross-site request forgery (CSRF) and unauthorized access. The use of wildcard ports
+ * in local development is a convenience feature that should be disabled in production.
+ * </p>
  */
 @Configuration
 public class CorsConfig {
@@ -20,7 +28,13 @@ public class CorsConfig {
 
     /**
      * Builds the CORS policy used by Spring Security.
-     *
+     * <ol>
+     *   <li>Allowed origin patterns include localhost with any port, and specific production domains.</li>
+     *   <li>Allowed methods cover common HTTP verbs used by the API.</li>
+     *   <li>Allowed headers include those necessary for content negotiation, authentication, and AJAX requests.</li>
+     *   <li>Credentials are allowed to support cookie-based authentication.</li>
+     *   <li>Exposed headers include "Authorization" for JWT token handling on the frontend.</li>
+     * </ol>
      * @return configuration source applied to all request paths
      */
     @Bean

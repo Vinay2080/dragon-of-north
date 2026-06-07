@@ -3,11 +3,11 @@ package org.miniProjectTwo.DragonOfNorth.modules.session.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.DeviceIdRequest;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaPolicy;
 import org.miniProjectTwo.DragonOfNorth.modules.session.api.SessionApi;
 import org.miniProjectTwo.DragonOfNorth.modules.session.dto.response.SessionSummaryResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.session.service.SessionService;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaPolicy;
 import org.miniProjectTwo.DragonOfNorth.security.web.SensitiveAccountOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +31,7 @@ public class SessionController implements SessionApi {
     private final SessionService sessionService;
 
     /**
-     * Returns all active/recent sessions visible to the authenticated user.
+     * Retrieves a list of active sessions for the current authenticated user.
      */
     @Override
     @GetMapping("/get/all")
@@ -42,7 +42,7 @@ public class SessionController implements SessionApi {
     }
 
     /**
-     * Revokes a specific session by identifier for the current authenticated user.
+     * Revokes a specific session by ID, ensuring the session belongs to the authenticated user.
      */
     @Override
     @DeleteMapping("/delete/{sessionId}")
@@ -71,6 +71,9 @@ public class SessionController implements SessionApi {
         return ResponseEntity.ok(ApiResponse.successMessage("revoked " + revokedCount + " other session(s)"));
     }
 
+    /**
+     * Resolves the user ID from the authentication principal, supporting both SecurityPrincipal and direct UUID representations. Throws an exception for unsupported principal types.
+     */
     private UUID resolveUserId(Authentication authentication) {
         Object principal = authentication == null ? null : authentication.getPrincipal();
         if (principal instanceof SecurityPrincipal securityPrincipal && securityPrincipal.userId() != null) {

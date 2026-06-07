@@ -4,11 +4,30 @@ import io.github.bucket4j.BucketConfiguration;
 import lombok.Getter;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RateLimitType;
 
+/**
+ * Service for managing rate limit buckets.
+ */
 public interface RateLimitBucketService {
+    /**
+     * Initializes rate limit bucket configurations.
+     */
     void initializeConfigurations();
 
+    /**
+     * Attempts to consume tokens from a rate limit bucket.
+     *
+     * @param key  Unique identifier for the rate limit bucket
+     * @param type Type of rate limit
+     * @return ConsumptionResult indicating whether the operation was allowed and details
+     */
     ConsumptionResult tryConsume(String key, RateLimitType type);
 
+    /**
+     * Creates a bucket configuration for the specified rate limit type.
+     *
+     * @param type Type of rate limit
+     * @return BucketConfiguration for the specified rate limit type
+     */
     BucketConfiguration createBucketConfiguration(RateLimitType type);
 
     @Getter

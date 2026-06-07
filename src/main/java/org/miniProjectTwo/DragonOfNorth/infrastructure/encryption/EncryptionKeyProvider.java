@@ -13,8 +13,18 @@ package org.miniProjectTwo.DragonOfNorth.infrastructure.encryption;
  * key state. Breaking these guarantees can corrupt decrypt paths across modules.
  */
 interface EncryptionKeyProvider {
-
+    /**
+     * Retrieves the current encryption key for new writes.
+     *
+     * @return The current encryption key.
+     */
     EncryptionKey currentKey();
 
+    /**
+     * Retrieves the encryption key for the specified key id.
+     *
+     * @param keyId The unique identifier for the encryption key.
+     * @return The encryption key for the specified key id.
+     */
     EncryptionKey keyFor(String keyId);
 }

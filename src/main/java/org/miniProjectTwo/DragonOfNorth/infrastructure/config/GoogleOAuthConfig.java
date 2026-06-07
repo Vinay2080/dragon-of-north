@@ -18,6 +18,8 @@ import org.springframework.validation.annotation.Validated;
  * Consumed by OAuth services to validate Google ID tokens before account login/signup branching.
  * The configuration boundary allows future support for multiple client IDs, hosted domain checks,
  * or additional identity providers without changing controller contracts.
+ * Invalid/missing client ID fails application startup, which is intentional for fail-fast ops.
+ * </p>
  */
 @Getter
 @Setter
@@ -31,7 +33,7 @@ public class GoogleOAuthConfig {
 
     /**
      * Creates a verifier used to validate Google ID tokens.
-     *
+     * The verifier is configured with a transport and JSON factory and can be extended with additional checks (e.g., audience, hosted domain) as needed.
      * @return Google ID token verifier
      */
     @Bean
@@ -44,7 +46,6 @@ public class GoogleOAuthConfig {
 
     /**
      * Returns the configured client id with surrounding whitespace removed.
-     *
      * @return trimmed client id, or {@code null} when not configured
      */
     public String normalizedClientId() {

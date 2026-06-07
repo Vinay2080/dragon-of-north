@@ -33,6 +33,16 @@ public class SessionTokenIssuer {
         return issueLoginSession(appUser, SessionCreationSpec.fromAppUser(appUser, primaryAmr), ipAddress, deviceId, userAgent);
     }
 
+    /**
+     * Issues a new login session for the specified user, creating a refresh token and an access token bound to the session. The method generates a refresh token using JWT services, creates a new session record with the provided user and session creation specifications, and then mints an access token that includes the session ID and authentication facts. The resulting access and refresh tokens are returned as an LoginTokens object.
+     *
+     * @param appUser      The user for whom the login session is being issued.
+     * @param creationSpec Specifications for creating the session, including authentication method and other relevant details.
+     * @param ipAddress    The IP address from which the login request originated.
+     * @param deviceId     An identifier for the device used in the login request.
+     * @param userAgent    The user agent string from the login request, providing information about the client's environment.
+     * @return A LoginTokens object containing the issued access token and refresh token for the new login session.
+     */
     public LoginTokens issueLoginSession(AppUser appUser,
                                          SessionCreationSpec creationSpec,
                                          String ipAddress,

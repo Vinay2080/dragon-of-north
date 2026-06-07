@@ -49,10 +49,12 @@ class SesEmailServiceTest {
         SendEmailRequest request = captor.getValue();
         assertEquals(DISPLAY_SOURCE, request.source());
         assertEquals(to, request.destination().toAddresses().getFirst());
-        assertTrue(request.message().body().text().data().contains(otp.substring(0, 3) + " " + otp.substring(3)));
-        assertTrue(request.message().body().text().data().contains(String.valueOf(ttlMinutes)));
-        assertTrue(request.message().body().html().data().contains("Dragon of North"));
-        assertTrue(request.message().body().html().data().contains("Your verification code"));
-        assertTrue(request.message().body().html().data().contains("Never share this code"));
+        String data = request.message().body().html().data();
+        assertTrue(data.contains(otp.substring(0, 3) + " " + otp.substring(3)));
+        assertTrue(data.contains(String.valueOf(ttlMinutes)));
+        assertTrue(data.contains("Dragon of North"));
+        assertTrue(data.contains("Your verification code"));
+        assertTrue(
+                data.contains("Never share this code"));
     }
 }
