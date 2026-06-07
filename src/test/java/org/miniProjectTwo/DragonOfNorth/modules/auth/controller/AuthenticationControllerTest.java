@@ -8,6 +8,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.*;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupConfirmResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaSetupResponse;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.VerificationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.orchestrator.MfaOrchestrationResult;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.*;
@@ -25,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -303,6 +305,14 @@ class AuthenticationControllerTest {
                   "device_id": "device-1"
                 }
                 """;
+
+        when(authCommonServices.completeMfaChallengeLogin(
+                eq("challenge-1"),
+                eq("123456"),
+                eq(ProviderType.TOTP),
+                any(),
+                any(AuthRequestContext.class)
+        )).thenReturn(VerificationResult.success(UUID.randomUUID(), "password", "totp"));
 
         mockMvc.perform(post("/api/v1/auth/mfa/verify")
                         .contentType(MediaType.APPLICATION_JSON)

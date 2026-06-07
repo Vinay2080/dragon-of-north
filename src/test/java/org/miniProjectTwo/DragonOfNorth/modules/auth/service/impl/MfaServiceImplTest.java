@@ -19,9 +19,9 @@ import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.shared.encryption.EncryptionService;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.UserLifecycleOperation;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -273,8 +273,6 @@ class MfaServiceImplTest {
         user.setId(userId);
         user.setMfaEnabled(true);
 
-        UserMfaSettings settings = new UserMfaSettings();
-
         when(mfaVerificationService.verifyAtLogin(eq(user), eq(ProviderType.RECOVERY_CODE), eq("ABCD-EFGH"), any()))
                 .thenReturn(VerifyResult.success(ProviderType.RECOVERY_CODE));
 
@@ -299,3 +297,4 @@ class MfaServiceImplTest {
         assertTrue(mfaService.verifyMfaCode(user, "ABCD-EFGH"));
     }
 }
+//todo warning

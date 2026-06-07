@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Mints access tokens from persisted session context plus role/authentication facts.
+ * Mints access tokens from the persisted session context plus role/authentication facts.
  */
 @Component
 public class SessionAccessTokenIssuer {
@@ -62,6 +62,12 @@ public class SessionAccessTokenIssuer {
         );
     }
 
+    /**
+     * Builds the AMR list for the session, including primary authentication and MFA method if applicable.
+     *
+     * @param session the session from which to derive AMR values (must have non-blank primaryAmr)
+     * @return the AMR list for the session
+     */
     private static List<String> buildAmr(Session session) {
         String primary = session.getPrimaryAmr();
         if (primary == null || primary.isBlank()) {

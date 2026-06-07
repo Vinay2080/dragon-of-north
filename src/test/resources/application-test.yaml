@@ -119,6 +119,26 @@ rate-limit:
       capacity: 5
       refill-tokens: 5
       refill-minutes: 30
+    passwordless:
+      capacity: 5
+      refill-tokens: 1
+      refill-minutes: 10
+    mfa_verify:
+      capacity: 5
+      refill-tokens: 5
+      refill-minutes: 10
+    step_up_request:
+      capacity: 4
+      refill-tokens: 4
+      refill-minutes: 10
+    step_up_verify:
+      capacity: 6
+      refill-tokens: 6
+      refill-minutes: 10
+    refresh:
+      capacity: 12
+      refill-tokens: 12
+      refill-minutes: 10
 
 logging:
   level:

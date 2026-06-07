@@ -52,6 +52,13 @@ public class MfaServiceImpl implements MfaService {
     private final MfaRecoveryCodeService recoveryCodeService;
     private final MfaVerificationService mfaVerificationService;
 
+    /**
+     * Initiates the MFA setup process for the authenticated user. This method generates a new TOTP secret, stores it temporarily in Redis with encryption, and returns the secret along with a QR code for the user to scan with their authenticator app. It also validates the user's state to ensure they are eligible for MFA setup and logs the request for auditing purposes. If MFA is already enabled for the user, a BusinessException is thrown.
+     *
+     * @param context The authentication request context containing information about the request, such as device ID and IP address.
+     * @return An MfaSetupResponse containing the generated TOTP secret and QR code for MFA setup.
+     * @throws BusinessException If MFA is already enabled for the user's account or if the user's state does not allow MFA setup.
+     */
     @Override
     public MfaSetupResponse requestMfaSetup(AuthRequestContext context) {
         AppUser appUser = authCommonServices.findAuthenticatedUser();
@@ -70,6 +77,14 @@ public class MfaServiceImpl implements MfaService {
 
     }
 
+    /**
+     * Confirms the MFA setup for the authenticated user. This method validates the provided TOTP code against the temporary secret stored in Redis, persists the MFA settings, and enables MFA for the user. It also generates and stores recovery codes for the user.
+     *
+     * @param context The authentication request context containing information about the request, such as device ID and IP address.
+     * @param code    The TOTP code to validate.
+     * @return An MfaSetupConfirmResponse containing the generated recovery codes.
+     * @throws BusinessException If the MFA setup session has expired or if the provided code is invalid.
+     */
     @Override
     @Transactional
     public MfaSetupConfirmResponse confirmMfaSetup(AuthRequestContext context, @NotNull @Length String code) {
@@ -99,11 +114,25 @@ public class MfaServiceImpl implements MfaService {
         return new MfaSetupConfirmResponse(recoveryCodes);
     }
 
+    /**
+     * Verifies an MFA code against the user's configured MFA settings.
+     *
+     * @param appUser The user for whom to verify the code.
+     * @param code    The MFA code to verify.
+     * @return true if the code is valid, false otherwise.
+     */
     @Override
     public boolean verifyMfaCode(AppUser appUser, @NotNull @Length String code) {
         return verifyTotpCode(appUser, code) || verifyRecoveryCode(appUser, code);
     }
 
+    /**
+     * Verifies a TOTP code against the user's configured MFA settings.
+     *
+     * @param appUser The user for whom to verify the code.
+     * @param code The TOTP code to verify.
+     * @return true if the code is valid, false otherwise.
+     */
     @Override
     public boolean verifyTotpCode(AppUser appUser, @NotNull @Length String code) {
         try {
@@ -114,6 +143,13 @@ public class MfaServiceImpl implements MfaService {
         }
     }
 
+    /**
+     * Verifies a recovery code against the user's configured MFA settings.
+     *
+     * @param appUser The user for whom to verify the code.
+     * @param code The recovery code to verify.
+     * @return true if the code is valid, false otherwise.
+     */
     @Override
     public boolean verifyRecoveryCode(AppUser appUser, @NotNull @Length String code) {
         try {
@@ -124,12 +160,26 @@ public class MfaServiceImpl implements MfaService {
         }
     }
 
+    /**
+     * Validates the provided TOTP code against the temporary secret.
+     *
+     * @param secret The temporary secret.
+     * @param code The TOTP code to validate.
+     */
     private void validateCode(String secret, @NotNull @Length String code) {
         if (!totpService.isValidCode(secret, code)) {
             throw new BusinessException(ErrorCode.MFA_INVALID_CODE, "Invalid MFA code");
         }
     }
 
+    /**
+     * Persists the MFA settings for the given user.
+     *
+     * @param appUser The user for whom to persist MFA settings.
+     * @param encryptedSecret The encrypted TOTP secret.
+     * @param enabledAt The timestamp when MFA was enabled.
+     * @return The persisted MFA settings.
+     */
     private UserMfaSettings persistMfaSettings(AppUser appUser, String encryptedSecret, Instant enabledAt) {
         UserMfaSettings settings = userMfaSettingsRepository.findByUserId(appUser.getId())
                 .orElseGet(UserMfaSettings::new);
@@ -139,11 +189,18 @@ public class MfaServiceImpl implements MfaService {
         return userMfaSettingsRepository.save(settings);
     }
 
+
     private void recordMfaSetupConfirmSuccess(UUID id, AuthRequestContext context) {
         meterRegistry.counter("auth.mfa_setup.confirm.success").increment();
         auditEventLogger.log("auth.mfa_setup.confirm", id, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
     }
 
+    /**
+     * Stores the temporary MFA secret in Redis.
+     *
+     * @param id The user ID.
+     * @param secret The temporary MFA secret.
+     */
     private void storeTemporaryMfaSecret(UUID id, String secret) {
         redisTemplate.opsForValue().set(MFA_SETUP_KEY_PREFIX + id, encryptionService.encrypt(secret), Duration.ofMinutes(5));
     }

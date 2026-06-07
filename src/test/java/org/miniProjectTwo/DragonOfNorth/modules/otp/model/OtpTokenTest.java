@@ -2,7 +2,6 @@ package org.miniProjectTwo.DragonOfNorth.modules.otp.model;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 

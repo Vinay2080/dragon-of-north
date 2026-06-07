@@ -5,6 +5,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Represents a security audit context with various fields related to user authentication and authorization.
+ */
 public record SecurityAuditContext(
         UUID userId,
         UUID sessionId,

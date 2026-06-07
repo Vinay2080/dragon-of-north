@@ -19,7 +19,7 @@ import java.time.Instant;
  *       column on the session row, which is only populated when MFA has actually been completed
  *       (login MFA or step-up) — <strong>not</strong> a cookie, local state, or a separate token.</li>
  *   <li>JWT claims are treated as a fast-path hint; enforcement must reconcile with the
- *       session row so stale snapshots cannot incorrectly allow or deny access.</li>
+ *       session row, so stale snapshots cannot incorrectly allow or deny access.</li>
  *   <li>After successful step-up verification, the session row is updated atomically, and a
  *       new access token is minted from that truthful state, so every downstream claim check
  *       immediately reflects the refresh.</li>

@@ -58,6 +58,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
         this.auditEventLogger = auditEventLogger;
     }
 
+    /**
+     * Processes the incoming request and applies rate limiting based on the configured properties and key resolver.
+     *
+     * @param request     The incoming HTTP request.
+     * @param response    The HTTP response to be sent.
+     * @param filterChain The filter chain for further processing.
+     * @throws ServletException If there's an error during request processing.
+     * @throws IOException      If there's an I/O error during request processing.
+     */
     @Override
     public void doFilterInternal(HttpServletRequest request,
                                  @NonNull HttpServletResponse response,
@@ -101,6 +110,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * Matches the request path against configured endpoint patterns to determine the rate limit type.
+     *
+     * @param requestPath The path of the incoming request.
+     * @return The rate limit type associated with the matched endpoint, or null if no match is found.
+     */
     private RateLimitType matchEndpoint(String requestPath) {
         for (Map.Entry<String, RateLimitProperties.EndpointConfig> entry : properties.getEndpoints().entrySet()) {
             RateLimitProperties.EndpointConfig config = entry.getValue();

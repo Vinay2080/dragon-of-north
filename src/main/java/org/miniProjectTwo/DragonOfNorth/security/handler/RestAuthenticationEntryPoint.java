@@ -17,7 +17,9 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- * Converts unauthenticated access attempts into consistent API error responses.
+ * Custom AuthenticationEntryPoint that returns JSON error responses for unauthenticated access attempts in a RESTful manner.
+ * <p>
+ * This entry point checks for CSRF-related authentication failures and returns specific error codes for those cases. For other authentication failures, it determines if the user is unauthenticated and delegates to the authentication entry point if necessary. Authenticated users that are denied access receive standard access denied error response. This approach ensures consistent API responses for security-related errors in a REST API context.
  */
 @Component
 @RequiredArgsConstructor

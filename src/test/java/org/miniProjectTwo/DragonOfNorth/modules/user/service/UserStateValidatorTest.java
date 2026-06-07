@@ -35,7 +35,7 @@ class UserStateValidatorTest {
     @Test
     void validate_shouldPass_whenStatusIsActive_andSignupStart() {
         AppUser user = userWithStatus(AppUserStatus.ACTIVE);
-        // LOCAL_SIGNUP_START has activeAllowed=true so it is permitted for ACTIVE users
+        // LOCAL_SIGNUP_START has activeAllowed= true, so it is permitted for ACTIVE users
         assertDoesNotThrow(() -> userStateValidator.validate(user, UserLifecycleOperation.LOCAL_SIGNUP_START));
     }
 

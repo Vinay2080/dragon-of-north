@@ -7,9 +7,21 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+/**
+ * RateLimitKeyResolver is responsible for generating unique keys for rate limiting based on the request context and rate limit type.
+ * This resolver extracts relevant information from the HTTP request and security context to create a key that can be used
+ * to identify and track rate limit usage for different types of operations.
+ */
 @Component
 public class RateLimitKeyResolver {
 
+    /**
+     * Generates a unique key for rate limiting based on the request context and rate limit type.
+     *
+     * @param request The HTTP request containing client information.
+     * @param type    The type of rate limit for which to generate the key.
+     * @return A string key that uniquely identifies the rate limit usage for the given request and type.
+     */
     public String resolve(HttpServletRequest request, RateLimitType type) {
         String ip = getClientIp(request);
         String deviceId = normalize(request.getHeader("X-Device-Id"));
@@ -26,6 +38,11 @@ public class RateLimitKeyResolver {
         };
     }
 
+    /**
+     * Normalizes a string value by trimming whitespace and returning null if the result is blank.
+     *
+     * @return The normalized string or null if the input is null or blank after trimming.
+     */
     private String n(String v) { return v == null ? "none" : v; }
     private String normalize(String value) {
         if (value == null) return null;

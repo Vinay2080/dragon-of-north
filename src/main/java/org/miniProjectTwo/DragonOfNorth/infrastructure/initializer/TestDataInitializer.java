@@ -189,6 +189,13 @@ public class TestDataInitializer implements CommandLineRunner {
         log.debug("Created seed phone user with verified={}", phoneVerified);
     }
 
+    /**
+     * Builds OAuthUserInfo for seed users.
+     *
+     * @param displayName display name to use in the profile
+     * @param email       email to set in the user info (can be null for phone users)
+     * @return constructed OAuthUserInfo
+     */
     private OAuthUserInfo buildSeedUserInfo(String displayName, String email) {
         return OAuthUserInfo.builder()
                 .sub(null)
@@ -203,6 +210,12 @@ public class TestDataInitializer implements CommandLineRunner {
                 .build();
     }
 
+    /**
+     * Ensures a profile exists for the given user, creating one if absent.
+     *
+     * @param appUser  the user for whom to ensure a profile exists
+     * @param userInfo the OAuth user info to use when creating a new profile
+     */
     private void ensureProfileIfAbsent(AppUser appUser, OAuthUserInfo userInfo) {
         if (profileRepository.existsProfileByAppUser(appUser)) {
             log.debug("Skipped profile creation because profile already exists for userId={}", appUser.getId());
@@ -213,6 +226,14 @@ public class TestDataInitializer implements CommandLineRunner {
         log.debug("Created seed profile for userId={}", appUser.getId());
     }
 
+    /**
+     * Creates a session for the given user and device if one does not already exist.
+     *
+     * @param user the user for whom to create a session
+     * @param deviceId the device ID to associate with the session
+     * @param ipAddress the IP address to associate with the session
+     * @param userAgent the user agent to associate with the session
+     */
     private void createSessionIfAbsent(AppUser user, String deviceId, String ipAddress, String userAgent) {
         if (sessionRepository.findByAppUserAndDeviceId(user, deviceId).isPresent()) {
             log.debug("Skipped seed session creation for existing deviceId={}", deviceId);
@@ -237,6 +258,11 @@ public class TestDataInitializer implements CommandLineRunner {
         log.debug("Created seed session for deviceId={}", deviceId);
     }
 
+    /**
+     * Creates a local authentication provider for the given user if one does not already exist.
+     *
+     * @param appUser the user for whom to create a local provider
+     */
     private void createLocalProvider(AppUser appUser) {
         if (userAuthProviderRepository.existsByUserIdAndProvider(appUser.getId(), LOCAL)) {
             return;

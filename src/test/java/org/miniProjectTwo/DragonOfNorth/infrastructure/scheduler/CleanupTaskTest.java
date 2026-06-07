@@ -2,7 +2,6 @@ package org.miniProjectTwo.DragonOfNorth.infrastructure.scheduler;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.infrastructure.scheduler.CleanupTask;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.repo.OtpTokenRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
 import org.mockito.InjectMocks;

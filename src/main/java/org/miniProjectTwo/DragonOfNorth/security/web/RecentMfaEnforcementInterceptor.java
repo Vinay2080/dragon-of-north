@@ -1,10 +1,10 @@
 package org.miniProjectTwo.DragonOfNorth.security.web;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.StepUpRequiredResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.MfaChallenge;
@@ -36,6 +36,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Interceptor to enforce Multi-Factor Authentication (MFA) for recent login attempts.
+ */
 @Component
 @RequiredArgsConstructor
 public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
@@ -50,6 +53,9 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
     private final AuthCommonServices authCommonServices;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Pre-handle method to enforce recent MFA verification for applicable requests. Checks for the presence of the @RequireRecentMfa annotation on the handler method or class, and if present, verifies that the authenticated user's last MFA verification time satisfies the policy requirements. If the session's MFA verification is stale, issues a step-up challenge response. If the JWT's MFA verification is stale but the session is fresh, refreshes the access token to update claims.
+     */
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
         if (!(handler instanceof HandlerMethod handlerMethod)) {
@@ -86,6 +92,22 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
         return true;
     }
 
+    private boolean requiresRecentMfa(HandlerMethod handlerMethod) {
+        return AnnotatedElementUtils.hasAnnotation(handlerMethod.getMethod(), RequireRecentMfa.class)
+                || AnnotatedElementUtils.hasAnnotation(handlerMethod.getBeanType(), RequireRecentMfa.class);
+    }
+
+    private RequireRecentMfa resolvePolicy(HandlerMethod handlerMethod) {
+        RequireRecentMfa methodPolicy = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), RequireRecentMfa.class);
+        if (methodPolicy != null) {
+            return methodPolicy;
+        }
+        return AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getBeanType(), RequireRecentMfa.class);
+    }
+
+    /**
+     * Resolves the live session for the authenticated principal. Validates that the session ID from the principal maps to an active session in the repository. If the session is missing or not live, logs an audit event and throws an exception to indicate an invalid token.
+     */
     private Session resolveLiveSession(SecurityPrincipal principal) {
         UUID sessionId = principal.sessionId();
         UUID userId = principal.userId();
@@ -101,36 +123,14 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
                 });
     }
 
-    private void refreshAccessTokenIfStale(boolean jwtFresh,
-                                           boolean sessionFresh,
-                                           Session session,
-                                           UUID userId,
-                                           HttpServletResponse response) {
-        if (jwtFresh || !sessionFresh) {
-            return;
-        }
-        String refreshedToken = sessionAccessTokenIssuer.mintAccessToken(session, roleRepository.findRolesById(userId));
-        authCommonServices.setAccessToken(response, refreshedToken);
-    }
-
-    private boolean requiresRecentMfa(HandlerMethod handlerMethod) {
-        return AnnotatedElementUtils.hasAnnotation(handlerMethod.getMethod(), RequireRecentMfa.class)
-                || AnnotatedElementUtils.hasAnnotation(handlerMethod.getBeanType(), RequireRecentMfa.class);
-    }
-
-    private RequireRecentMfa resolvePolicy(HandlerMethod handlerMethod) {
-        RequireRecentMfa methodPolicy = AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getMethod(), RequireRecentMfa.class);
-        if (methodPolicy != null) {
-            return methodPolicy;
-        }
-        return AnnotatedElementUtils.findMergedAnnotation(handlerMethod.getBeanType(), RequireRecentMfa.class);
-    }
-
     private AppUser resolveUser(UUID userId) {
         return appUserRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "User not found"));
     }
 
+    /**
+     * Issues a step-up MFA challenge and returns a 403 response with challenge details.
+     */
     private boolean issueStepUpChallenge(HttpServletRequest request,
                                          HttpServletResponse response,
                                          AppUser user,
@@ -146,5 +146,20 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
             throw new BusinessException(ErrorCode.MFA_STEP_UP_REQUIRED, "Recent MFA verification required");
         }
         return false;
+    }
+
+    /**
+     * If the JWT's MFA verification is stale but the session's MFA verification is fresh, issues a new access token with updated claims to avoid forcing an unnecessary step-up challenge on later requests.
+     */
+    private void refreshAccessTokenIfStale(boolean jwtFresh,
+                                           boolean sessionFresh,
+                                           Session session,
+                                           UUID userId,
+                                           HttpServletResponse response) {
+        if (jwtFresh || !sessionFresh) {
+            return;
+        }
+        String refreshedToken = sessionAccessTokenIssuer.mintAccessToken(session, roleRepository.findRolesById(userId));
+        authCommonServices.setAccessToken(response, refreshedToken);
     }
 }

@@ -2,8 +2,6 @@ package org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl.EmailOtpSender;
-import org.miniProjectTwo.DragonOfNorth.modules.otp.service.impl.SesEmailService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;

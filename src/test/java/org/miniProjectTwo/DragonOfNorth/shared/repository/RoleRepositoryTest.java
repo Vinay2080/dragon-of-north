@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.RoleName;
 import org.miniProjectTwo.DragonOfNorth.shared.model.Role;
-import org.miniProjectTwo.DragonOfNorth.shared.repository.RoleRepository;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 

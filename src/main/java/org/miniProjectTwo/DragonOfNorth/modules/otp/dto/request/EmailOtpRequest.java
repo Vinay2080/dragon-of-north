@@ -7,7 +7,10 @@ import jakarta.validation.constraints.Pattern;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 
 /**
- * Request DTO for generating OTP codes via email delivery.
+ * Request payload for sending an OTP to an email address.
+ *
+ * <p>Includes the target email and the business context for OTP issuance. Validation ensures
+ * that the email is well-formed and that the OTP purpose is specified.</p>
  */
 @Schema(name = "EmailOtpRequest", description = "Request payload for sending an OTP to an email address.")
 public record EmailOtpRequest(

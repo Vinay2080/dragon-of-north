@@ -11,6 +11,8 @@ import java.util.Optional;
 
 /**
  * Persistence adapter for MFA challenges state serialization and TTL management in Redis.
+ * <p>
+ * This component abstracts the Redis interactions for storing and retrieving MFA challenge states, including serialization/deserialization logic and TTL management. It provides methods to save a challenge state with a specified TTL, retrieve a challenge state by token ID, and delete challenge states. The TTL ensures that challenge states are automatically removed after a certain period, which is critical for security and resource management. The component relies on a codec for converting between ChallengeState objects and their string representations for Redis storage, and it uses properties defined in MfaChallengeProperties for default TTL values. Proper error handling is implemented to ensure that invalid TTL values are not accepted, and optional return types are used to handle cases where a challenge state may not be found in Redis.
  */
 @Component
 @RequiredArgsConstructor

@@ -12,7 +12,7 @@ import java.time.Duration;
 /**
  * Configuration for the "recent MFA" step-up authentication window.
  *
- * <p>Controls how long a completed MFA verification is considered "fresh" enough
+ * <p>Controls how long completed MFA verification is considered "fresh" enough
  * to satisfy sensitive-action guards.  When a session's {@code mfaVerifiedAt}
  * timestamp is older than the policy's max age, callers must complete a step-up MFA
  * challenge before the sensitive operation is allowed to proceed.</p>

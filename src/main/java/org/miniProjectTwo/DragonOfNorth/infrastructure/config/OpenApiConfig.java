@@ -14,6 +14,8 @@ import java.util.List;
 
 /**
  * Defines OpenAPI metadata and security schemes for Swagger UI.
+ * <blockquote>
+ * <p>This configuration sets up the OpenAPI documentation for the Dragon of North Asia, including API title, version, description, contact information, and license. It also defines two security schemes: one for JWT bearer token authentication (for tools that do not use cookies) and another for cookie-based authentication (for the HTTP-only cookies set after login). Additionally, it specifies server URLs for the current environment and local development.</p>
  */
 @Configuration
 public class OpenApiConfig {

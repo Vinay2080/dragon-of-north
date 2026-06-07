@@ -2,6 +2,9 @@ package org.miniProjectTwo.DragonOfNorth.shared.exception;
 
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 
+/**
+ * Exception class for invalid OAuth token scenarios.
+ */
 public class InvalidOAuthTokenException extends BusinessException {
 
     public InvalidOAuthTokenException() {

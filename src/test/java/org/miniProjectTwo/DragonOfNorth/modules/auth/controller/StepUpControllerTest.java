@@ -40,9 +40,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -84,12 +84,10 @@ class StepUpControllerTest {
     @Mock
     private RoleRepository roleRepository;
 
-    private RecentMfaEnforcementInterceptor recentMfaEnforcementInterceptor;
-
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
-        recentMfaEnforcementInterceptor = new RecentMfaEnforcementInterceptor(
+        RecentMfaEnforcementInterceptor recentMfaEnforcementInterceptor = new RecentMfaEnforcementInterceptor(
                 recentMfaService,
                 recentMfaProperties,
                 auditEventLogger,
@@ -150,7 +148,9 @@ class StepUpControllerTest {
         mockMvc.perform(post("/api/v1/auth/step-up/mfa/request")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.apiResponseStatus").value("failed"))
+                .andExpect(jsonPath("$.data.code").value(ErrorCode.MFA_REQUIRED.getCode()));
     }
 
     // ------------------------------------------------------------------ /mfa/verify
@@ -259,10 +259,10 @@ class StepUpControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.apiResponseStatus").value("failed"))
-                .andExpect(jsonPath("$.error.code").value(ErrorCode.MFA_STEP_UP_REQUIRED.getCode()))
-                .andExpect(jsonPath("$.error.challengeId").value("token-expired"))
-                .andExpect(jsonPath("$.error.availableMethods[0]").value("TOTP"))
-                .andExpect(jsonPath("$.error.expiresAt").exists());
+                .andExpect(jsonPath("$.data.code").value(ErrorCode.MFA_STEP_UP_REQUIRED.getCode()))
+                .andExpect(jsonPath("$.data.challengeId").value("token-expired"))
+                .andExpect(jsonPath("$.data.availableMethods[0]").value("TOTP"))
+                .andExpect(jsonPath("$.data.expiresAt").exists());
         verify(authCommonServices).issueStepUpChallenge(eq(user), eq(sessionId), any());
     }
 
@@ -277,8 +277,8 @@ class StepUpControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new DeviceIdRequest("device-1"))))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error.code").value(ErrorCode.INVALID_TOKEN.getCode()))
-                .andExpect(jsonPath("$.error.defaultMessage", contains("no longer live")));
+                .andExpect(jsonPath("$.data.code").value(ErrorCode.INVALID_TOKEN.getCode()))
+                .andExpect(jsonPath("$.data.defaultMessage").value(containsString("no longer live")));
 
         verify(authCommonServices, never()).issueStepUpChallenge(any(), any(), any());
     }

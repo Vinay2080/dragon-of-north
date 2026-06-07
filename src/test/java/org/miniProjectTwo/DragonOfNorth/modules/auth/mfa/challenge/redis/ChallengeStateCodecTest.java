@@ -2,12 +2,14 @@ package org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.redis;
 
 import org.junit.jupiter.api.Test;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.ChallengeState;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ChallengeStateCodecTest {
 
@@ -17,11 +19,12 @@ class ChallengeStateCodecTest {
     void serializeAndDeserialize_shouldRoundTrip() {
         ChallengeState state = new ChallengeState(
                 UUID.randomUUID(),
+                UUID.randomUUID(),
                 "pwd",
                 "device-1",
                 "10.0.0",
                 "ua-hash",
-                List.of(org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType.TOTP),
+                List.of(ProviderType.TOTP),
                 2,
                 Instant.parse("2026-05-20T00:00:00Z"),
                 Instant.parse("2026-05-20T00:05:00Z")
@@ -41,6 +44,7 @@ class ChallengeStateCodecTest {
     @Test
     void deserialize_shouldRejectUnsupportedVersion() {
         ChallengeState state = new ChallengeState(
+                UUID.randomUUID(),
                 UUID.randomUUID(),
                 "pwd",
                 "device-1",

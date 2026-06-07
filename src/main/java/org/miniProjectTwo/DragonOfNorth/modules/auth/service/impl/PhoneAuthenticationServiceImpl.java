@@ -6,7 +6,6 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AppUserSignUpRe
 import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.AppUserStatusFinderResponse;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.model.UserAuthProvider;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.repo.UserAuthProviderRepository;
-import org.miniProjectTwo.DragonOfNorth.modules.auth.resolver.AuthenticationServiceResolver;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthenticationService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.PasswordService;
@@ -133,6 +132,12 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
+    /**
+     * Builds a user status response for a given AppUser. Extracts authentication providers, phone verification status, and account status to construct a comprehensive response for frontend consumption. Critical for consistent API responses across different identifier types.
+     *
+     * @param user the AppUser entity for which to build the status response
+     * @return the user status response
+     */
     private AppUserStatusFinderResponse buildStatusResponse(AppUser user) {
         return new AppUserStatusFinderResponse(
                 true,
@@ -142,39 +147,36 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
         );
     }
 
-    private AppUser buildPhoneUser(AppUserSignUpRequest request) {
-        String normalizedIdentifier = IdentifierNormalizer.normalizePhone(request.identifier());
-        AppUser appUser = new AppUser();
-        appUser.setPhone(normalizedIdentifier);
-        appUser.setPassword(passwordService.encodePassword(request.password()));
-        appUser.setAppUserStatus(ACTIVE);
-        return appUser;
-    }
-
-    private void persistLocalProvider(AppUser savedUser) {
-        UserAuthProvider localProvider = new UserAuthProvider();
-        localProvider.setUser(savedUser);
-        localProvider.setProvider(LOCAL);
-        userAuthProviderRepository.save(localProvider);
-    }
-
+    /**
+     * Finds a user by their phone number. Normalizes the phone number and queries the database for a matching user. Throws a BusinessException with USER_NOT_FOUND error code if no user is found. Critical for ensuring that phone-based operations are performed on valid user accounts.
+     *
+     * @param identifier the phone number to search for
+     * @return the found AppUser entity
+     */
     private AppUser findUserByPhone(String identifier) {
         return appUserRepository.findByPhone(identifier)
                 .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
     }
 
+    /**
+     * Prepares a user account for phone-based sign-up. Checks if a user with the normalized phone number already exists. If a user exists and is deleted, it reactivates the account. If no user exists, it creates a new user account. Critical for handling both new registrations and reactivation in a seamless manner.
+     *
+     * @param request the sign-up request containing the phone number and password
+     * @param normalizedIdentifier the normalized phone number to check for existing users
+     */
     private void prepareUserForSignup(AppUserSignUpRequest request, String normalizedIdentifier) {
         appUserRepository.findByPhoneForUpdate(normalizedIdentifier)
                 .map(existingUser -> reactivateDeletedAccount(existingUser, request))
                 .orElseGet(() -> createNewUser(request));
     }
 
-    private AppUser createNewUser(AppUserSignUpRequest request) {
-        AppUser savedUser = appUserRepository.save(buildPhoneUser(request));
-        persistLocalProvider(savedUser);
-        return savedUser;
-    }
-
+    /**
+     * Reactivates a deleted user account for phone-based sign-up. Updates the user's password and verification status, and persists the local authentication provider. Critical for restoring access to previously deleted accounts.
+     *
+     * @param appUser the deleted AppUser entity to reactivate
+     * @param request the sign-up request containing the new password
+     * @return the reactivated AppUser entity
+     */
     private AppUser reactivateDeletedAccount(AppUser appUser, AppUserSignUpRequest request) {
         userStateValidator.validate(appUser, UserLifecycleOperation.LOCAL_SIGNUP_START);
         if (!userStateValidator.isDeleted(appUser)) {
@@ -191,12 +193,61 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
         return savedUser;
     }
 
+    /**
+     * Creates a new user account for phone-based registration. Builds a new AppUser entity from the sign-up request, saves it to the database, and persists the local authentication provider. Critical for initiating the registration process for new users.
+     *
+     * @param request the sign-up request containing the phone number and password
+     * @return the created AppUser entity
+     */
+    private AppUser createNewUser(AppUserSignUpRequest request) {
+        AppUser savedUser = appUserRepository.save(buildPhoneUser(request));
+        persistLocalProvider(savedUser);
+        return savedUser;
+    }
+
+    /**
+     * Persists a local authentication provider for a user if it is missing. Checks if a local provider already exists for the user, and if not, it creates and saves a new local provider. Critical for ensuring that reactivated accounts have the necessary authentication provider for local sign-in.
+     *
+     * @param savedUser the AppUser entity for which to check and persist the local provider
+     */
     private void persistLocalProviderIfMissing(AppUser savedUser) {
         if (!userAuthProviderRepository.existsByUserIdAndProvider(savedUser.getId(), LOCAL)) {
             persistLocalProvider(savedUser);
         }
     }
 
+    /**
+     * Builds a new AppUser entity for phone-based registration. Normalizes the phone number, encodes the password, and sets the initial account status to ACTIVE. Critical for ensuring consistent user creation logic for phone identifiers.
+     *
+     * @param request the sign-up request containing the phone number and password
+     * @return a new AppUser entity ready for persistence
+     */
+    private AppUser buildPhoneUser(AppUserSignUpRequest request) {
+        String normalizedIdentifier = IdentifierNormalizer.normalizePhone(request.identifier());
+        AppUser appUser = new AppUser();
+        appUser.setPhone(normalizedIdentifier);
+        appUser.setPassword(passwordService.encodePassword(request.password()));
+        appUser.setAppUserStatus(ACTIVE);
+        return appUser;
+    }
+
+    /**
+     * Persists a local authentication provider for a given user. Associates the user with the LOCAL provider type and saves it to the database. Critical for enabling local authentication flows for the user.
+     *
+     * @param savedUser the AppUser entity for which to persist the local provider
+     */
+    private void persistLocalProvider(AppUser savedUser) {
+        UserAuthProvider localProvider = new UserAuthProvider();
+        localProvider.setUser(savedUser);
+        localProvider.setProvider(LOCAL);
+        userAuthProviderRepository.save(localProvider);
+    }
+
+    /**
+     * Ensures that the OTP verification for phone-based sign-up is completed. Fetches the latest OTP token for the given phone number and SIGNUP purpose. If no OTP token is found, or if the token is expired or not verified, it throws a BusinessException with OTP_VERIFICATION_REQUIRED error code. Critical for enforcing phone verification before allowing users to complete the registration process.
+     *
+     * @param identifier the phone number for which to check OTP verification
+     */
     private void ensureSignupOtpVerified(String identifier) {
         OtpToken otpToken;
         try {
@@ -213,6 +264,11 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
+    /**
+     * Completes the phone-based sign-up process by assigning a default role, marking the phone number as verified, and updating the user's account status to ACTIVE. Saves the updated user entity to the database. Critical for finalizing the registration process and enabling full access for the user.
+     *
+     * @param appUser the AppUser entity to update and save
+     */
     private void completePhoneSignup(AppUser appUser) {
         authCommonServices.assignDefaultRole(appUser);
         appUser.setPhoneNumberVerified(true);
@@ -220,6 +276,9 @@ public class PhoneAuthenticationServiceImpl implements AuthenticationService {
         appUserRepository.save(appUser);
     }
 
+    /**
+     * Records a successful phone-based sign-up event. Increments the signup success counter and logs the event.
+     */
     private void recordSignupSuccess() {
         meterRegistry.counter("auth.signup.success").increment();
         auditEventLogger.log("auth.signup", null, null, null, "success", "identifier_type=PHONE", null);

@@ -2,12 +2,12 @@ package org.miniProjectTwo.DragonOfNorth.security.filter;
 
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.Test;
-import org.miniProjectTwo.DragonOfNorth.security.filter.CsrfCookieFilter;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.web.csrf.CsrfToken;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class CsrfCookieFilterTest {
 

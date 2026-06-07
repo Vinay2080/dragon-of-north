@@ -23,7 +23,9 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- * Converts authenticated-but-forbidden requests into standardized API error responses.
+ * Custom AccessDeniedHandler that returns JSON error responses for access denied exceptions in a RESTful manner.
+ * <p>
+ * This handler checks for CSRF-related access denials and returns specific error codes for those cases. For other access denials, it determines if the user is unauthenticated and delegates to the authentication entry point if necessary. Authenticated users that are denied access receive standard access denied error response. This approach ensures consistent API responses for security-related errors in a REST API context.
  */
 @Component
 @RequiredArgsConstructor

@@ -76,6 +76,28 @@ public class JwtFilter extends OncePerRequestFilter {
         this.jwtServices = jwtServices;
     }
 
+    /**
+     * Main filter method that processes incoming HTTP requests, extracts and validates JWT tokens,
+     * and populates the Spring Security context with an authenticated user if a valid token is found.
+     *
+     * <p>The method performs the following steps:
+     * <ol>
+     *   <li>Checks if the request path matches any configured public endpoints and skips authentication if so</li>
+     *   <li>Extracts the JWT token from the {@code Authorization} header or cookies</li>
+     *   <li>Validates the token and extracts claims</li>
+     *   <li>Loads user details and authorities from claims</li>
+     *   <li>Populates the Spring Security context with an authenticated user principal</li>
+     * </ol>
+     *
+     * <p>If any step fails (e.g., no token, invalid token, expired token), the method clears the security context
+     * and allows the request to proceed unauthenticated, relying on downstream handlers to enforce access control.</p>
+     *
+     * @param request     The incoming HTTP request
+     * @param response    The HTTP response
+     * @param filterChain The filter chain to pass control to the next filter
+     * @throws ServletException If an error occurs during filtering
+     * @throws IOException      If an I/O error occurs during filtering
+     */
     @Override
     public void doFilterInternal(
             @NonNull HttpServletRequest request,
@@ -191,17 +213,12 @@ public class JwtFilter extends OncePerRequestFilter {
         return Stream.of(public_urls).anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
     }
 
-    private boolean resolveMfaVerified(Claims claims, Instant mfaVerifiedAt) {
-        boolean verifiedClaim = Boolean.TRUE.equals(claims.get(MFA_VERIFIED, Boolean.class));
-        if (!verifiedClaim) {
-            return false;
-        }
-        if (mfaVerifiedAt == null) {
-            throw new IllegalArgumentException("JWT mfa_verified_at is required when mfa_verified=true");
-        }
-        return true;
-    }
-
+    /**
+     * Resolves the MFA verified timestamp from the JWT claims. The claim can be represented either as a Date object or as a numeric timestamp (milliseconds since epoch). If the claim is missing or cannot be parsed, this method returns null.
+     *
+     * @param claims The JWT claims to extract the MFA verified timestamp from
+     * @return The resolved MFA verified timestamp as an Instant, or null if not present or invalid
+     */
     private Instant resolveMfaVerifiedAt(Claims claims) {
         Object raw = claims.get(MFA_VERIFIED_AT);
         if (raw instanceof Date date) {
@@ -213,6 +230,32 @@ public class JwtFilter extends OncePerRequestFilter {
         return null;
     }
 
+    /**
+     * Resolves the MFA verified status from the JWT claims. This method checks if the "mfa_verified" claim is set to true and ensures that the "mfa_verified_at" claim is present when MFA is marked as verified. If "mfa_verified" is true but "mfa_verified_at" is missing, this method throws an IllegalArgumentException, indicating a malformed token.
+     *
+     * @param claims        The JWT claims to extract the MFA verified status from
+     * @param mfaVerifiedAt The resolved MFA verified timestamp, which must be non-null if MFA is verified
+     * @return true if MFA is verified according to the claims, false otherwise
+     * @throws IllegalArgumentException if "mfa_verified" is true but "mfa_verified_at" is null
+     */
+    private boolean resolveMfaVerified(Claims claims, Instant mfaVerifiedAt) {
+        boolean verifiedClaim = Boolean.TRUE.equals(claims.get(MFA_VERIFIED, Boolean.class));
+        if (!verifiedClaim) {
+            return false;
+        }
+        if (mfaVerifiedAt == null) {
+            throw new IllegalArgumentException("JWT mfa_verified_at is required when mfa_verified=true");
+        }
+        return true;
+    }
+
+    /**
+     * Resolves the Authentication Methods References (AMR) from the JWT claims. The AMR claim is expected to be a list of strings representing the authentication methods used during login (e.g., ["pwd", "mfa_totp"]).
+     * If the claim is missing or not in the expected format, this method returns an empty list.
+     *
+     * @param claims The JWT claims to extract the AMR from
+     * @return A list of authentication method references, or an empty list if not present or invalid
+     */
     private List<String> resolveAmr(Claims claims) {
         Object raw = claims.get(AMR);
         if (raw instanceof List<?> list) {
@@ -230,6 +273,13 @@ public class JwtFilter extends OncePerRequestFilter {
         return List.of();
     }
 
+    /**
+     * Resolves the session ID from the JWT claims. The session ID is expected to be a string representation of a UUID.
+     * If the claim is missing, blank, or cannot be parsed as a UUID, this method returns null.
+     *
+     * @param claims The JWT claims to contain the session ID
+     * @return The resolved session ID as a UUID, or null if not present or invalid
+     */
     private UUID resolveSessionId(Claims claims) {
         String raw = claims.get(SESSION_ID, String.class);
         if (raw == null || raw.isBlank()) {

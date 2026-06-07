@@ -8,15 +8,18 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Central Cloudinary client factory used by profile image flows.
- * <p>
- * Primary consumer: profile services/controllers that upload avatar assets. Keeping creation here
- * avoids leaking provider credentials into business modules and allows future migration to secret
- * managers, per-tenant Cloudinary accounts, or alternative media backends behind the same bean.
- * Invalid/missing properties fail application startup, which is intentional for fail-fast ops.
  */
 @Configuration
 public class CloudinaryConfig {
 
+    /**
+     * Creates a Cloudinary client configured with the provided credentials.
+     *
+     * @param cloudName Cloudinary cloud name (from application properties)
+     * @param apiKey    Cloudinary API key (from application properties)
+     * @param apiSecret Cloudinary API secret (from application properties)
+     * @return Configured Cloudinary client instance
+     */
     @Bean
     public Cloudinary cloudinary(
             @Value("${cloudinary.cloud-name}") String cloudName,

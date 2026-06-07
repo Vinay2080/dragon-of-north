@@ -13,13 +13,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
  * <p>This DTO is used to create new user accounts with initially CREATED status.
  * It contains the user identifier, authentication method preference, and password
  * that will be validated and stored securely. Password must meet security requirements.</p>
- *
- * <p><strong>Input Components:</strong></p>
- * <ul>
- *   <li>{@code identifier} - The user's email address or phone number for registration</li>
- *   <li>{@code identifierType} - Enum specifying EMAIL or PHONE authentication method</li>
- *   <li>{@code password} - User password meeting security criteria (8-50 chars, mixed case, numbers, special chars)</li>
- * </ul>
+
  *
  * <p><strong>Usage:</strong></p>
  * <p>Used in {@code AuthenticationController.signupUser()} endpoint at {@code /api/v1/auth/identifier/sign-up}.
@@ -27,9 +21,13 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
  * with CREATED status, and initiates a verification process (OTP/email verification).</p>
  *
  * <p><strong>Lifecycle Note:</strong></p>
- * This request enters at the sign-up start endpoint and transitions account state into a
+ * This request enters at the sign-up start endpoint and transitions the account state into a
  * verification-required phase. Completion requires OTP verification plus the sign-up-complete call.
  * Password content is security-sensitive and must remain redacted in logs/telemetry.
+ * Security expectations: this endpoint should only be accessible after successful OTP verification, and the identifier should be looked up and validated against the pending OTP context to ensure that only the verified identifier can be activated. Additional rate limiting may be advisable to prevent abuse of this endpoint for account activation.
+ * @param identifier The email address or phone number used as the username for registration. Must be unique and non-blank.
+ * @param identifierType The type of identifier (EMAIL or PHONE) to determine the authentication method and verification flow. Required for routing and validation.
+ * @param password The user's chosen password for authentication. Must be 8-50 characters long and include uppercase, lowercase, numeric, and special characters to meet security requirements. Must be non-blank and is sensitive information that should not be logged.
  */
 @Schema(name = "AppUserSignUpRequest", description = "Request payload for starting a local identifier-based sign-up flow.")
 public record AppUserSignUpRequest(

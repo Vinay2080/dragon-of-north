@@ -29,15 +29,13 @@ import java.util.*;
  *
  * <p>Tokens are signed with the RSA private key and verified using the RSA public key.
  * Token expiration durations are configured through application properties.</p>
- */
-@Slf4j
-@Service
-/**
  * Default JWT implementation for access/refresh issuance and validation.
  * <p>
  * Encodes authentication facts used by filters and session enforcement. Any claim-format change
  * must be coordinated with JwtFilter, SidLivenessFilter, and session token issuance components.
  */
+@Slf4j
+@Service
 public class JwtServicesImpl implements JwtServices {
 
     private static final String TOKEN_TYPE = "token_type";
@@ -74,6 +72,12 @@ public class JwtServicesImpl implements JwtServices {
         log.info("JWT RSA keys successfully loaded");
     }
 
+    /**
+     * Generates a signed JWT access token containing authentication facts as claims.
+     *
+     * @param authnFacts the authentication facts to embed in the token
+     * @return a compact JWT access token string
+     */
     @Override
     public String generateAccessToken(AuthnFacts authnFacts) {
         Objects.requireNonNull(authnFacts, "authnFacts cannot be null");

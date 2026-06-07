@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
+/**
+ * Request payload for Google OAuth login and Google OAuth sign-up.
+ */
 @Builder
 @Schema(name = "OAuthLoginRequest", description = "Request payload for Google OAuth login and Google OAuth sign-up.")
 public record OAuthLoginRequest(

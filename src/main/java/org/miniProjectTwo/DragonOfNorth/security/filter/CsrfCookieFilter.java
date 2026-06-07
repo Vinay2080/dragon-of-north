@@ -17,6 +17,10 @@ import java.io.IOException;
 @Component
 public class CsrfCookieFilter extends OncePerRequestFilter {
 
+    /**
+     * Extracts the CSRF token from the request and ensures it is included in the response cookies.
+     * This allows browser clients to access the token for subsequent requests.
+     */
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
