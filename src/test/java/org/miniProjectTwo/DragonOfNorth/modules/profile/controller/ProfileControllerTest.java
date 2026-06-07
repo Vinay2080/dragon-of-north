@@ -232,3 +232,4 @@ class ProfileControllerTest {
                 .andExpect(jsonPath("$.data.avatarSource").value("USER_DEFINED"));
     }
 }
+//todo warnings
