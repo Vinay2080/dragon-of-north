@@ -38,7 +38,6 @@ spring:
   devtools:
     restart:
       enabled: true
-
 app:
   security:
     sid-enforcement:
@@ -53,7 +52,7 @@ app:
       session-revoke-all-max-age: ${step_up_session_revoke_all_max_age:PT5M}
     jwt:
       expiration:
-        access-token: ${access_token}
+        access-token: 518400000 # 6 days in milliseconds
         refresh-token: ${refresh_token}
     cookie:
       same-site: ${cookie_same_site}
@@ -133,37 +132,37 @@ rate-limit:
       type: refresh
   rules:
     signup:
-      capacity: 5
-      refill-tokens: 1
-      refill-minutes: 60
-    login:
-      capacity: 10
+      capacity: 50
       refill-tokens: 10
-      refill-minutes: 15
+      refill-minutes: 1
+    login:
+      capacity: 100
+      refill-tokens: 100
+      refill-minutes: 1
     otp:
-      capacity: 5
-      refill-tokens: 5
-      refill-minutes: 30
+      capacity: 50
+      refill-tokens: 50
+      refill-minutes: 1
     passwordless:
-      capacity: 5
-      refill-tokens: 1
-      refill-minutes: 10
+      capacity: 50
+      refill-tokens: 10
+      refill-minutes: 1
     mfa_verify:
-      capacity: 5
-      refill-tokens: 5
-      refill-minutes: 10
+      capacity: 50
+      refill-tokens: 50
+      refill-minutes: 1
     step_up_request:
-      capacity: 4
-      refill-tokens: 4
-      refill-minutes: 10
+      capacity: 40
+      refill-tokens: 40
+      refill-minutes: 1
     step_up_verify:
-      capacity: 6
-      refill-tokens: 6
-      refill-minutes: 10
+      capacity: 60
+      refill-tokens: 60
+      refill-minutes: 1
     refresh:
-      capacity: 12
-      refill-tokens: 12
-      refill-minutes: 10
+      capacity: 120
+      refill-tokens: 120
+      refill-minutes: 100
 
 management:
   endpoints:

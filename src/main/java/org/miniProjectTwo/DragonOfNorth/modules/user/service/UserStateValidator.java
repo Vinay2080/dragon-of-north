@@ -49,7 +49,7 @@ public class UserStateValidator {
         }
 
         if (status == PENDING_VERIFICATION) {
-            if (operation == UserLifecycleOperation.LOCAL_SIGNUP_COMPLETE) {
+            if (operation == UserLifecycleOperation.LOCAL_SIGNUP_COMPLETE || operation == UserLifecycleOperation.EMAIL_VERIFICATION_REQUEST) {
                 return;
             }
             throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED, "Email not verified");

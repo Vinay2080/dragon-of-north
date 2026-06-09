@@ -5,8 +5,6 @@ import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpVerificationStatus;
 
-import java.util.function.Function;
-
 /**
  * OTP lifecycle service covering issuance, persistence lookup, and verification transitions.
  * <p>
@@ -29,7 +27,7 @@ public interface OtpService {
      * Shared OTP creation pipeline used by channel-specific methods.
      */
     void createOtp(OtpSender sender, OtpPurpose otpPurpose,
-                   String identifier, IdentifierType otpType, Function<String, String> normalizer);
+                   String identifier, IdentifierType otpType);
 
     /**
      * Verifies an email OTP.

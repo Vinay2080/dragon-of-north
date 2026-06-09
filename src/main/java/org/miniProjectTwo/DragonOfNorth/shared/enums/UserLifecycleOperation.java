@@ -30,7 +30,8 @@ public enum UserLifecycleOperation {
     PASSWORDLESS_LOGIN_REQUEST(true),
     PASSWORDLESS_LOGIN_VERIFY(true),
     MFA_SETUP_REQUEST(true),
-    MFA_SETUP_CONFIRM(true);
+    MFA_SETUP_CONFIRM(true),
+    EMAIL_VERIFICATION_REQUEST(false);
 
     /**
      * Indicates whether the operation is permitted for active users.

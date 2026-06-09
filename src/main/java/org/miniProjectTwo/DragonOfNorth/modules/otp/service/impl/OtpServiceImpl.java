@@ -8,10 +8,10 @@ import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.repo.OtpTokenRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpSender;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.service.OtpService;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
-import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpVerificationStatus;
+import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
+import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
+import org.miniProjectTwo.DragonOfNorth.shared.enums.*;
 import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.miniProjectTwo.DragonOfNorth.shared.util.AuditEventLogger;
 import org.miniProjectTwo.DragonOfNorth.shared.util.IdentifierNormalizer;
@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.function.Function;
 
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.EMAIL;
 import static org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType.PHONE;
@@ -41,6 +40,8 @@ public class OtpServiceImpl implements OtpService {
     private final PhoneOtpSender phoneOtpSender;
     private final MeterRegistry meterRegistry;
     private final AuditEventLogger auditEventLogger;
+    private final AppUserRepository appUserRepository;
+    private final UserStateValidator userStateValidator;
 
     @Value("${otp.length}")
     private int otpLength;
@@ -72,7 +73,16 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     @Override
     public void createEmailOtp(String email, OtpPurpose otpPurpose) {
-        createOtp(emailOtpSender, otpPurpose, email, EMAIL, IdentifierNormalizer::normalizeEmail);
+        String normalizedEmail = IdentifierNormalizer.normalizeEmail(email);
+        validateOtpRequest(normalizedEmail);
+        createOtp(emailOtpSender, otpPurpose, normalizedEmail, EMAIL);
+
+    }
+
+    private void validateOtpRequest(String email) {
+        AppUser appUser = appUserRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        userStateValidator.validate(appUser, UserLifecycleOperation.EMAIL_VERIFICATION_REQUEST);
     }
 
     /**
@@ -81,7 +91,7 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     @Override
     public void createPhoneOtp(String phone, OtpPurpose otpPurpose) {
-        createOtp(phoneOtpSender, otpPurpose, phone, PHONE, IdentifierNormalizer::normalizePhone);
+        createOtp(phoneOtpSender, otpPurpose, IdentifierNormalizer.normalizePhone(phone), PHONE);
     }
 
     /**
@@ -89,8 +99,7 @@ public class OtpServiceImpl implements OtpService {
      **/
     @Override
     public void createOtp(OtpSender sender, OtpPurpose otpPurpose,
-                          String identifier, IdentifierType otpType, Function<String, String> normalizer) {
-        String normalizedIdentifier = normalizer.apply(identifier);
+                          String normalizedIdentifier, IdentifierType otpType) {
         try {
             issueOtp(sender, otpPurpose, normalizedIdentifier, otpType);
             recordOtpRequestSuccess(otpType, otpPurpose);
@@ -107,7 +116,15 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     @Override
     public OtpVerificationStatus verifyEmailOtp(String email, String providedOtp, OtpPurpose otpPurpose) {
-        return verifyToken(fetchLatest(IdentifierNormalizer.normalizeEmail(email), EMAIL, otpPurpose), providedOtp, otpPurpose);
+        String normalizedEmail = IdentifierNormalizer.normalizeEmail(email);
+        validateVerificationRequest(normalizedEmail);
+        return verifyToken(fetchLatest(normalizedEmail, EMAIL, otpPurpose), providedOtp, otpPurpose);
+    }
+
+    private void validateVerificationRequest(String email) {
+        AppUser appUser = appUserRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        userStateValidator.validate(appUser, UserLifecycleOperation.EMAIL_VERIFICATION_REQUEST);
     }
 
     /**
@@ -117,7 +134,9 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     @Override
     public OtpVerificationStatus verifyPhoneOtp(String phone, String providedOtp, OtpPurpose otpPurpose) {
-        return verifyToken(fetchLatest(IdentifierNormalizer.normalizePhone(phone), PHONE, otpPurpose), providedOtp, otpPurpose);
+        String normalizedPhone = IdentifierNormalizer.normalizePhone(phone);
+        validateVerificationRequest(normalizedPhone);
+        return verifyToken(fetchLatest(normalizedPhone, PHONE, otpPurpose), providedOtp, otpPurpose);
     }
 
     /**

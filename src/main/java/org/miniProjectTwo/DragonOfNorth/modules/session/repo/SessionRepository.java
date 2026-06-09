@@ -128,6 +128,9 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
             """)
     int revokeAllSessionsByUserId(UUID userId);
 
+    /**
+     * Checks for the existence of a live session by session ID and user ID.
+     */
     @Query("""
             select count(s) > 0
             from Session s
@@ -141,6 +144,9 @@ public interface SessionRepository extends JpaRepository<Session, UUID> {
                                      @Param("userId") UUID userId,
                                      @Param("now") Instant now);
 
+    /**
+     * Finds a session by ID constrained to user ownership and active status.
+     */
     @Query("""
             select s
             from Session s

@@ -67,7 +67,7 @@ public class AppUser extends BaseEntity {
      * Current lifecycle status of the account.
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, columnDefinition = "user_status")
+    @Column(name = "status", nullable = false)
     private AppUserStatus appUserStatus = ACTIVE;
 
     /**

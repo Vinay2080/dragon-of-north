@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.model.OtpToken;
 import org.miniProjectTwo.DragonOfNorth.modules.otp.repo.OtpTokenRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.repo.AppUserRepository;
+import org.miniProjectTwo.DragonOfNorth.modules.user.service.UserStateValidator;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.ErrorCode;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.IdentifierType;
 import org.miniProjectTwo.DragonOfNorth.shared.enums.OtpPurpose;
@@ -46,11 +48,15 @@ class OtpServiceTest {
     private Counter counter;
     @Mock
     private AuditEventLogger auditEventLogger;
+    @Mock
+    private AppUserRepository appUserRepository;
+    @Mock
+    private UserStateValidator userStateValidator;
 
     @BeforeEach
     void setUp() {
         lenient().when(meterRegistry.counter(anyString())).thenReturn(counter);
-        otpServiceImpl = new OtpServiceImpl(otpTokenRepository, emailOtpSender, phoneOtpSender, meterRegistry, auditEventLogger);
+        otpServiceImpl = new OtpServiceImpl(otpTokenRepository, emailOtpSender, phoneOtpSender, meterRegistry, auditEventLogger, appUserRepository, userStateValidator);
         ReflectionTestUtils.setField(otpServiceImpl, "otpLength", 6);
         ReflectionTestUtils.setField(otpServiceImpl, "ttlMinutes", 5);
         ReflectionTestUtils.setField(otpServiceImpl, "maxAttempts", 3);
