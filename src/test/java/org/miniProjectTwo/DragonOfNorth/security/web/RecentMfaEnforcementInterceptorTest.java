@@ -7,6 +7,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.request.AuthRequestContext;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaPolicy;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaProperties;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaService;
@@ -243,6 +245,7 @@ class RecentMfaEnforcementInterceptorTest {
         Session session = new Session();
         session.setId(sessionId);
         session.setMfaVerifiedAt(mfaVerifiedAt);
+        session.setDeviceId("session-device");
         return session;
     }
 
@@ -271,5 +274,60 @@ class RecentMfaEnforcementInterceptorTest {
         assertFalse(allowed);
         verify(authCommonServices).issueStepUpChallenge(eq(user), eq(sessionId), any());
         verify(response).setStatus(ErrorCode.MFA_STEP_UP_REQUIRED.getHttpStatus().value());
+    }
+
+    @Test
+    void sessionStale_stepUpChallengeFallsBackToSessionDeviceWhenHeaderMissing() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        Instant stale = Instant.now().minus(Duration.ofHours(2));
+        SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(), true, stale, sessionId, List.of("pwd", "mfa"));
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+
+        AppUser user = buildUser();
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        Session session = buildSession(sessionId, stale);
+        session.setDeviceId("trusted-device-1");
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any())).thenReturn(Optional.of(session));
+        when(recentMfaService.isRecentMfaSatisfied(eq(stale), any())).thenReturn(false);
+
+        HandlerMethod handlerMethod = new HandlerMethod(new TestController(), TestController.class.getMethod("accountDelete"));
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        boolean allowed = interceptor.preHandle(request, response, handlerMethod);
+
+        assertFalse(allowed);
+        ArgumentCaptor<AuthRequestContext> contextCaptor = ArgumentCaptor.forClass(AuthRequestContext.class);
+        verify(authCommonServices).issueStepUpChallenge(eq(user), eq(sessionId), contextCaptor.capture());
+        assertEquals("trusted-device-1", contextCaptor.getValue().deviceId());
+    }
+
+    @Test
+    void sessionStale_stepUpChallengePrefersRequestDeviceHeader() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        Instant stale = Instant.now().minus(Duration.ofHours(2));
+        SecurityPrincipal principal = new SecurityPrincipal(userId, List.of(), true, stale, sessionId, List.of("pwd", "mfa"));
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+
+        AppUser user = buildUser();
+        when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        Session session = buildSession(sessionId, stale);
+        session.setDeviceId("session-device-1");
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any())).thenReturn(Optional.of(session));
+        when(recentMfaService.isRecentMfaSatisfied(eq(stale), any())).thenReturn(false);
+
+        HandlerMethod handlerMethod = new HandlerMethod(new TestController(), TestController.class.getMethod("accountDelete"));
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getHeader("X-Device-Id")).thenReturn("header-device-1");
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        boolean allowed = interceptor.preHandle(request, response, handlerMethod);
+
+        assertFalse(allowed);
+        ArgumentCaptor<AuthRequestContext> contextCaptor = ArgumentCaptor.forClass(AuthRequestContext.class);
+        verify(authCommonServices).issueStepUpChallenge(eq(user), eq(sessionId), contextCaptor.capture());
+        assertEquals("header-device-1", contextCaptor.getValue().deviceId());
     }
 }

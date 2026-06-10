@@ -138,7 +138,7 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
                                          HttpServletResponse response,
                                          AppUser user,
                                          Session session) {
-        AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, request.getHeader("X-Device-Id"));
+        AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, resolveDeviceId(request, session));
         MfaChallenge challenge = authCommonServices.issueStepUpChallenge(user, session.getId(), context);
         StepUpRequiredResponse payload = StepUpRequiredResponse.from(ErrorCode.MFA_STEP_UP_REQUIRED, challenge);
         response.setStatus(ErrorCode.MFA_STEP_UP_REQUIRED.getHttpStatus().value());
@@ -149,6 +149,14 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
             throw new BusinessException(ErrorCode.MFA_STEP_UP_REQUIRED, "Recent MFA verification required");
         }
         return false;
+    }
+
+    private String resolveDeviceId(HttpServletRequest request, Session session) {
+        String headerDeviceId = request.getHeader("X-Device-Id");
+        if (headerDeviceId != null && !headerDeviceId.isBlank()) {
+            return headerDeviceId;
+        }
+        return session.getDeviceId();
     }
 
     /**
