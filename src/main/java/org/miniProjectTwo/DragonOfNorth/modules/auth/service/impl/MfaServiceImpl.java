@@ -57,7 +57,7 @@ public class MfaServiceImpl implements MfaService {
      *
      * @param context The authentication request context containing information about the request, such as device ID and IP address.
      * @return An MfaSetupResponse containing the generated TOTP secret and QR code for MFA setup.
-     * @throws BusinessException If MFA is already enabled for the user's account or if the user's state does not allow MFA setup.
+     * @throws BusinessException If MFA is already enabled for the user's account, or if the user's state does not allow MFA setup.
      */
     @Override
     public MfaSetupResponse requestMfaSetup(AuthRequestContext context) {

@@ -50,7 +50,7 @@ public class PasswordServiceImpl implements PasswordService {
      *
      * @param identifier     The email or phone number used to identify the user requesting a password reset.
      * @param identifierType The type of identifier provided (EMAIL or PHONE).
-     * @throws BusinessException If no user is found with the provided identifier or if the user's lifecycle state does not allow for password reset requests.
+     * @throws BusinessException If no user is found with the provided identifier, or if the user's lifecycle state does not allow for password reset requests.
      */
     @Override
     public void requestPasswordResetOtp(String identifier, IdentifierType identifierType) {
@@ -84,7 +84,7 @@ public class PasswordServiceImpl implements PasswordService {
      * Changes the user's password after validating the current password and ensuring the new password meets the required criteria. This method ensures that the user has a valid local credential and updates their password, revoking all active sessions.
      *
      * @param request The password change request containing the current and new passwords.
-     * @throws BusinessException If the current password is incorrect or if the new password does not meet the required criteria.
+     * @throws BusinessException If the current password is wrong. If the new password does not satisfy the required criteria.
      */
     @Override
     @Transactional
@@ -255,7 +255,7 @@ public class PasswordServiceImpl implements PasswordService {
     }
 
     /**
-     * Creates a password reset OTP for the specified identifier and identifier type.
+     * Creates a password-reset OTP for the specified identifier and identifier type.
      *
      * @param identifier     The identifier for which to create the OTP.
      * @param identifierType The type of the identifier.

@@ -130,7 +130,7 @@ public class SessionServiceImpl implements SessionService {
     }
 
     /**
-     * Retrieves a list of session summaries for the given user ID, ordered by last used timestamp descending. Each summary includes session metadata such as device ID, IP address, user agent, last used time, expiry date, and revocation status.
+     * Retrieves a list of session summaries for the given user ID, ordered by the last-used timestamp descending. Each summary includes session metadata such as device ID, IP address, user agent, last used time, expiry date, and revocation status.
      *
      * @param userId The UUID of the user for whom to retrieve sessions. Must not be null.
      * @return A list of SessionSummaryResponse objects representing the user's sessions.
@@ -153,7 +153,7 @@ public class SessionServiceImpl implements SessionService {
     }
 
     /**
-     * Revokes a specific session by its ID for the given user. The method first validates the user's state for session revocation, then attempts to find the session by ID and user ID. If the session is found and is not already revoked, it marks it as revoked. If the session is not found, it logs a failure event and throws a BusinessException.
+     * Revokes a specific session by its ID for the given user. The method first validates the user's state for session revocation, then attempts to find the session by ID and user ID. If the session is found and is not yet revoked, it marks it as revoked. If the session is not found, it logs a failure event and throws a BusinessException.
      *
      * @param userId    The UUID of the user who owns the session to revoke. Must not be null.
      * @param sessionId The UUID of the session to revoke. Must not be null.

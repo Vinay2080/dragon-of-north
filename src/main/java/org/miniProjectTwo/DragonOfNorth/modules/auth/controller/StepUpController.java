@@ -119,8 +119,7 @@ public class StepUpController {
     @PostMapping("/protected-action")
     @SensitiveAccountOperation
     public ResponseEntity<ApiResponse<?>> sensitiveAction(
-            @RequestBody @Valid DeviceIdRequest deviceIdRequest,
-            HttpServletRequest httpServletRequest) {
+    ) {
 
         return ResponseEntity.ok(successMessage("sensitive action completed"));
     }
