@@ -19,6 +19,7 @@ import {useCooldown} from '../hooks/useCooldown';
 import {persistPostLoginRedirect, resolvePostLoginRedirectPath} from '../utils/postLoginRedirect';
 import {handleAuthResponse} from '../utils/authResponseHandler';
 import {requestPasswordlessLogin} from '../services/passwordlessAuthService';
+import MfaChallengeModal from '../components/auth/MfaChallengeModal';
 
 const AUTH_STEP = {
     EMAIL_ENTRY: 'EMAIL_ENTRY',
@@ -65,6 +66,9 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
     const [passwordlessLoading, setPasswordlessLoading] = useState(false);
     const [passwordlessMessage, setPasswordlessMessage] = useState('');
     const [passwordlessError, setPasswordlessError] = useState('');
+    const [mfaChallenge, setMfaChallenge] = useState(null);
+    const [mfaError, setMfaError] = useState('');
+    const [mfaSubmitting, setMfaSubmitting] = useState(false);
 
     const passwordInputRef = useRef(null);
     const passwordlessRequestInFlightRef = useRef(false);
@@ -241,6 +245,57 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
         }, 150);
     };
 
+    const completeLoginSuccess = useCallback((identifier) => {
+        authState.setSuccess('Welcome back!');
+
+        // Don’t keep the post-signup email hint around once auth succeeds.
+        sessionStorage.removeItem(PREFILL_EMAIL_STORAGE_KEY);
+        onClearPrefilledEmail?.();
+
+        login({identifier});
+        navigateAfterAuthSuccess('/');
+    }, [authState, login, navigateAfterAuthSuccess, onClearPrefilledEmail]);
+
+    const handleMfaCancel = useCallback(() => {
+        if (mfaSubmitting) return;
+        setMfaChallenge(null);
+        setMfaError('');
+        setPassword('');
+        authState.setIdle();
+    }, [authState, mfaSubmitting]);
+
+    const handleMfaSubmit = useCallback(async ({providerType, code}) => {
+        if (!mfaChallenge?.challenge_id || mfaSubmitting) return;
+
+        setMfaSubmitting(true);
+        setMfaError('');
+
+        try {
+            const result = await apiService.post(
+                API_CONFIG.ENDPOINTS.MFA_VERIFY,
+                {
+                    challenge_id: mfaChallenge.challenge_id,
+                    provider_type: providerType,
+                    code,
+                    device_id: getDeviceId(),
+                },
+                {skipAuthRefresh: true}
+            );
+
+            if (apiService.isErrorResponse(result) || result?.api_response_status !== 'success') {
+                setMfaError(result?.backendMessage || result?.message || 'Unable to verify this code. Please try again.');
+                return;
+            }
+
+            const identifier = mfaChallenge.identifier;
+            setMfaChallenge(null);
+            setMfaError('');
+            completeLoginSuccess(identifier);
+        } finally {
+            setMfaSubmitting(false);
+        }
+    }, [completeLoginSuccess, mfaChallenge, mfaSubmitting]);
+
     const handleLocalLogin = async (event) => {
         event.preventDefault();
         const submittedPassword =
@@ -253,6 +308,7 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
         }
 
         setPasswordError('');
+        setMfaError('');
         setLoading(true);
         authState.setLoading('Signing in...');
 
@@ -294,14 +350,18 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
             return;
         }
 
-        authState.setSuccess('Welcome back!');
+        const challenge = result?.data;
+        if (challenge?.mfa_required === true && challenge?.challenge_id) {
+            authState.setIdle();
+            setMfaChallenge({
+                challenge_id: challenge.challenge_id,
+                available_methods: Array.isArray(challenge.available_methods) ? challenge.available_methods : [],
+                identifier: normalizedEmail,
+            });
+            return;
+        }
 
-        // Don’t keep the post-signup email hint around once auth succeeds.
-        sessionStorage.removeItem(PREFILL_EMAIL_STORAGE_KEY);
-        onClearPrefilledEmail?.();
-
-        login({identifier: normalizedEmail});
-        navigateAfterAuthSuccess('/');
+        completeLoginSuccess(normalizedEmail);
     };
 
     const handlePasswordValueChange = useCallback((event) => {
@@ -443,6 +503,15 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
     return (
         <>
             <AuthLoadingOverlay isVisible={authState.isLoading} message={authState.message}/>
+            <MfaChallengeModal
+                key={mfaChallenge?.challenge_id || 'login-mfa'}
+                open={Boolean(mfaChallenge)}
+                availableMethods={mfaChallenge?.available_methods || []}
+                error={mfaError}
+                isSubmitting={mfaSubmitting}
+                onCancel={handleMfaCancel}
+                onSubmit={handleMfaSubmit}
+            />
 
             <AuthCardLayout
                 title="Welcome back"
