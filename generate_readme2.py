@@ -1,4 +1,6 @@
-<!-- ═══════════════════════════════════════════════════════════════ -->
+import os
+
+readme_content = """<!-- ═══════════════════════════════════════════════════════════════ -->
 <!--                   DRAGON OF NORTH — README                      -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
@@ -231,3 +233,7 @@ This architecture was built with specific, mitigated threat vectors in mind:
 <br>
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:6B57FF,50:1a1040,100:0a0a12&height=150&section=footer" width="100%"/>
+"""
+
+with open("README.MD", "w") as f:
+    f.write(readme_content)
