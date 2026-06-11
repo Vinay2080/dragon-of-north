@@ -9,6 +9,7 @@ import {clearAuthClientState, extractUserStatus, isDeletedUserStatus} from './au
 const AUTO_REFRESH_EXCLUDED_ENDPOINTS = new Set([
     API_CONFIG.ENDPOINTS.LOGIN,
     API_CONFIG.ENDPOINTS.MFA_VERIFY,
+    API_CONFIG.ENDPOINTS.STEP_UP_MFA_VERIFY,
     API_CONFIG.ENDPOINTS.PASSWORDLESS_REQUEST,
     API_CONFIG.ENDPOINTS.PASSWORDLESS_VERIFY,
     API_CONFIG.ENDPOINTS.PASSWORDLESS_REQUEST_FALLBACK,
@@ -23,6 +24,7 @@ const AUTO_REFRESH_EXCLUDED_ENDPOINTS = new Set([
 const AUTH_FAILURE_401_IGNORED_ENDPOINTS = new Set([
     API_CONFIG.ENDPOINTS.LOGIN,
     API_CONFIG.ENDPOINTS.MFA_VERIFY,
+    API_CONFIG.ENDPOINTS.STEP_UP_MFA_VERIFY,
     API_CONFIG.ENDPOINTS.PASSWORDLESS_REQUEST,
     API_CONFIG.ENDPOINTS.PASSWORDLESS_VERIFY,
     API_CONFIG.ENDPOINTS.PASSWORDLESS_REQUEST_FALLBACK,
@@ -37,6 +39,11 @@ class ApiService {
         this.refreshPromise = null;
         this.authFailureListeners = [];
         this.authFailureInProgress = false;
+        this.stepUpMfaHandler = null;
+    }
+
+    registerStepUpMfaHandler(handler) {
+        this.stepUpMfaHandler = handler;
     }
 
     onAuthFailure(callback) {
@@ -283,6 +290,28 @@ class ApiService {
                 }
 
                 if (response.status === 403) {
+                    if (normalizedError.errorCode === 'MFA_012' && !options.mfaRetryAttempted) {
+                        if (this.stepUpMfaHandler) {
+                            try {
+                                const challengeData = data?.data || data;
+                                await this.stepUpMfaHandler({
+                                    challenge_id: challengeData?.challenge_id,
+                                    available_methods: challengeData?.available_methods,
+                                    expires_at: challengeData?.expires_at,
+                                });
+                                return this.request(endpoint, { ...options, mfaRetryAttempted: true }, retry, attempt);
+                            } catch (mfaError) {
+                                return {
+                                    type: 'API_ERROR',
+                                    status: response.status,
+                                    ...normalizedError,
+                                    message: mfaError.message || normalizedError.message || normalizedError.backendMessage || 'MFA verification failed or was cancelled.',
+                                    data,
+                                };
+                            }
+                        }
+                    }
+
                     return {
                         type: 'API_ERROR',
                         status: response.status,

@@ -1,10 +1,11 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState, useRef} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {apiService} from '../services/apiService';
 import {AuthContext} from './authContext';
 import {API_CONFIG} from '../config';
 import {getDeviceId} from '../utils/device.js';
 import {clearAuthClientState, isDeletedUserStatus} from '../services/authSession';
+import MfaChallengeModal from '../components/auth/MfaChallengeModal';
 
 const IDENTIFIER_HINT_KEY = 'auth_identifier_hint';
 
@@ -41,6 +42,84 @@ export const AuthProvider = ({children}) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState(null);
+
+    const [stepUpMfaChallenge, setStepUpMfaChallenge] = useState(null);
+    const [stepUpError, setStepUpError] = useState('');
+    const [isStepUpSubmitting, setIsStepUpSubmitting] = useState(false);
+    const stepUpPendingRef = useRef(null);
+
+    useEffect(() => {
+        const handler = (challenge) => {
+            if (stepUpPendingRef.current) {
+                return stepUpPendingRef.current.promise;
+            }
+
+            let resolvePromise, rejectPromise;
+            const promise = new Promise((resolve, reject) => {
+                resolvePromise = resolve;
+                rejectPromise = reject;
+            });
+
+            stepUpPendingRef.current = { promise, resolve: resolvePromise, reject: rejectPromise };
+            
+            setStepUpMfaChallenge({
+                challenge_id: challenge.challenge_id,
+                available_methods: Array.isArray(challenge.available_methods) ? challenge.available_methods : [],
+            });
+
+            return promise;
+        };
+
+        apiService.registerStepUpMfaHandler(handler);
+        return () => apiService.registerStepUpMfaHandler(null);
+    }, []);
+
+    const handleStepUpMfaSubmit = useCallback(async ({providerType, code}) => {
+        if (!stepUpMfaChallenge?.challenge_id || isStepUpSubmitting) return;
+
+        setIsStepUpSubmitting(true);
+        setStepUpError('');
+
+        try {
+            const result = await apiService.post(
+                API_CONFIG.ENDPOINTS.STEP_UP_MFA_VERIFY,
+                {
+                    challenge_id: stepUpMfaChallenge.challenge_id,
+                    provider_type: providerType,
+                    code,
+                    device_id: getDeviceId(),
+                },
+                {skipAuthRefresh: true}
+            );
+
+            if (apiService.isErrorResponse(result) || result?.api_response_status !== 'success') {
+                setStepUpError(result?.backendMessage || result?.message || 'Unable to verify this code. Please try again.');
+                return;
+            }
+
+            setStepUpMfaChallenge(null);
+            setStepUpError('');
+            
+            if (stepUpPendingRef.current) {
+                stepUpPendingRef.current.resolve();
+                stepUpPendingRef.current = null;
+            }
+        } finally {
+            setIsStepUpSubmitting(false);
+        }
+    }, [stepUpMfaChallenge, isStepUpSubmitting]);
+
+    const handleStepUpMfaCancel = useCallback(() => {
+        if (isStepUpSubmitting) return;
+        
+        setStepUpMfaChallenge(null);
+        setStepUpError('');
+
+        if (stepUpPendingRef.current) {
+            stepUpPendingRef.current.reject(new Error('MFA verification cancelled.'));
+            stepUpPendingRef.current = null;
+        }
+    }, [isStepUpSubmitting]);
 
     const clearLocalAuthState = useCallback(() => {
         setIsAuthenticated(false);
@@ -225,5 +304,17 @@ export const AuthProvider = ({children}) => {
         persistUserState,
     }), [isAuthenticated, isLoading, user, login, logout, forceLogout, checkAuthStatus, patchUser, syncUserProfile, persistUserState]);
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+            <MfaChallengeModal
+                open={Boolean(stepUpMfaChallenge)}
+                availableMethods={stepUpMfaChallenge?.available_methods || []}
+                error={stepUpError}
+                isSubmitting={isStepUpSubmitting}
+                onCancel={handleStepUpMfaCancel}
+                onSubmit={handleStepUpMfaSubmit}
+            />
+        </AuthContext.Provider>
+    );
 };
