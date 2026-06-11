@@ -2,7 +2,7 @@
 <!--                   DRAGON OF NORTH — README                      -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0D0D12,50:1a1040,100:6B57FF&height=200&section=header&text=Dragon%20of%20North&fontSize=48&fontColor=ffffff&fontAlignY=52&desc=Production%20authentication%20infrastructure.%20Not%20a%20tutorial%20project.&descAlignY=70&descSize=14&descColor=9d8fff" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0D0D12,50:1a1040,100:6B57FF&height=200&section=header&text=Dragon%20of%20North&fontSize=48&fontColor=ffffff&fontAlignY=52&desc=Production%20authentication%20infrastructure.%20Not%20a%20tutorial%20project.&descAlignY=70&descSize=14&descColor=9d8fff" width="100%" alt=""/>
 
 <br>
 
@@ -26,33 +26,36 @@
 <!-- ─── TYPING ANIMATION ──────────────────────────────────────────── -->
 
 <p align="center">
-  <img src="https://readme-typing-svg.herokuapp.com?font=JetBrains+Mono&weight=500&size=16&duration=2500&pause=900&color=6B57FF&center=true&vCenter=true&width=760&lines=Identity+infrastructure%2C+not+just+login+APIs.;MFA+orchestration+%C2%B7+Step-up+auth+%C2%B7+Session+liveness;Refresh+rotation+%C2%B7+CSRF+%C2%B7+Redis+rate+limits;89+Java+test+classes+%C2%B7+13+k6+scenario+scripts;This+is+what+production-minded+auth+looks+like." />
+  <img src="https://readme-typing-svg.herokuapp.com?font=JetBrains+Mono&weight=500&size=16&duration=2500&pause=900&color=6B57FF&center=true&vCenter=true&width=760&lines=Identity+infrastructure%2C+not+just+login+APIs.;MFA+orchestration+%C2%B7+Step-up+auth+%C2%B7+Session+liveness;Refresh+rotation+%C2%B7+CSRF+%C2%B7+Redis+rate+limits;89+Java+test+classes+%C2%B7+13+k6+scenario+scripts;This+is+what+production-minded+auth+looks+like."  alt="Typing SVG"/>
 </p>
 
 <br>
 
 <p align="center">
   <a href="https://app.verloren.dev">
-    <img src="https://img.shields.io/badge/%F0%9F%8C%90_Live_App-app.verloren.dev-6B57FF?style=for-the-badge">
+    <img src="https://img.shields.io/badge/%F0%9F%8C%90_Live_App-app.verloren.dev-6B57FF?style=for-the-badge" alt="">
   </a>
   &nbsp;&nbsp;
   <a href="https://api.verloren.dev/swagger-ui/index.html">
-    <img src="https://img.shields.io/badge/%F0%9F%93%96_API_Docs-Swagger_UI-85EA2D?style=for-the-badge">
+    <img src="https://img.shields.io/badge/%F0%9F%93%96_API_Docs-Swagger_UI-85EA2D?style=for-the-badge" alt="">
   </a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Java_21-ED8B00?style=flat-square&logo=openjdk&logoColor=white">
-  <img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat-square&logo=springboot&logoColor=white">
-  <img src="https://img.shields.io/badge/PostgreSQL_16-336791?style=flat-square&logo=postgresql&logoColor=white">
-  <img src="https://img.shields.io/badge/Redis_7-DC382D?style=flat-square&logo=redis&logoColor=white">
-  <img src="https://img.shields.io/badge/AWS_SES%2FSNS-FF9900?style=flat-square&logo=amazonaws&logoColor=white">
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white">
-  <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white">
-  <img src="https://img.shields.io/badge/License-MIT-22c55e?style=flat-square">
+  <img src="https://img.shields.io/badge/Java_21-ED8B00?style=flat-square&logo=openjdk&logoColor=white" alt="Java 21">
+  <img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat-square&logo=springboot&logoColor=white" alt="Spring Boot">
+  <img src="https://img.shields.io/badge/PostgreSQL_16-336791?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL 16">
+  <img src="https://img.shields.io/badge/Redis_7-DC382D?style=flat-square&logo=redis&logoColor=white" alt="Redis 7">
+  <img src="https://img.shields.io/badge/AWS_SES%2FSNS-FF9900?style=flat-square&logo=amazonaws&logoColor=white" alt="AWS SES/SNS">
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker">
+  <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white" alt="GitHub Actions">
+  <img src="https://img.shields.io/badge/License-MIT-22c55e?style=flat-square" alt="License">
+  <a href="https://github.com/Vinay2080/dragon-of-north/actions/workflows/CI-CD.yaml">
+    <img src="https://github.com/Vinay2080/dragon-of-north/actions/workflows/CI-CD.yaml/badge.svg?branch=master" alt="CI">
+  </a>
 </p>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:6B57FF,100:0D0D12&height=3" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=rect&color=0:6B57FF,100:0D0D12&height=3" width="100%" alt="Footer"/>
 
 <br>
 
@@ -65,7 +68,8 @@ scalability of JWTs without giving up revocation, device tracking, MFA freshness
 The platform supports local email and phone identity flows, Google OAuth, passwordless email-link login, TOTP-based MFA,
 one-time recovery codes, sensitive-operation step-up verification, device-aware sessions, refresh-token rotation,
 Redis-backed rate limiting, CSRF protection for browser clients, audit logging, Prometheus metrics, Docker
-infrastructure, Flyway migrations, integration tests, and k6 load scenarios.
+infrastructure, Flyway migrations, integration tests, and k6 load scenarios. A React/TypeScript frontend is
+deployed at `app.verloren.dev` and included at `frontend/`.
 
 This is intentionally documented as an IAM system rather than a generic Spring Boot app: the important work is not only
 whether a user can log in, but how identity proof, session continuity, factor verification, token transport, revocation,
@@ -139,6 +143,17 @@ Security Controls
 | k6 load-test scenarios                 | ✓      |
 | Role and permission data model         | ✓      |
 
+<br>
+
+<p align="center">
+  <img src="images/img.png" width="1920" alt="Create Account"/>
+  &nbsp;&nbsp;
+  <img src="images/Screenshot (2798).png" width="1920" alt="MFA Settings"/>
+</p>
+<p align="center">
+  <sub>Left: Signup flow &nbsp;·&nbsp; Right: MFA settings — enabled state</sub>
+</p>
+
 # Project Scale
 
 | Measure                                       | Count |
@@ -203,6 +218,13 @@ Persistence and Infrastructure
    non-access token types, and builds a `SecurityPrincipal`.
 4. `SidLivenessFilter` can verify that the access-token `sid` still maps to a live database session, depending on
    configured enforcement mode.
+
+   | Mode                | Behavior                                                              |
+         |---------------------|-----------------------------------------------------------------------|
+   | `DISABLED`          | No session lookup on any request.                                     |
+   | `ALL_AUTHENTICATED` | Validates every authenticated request against the live session row.   |
+   | `MFA_ONLY`          | Validates only requests where the principal carries MFA verification. |
+   | `SENSITIVE_ONLY`    | Validates only requests matching configured sensitive-route patterns. |
 5. Sensitive endpoints annotated with `@SensitiveAccountOperation` / `@RequireRecentMfa` pass through
    `RecentMfaEnforcementInterceptor`.
 6. Controllers delegate to services; services emit audit events, metrics, and persistence changes.
@@ -237,29 +259,51 @@ Sign Up Complete
 Verified Account
 ```
 
-This split lets the system represent accounts that are created but not yet verified, and lets cleanup jobs remove stale
+This split lets the system represent accounts that are created but not yet verified and lets cleanup jobs remove stale
 unverified users.
 
 ## Login Flow
 
-```text
-Client                    Auth API                  Auth Services                 DB / Redis
-  |                          |                            |                            |
-  |-- identifier/login ----->|                            |                            |
-  |   identifier,password,   |                            |                            |
-  |   device_id              |                            |                            |
-  |                          |-- normalize identifier --->|                            |
-  |                          |-- validate user state ---->| users/auth_provider        |
-  |                          |-- authenticate password -->| BCrypt + UserDetails       |
-  |                          |-- check MFA policy ------->| user_mfa_settings          |
-  |                          |                            |                            |
-  |                          |<-- no MFA required --------|                            |
-  |                          |-- create session --------->| user_sessions              |
-  |                          |-- hash refresh token ----->| user_sessions              |
-  |                          |-- mint access JWT -------->| RSA private key            |
-  |<-- HttpOnly cookies -----|                            |                            |
-  |    access_token          |                            |                            |
-  |    refresh_token         |                            |                            |
+```mermaid
+sequenceDiagram
+    actor User
+    User ->> AuthenticationController: POST /api/v1/auth/identifier/login {identifier,password,deviceId}
+    AuthenticationController ->> AuthRequestContext: fromHttpRequest(httpRequest, deviceId)
+    AuthRequestContext -->> AuthenticationController: context(ipAddress, userAgent, deviceId, requestId)
+    AuthenticationController ->> AuthCommonServiceImpl: login(identifier, password, httpResponse, context)
+    Note over AuthCommonServiceImpl: normalizeIdentifier(identifier)
+    AuthCommonServiceImpl ->> AppUserRepository: findByEmail(...) or findByPhone(...)
+    AppUserRepository -->> AuthCommonServiceImpl: AppUser | empty
+
+    alt user not found
+        AuthCommonServiceImpl ->> MeterRegistry: counter("auth.login.failure").increment()
+        AuthCommonServiceImpl ->> AuditEventLogger: log("auth.login", null, ..., "failure", reason)
+        AuthCommonServiceImpl -->> User: Error Response
+    else user found
+        AuthCommonServiceImpl ->> UserStateValidator: validate(user, LOCAL_LOGIN)
+        AuthCommonServiceImpl ->> AuthenticationManager: authenticate(UsernamePasswordAuthenticationToken)
+        AuthenticationManager -->> AuthCommonServiceImpl: Authentication | AuthenticationException
+
+        alt bad credentials
+            AuthCommonServiceImpl ->> MeterRegistry: counter("auth.login.failure").increment()
+            AuthCommonServiceImpl ->> AuditEventLogger: log("auth.login", user.id, ..., "failure", reason)
+            AuthCommonServiceImpl -->> User: Error Response
+        else authenticated
+            AuthCommonServiceImpl ->> AuthCommonServiceImpl: ensureIdentifierVerified(user, normalizedIdentifier)
+            AuthCommonServiceImpl ->> MfaOrchestrator: orchestrateLogin(appUser, "pwd", context)
+            MfaOrchestrator -->> AuthCommonServiceImpl: MfaOrchestrationResult
+
+            alt challengeRequired == true
+                AuthCommonServiceImpl -->> User: HTTP 200 ApiResponse.success(challenge)
+            else challengeRequired == false
+                AuthCommonServiceImpl ->> SessionTokenIssuer: issueLoginSession(appUser, creationSpec, ...)
+                SessionTokenIssuer -->> AuthCommonServiceImpl: LoginTokens(access, refresh)
+                AuthCommonServiceImpl ->> MeterRegistry: counter("auth.login.success").increment()
+                AuthCommonServiceImpl ->> AuditEventLogger: log("auth.login", user.id, ..., "success", null)
+                AuthCommonServiceImpl -->> User: HTTP 200 + HttpOnly cookies (access_token, refresh_token)
+            end
+        end
+    end
 ```
 
 If MFA is enabled, the flow branches before session creation. No application session is issued until the MFA challenge
@@ -267,7 +311,8 @@ succeeds.
 
 # MFA Architecture
 
-MFA is implemented as an orchestration system, not as a boolean check embedded inside login. The core components are:
+MFA is implemented as an orchestration system, not as a boolean check embedded inside the login. The core components
+are:
 
 | Component                         | Responsibility                                                          |
 |-----------------------------------|-------------------------------------------------------------------------|
@@ -327,7 +372,7 @@ reduce replay and concurrent-consume races.
 
 ## Recovery Code Flow
 
-Recovery codes are generated during MFA setup and returned once. They are normalized, BCrypt-hashed, stored
+Recovery codes are generated during MFA setup and returned at once. They are normalized, BCrypt-hashed, stored
 individually, and consumed atomically with `consumeIfUnused`. Existing active codes are invalidated when a new set is
 generated.
 
@@ -376,7 +421,8 @@ elevation token.
 
 ## MFA Trade-Offs
 
-The system chooses Redis-backed challenge state instead of encoding all challenge state into a signed token. That adds
+The system chooses a Redis-backed challenge state instead of encoding all challenge states into a signed token. That
+adds
 infrastructure dependency, but it enables server-side lockout, replay detection, context binding, and immediate
 invalidation.
 
@@ -436,7 +482,7 @@ Client                         Auth API                 Session Service         
   |                               |-- validate token --------->| RSA public key                |
   |                               |-- generate new refresh --->|                              |
   |                               |-- hash old/new tokens ---->|                              |
-  |                               |-- atomic update ---------->| where user + device + oldhash |
+  |                               |-- atomic update ---------->| where user + device + old hash |
   |                               |                            | and live + not revoked        |
   |                               |<-- updated session --------|                              |
   |                               |-- mint new access JWT ---->| includes same sid             |
@@ -476,7 +522,8 @@ Access and refresh tokens are both JWTs signed with RSA keys loaded through `Key
 | Refresh token | `refresh_token` cookie                           | `token_type=refresh_token`, subject user ID                                                                    |
 
 `JwtFilter` only accepts tokens with `token_type=access_token`. Refresh endpoints validate and rotate refresh tokens
-separately. Access tokens are short-lived; refresh tokens are linked to persistent server-side session state through the
+separately. Access tokens are short-lived; refresh tokens are linked to a persistent server-side session state through
+the
 stored hash.
 
 # OAuth Implementation
@@ -569,7 +616,7 @@ Keys vary by risk profile:
 
 The configured policies include login, signup, OTP, passwordless, MFA verify, step-up request, step-up verify, and
 refresh. Failed rate-limit checks emit `X-RateLimit-*` headers, `Retry-After`, Micrometer counters, and security audit
-events. The current implementation fails closed on rate-limit infrastructure errors by returning a blocked result.
+events. The current implementation fails to close on rate-limit infrastructure errors by returning a blocked result.
 
 ## Redis Usage
 
@@ -604,32 +651,33 @@ outcomes, session revocation, and per-rate-limit success/blocked counts.
 
 ## Refresh Token Rotation
 
-```text
-Old refresh token
-       |
-       v
-Extract user ID from RSA-verified refresh JWT
-       |
-       v
-Generate new refresh JWT
-       |
-       v
-Hash old token + hash new token
-       |
-       v
-UPDATE user_sessions
-  SET refresh_token_hash = new_hash,
-      last_used_at = now
-WHERE user_id = token_subject
-  AND device_id = request_device
-  AND refresh_token_hash = old_hash
-  AND revoked = false
-  AND deleted = false
-  AND expiry_date > now
-       |
-       +--> 1 row updated: mint access token + set cookies
-       |
-       +--> 0 rows updated: reject as invalid/replayed/stale
+```mermaid
+sequenceDiagram
+    actor User
+    User ->> AuthenticationController: POST /api/v1/auth/jwt/refresh {deviceId}
+    AuthenticationController ->> AuthenticationController: extractRefreshToken(request.cookies)
+    AuthenticationController ->> AuthCommonServiceImpl: refreshToken(oldRefreshToken, response, context)
+
+    alt refresh token missing or deviceId blank
+        AuthCommonServiceImpl ->> AuthCommonServiceImpl: clearRefreshTokenCookie(response)
+        AuthCommonServiceImpl ->> MeterRegistry: counter("auth.refresh.failure").increment()
+        AuthCommonServiceImpl ->> AuditEventLogger: log("auth.refresh", null, ..., "failure", reason)
+        AuthCommonServiceImpl -->> User: Error Response
+    else request valid
+        AuthCommonServiceImpl ->> JwtServices: extractUserId(oldRefreshToken)
+        JwtServices -->> AuthCommonServiceImpl: userIdFromOldToken
+        AuthCommonServiceImpl ->> UserStateValidator: validate(appUser, SESSION_ROTATE_REFRESH)
+        AuthCommonServiceImpl ->> JwtServices: generateRefreshToken(userIdFromOldToken)
+        JwtServices -->> AuthCommonServiceImpl: newRefreshToken
+        Note over AuthCommonServiceImpl: UPDATE user_sessions SET refresh_token_hash = new_hash<br/>WHERE user_id AND device_id AND old_hash AND not revoked AND expiry > now
+        AuthCommonServiceImpl ->> SessionService: validateAndRotateSession(oldRefreshToken, newRefreshToken, deviceId)
+        SessionService -->> AuthCommonServiceImpl: Session (1 row updated) | reject (0 rows — replayed/stale)
+        AuthCommonServiceImpl ->> SessionAccessTokenIssuer: mintAccessToken(session, roles)
+        SessionAccessTokenIssuer -->> AuthCommonServiceImpl: newAccessToken
+        AuthCommonServiceImpl ->> MeterRegistry: counter("auth.refresh.success").increment()
+        AuthCommonServiceImpl ->> AuditEventLogger: log("auth.refresh", userId, ..., "success", null)
+        AuthCommonServiceImpl -->> User: HTTP 200 + new HttpOnly cookies (access_token, refresh_token)
+    end
 ```
 
 ## Session Lifecycle
@@ -765,12 +813,13 @@ Shared MFA/session issuance
 
 ## JWT + Persistent Sessions
 
-**Problem:** Pure stateless JWT systems are difficult to revoke before expiry, while fully stateful session systems can
+**Problem:** Pure stateless JWT systems are challenging to revoke before expiry, while fully stateful session systems
+can
 add database pressure to every request.
 
 **Rejected alternatives:** A purely stateless refresh-token model was rejected because stolen refresh tokens remain
 useful until expiry. A purely opaque session-token model was rejected because every request would need a session lookup
-even when access-token authorization is sufficient.
+even when access-token authorization is enough.
 
 **Chosen solution:** Access JWTs are stateless and short-lived; refresh tokens are linked to persistent `user_sessions`
 rows. Access tokens carry `sid`, roles, AMR, and MFA facts. Refresh and sensitive operations return to server-side
@@ -821,7 +870,8 @@ because policy drift would be likely.
 **Chosen solution:** Local, OAuth, and passwordless authentication converge through shared MFA orchestration and session
 issuance.
 
-**Security implications:** MFA-enabled users are challenged consistently regardless of primary authentication method.
+**Security implications:** MFA-enabled users are challenged consistently regardless of the primary authentication
+method.
 Login-time challenges are isolated from session creation until verification succeeds.
 
 **Operational implications:** New primary authentication methods can reuse the same challenge, session, token, and audit
@@ -862,7 +912,8 @@ trusted-device/risk scoring.
 
 ## Rate Limiting
 
-**Problem:** Authentication endpoints are asymmetric: failed login, OTP, MFA verify, and passwordless attempts are cheap
+**Problem:** Authentication endpoints are asymmetric: failed login, OTP, MFA verify, and passwordless attempts are
+inexpensive
 for attackers and expensive or risky for the platform.
 
 **Rejected alternative:** One global rate limit was rejected because it would either be too permissive for MFA/OTP or
@@ -918,8 +969,8 @@ Security-focused tests validate:
 * Sensitive-route validation for SID enforcement configuration.
 * Recent-MFA enforcement and access-token refresh when session MFA is fresher than JWT claims.
 * CSRF cookie generation and configured bypass behavior.
-* MFA challenge context binding, provider mismatch handling, replay/consume failure paths, and Redis key codecs.
-* Recovery code one-time consumption.
+* MFA challenges context binding, provider mismatch handling, replay/consume failure paths, and Redis key codecs.
+* Recovery code one-time consumes.
 * Rate-limit headers, blocked behavior, and key derivation.
 
 ## Load Testing
@@ -928,6 +979,22 @@ The `load_tests/` directory contains 13 k6 scenario scripts plus a shared cookie
 stability, auth load, login load, refresh storms, session reads, logout, multi-device sessions, CSRF token behavior,
 profile reads, protected endpoint concurrency, mixed traffic, and optional profile mutation idempotency. Historical
 result captures and an audit summary are included in the repository.
+
+## Performance Validation
+
+Results from the most recent production run against `api.verloren.dev` (7 of 13 scenarios executed, May 2026).
+Redis rate limiting blocked auth-dependent scenarios on the test account — the table below covers the two
+scenarios that ran against real application logic.
+
+| Scenario           | Requests | Throughput  | Avg Latency | P95 Latency | Check Pass Rate |
+|--------------------|----------|-------------|-------------|-------------|-----------------|
+| `health-stability` | 3,775    | 39.65 req/s | 321.92 ms   | 327.59 ms   | 100%            |
+| `csrf-token`       | 774      | 12.76 req/s | 354.31 ms   | 445.19 ms   | 98.71%          |
+
+Auth scenarios (login, refresh, session read, profile) are designed with custom `Rate` metrics to track success vs.
+rate-limited (429) vs. invalid-credential outcomes independently — removing the misleading k6 `http_req_failed`
+that would count expected 429 responses as failures. The `AUDIT_SUMMARY.md` in `load_tests/` documents this
+instrumentation decision.
 
 # Infrastructure
 
@@ -1001,14 +1068,14 @@ The repository includes:
 * Spring Boot 3
 * Spring Security
 * Spring Data JPA
-* Spring Modulith naming boundaries
+* Spring Moduli naming boundaries
 * Bucket4j
 
 ## Security and Cryptography
 
 * JJWT
 * RSA private/public key signing
-* BCrypt
+* Bcrypt
 * SHA-256 token hashing
 * AES-GCM encryption
 * TOTP authenticator support
@@ -1053,4 +1120,4 @@ These items naturally extend the existing architecture without changing its core
 
 <br>
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:6B57FF,50:1a1040,100:0a0a12&height=150&section=footer" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:6B57FF,50:1a1040,100:0a0a12&height=150&section=footer" width="100%" alt="Footer"/>

@@ -3,7 +3,16 @@
     "allow": [
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\shaki\\\\IdeaProjects\\\\dragon-of-north\\\\frontend\\\\src\" -Directory -ErrorAction SilentlyContinue)",
       "Bash(Select-Object Name)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(Get-ChildItem -Force)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\shaki\\\\IdeaProjects\\\\dragon-of-north\\\\.github\" -Recurse | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\shaki\\\\IdeaProjects\\\\dragon-of-north\\\\frontend\" -File -Recurse | Where-Object { $_.Extension -in @\\('.json', '.yaml', '.yml', '.config.ts', '.config.js'\\) } | ForEach-Object { $_.FullName } | Sort-Object | Select-Object -First 20)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\shaki\\\\IdeaProjects\\\\dragon-of-north\\\\frontend\" -MaxDepth 1 -File | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\shaki\\\\IdeaProjects\\\\dragon-of-north\\\\frontend\" -Depth 1 | Where-Object { -not $_.PSIsContainer } | ForEach-Object { $_.FullName })",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\shaki\\\\IdeaProjects\\\\dragon-of-north\\\\src\\\\test\" -Recurse -Filter \"*.java\")",
+      "Bash(Measure-Object)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\shaki\\\\IdeaProjects\\\\dragon-of-north\\\\src\\\\main\\\\java\\\\org\\\\miniProjectTwo\\\\DragonOfNorth\" -Directory)"
     ]
   }
 }
