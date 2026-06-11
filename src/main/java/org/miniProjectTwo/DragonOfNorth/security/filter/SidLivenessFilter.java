@@ -41,8 +41,8 @@ public class SidLivenessFilter extends OncePerRequestFilter {
 
     public SidLivenessFilter(
             SessionRepository sessionRepository,
-            @Value("${app.security.sid-enforcement.mode:disabled}") String enforcementMode,
-            @Value("${app.security.sid-enforcement.sensitive-patterns:/api/v1/sessions/**,/api/v1/auth/password/forgot/reset,/api/v1/auth/password/change,/api/v1/auth/account/delete,/api/v1/auth/enable/mfa/**,/api/v1/auth/step-up/**}") String sensitivePatterns,
+            @Value("${app.security.sid-enforcement.mode:}") String enforcementMode,
+            @Value("${app.security.sid-enforcement.sensitive-patterns:}") String sensitivePatterns,
             AuditEventLogger auditEventLogger
     ) {
         this.sessionRepository = sessionRepository;
