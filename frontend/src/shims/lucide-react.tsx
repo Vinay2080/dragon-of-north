@@ -67,6 +67,15 @@ export const CheckCircle = (props: IconProps) => (
     </IconBase>
 );
 
+// Download icon used by some components
+export const Download = (props: IconProps) => (
+    <IconBase {...props}>
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <path d="M7 10 12 15 17 10"/>
+        <path d="M12 15V3"/>
+    </IconBase>
+);
+
 export const ChevronRight = (props: IconProps) => (
     <IconBase {...props}>
         <path d="m9 18 6-6-6-6"/>
