@@ -1,7 +1,8 @@
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import AuthButton from './AuthButton';
 import AuthInput from './AuthInput';
+import OtpInput from './OtpInput';
 import ValidationError from '../Validation/ValidationError';
 
 const METHOD_LABELS = {
@@ -9,15 +10,64 @@ const METHOD_LABELS = {
     RECOVERY_CODE: 'Recovery code',
 };
 
+const COPY_BY_MODE = {
+    'login': {
+        title: 'Verify it’s you',
+        subtitle: 'Enter a verification code to finish signing in.',
+        submit: 'Verify and Sign In',
+    },
+    'step-up': {
+        title: 'Verify Identity',
+        subtitle: 'Enter a verification code to confirm this action.',
+        submit: 'Verify Identity',
+    },
+};
+
+const TOTP_LENGTH = 6;
+const EMPTY_TOTP = Array(TOTP_LENGTH).fill('');
+
 const normalizeMethods = (methods = []) => {
     const supported = methods.filter((method) => method === 'TOTP' || method === 'RECOVERY_CODE');
     return supported.length > 0 ? supported : ['TOTP'];
 };
 
-const MfaChallengeModal = ({open, availableMethods = [], error = '', isSubmitting = false, onCancel, onSubmit}) => {
+const MfaChallengeModal = ({
+                               open,
+                               mode = 'login',
+                               availableMethods = [],
+                               error = '',
+                               isSubmitting = false,
+                               onCancel,
+                               onSubmit,
+                           }) => {
     const methods = useMemo(() => normalizeMethods(availableMethods), [availableMethods]);
     const [selectedMethod, setSelectedMethod] = useState(methods[0]);
-    const [code, setCode] = useState('');
+    const [totpDigits, setTotpDigits] = useState(EMPTY_TOTP);
+    const [recoveryCode, setRecoveryCode] = useState('');
+    const [shakeKey, setShakeKey] = useState(0);
+    const lastErrorRef = useRef('');
+
+    useEffect(() => {
+        if (open) {
+            setSelectedMethod(methods[0]);
+            setTotpDigits(EMPTY_TOTP);
+            setRecoveryCode('');
+            lastErrorRef.current = '';
+        }
+    }, [open, methods]);
+
+    useEffect(() => {
+        if (error && error !== lastErrorRef.current) {
+            lastErrorRef.current = error;
+            setShakeKey((k) => k + 1);
+            if (selectedMethod === 'TOTP') {
+                setTotpDigits(EMPTY_TOTP);
+            }
+        }
+        if (!error) {
+            lastErrorRef.current = '';
+        }
+    }, [error, selectedMethod]);
 
     if (!open) {
         return null;
@@ -25,12 +75,40 @@ const MfaChallengeModal = ({open, availableMethods = [], error = '', isSubmittin
 
     const resolvedMethod = methods.includes(selectedMethod) ? selectedMethod : methods[0];
     const isRecoveryCode = resolvedMethod === 'RECOVERY_CODE';
-    const trimmedCode = code.trim();
+    const copy = COPY_BY_MODE[mode] || COPY_BY_MODE.login;
+
+    const totpValue = totpDigits.join('');
+    const trimmedRecovery = recoveryCode.trim();
+    const submitValue = isRecoveryCode ? trimmedRecovery : totpValue;
+    const canSubmit = isRecoveryCode
+        ? trimmedRecovery.length > 0
+        : totpValue.length === TOTP_LENGTH;
+
+    const fireSubmit = (code) => {
+        if (!code || isSubmitting) return;
+        onSubmit?.({providerType: resolvedMethod, code});
+    };
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        if (!trimmedCode || isSubmitting) return;
-        onSubmit?.({providerType: resolvedMethod, code: trimmedCode});
+        if (!canSubmit) return;
+        fireSubmit(submitValue);
+    };
+
+    const handleTotpChange = (nextDigits) => {
+        setTotpDigits(nextDigits);
+    };
+
+    const handleTotpComplete = (fullCode) => {
+        if (isSubmitting || fullCode.length !== TOTP_LENGTH) return;
+        fireSubmit(fullCode);
+    };
+
+    const handleMethodSwitch = (method) => {
+        if (isSubmitting || method === resolvedMethod) return;
+        setSelectedMethod(method);
+        setTotpDigits(EMPTY_TOTP);
+        setRecoveryCode('');
     };
 
     const modalContent = (
@@ -45,13 +123,16 @@ const MfaChallengeModal = ({open, availableMethods = [], error = '', isSubmittin
                 onClick={isSubmitting ? undefined : onCancel}
                 aria-hidden="true"
             />
-            <div className="relative w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_24px_50px_rgba(15,23,42,0.24)] transition-all duration-200 dark:border-slate-700/70 dark:bg-slate-900">
+            <div
+                key={shakeKey}
+                className={`relative w-full max-w-md rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_24px_50px_rgba(15,23,42,0.24)] transition-all duration-200 dark:border-slate-700/70 dark:bg-slate-900 ${error ? 'mfa-shake' : ''}`}
+            >
                 <div className="mb-5">
                     <h3 id="mfa-challenge-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                        Verify it’s you
+                        {copy.title}
                     </h3>
                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                        Enter a verification code to finish signing in.
+                        {copy.subtitle}
                     </p>
                 </div>
 
@@ -65,10 +146,7 @@ const MfaChallengeModal = ({open, availableMethods = [], error = '', isSubmittin
                                         key={method}
                                         type="button"
                                         disabled={isSubmitting}
-                                        onClick={() => {
-                                            setSelectedMethod(method);
-                                            setCode('');
-                                        }}
+                                        onClick={() => handleMethodSwitch(method)}
                                         className={`rounded-2xl border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                                             resolvedMethod === method
                                                 ? 'border-violet-400 bg-violet-50 text-violet-700 dark:border-violet-400/70 dark:bg-violet-500/15 dark:text-violet-200'
@@ -86,17 +164,31 @@ const MfaChallengeModal = ({open, availableMethods = [], error = '', isSubmittin
                         <label className="auth-label">
                             {isRecoveryCode ? 'Recovery code' : 'Authenticator code'}
                         </label>
-                        <AuthInput
-                            type="text"
-                            value={code}
-                            onChange={(event) => setCode(event.target.value)}
-                            placeholder={isRecoveryCode ? 'Enter recovery code' : 'Enter 6-digit code'}
-                            autoComplete="one-time-code"
-                            inputMode={isRecoveryCode ? 'text' : 'numeric'}
-                            disabled={isSubmitting}
-                            hasError={Boolean(error)}
-                            autoFocus
-                        />
+                        {isRecoveryCode ? (
+                            <AuthInput
+                                type="text"
+                                value={recoveryCode}
+                                onChange={(event) => setRecoveryCode(event.target.value)}
+                                placeholder="Enter recovery code"
+                                autoComplete="one-time-code"
+                                inputMode="text"
+                                disabled={isSubmitting}
+                                hasError={Boolean(error)}
+                                autoFocus
+                            />
+                        ) : (
+                            <OtpInput
+                                value={totpDigits}
+                                onChange={handleTotpChange}
+                                length={TOTP_LENGTH}
+                                idPrefix="mfa-totp"
+                                disabled={isSubmitting}
+                                error={Boolean(error)}
+                                autoSubmit
+                                autoFocus
+                                onComplete={handleTotpComplete}
+                            />
+                        )}
                         <ValidationError errors={error ? [error] : []}/>
                     </div>
 
@@ -112,10 +204,10 @@ const MfaChallengeModal = ({open, availableMethods = [], error = '', isSubmittin
                         <AuthButton
                             type="submit"
                             loading={isSubmitting}
-                            disabled={!trimmedCode || isSubmitting}
+                            disabled={!canSubmit || isSubmitting}
                             className="sm:w-auto"
                         >
-                            Verify and sign in
+                            {copy.submit}
                         </AuthButton>
                     </div>
                 </form>

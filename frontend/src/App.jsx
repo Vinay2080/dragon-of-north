@@ -27,6 +27,7 @@ import TermsOfServicePage from './pages/TermsOfServicePage';
 import {useRouteDocumentTitle} from './hooks/useDocumentTitle';
 import ProfilePage from './pages/ProfilePage.jsx';
 import HomeDocsPage from './pages/HomeDocsPage.jsx';
+import MfaManagementPage from './pages/MfaManagementPage.jsx';
 import {clearAuthClientState} from './services/authSession';
 
 const AppShell = () => {
@@ -72,6 +73,7 @@ const AppShell = () => {
                     <Route path="/home" element={<ProtectedRoute><HomeDocsPage/></ProtectedRoute>}/>
                     <Route path="/sessions" element={<ProtectedRoute><SessionsPage/></ProtectedRoute>}/>
                     <Route path="/profile" element={<ProtectedRoute><ProfilePage/></ProtectedRoute>}/>
+                    <Route path="/security/mfa" element={<ProtectedRoute><MfaManagementPage/></ProtectedRoute>}/>
                 </Route>
                 <Route path="/dashboard" element={<Navigate to="/sessions" replace/>}/>
             </Routes>
@@ -90,4 +92,3 @@ export default function App() {
         </ErrorBoundary>
     );
 }
-//todo login flow

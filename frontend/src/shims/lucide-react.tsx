@@ -98,6 +98,20 @@ export const AlertTriangle = (props: IconProps) => (
     </IconBase>
 );
 
+export const ArrowLeft = (props: IconProps) => (
+    <IconBase {...props}>
+        <path d="M19 12H5"/>
+        <path d="M12 19l-7-7 7-7"/>
+    </IconBase>
+);
+
+export const ShieldCheck = (props: IconProps) => (
+    <IconBase {...props}>
+        <path d="M12 3l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3z"/>
+        <path d="M9 12l2 2 4-4"/>
+    </IconBase>
+);
+
 export const AlertCircle = (props: IconProps) => (
     <IconBase {...props}>
         <circle cx="12" cy="12" r="10"/>

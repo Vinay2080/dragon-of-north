@@ -425,6 +425,18 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
             return;
         }
 
+        if (data?.mfa_required === true && data?.challenge_id) {
+            localStorage.setItem('auth_identifier_hint', resolvedIdentifier);
+            setIsGoogleRedirecting(false);
+            authState.setIdle();
+            setMfaChallenge({
+                challenge_id: data.challenge_id,
+                available_methods: Array.isArray(data.available_methods) ? data.available_methods : [],
+                identifier: resolvedIdentifier,
+            });
+            return;
+        }
+
         // Keep an identifier hint so the auth bootstrap can hydrate user info after browser reopened.
         localStorage.setItem('auth_identifier_hint', resolvedIdentifier);
 
@@ -506,6 +518,7 @@ const AuthPage = ({prefilledEmail = '', onClearPrefilledEmail} = {}) => {
             <MfaChallengeModal
                 key={mfaChallenge?.challenge_id || 'login-mfa'}
                 open={Boolean(mfaChallenge)}
+                mode="login"
                 availableMethods={mfaChallenge?.available_methods || []}
                 error={mfaError}
                 isSubmitting={mfaSubmitting}

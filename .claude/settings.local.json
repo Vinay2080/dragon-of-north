@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\shaki\\\\IdeaProjects\\\\dragon-of-north\\\\frontend\\\\src\" -Directory -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object Name)",
+      "Bash(npx vite *)"
+    ]
+  }
+}

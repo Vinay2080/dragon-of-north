@@ -1,4 +1,4 @@
-import React, {useCallback, useRef} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 
 const OtpInput = ({
                       value,
@@ -8,10 +8,17 @@ const OtpInput = ({
                       disabled = false,
                       error = false,
                       autoSubmit = false,
+                      autoFocus = false,
                       onComplete,
                       className = '',
                   }) => {
     const inputRefs = useRef([]);
+
+    useEffect(() => {
+        if (autoFocus && !disabled) {
+            inputRefs.current[0]?.focus();
+        }
+    }, [autoFocus, disabled]);
 
     const focusInput = useCallback((index) => {
         const clampedIndex = Math.max(0, Math.min(index, length - 1));

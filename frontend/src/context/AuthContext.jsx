@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState, useRef} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {apiService} from '../services/apiService';
 import {AuthContext} from './authContext';
@@ -309,7 +309,9 @@ export const AuthProvider = ({children}) => {
         <AuthContext.Provider value={value}>
             {children}
             <MfaChallengeModal
+                key={stepUpMfaChallenge?.challenge_id || 'step-up-mfa'}
                 open={Boolean(stepUpMfaChallenge)}
+                mode="step-up"
                 availableMethods={stepUpMfaChallenge?.available_methods || []}
                 error={stepUpError}
                 isSubmitting={isStepUpSubmitting}

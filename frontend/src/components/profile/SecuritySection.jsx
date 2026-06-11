@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {Link} from 'react-router-dom';
 import AuthButton from '../auth/AuthButton';
 import PasswordInput from '../auth/PasswordInput';
 import ValidationError from '../Validation/ValidationError';
@@ -7,7 +8,6 @@ import {API_CONFIG} from '../../config';
 import {useToast} from '../../hooks/useToast';
 import {useAuth} from '../../context/authUtils';
 import DeleteAccountSection from './DeleteAccountSection';
-import MfaSetupModal from './MfaSetupModal';
 
 const EMPTY_PASSWORD_STATE = {
     currentPassword: '',
@@ -25,11 +25,10 @@ const PASSWORD_COMPLEXITY_MESSAGE = 'Password must be at least 8 characters with
 
 const SecuritySection = ({authProvider}) => {
     const {toast} = useToast();
-    const {user, patchUser} = useAuth();
+    const {user, forceLogout} = useAuth();
     const [passwordForm, setPasswordForm] = useState(EMPTY_PASSWORD_STATE);
     const [passwordErrors, setPasswordErrors] = useState(EMPTY_PASSWORD_ERRORS);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isMfaModalOpen, setIsMfaModalOpen] = useState(false);
     const normalizedAuthProvider = String(authProvider || '').toUpperCase();
     const canChangePassword = !normalizedAuthProvider || normalizedAuthProvider === 'LOCAL';
 
@@ -190,7 +189,8 @@ const SecuritySection = ({authProvider}) => {
             }
 
             resetPasswordForm();
-            toast.success('Password updated successfully.');
+            toast.success('Password updated. Please sign in again with your new password.');
+            forceLogout({redirectTo: '/login'});
         } finally {
             setIsSubmitting(false);
         }
@@ -232,20 +232,30 @@ const SecuritySection = ({authProvider}) => {
                     <div className="mt-3 flex items-center gap-3 border-t border-slate-200/50 dark:border-slate-700/50 pt-3">
                         <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Two-Factor Auth</span>
                         {user?.mfaEnabled ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20">
-                                <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                                </svg>
-                                Enabled
-                            </span>
+                            <>
+                                <span
+                                    className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20">
+                                    <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd"
+                                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                                              clipRule="evenodd"/>
+                                    </svg>
+                                    Enabled
+                                </span>
+                                <Link
+                                    to="/security/mfa"
+                                    className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                                >
+                                    Manage MFA
+                                </Link>
+                            </>
                         ) : (
-                            <button
-                                type="button"
-                                onClick={() => setIsMfaModalOpen(true)}
+                            <Link
+                                to="/security/mfa"
                                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-teal-400 dark:focus:ring-offset-slate-900"
                             >
                                 Enable MFA
-                            </button>
+                            </Link>
                         )}
                     </div>
                 </div>
@@ -328,12 +338,6 @@ const SecuritySection = ({authProvider}) => {
             )}
 
             <DeleteAccountSection/>
-            
-            <MfaSetupModal 
-                isOpen={isMfaModalOpen} 
-                onClose={() => setIsMfaModalOpen(false)} 
-                onComplete={() => patchUser({mfaEnabled: true})} 
-            />
         </section>
     );
 };
