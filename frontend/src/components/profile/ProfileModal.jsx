@@ -57,7 +57,7 @@ const getResponseData = (result) => {
 
 const ProfileModal = ({isOpen, onClose, onProfileUpdated}) => {
     const {toast} = useToast();
-    const {user, patchUser, syncUserProfile} = useAuth();
+    const {user, patchUser, syncUserProfile, forceLogout} = useAuth();
     const [loadingProfile, setLoadingProfile] = useState(false);
     const [isProfileSubmitting, setIsProfileSubmitting] = useState(false);
     const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
@@ -301,7 +301,9 @@ const ProfileModal = ({isOpen, onClose, onProfileUpdated}) => {
                 return;
             }
 
-            toast.success('Password updated successfully.');
+            toast.success('Password changed successfully. Please sign in again using your new password.');
+            closeModal();
+            forceLogout({redirectTo: '/login'});
         } finally {
             // Clear sensitive fields immediately after request completion.
             resetPasswordForm();

@@ -13,6 +13,8 @@ export const API_CONFIG = {
         LOGIN: '/api/v1/auth/identifier/login',
         MFA_VERIFY: '/api/v1/auth/mfa/verify',
         STEP_UP_MFA_VERIFY: '/api/v1/auth/step-up/mfa/verify',
+        MFA_SETUP_REQUEST: '/api/v1/auth/enable/mfa/request',
+        MFA_SETUP_CONFIRM: '/api/v1/auth/enable/mfa/confirm',
         PASSWORDLESS_REQUEST: '/api/v1/auth/login/passwordless/request',
         PASSWORDLESS_VERIFY: '/api/v1/auth/login/passwordless/verify',
         PASSWORDLESS_REQUEST_FALLBACK: '/api/v1/auth/passwordless/request',

@@ -34,6 +34,7 @@ const normalizeUserPayload = (payload = {}) => {
         avatarUrl: payload?.avatarUrl || payload?.avatar_url || '',
         authProvider: payload?.authProvider || payload?.auth_provider || null,
         status: payload?.status || payload?.user_status || payload?.userStatus || null,
+        mfaEnabled: payload?.mfaEnabled || payload?.mfa_enabled || false,
     };
 };
 
