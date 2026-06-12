@@ -296,5 +296,91 @@ class MfaServiceImplTest {
 
         assertTrue(mfaService.verifyMfaCode(user, "ABCD-EFGH"));
     }
+
+    @Test
+    void disableMfa_shouldHandleMissingSettingsRow() {
+        UUID userId = UUID.randomUUID();
+
+        AppUser user = new AppUser();
+        user.setId(userId);
+        user.setMfaEnabled(true);
+
+        AuthRequestContext context =
+                new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+
+        when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
+        when(userMfaSettingsRepository.findByUserId(userId))
+                .thenReturn(Optional.empty());
+
+        mfaService.disableMfa(context);
+
+        assertFalse(user.isMfaEnabled());
+
+        verify(userMfaSettingsRepository, never()).delete(any());
+    }
+
+    @Test
+    void disableMfa_shouldThrowWhenMfaNotEnabled() {
+        AppUser user = new AppUser();
+        user.setId(UUID.randomUUID());
+        user.setMfaEnabled(false);
+
+        AuthRequestContext context =
+                new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+
+        when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
+
+        BusinessException exception =
+                assertThrows(BusinessException.class,
+                        () -> mfaService.disableMfa(context));
+
+        assertEquals(ErrorCode.MFA_NOT_ENABLED, exception.getErrorCode());
+
+        verify(userMfaSettingsRepository, never()).delete(any());
+        verify(meterRegistry, never()).counter(anyString());
+    }
+
+    @Test
+    void disableMfa_shouldDisableMfaAndDeleteSettings() {
+        UUID userId = UUID.randomUUID();
+
+        AppUser user = new AppUser();
+        user.setId(userId);
+        user.setMfaEnabled(true);
+
+        UserMfaSettings settings = new UserMfaSettings();
+
+        AuthRequestContext context =
+                new AuthRequestContext("device-1", "127.0.0.1", "req-1", "JUnit");
+
+        when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
+        when(userMfaSettingsRepository.findByUserId(userId))
+                .thenReturn(Optional.of(settings));
+        when(meterRegistry.counter("auth.mfa_disabled"))
+                .thenReturn(counter);
+
+        mfaService.disableMfa(context);
+
+        assertFalse(user.isMfaEnabled());
+        assertNull(user.getMfaEnabledAt());
+
+        verify(userStateValidator)
+                .validate(user, UserLifecycleOperation.MFA_DISABLE);
+
+        verify(userMfaSettingsRepository).delete(settings);
+        verify(counter).increment();
+
+        verify(auditEventLogger).log(
+                "auth.mfa_disabled",
+                userId,
+                "device-1",
+                "127.0.0.1",
+                "success",
+                null,
+                "req-1"
+        );
+    }
+
+
 }
 //todo warning

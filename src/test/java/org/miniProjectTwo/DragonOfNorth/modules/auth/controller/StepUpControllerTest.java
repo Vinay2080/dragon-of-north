@@ -12,6 +12,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.MfaChal
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaProperties;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaService;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.MfaService;
 import org.miniProjectTwo.DragonOfNorth.modules.session.model.Session;
 import org.miniProjectTwo.DragonOfNorth.modules.session.repo.SessionRepository;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
@@ -83,6 +84,9 @@ class StepUpControllerTest {
 
     @Mock
     private RoleRepository roleRepository;
+
+    @Mock
+    private MfaService mfaService;
 
     @BeforeEach
     void setUp() {
@@ -341,6 +345,117 @@ class StepUpControllerTest {
         verify(authCommonServices).issueStepUpChallenge(eq(user), eq(sessionId), any());
     }
 
+    @Test
+    void disableMfa_shouldReturn403_whenRecentMfaExpired() throws Exception {
+        Instant staleVerification = Instant.now().minus(Duration.ofMinutes(20));
+
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = setUpSecurityContextWithSessionId(sessionId, staleVerification);
+
+        AppUser user = new AppUser();
+        user.setId(userId);
+        user.setMfaEnabled(true);
+
+        when(appUserRepository.findById(userId))
+                .thenReturn(java.util.Optional.of(user));
+
+        Session session = buildSession(sessionId, staleVerification);
+
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any()))
+                .thenReturn(java.util.Optional.of(session));
+
+        when(recentMfaProperties.resolveMaxAge(any()))
+                .thenReturn(Duration.ofMinutes(15));
+
+        when(recentMfaService.isRecentMfaSatisfied(eq(staleVerification), any()))
+                .thenReturn(false);
+
+        MfaChallenge challenge = new MfaChallenge(
+                "disable-mfa-challenge",
+                Instant.now().plusSeconds(120),
+                List.of(ProviderType.TOTP)
+        );
+
+        when(authCommonServices.issueStepUpChallenge(eq(user), eq(sessionId), any()))
+                .thenReturn(challenge);
+
+        mockMvc.perform(post("/api/v1/auth/step-up/mfa/disable")
+                        .header("X-Device-Id", "device-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new DeviceIdRequest("device-1"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.data.code")
+                        .value(ErrorCode.MFA_STEP_UP_REQUIRED.getCode()));
+
+        verify(mfaService, never()).disableMfa(any());
+    }
+
+    @Test
+    void disableMfa_shouldReturn200_whenRecentMfaSatisfied() throws Exception {
+        Instant recentlyVerified = Instant.now().minusSeconds(30);
+
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = setUpSecurityContextWithSessionId(sessionId, recentlyVerified);
+
+        AppUser user = new AppUser();
+        user.setId(userId);
+        user.setMfaEnabled(true);
+
+        when(appUserRepository.findById(userId))
+                .thenReturn(java.util.Optional.of(user));
+
+        Session session = buildSession(sessionId, recentlyVerified);
+
+        when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any()))
+                .thenReturn(java.util.Optional.of(session));
+
+        when(recentMfaProperties.resolveMaxAge(any()))
+                .thenReturn(Duration.ofMinutes(15));
+
+        when(recentMfaService.isRecentMfaSatisfied(eq(recentlyVerified), any()))
+                .thenReturn(true);
+
+        doNothing().when(mfaService).disableMfa(any());
+
+        mockMvc.perform(post("/api/v1/auth/step-up/mfa/disable")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new DeviceIdRequest("device-1"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"));
+
+        verify(mfaService).disableMfa(any());
+    }
+
+    @Test
+    void mfaStatus_shouldReturnEnabledFalse_whenUserHasMfaDisabled() throws Exception {
+        AppUser user = new AppUser();
+        user.setId(UUID.randomUUID());
+        user.setMfaEnabled(false);
+
+        when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
+
+        mockMvc.perform(post("/api/v1/auth/step-up/mfa/status"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.mfaEnabled").value(false));
+    }
+
+    @Test
+    void mfaStatus_shouldReturnEnabledTrue_whenUserHasMfaEnabled() throws Exception {
+        AppUser user = new AppUser();
+        user.setId(UUID.randomUUID());
+        user.setMfaEnabled(true);
+
+        when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
+
+        mockMvc.perform(post("/api/v1/auth/step-up/mfa/status"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiResponseStatus").value("success"))
+                .andExpect(jsonPath("$.data.mfaEnabled").value(true));
+
+        verify(authCommonServices).findAuthenticatedUser();
+    }
     // ------------------------------------------------------------------ helpers
 
     private UUID setUpSecurityContextWithSessionId(UUID sessionId, Instant mfaVerifiedAt) {
