@@ -25,6 +25,12 @@ public interface UserMfaRecoveryCodeRepository extends JpaRepository<UserMfaReco
             """)
     int consumeIfUnused(@Param("recoveryCodeId") UUID recoveryCodeId, @Param("usedAt") Instant usedAt);
 
+    /**
+     * Marks all active (unused and not deleted) recovery codes for the given MFA settings as used, effectively invalidating them. This is typically called when new recovery codes are generated to ensure that any previously issued codes cannot be used.
+     *
+     * @param mfaSettingsId The ID of the MFA settings for which to invalidate active recovery codes. Must not be null.
+     * @param usedAt        The timestamp to set as the usedAt value for the invalidated codes. Typically, the current time. Must not be null.
+     */
     @Modifying
     @Query("""
             update UserMfaRecoveryCode code

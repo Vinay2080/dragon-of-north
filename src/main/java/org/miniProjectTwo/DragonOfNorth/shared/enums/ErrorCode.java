@@ -52,6 +52,7 @@ public enum ErrorCode {
     MFA_PROVIDER_NOT_ENABLED("MFA_016", "Requested MFA provider is not enabled for this user", HttpStatus.FORBIDDEN),
     MFA_INVALID_PROVIDER("MFA_018", "Invalid MFA provider type", HttpStatus.BAD_REQUEST),
     MFA_PROVIDER_CONFIGURATION_INVALID("MFA_019", "MFA provider configuration is invalid", HttpStatus.BAD_REQUEST),
+    MFA_NOT_ENABLED("MFA_020", "MFA is not enabled for this account", HttpStatus.BAD_REQUEST),
 
 
     ROLE_NOT_FOUND("ROL_009", "role %s not found", HttpStatus.NOT_FOUND),

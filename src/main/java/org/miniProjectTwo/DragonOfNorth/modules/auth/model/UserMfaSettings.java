@@ -9,6 +9,8 @@ import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.shared.model.BaseEntity;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Stores MFA factor material separately from the core user aggregate.
@@ -38,5 +40,12 @@ public class UserMfaSettings extends BaseEntity {
 
     @Column(name = "totp_enabled_at", nullable = false)
     private Instant totpEnabledAt;
+
+    @OneToMany(
+            mappedBy = "mfaSettings",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<UserMfaRecoveryCode> recoveryCodes = new ArrayList<>();
 
 }

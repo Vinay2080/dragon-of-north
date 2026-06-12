@@ -57,4 +57,11 @@ public interface MfaService {
      * @return true if the code is valid, false otherwise.
      */
     boolean verifyRecoveryCode(AppUser appUser, @NotNull @Length String code);
+
+    /**
+     * Disables MFA for the user associated with the given authentication context. This method is typically called when a user chooses to turn off MFA or when an administrator needs to disable MFA for a user. It should handle all necessary cleanup, such as invalidating existing MFA credentials and updating the user's MFA status in the system.
+     *
+     * @param context The authentication request context containing information about the user for whom MFA should be disabled.
+     */
+    void disableMfa(AuthRequestContext context);
 }

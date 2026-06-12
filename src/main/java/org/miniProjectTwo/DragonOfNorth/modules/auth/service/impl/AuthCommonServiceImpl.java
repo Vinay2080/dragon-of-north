@@ -155,7 +155,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
 
     /**
      * Assigns the default USER role to a newly registered user if they do not have any roles assigned. This ensures that every user has at least basic permissions and access rights defined by the USER role. The method checks if the user already has any roles, and if not, it retrieves the USER role from the database and assigns it to the user. If the USER role is not found in the database, a BusinessException is thrown indicating that the role is missing.
-     * @param appUser The user to whom the default role should be assigned. The method will check if this user has any roles and assign the USER role if none are present.
+     * @param appUser The user to whom the default role should be assigned. The method will check if this user has any roles and assign the USER role if none is present.
      */
     @Override
     public void assignDefaultRole(AppUser appUser) {
@@ -240,7 +240,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * Retrieves the currently authenticated user from the security context. This method checks the authentication object in the security context to ensure that a user is authenticated. If no authentication is found or if the principal is null, it throws a BusinessException indicating that access is denied. If an authenticated user is found, it resolves the user's ID from the authentication principal and retrieves the corresponding AppUser from the database. If the user cannot be found, it throws a BusinessException indicating that the user was not found.
      *
      * @return The currently authenticated AppUser
-     * @throws BusinessException if no authenticated user is found or if the user cannot be retrieved from the database
+     * @throws BusinessException if no authenticated user is found, or if the user cannot be retrieved from the database
      */
     @Override
     public AppUser findAuthenticatedUser() {
@@ -348,7 +348,7 @@ public class AuthCommonServiceImpl implements AuthCommonServices {
      * @param response HTTP response object used to set authentication cookies
      * @param context Additional context for the authentication request, including device and IP information
      * @return VerificationResult indicating the outcome of the MFA challenge completion
-     * @throws BusinessException if the MFA challenge is invalid or if the user cannot be authenticated
+     * @throws BusinessException if the MFA challenge is invalid, or if the user cannot be authenticated
      */
     @Override
     public VerificationResult completeMfaChallengeLogin(String challengeId, String code, org.miniProjectTwo.DragonOfNorth.shared.enums.ProviderType providerType, HttpServletResponse response, AuthRequestContext context) {

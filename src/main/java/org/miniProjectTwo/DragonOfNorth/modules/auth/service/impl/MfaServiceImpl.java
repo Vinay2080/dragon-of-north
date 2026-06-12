@@ -160,6 +160,30 @@ public class MfaServiceImpl implements MfaService {
         }
     }
 
+    @Override
+    @Transactional
+    public void disableMfa(AuthRequestContext context) {
+        AppUser appUser = authCommonServices.findAuthenticatedUser();
+        userStateValidator.validate(appUser, UserLifecycleOperation.MFA_DISABLE);
+
+        if (!appUser.isMfaEnabled()) {
+            throw new BusinessException(ErrorCode.MFA_NOT_ENABLED, "MFA is not enabled for this account");
+        }
+
+        appUser.setMfaEnabled(false);
+        appUser.setMfaEnabledAt(null);
+
+        userMfaSettingsRepository.findByUserId(appUser.getId()).ifPresent(settings -> {
+            userMfaSettingsRepository.delete(settings);
+            recordMfaDisabledEvent(appUser.getId(), context);
+        });
+    }
+
+    private void recordMfaDisabledEvent(UUID id, AuthRequestContext context) {
+        meterRegistry.counter("auth.mfa_disabled").increment();
+        auditEventLogger.log("auth.mfa_disabled", id, context.deviceId(), context.ipAddress(), "success", null, context.requestId());
+    }
+
     /**
      * Validates the provided TOTP code against the temporary secret.
      *

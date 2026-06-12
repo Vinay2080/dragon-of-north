@@ -12,6 +12,7 @@ import org.miniProjectTwo.DragonOfNorth.modules.auth.dto.response.MfaStatusRespo
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.challenge.model.MfaChallenge;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.mfa.stepup.RecentMfaPolicy;
 import org.miniProjectTwo.DragonOfNorth.modules.auth.service.AuthCommonServices;
+import org.miniProjectTwo.DragonOfNorth.modules.auth.service.MfaService;
 import org.miniProjectTwo.DragonOfNorth.modules.user.model.AppUser;
 import org.miniProjectTwo.DragonOfNorth.security.model.SecurityPrincipal;
 import org.miniProjectTwo.DragonOfNorth.security.web.RequireRecentMfa;
@@ -62,6 +63,7 @@ import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.succes
 public class StepUpController {
 
     private final AuthCommonServices authCommonServices;
+    private final MfaService mfaService;
 
     /**
      * Issues a step-up MFA challenge for the currently authenticated user.
@@ -127,7 +129,7 @@ public class StepUpController {
     }
 
     /**
-     * Endpoint to check if the authenticated user has MFA enabled. This can be used by clients to
+     * Endpoint to check if the authenticated user has MFA enabled. Clients can use this to
      * determine whether to prompt for MFA setup or to conditionally display MFA-related UI.
      */
     @PostMapping("/mfa/status")
@@ -138,6 +140,13 @@ public class StepUpController {
 
     @PostMapping("/mfa/disable")
     @SensitiveAccountOperation(policy = RecentMfaPolicy.DISABLE_MFA)
+    public ResponseEntity<ApiResponse<?>> disableMfa(HttpServletRequest request,
+                                                     @RequestBody @Valid DeviceIdRequest deviceIdRequest) {
+        AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, deviceIdRequest.deviceId());
+        mfaService.disableMfa(context);
+
+        return ResponseEntity.ok(successMessage("MFA disabled"));
+    }
 
     // ------------------------------------------------------------------ helpers
 
