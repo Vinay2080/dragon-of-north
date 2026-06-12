@@ -73,6 +73,17 @@ app:
       same-site: None
       secure: false
       domain: localhost
+    sid-enforcement:
+      mode: disabled
+      sensitive-patterns: ^/api/auth/passwordless/request$|^/api/auth/passwordless/verify$|^/api/auth/signup$|^/api/auth/login$
+    step-up:
+      mfa-max-age: PT15M
+      password-change-max-age: PT10M
+      account-delete-max-age: PT1M
+      recovery-code-regeneration-max-age: PT2M
+      session-revoke-max-age: PT5M
+      session-revoke-all-max-age: PT5M
+      disable-mfa-max-age: PT2M
 
 otp:
   length: ${otp_length}
