@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import AuthButton from '../auth/AuthButton';
 import PasswordInput from '../auth/PasswordInput';
@@ -25,10 +25,37 @@ const PASSWORD_COMPLEXITY_MESSAGE = 'Password must be at least 8 characters with
 
 const SecuritySection = ({authProvider}) => {
     const {toast} = useToast();
-    const {user, forceLogout} = useAuth();
+    const {user, forceLogout, patchUser} = useAuth();
     const [passwordForm, setPasswordForm] = useState(EMPTY_PASSWORD_STATE);
     const [passwordErrors, setPasswordErrors] = useState(EMPTY_PASSWORD_ERRORS);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [mfaStatus, setMfaStatus] = useState({isLoading: true, isError: false, enabled: false});
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchMfaStatus = async () => {
+            try {
+                const result = await apiService.post(API_CONFIG.ENDPOINTS.MFA_STATUS);
+                if (!isMounted) return;
+
+                if (apiService.isErrorResponse(result)) {
+                    setMfaStatus({isLoading: false, isError: true, enabled: false});
+                } else {
+                    const data = result?.data || result;
+                    const mfaEnabled = Boolean(data?.mfaEnabled ?? data?.mfa_enabled);
+                    setMfaStatus({isLoading: false, isError: false, enabled: mfaEnabled});
+                    patchUser({mfaEnabled});
+                }
+            } catch (err) {
+                if (isMounted) setMfaStatus({isLoading: false, isError: true, enabled: false});
+            }
+        };
+
+        void fetchMfaStatus();
+        return () => {
+            isMounted = false;
+        };
+    }, [patchUser]);
     const normalizedAuthProvider = String(authProvider || '').toUpperCase();
     const canChangePassword = !normalizedAuthProvider || normalizedAuthProvider === 'LOCAL';
 
@@ -231,7 +258,11 @@ const SecuritySection = ({authProvider}) => {
                     <p className="font-medium">{canChangePassword ? 'Password is managed in this account.' : 'Password managed by Google.'}</p>
                     <div className="mt-3 flex items-center gap-3 border-t border-slate-200/50 dark:border-slate-700/50 pt-3">
                         <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Two-Factor Auth</span>
-                        {user?.mfaEnabled ? (
+                        {mfaStatus.isLoading ? (
+                            <span className="text-xs text-slate-500">Loading...</span>
+                        ) : mfaStatus.isError ? (
+                            <span className="text-xs text-red-500">Unable to load</span>
+                        ) : mfaStatus.enabled ? (
                             <>
                                 <span
                                     className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20">

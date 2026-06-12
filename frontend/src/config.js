@@ -38,6 +38,10 @@ export const API_CONFIG = {
         PHONE_OTP_REQUEST: '/api/v1/otp/phone/request',
         PHONE_OTP_VERIFY: '/api/v1/otp/phone/verify',
 
+        // MFA
+        MFA_STATUS: '/api/v1/auth/step-up/mfa/status',
+        MFA_DISABLE: '/api/v1/auth/step-up/mfa/disable',
+
         // Sessions
         SESSIONS_ALL: '/api/v1/sessions/get/all',
         SESSION_REVOKE: (sessionId) => `/api/v1/sessions/delete/${sessionId}`,

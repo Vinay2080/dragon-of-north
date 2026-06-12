@@ -3,6 +3,7 @@ import {Link, useNavigate} from 'react-router-dom';
 import {ArrowLeft, Check, Copy, Download, ShieldCheck} from 'lucide-react';
 import AuthButton from '../components/auth/AuthButton';
 import OtpInput from '../components/auth/OtpInput';
+import ConfirmationModal from '../components/ui/ConfirmationModal';
 import {apiService} from '../services/apiService';
 import {API_CONFIG} from '../config';
 import {getDeviceId} from '../utils/device';
@@ -31,6 +32,7 @@ const MfaManagementPage = () => {
     const [step, setStep] = useState(STEP.IDLE);
     const [isBusy, setIsBusy] = useState(false);
     const [error, setError] = useState('');
+    const [isConfirmDisableOpen, setIsConfirmDisableOpen] = useState(false);
 
     const [mfaSecret, setMfaSecret] = useState('');
     const [mfaQrCode, setMfaQrCode] = useState('');
@@ -157,6 +159,28 @@ const MfaManagementPage = () => {
         setStep(STEP.DONE);
     };
 
+    const handleDisableConfirm = async () => {
+        setIsBusy(true);
+        setError('');
+
+        const result = await apiService.post(API_CONFIG.ENDPOINTS.MFA_DISABLE, {
+            deviceId: getDeviceId(),
+        });
+
+        setIsBusy(false);
+
+        if (apiService.isErrorResponse(result)) {
+            toast.error(result?.backendMessage || result?.message || 'Failed to disable MFA.');
+            setIsConfirmDisableOpen(false);
+            return;
+        }
+
+        patchUser({mfaEnabled: false});
+        toast.success('MFA has been disabled on your account.');
+        setIsConfirmDisableOpen(false);
+        setStep(STEP.IDLE);
+    };
+
     useEffect(() => {
         if (step === STEP.RECOVERY) {
             const beforeUnload = (event) => {
@@ -201,18 +225,39 @@ const MfaManagementPage = () => {
             return (
                 <div
                     className="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 p-5 dark:border-emerald-500/25 dark:bg-emerald-500/10">
-                    <div className="flex items-center gap-3">
-                        <div
-                            className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                            <Check className="h-5 w-5"/>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                            <div
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                                <Check className="h-5 w-5"/>
+                            </div>
+                            <div>
+                                <p className="font-semibold text-emerald-900 dark:text-emerald-200">Status: Enabled</p>
+                                <p className="mt-0.5 text-sm text-emerald-800/80 dark:text-emerald-200/80">
+                                    You will be asked for a verification code each time you sign in.
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-semibold text-emerald-900 dark:text-emerald-200">MFA is enabled</p>
-                            <p className="mt-0.5 text-sm text-emerald-800/80 dark:text-emerald-200/80">
-                                You will be asked for a verification code each time you sign in.
-                            </p>
-                        </div>
+                        <AuthButton
+                            type="button"
+                            onClick={() => setIsConfirmDisableOpen(true)}
+                            disabled={isBusy}
+                            className="bg-red-600 hover:bg-red-700 focus:ring-red-500 dark:bg-red-700 dark:hover:bg-red-800 sm:w-auto"
+                        >
+                            Disable MFA
+                        </AuthButton>
                     </div>
+                    <ConfirmationModal
+                        open={isConfirmDisableOpen}
+                        isLoading={isBusy}
+                        title="Disable Multi-Factor Authentication"
+                        message="This will remove the extra authentication step from your account."
+                        confirmText="Disable MFA"
+                        cancelText="Cancel"
+                        isDestructive={true}
+                        onConfirm={handleDisableConfirm}
+                        onCancel={() => setIsConfirmDisableOpen(false)}
+                    />
                 </div>
             );
         }
