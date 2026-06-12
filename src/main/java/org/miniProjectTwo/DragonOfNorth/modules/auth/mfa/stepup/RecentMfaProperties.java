@@ -34,22 +34,25 @@ public class RecentMfaProperties {
      * with security (short enough to limit the window after a stolen session).</p>
      */
     @NotNull
-    private Duration mfaMaxAge = Duration.ofMinutes(15);
+    private Duration mfaMaxAge;
 
     @NotNull
-    private Duration passwordChangeMaxAge = Duration.ofMinutes(5);
+    private Duration passwordChangeMaxAge;
 
     @NotNull
-    private Duration accountDeleteMaxAge = Duration.ofSeconds(60);
+    private Duration accountDeleteMaxAge;
 
     @NotNull
-    private Duration recoveryCodeRegenerationMaxAge = Duration.ofMinutes(2);
+    private Duration recoveryCodeRegenerationMaxAge;
 
     @NotNull
-    private Duration sessionRevokeMaxAge = Duration.ofMinutes(5);
+    private Duration sessionRevokeMaxAge;
 
     @NotNull
-    private Duration sessionRevokeAllMaxAge = Duration.ofMinutes(5);
+    private Duration sessionRevokeAllMaxAge;
+
+    @NotNull
+    private Duration disableMfaMaxAge;
 
     public Duration resolveMaxAge(RecentMfaPolicy policy) {
         if (policy == null) {
@@ -61,6 +64,7 @@ public class RecentMfaProperties {
             case RECOVERY_CODE_REGENERATION -> recoveryCodeRegenerationMaxAge;
             case SESSION_REVOKE -> sessionRevokeMaxAge;
             case SESSION_REVOKE_ALL -> sessionRevokeAllMaxAge;
+            case DISABLE_MFA -> disableMfaMaxAge;
             case DEFAULT -> mfaMaxAge;
         };
     }

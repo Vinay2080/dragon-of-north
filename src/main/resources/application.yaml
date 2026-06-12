@@ -42,15 +42,16 @@ spring:
 app:
   security:
     sid-enforcement:
-      mode: ${sid_enforcement_mode:disabled}
-      sensitive-patterns: ${sid_enforcement_sensitive_patterns:/api/v1/session/**,/api/v1/auth/password/forgot/reset}
+      mode: ${sid_enforcement_mode}
+      sensitive-patterns: ${sid_enforcement_sensitive_patterns}
     step-up:
-      mfa-max-age: ${step_up_mfa_max_age:PT15M}
-      password-change-max-age: ${step_up_password_change_max_age:PT5M}
-      account-delete-max-age: ${step_up_account_delete_max_age:PT1M}
-      recovery-code-regeneration-max-age: ${step_up_recovery_code_regeneration_max_age:PT2M}
-      session-revoke-max-age: ${step_up_session_revoke_max_age:PT5M}
-      session-revoke-all-max-age: ${step_up_session_revoke_all_max_age:PT5M}
+      mfa-max-age: ${step_up_mfa_max_age}
+      password-change-max-age: ${step_up_password_change_max_age}
+      account-delete-max-age: ${step_up_account_delete_max_age}
+      recovery-code-regeneration-max-age: ${step_up_recovery_code_regeneration_max_age}
+      session-revoke-max-age: ${step_up_session_revoke_max_age}
+      session-revoke-all-max-age: ${step_up_session_revoke_all_max_age}
+      disable-mfa-max-age: ${step_up_disable_mfa_max_age}
     jwt:
       expiration:
         access-token: ${access_token}

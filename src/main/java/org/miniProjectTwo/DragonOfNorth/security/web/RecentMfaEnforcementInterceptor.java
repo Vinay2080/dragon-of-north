@@ -74,10 +74,8 @@ public class RecentMfaEnforcementInterceptor implements HandlerInterceptor {
         }
         Session session = resolveLiveSession(principal);
         AppUser user = resolveUser(principal.userId());
-        if (!user.isMfaEnabled()) {
-            if (policy.onlyWhenMfaEnabled()) {
-                return true;
-            }
+
+        if (policy.onlyWhenMfaEnabled() && !user.isMfaEnabled()) {
             return true;
         }
 

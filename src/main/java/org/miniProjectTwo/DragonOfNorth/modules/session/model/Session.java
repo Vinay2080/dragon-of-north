@@ -67,15 +67,28 @@ public class Session extends BaseEntity {
     @Column(nullable = false)
     private boolean revoked = false;
 
+    /**
+     * Timestamp of when MFA was completed for this session.  Used to enforce "recent MFA" requirements
+     * on sensitive operations.
+     */
     @Column(name = "mfa_verified_at")
     private Instant mfaVerifiedAt;
 
+    /**
+     * Whether MFA is required for this session based on the user's MFA enrollment state at login time.
+     */
     @Column(name = "mfa_required", nullable = false)
     private boolean mfaRequired;
 
+    /**
+     * Authentication method reference for the primary authentication (e.g. "password", "oauth2", etc.).
+     */
     @Column(name = "primary_amr", nullable = false, length = 32)
     private String primaryAmr;
 
+    /**
+     * Authentication method reference for the MFA method used (e.g. "totp", "email_otp", etc.).
+     */
     @Column(name = "mfa_method_amr", length = 32)
     private String mfaMethodAmr;
 
