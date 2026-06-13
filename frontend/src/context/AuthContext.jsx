@@ -215,7 +215,7 @@ export const AuthProvider = ({children}) => {
                 return;
             }
 
-            const sessionResult = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS_ALL);
+            const sessionResult = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS);
             if (!apiService.isErrorResponse(sessionResult) && Array.isArray(sessionResult?.data)) {
                 setIsAuthenticated(true);
                 localStorage.setItem('isAuthenticated', 'true');

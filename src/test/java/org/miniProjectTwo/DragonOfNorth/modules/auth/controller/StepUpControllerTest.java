@@ -45,6 +45,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -124,7 +125,7 @@ class StepUpControllerTest {
 
         DeviceIdRequest request = new DeviceIdRequest("device-1");
 
-        mockMvc.perform(post("/api/v1/auth/step-up/mfa/request")
+        mockMvc.perform(post("/api/v1/auth/mfa/request")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -149,7 +150,7 @@ class StepUpControllerTest {
 
         DeviceIdRequest request = new DeviceIdRequest("device-1");
 
-        mockMvc.perform(post("/api/v1/auth/step-up/mfa/request")
+        mockMvc.perform(post("/api/v1/auth/mfa/request")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())
@@ -229,7 +230,7 @@ class StepUpControllerTest {
 
         DeviceIdRequest request = new DeviceIdRequest("device-1");
 
-        mockMvc.perform(post("/api/v1/auth/step-up/protected-action")
+        mockMvc.perform(post("/api/v1/auth/protected-action")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -257,7 +258,7 @@ class StepUpControllerTest {
 
         DeviceIdRequest request = new DeviceIdRequest("device-1");
 
-        mockMvc.perform(post("/api/v1/auth/step-up/protected-action")
+        mockMvc.perform(post("/api/v1/auth/protected-action")
                         .header("X-Device-Id", "device-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -276,7 +277,7 @@ class StepUpControllerTest {
         UUID userId = setUpSecurityContextWithSessionId(sessionId, Instant.now().minus(Duration.ofMinutes(25)));
         when(sessionRepository.findLiveByIdAndAppUserId(eq(sessionId), eq(userId), any())).thenReturn(java.util.Optional.empty());
 
-        mockMvc.perform(post("/api/v1/auth/step-up/protected-action")
+        mockMvc.perform(post("/api/v1/auth/protected-action")
                         .header("X-Device-Id", "device-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new DeviceIdRequest("device-1"))))
@@ -307,7 +308,7 @@ class StepUpControllerTest {
         when(roleRepository.findRolesById(userId)).thenReturn(java.util.Set.of());
         when(sessionAccessTokenIssuer.mintAccessToken(session, java.util.Set.of())).thenReturn("refreshed-access-token");
 
-        mockMvc.perform(post("/api/v1/auth/step-up/protected-action")
+        mockMvc.perform(post("/api/v1/auth/protected-action")
                         .header("X-Device-Id", "device-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new DeviceIdRequest("device-1"))))
@@ -337,7 +338,7 @@ class StepUpControllerTest {
 
         DeviceIdRequest request = new DeviceIdRequest("device-1");
 
-        mockMvc.perform(post("/api/v1/auth/step-up/protected-action")
+        mockMvc.perform(post("/api/v1/auth/protected-action")
                         .header("X-Device-Id", "device-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -379,7 +380,7 @@ class StepUpControllerTest {
         when(authCommonServices.issueStepUpChallenge(eq(user), eq(sessionId), any()))
                 .thenReturn(challenge);
 
-        mockMvc.perform(post("/api/v1/auth/step-up/mfa/disable")
+        mockMvc.perform(post("/api/v1/auth/mfa/disable")
                         .header("X-Device-Id", "device-1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
@@ -418,7 +419,7 @@ class StepUpControllerTest {
 
         doNothing().when(mfaService).disableMfa(any());
 
-        mockMvc.perform(post("/api/v1/auth/step-up/mfa/disable")
+        mockMvc.perform(post("/api/v1/auth/mfa/disable")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 new DeviceIdRequest("device-1"))))
@@ -436,7 +437,7 @@ class StepUpControllerTest {
 
         when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
 
-        mockMvc.perform(post("/api/v1/auth/step-up/mfa/status"))
+        mockMvc.perform(get("/api/v1/auth/mfa/status"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.mfaEnabled").value(false));
     }
@@ -449,7 +450,7 @@ class StepUpControllerTest {
 
         when(authCommonServices.findAuthenticatedUser()).thenReturn(user);
 
-        mockMvc.perform(post("/api/v1/auth/step-up/mfa/status"))
+        mockMvc.perform(get("/api/v1/auth/mfa/status"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.apiResponseStatus").value("success"))
                 .andExpect(jsonPath("$.data.mfaEnabled").value(true));

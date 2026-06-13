@@ -31,6 +31,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -90,7 +91,6 @@ class AuthenticationControllerTest {
         verify(resolver).resolve(request.identifier(), request.identifierType());
         verify(authenticationService).getUserStatus(request.identifier());
     }
-
 
 
     @Test
@@ -154,7 +154,7 @@ class AuthenticationControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/v1/auth/password/change")
+        mockMvc.perform(patch("/api/v1/auth/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
@@ -172,7 +172,7 @@ class AuthenticationControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/v1/auth/password/change")
+        mockMvc.perform(patch("/api/v1/auth/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
@@ -201,7 +201,7 @@ class AuthenticationControllerTest {
     void deleteAccount_shouldReturnOk_whenRequestIsValid() throws Exception {
         DeviceIdRequest request = new DeviceIdRequest("device-1");
 
-        mockMvc.perform(post("/api/v1/auth/account/delete")
+        mockMvc.perform(post("/api/v1/auth/account")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -284,7 +284,7 @@ class AuthenticationControllerTest {
                 .thenReturn(new MfaSetupResponse("secret-123", "data:image/png;base64,AAAA"));
 
         // act + assert
-        mockMvc.perform(post("/api/v1/auth/enable/mfa/request")
+        mockMvc.perform(post("/api/v1/auth/mfa/setup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -342,7 +342,7 @@ class AuthenticationControllerTest {
                 """;
 
         // act + assert
-        mockMvc.perform(post("/api/v1/auth/enable/mfa/request")
+        mockMvc.perform(post("/api/v1/auth/mfa/setup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
@@ -359,7 +359,7 @@ class AuthenticationControllerTest {
                 .thenReturn(new MfaSetupConfirmResponse(new String[]{"code-1", "code-2"}));
 
         // act + assert
-        mockMvc.perform(post("/api/v1/auth/enable/mfa/confirm")
+        mockMvc.perform(post("/api/v1/auth/mfa/setup/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -387,7 +387,7 @@ class AuthenticationControllerTest {
                 """;
 
         // act + assert
-        mockMvc.perform(post("/api/v1/auth/enable/mfa/confirm")
+        mockMvc.perform(post("/api/v1/auth/mfa/setup/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
@@ -408,7 +408,7 @@ class AuthenticationControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/v1/auth/enable/mfa/confirm")
+        mockMvc.perform(post("/api/v1/auth/mfa/setup/confirm")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest())

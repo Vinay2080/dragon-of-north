@@ -23,10 +23,7 @@ import org.miniProjectTwo.DragonOfNorth.shared.exception.BusinessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -58,7 +55,7 @@ import static org.miniProjectTwo.DragonOfNorth.shared.dto.api.ApiResponse.succes
  * </ul>
  */
 @RestController
-@RequestMapping("/api/v1/auth/step-up")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class StepUpController {
 
@@ -94,7 +91,7 @@ public class StepUpController {
      * </ul>
      * After this call, the client may retry the originally blocked sensitive operation.</p>
      */
-    @PostMapping("/mfa/verify")
+    @PostMapping("/step-up/mfa/verify")
     public ResponseEntity<ApiResponse<?>> verifyStepUp(
             @RequestBody @Valid MfaVerifyRequest request,
             HttpServletRequest httpServletRequest,
@@ -132,14 +129,14 @@ public class StepUpController {
      * Endpoint to check if the authenticated user has MFA enabled. Clients can use this to
      * determine whether to prompt for MFA setup or to conditionally display MFA-related UI.
      */
-    @PostMapping("/mfa/status")
+    @GetMapping("/mfa/status")
     public ResponseEntity<ApiResponse<MfaStatusResponse>> mfaStatus() {
         AppUser appUser = authCommonServices.findAuthenticatedUser();
         return ResponseEntity.ok(ApiResponse.success(new MfaStatusResponse(appUser.isMfaEnabled())));
     }
 
     @PostMapping("/mfa/disable")
-    @SensitiveAccountOperation(policy = RecentMfaPolicy.DISABLE_MFA)
+    @SensitiveAccountOperation(policy = RecentMfaPolicy.DISABLE_MFA, onlyWhenMfaEnabled = true)
     public ResponseEntity<ApiResponse<?>> disableMfa(HttpServletRequest request,
                                                      @RequestBody @Valid DeviceIdRequest deviceIdRequest) {
         AuthRequestContext context = AuthRequestContext.fromHttpRequest(request, deviceIdRequest.deviceId());

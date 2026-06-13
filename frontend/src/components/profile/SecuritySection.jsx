@@ -35,7 +35,7 @@ const SecuritySection = ({authProvider}) => {
         let isMounted = true;
         const fetchMfaStatus = async () => {
             try {
-                const result = await apiService.post(API_CONFIG.ENDPOINTS.MFA_STATUS);
+                const result = await apiService.get(API_CONFIG.ENDPOINTS.MFA_STATUS);
                 if (!isMounted) return;
 
                 if (apiService.isErrorResponse(result)) {
@@ -198,7 +198,7 @@ const SecuritySection = ({authProvider}) => {
         setIsSubmitting(true);
 
         try {
-            const result = await apiService.post(API_CONFIG.ENDPOINTS.PASSWORD_CHANGE, {
+            const result = await apiService.patch(API_CONFIG.ENDPOINTS.PASSWORD_CHANGE, {
                 oldPassword: passwordForm.currentPassword,
                 newPassword: passwordForm.newPassword,
             });

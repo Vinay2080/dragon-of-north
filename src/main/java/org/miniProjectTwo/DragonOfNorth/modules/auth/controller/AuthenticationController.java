@@ -211,8 +211,8 @@ public class AuthenticationController implements AuthenticationApi {
      * @return ResponseEntity with a success message
      */
     @Override
-    @PostMapping("/password/change")
-    @SensitiveAccountOperation(policy = RecentMfaPolicy.PASSWORD_CHANGE)
+    @PatchMapping("/password")
+    @SensitiveAccountOperation(policy = RecentMfaPolicy.PASSWORD_CHANGE, onlyWhenMfaEnabled = true)
     public ResponseEntity<ApiResponse<?>> changePassword(
             @RequestBody @Valid PasswordChangeRequest request
     ) {
@@ -229,8 +229,8 @@ public class AuthenticationController implements AuthenticationApi {
      * @return ResponseEntity with a success message
      */
     @Override
-    @PostMapping("/account/delete")
-    @SensitiveAccountOperation(policy = RecentMfaPolicy.ACCOUNT_DELETE)
+    @PostMapping("/account")
+    @SensitiveAccountOperation(policy = RecentMfaPolicy.ACCOUNT_DELETE, onlyWhenMfaEnabled = true)
     public ResponseEntity<ApiResponse<?>> deleteAccount(
             @RequestBody @Valid DeviceIdRequest deviceIdRequest,
             HttpServletRequest request,
@@ -310,7 +310,7 @@ public class AuthenticationController implements AuthenticationApi {
      * The setup is not persisted as enabled until {@link #confirmMfaSetup(HttpServletRequest, MfaSetupConfirmRequest)}
      * succeeds with a valid authenticator code.
      */
-    @PostMapping("/enable/mfa/request")
+    @PostMapping("/mfa/setup")
     @RequireRecentMfa(onlyWhenMfaEnabled = true)
     @Override
     public ResponseEntity<ApiResponse<MfaSetupResponse>> requestMfaSetup(
@@ -331,7 +331,7 @@ public class AuthenticationController implements AuthenticationApi {
      * @return ResponseEntity with MFA setup confirmation response or failure message
      */
     @Override
-    @PostMapping("/enable/mfa/confirm")
+    @PostMapping("/mfa/setup/confirm")
     @RequireRecentMfa(onlyWhenMfaEnabled = true)
     public ResponseEntity<ApiResponse<MfaSetupConfirmResponse>> confirmMfaSetup(
             HttpServletRequest request,

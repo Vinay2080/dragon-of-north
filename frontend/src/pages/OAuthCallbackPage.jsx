@@ -63,7 +63,7 @@ const OAuthCallbackPage = () => {
         };
 
         const verifySession = async () => {
-            const verificationRequest = apiService.get(API_CONFIG.ENDPOINTS.SESSIONS_ALL);
+            const verificationRequest = apiService.get(API_CONFIG.ENDPOINTS.SESSIONS);
             const timeoutPromise = new Promise((_, reject) => {
                 window.setTimeout(() => reject(new Error('verification-timeout')), 5000);
             });

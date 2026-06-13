@@ -16,7 +16,7 @@ const extractToken = (payload: any) => {
 
 const readCurrentUserStatus = async (): Promise<string | null> => {
     try {
-        const meResponse: any = await apiClient.post(API_CONFIG.ENDPOINTS.PROFILE, undefined, {method: 'GET'} as any);
+        const meResponse: any = await apiClient.get(API_CONFIG.ENDPOINTS.PROFILE, undefined, {method: 'GET'} as any);
         return extractUserStatus(meResponse?.data || meResponse) || null;
     } catch {
         return null;

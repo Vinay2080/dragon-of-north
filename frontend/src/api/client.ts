@@ -178,7 +178,7 @@ const create = (defaults: RequestConfig) => {
                 },
             },
         },
-        get: (url: string, config: RequestConfig = {}) => request({...config, method: 'GET', url}),
+        get: (url: string, config: RequestConfig = {}, p0: any) => request({...config, method: 'GET', url}),
         post: (url: string, data?: unknown, config: RequestConfig = {}) => request({...config, method: 'POST', url, data}),
     };
 };

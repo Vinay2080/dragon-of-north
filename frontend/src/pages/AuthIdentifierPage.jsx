@@ -62,7 +62,7 @@ const AuthIdentifierPage = () => {
         const processedIdentifier = identifierType === 'PHONE' ? normalizePhone(trimmed) : trimmed;
         setLoading(true);
 
-        // Backend lookup: POST /api/v1/auth/identifier/status
+        // Backend lookup: GET /api/v1/auth/identifier/status
         const result = await apiService.post(API_CONFIG.ENDPOINTS.IDENTIFIER_STATUS, {
             identifier: processedIdentifier,
             identifier_type: identifierType,

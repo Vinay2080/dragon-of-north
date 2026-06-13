@@ -34,7 +34,7 @@ public class SessionController implements SessionApi {
      * Retrieves a list of active sessions for the current authenticated user.
      */
     @Override
-    @GetMapping("/get/all")
+    @GetMapping
     public ResponseEntity<ApiResponse<List<SessionSummaryResponse>>> getMySessions(Authentication authentication) {
         UUID userId = resolveUserId(authentication);
         List<SessionSummaryResponse> sessions = sessionService.getSessionsForUser(userId);
@@ -45,8 +45,8 @@ public class SessionController implements SessionApi {
      * Revokes a specific session by ID, ensuring the session belongs to the authenticated user.
      */
     @Override
-    @DeleteMapping("/delete/{sessionId}")
-    @SensitiveAccountOperation(policy = RecentMfaPolicy.SESSION_REVOKE)
+    @DeleteMapping("/{sessionId}")
+    @SensitiveAccountOperation(policy = RecentMfaPolicy.SESSION_REVOKE, onlyWhenMfaEnabled = true)
     public ResponseEntity<ApiResponse<?>> revokeSession(
             Authentication authentication,
             @PathVariable UUID sessionId
@@ -61,7 +61,7 @@ public class SessionController implements SessionApi {
      */
     @Override
     @PostMapping("/revoke-others")
-    @SensitiveAccountOperation(policy = RecentMfaPolicy.SESSION_REVOKE_ALL)
+    @SensitiveAccountOperation(policy = RecentMfaPolicy.SESSION_REVOKE_ALL, onlyWhenMfaEnabled = true)
     public ResponseEntity<ApiResponse<?>> revokeOtherSessions(
             Authentication authentication,
             @RequestBody @Valid DeviceIdRequest deviceIdRequest

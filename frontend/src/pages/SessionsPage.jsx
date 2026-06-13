@@ -89,7 +89,7 @@ const SessionsPage = () => {
         }
 
         setLoadingSessions(true);
-        const result = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS_ALL);
+        const result = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS);
         if (apiService.isErrorResponse(result)) {
             toast.error(result.message || 'Failed to load sessions.');
             setLoadingSessions(false);

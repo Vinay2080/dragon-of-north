@@ -159,7 +159,7 @@ const ProfilePage = () => {
         let isMounted = true;
 
         const loadSessionsPreview = async () => {
-            const result = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS_ALL);
+            const result = await apiService.get(API_CONFIG.ENDPOINTS.SESSIONS);
             if (!isMounted || apiService.isErrorResponse(result) || !Array.isArray(result?.data)) {
                 return;
             }
