@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.2</version>
+        <version>4.1.0</version>
         <relativePath/> <!-- lookup parent from a repository -->
     </parent>
     <groupId>org.mini-project-two</groupId>
@@ -30,11 +30,11 @@
         <java.version>21</java.version>
         <jjwt.version>0.13.0</jjwt.version>
         <mockito.version>5.11.0</mockito.version>
-        <spring.security.version>7.0.4</spring.security.version>
+        <spring.security.version>7.0.5</spring.security.version>
         <jackson.core.version>2.21.1</jackson.core.version>
         <jackson3.core.version>3.1.0</jackson3.core.version>
         <spring-modulith.version>2.0.0</spring-modulith.version>
-        <testcontainers.version>1.20.5</testcontainers.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
     <dependencies>
         <dependency>
@@ -135,7 +135,7 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.8.11</version>
+            <version>3.0.3</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -236,7 +236,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.2.8.Final</version>
+                <version>4.2.15.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

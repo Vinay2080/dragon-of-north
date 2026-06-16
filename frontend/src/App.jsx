@@ -1,34 +1,36 @@
 import {Navigate, Route, Routes, useNavigate} from 'react-router-dom';
-import {useCallback} from 'react';
+import {lazy, Suspense, useCallback} from 'react';
 import {AuthProvider} from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './components/AppLayout';
-import SignupPage from './pages/SignupPage';
-import OtpPage from './pages/OtpPage';
-import LoginPage from './pages/LoginPage.jsx';
-import SessionsPage from './pages/SessionsPage';
-import ForgotPasswordRequestPage from './pages/ForgotPasswordRequestPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
 import {ToastProvider} from './context/ToastContext.jsx';
 import NetworkStatus from './components/NetworkStatus/NetworkStatus';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import {useSessionTimeout} from './hooks/useSessionTimeout';
 import {useToast} from './hooks/useToast';
-import PremiumLandingPage from './pages/PremiumLandingPage';
-import FeaturesDocsPage from './pages/FeaturesDocsPage';
-import ArchitectureDocsPage from './pages/ArchitectureDocsPage';
-import SecurityDemoPage from './pages/SecurityDemoPage';
-import DeploymentDocsPage from './pages/DeploymentDocsPage';
-import OAuthCallbackPage from './pages/OAuthCallbackPage';
-import PasswordlessVerifyPage from './pages/PasswordlessVerifyPage.jsx';
-import IdentifierFlowPage from './pages/IdentifierFlowPage';
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import TermsOfServicePage from './pages/TermsOfServicePage';
 import {useRouteDocumentTitle} from './hooks/useDocumentTitle';
-import ProfilePage from './pages/ProfilePage.jsx';
-import HomeDocsPage from './pages/HomeDocsPage.jsx';
-import MfaManagementPage from './pages/MfaManagementPage.jsx';
 import {clearAuthClientState} from './services/authSession';
+
+const SignupPage = lazy(() => import('./pages/SignupPage'));
+const OtpPage = lazy(() => import('./pages/OtpPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
+const SessionsPage = lazy(() => import('./pages/SessionsPage'));
+const ForgotPasswordRequestPage = lazy(() => import('./pages/ForgotPasswordRequestPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+
+const PremiumLandingPage = lazy(() => import('./pages/PremiumLandingPage'));
+const FeaturesDocsPage = lazy(() => import('./pages/FeaturesDocsPage'));
+const ArchitectureDocsPage = lazy(() => import('./pages/ArchitectureDocsPage'));
+const SecurityDemoPage = lazy(() => import('./pages/SecurityDemoPage'));
+const DeploymentDocsPage = lazy(() => import('./pages/DeploymentDocsPage'));
+const OAuthCallbackPage = lazy(() => import('./pages/OAuthCallbackPage'));
+const PasswordlessVerifyPage = lazy(() => import('./pages/PasswordlessVerifyPage.jsx'));
+const IdentifierFlowPage = lazy(() => import('./pages/IdentifierFlowPage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const TermsOfServicePage = lazy(() => import('./pages/TermsOfServicePage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
+const HomeDocsPage = lazy(() => import('./pages/HomeDocsPage.jsx'));
+const MfaManagementPage = lazy(() => import('./pages/MfaManagementPage.jsx'));
 
 const AppShell = () => {
     const navigate = useNavigate();
@@ -86,7 +88,14 @@ export default function App() {
         <ErrorBoundary>
             <ToastProvider>
                 <AuthProvider>
-                    <AppShell/>
+                    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center">
+                        <div className="animate-pulse flex flex-col items-center gap-4">
+                            <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+                            <div className="h-4 w-32 rounded bg-slate-200 dark:bg-slate-700"></div>
+                        </div>
+                    </div>}>
+                        <AppShell/>
+                    </Suspense>
                 </AuthProvider>
             </ToastProvider>
         </ErrorBoundary>
